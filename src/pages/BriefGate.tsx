@@ -17,7 +17,7 @@ import { greetingSlot, localDayKey, markShown, readLastShown } from '@/lib/brief
 import { buildBriefMessages, continuityFromSnapshot, mergeContinuity } from '@/lib/brief/engine';
 import { readContinuity, writeContinuity } from '@/lib/brief/continuity';
 import { describeDueWhen } from '@/lib/brief/dueWhen';
-import { BRIEF_FADE_MS, planChoreography } from '@/lib/brief/choreography';
+import { planChoreography } from '@/lib/brief/choreography';
 import type { BriefFilterTarget, BriefMessage, BriefSnapshot } from '@/lib/brief/types';
 import { requestOpenOverdueInvoices } from '@/lib/eracun/openOverdueRequest';
 
@@ -174,11 +174,11 @@ const BriefGate = () => {
     >
       <div
         className="w-full max-w-[22rem] text-left -translate-y-[6vh]"
-        style={{ transitionDuration: `${BRIEF_FADE_MS}ms` }}
+        style={{ transitionDuration: `${plan.fadeMs}ms` }}
       >
         <p
           className={`text-lg text-muted-foreground ${fade(true)}`}
-          style={{ transitionDuration: `${BRIEF_FADE_MS}ms` }}
+          style={{ transitionDuration: `${plan.fadeMs}ms` }}
           data-testid="brief-gate-greeting"
         >
           {greeting}
@@ -201,7 +201,7 @@ const BriefGate = () => {
 
         <div
           className={`mt-10 flex flex-col items-start gap-1 ${fade(complete)}`}
-          style={{ transitionDuration: `${BRIEF_FADE_MS}ms` }}
+          style={{ transitionDuration: `${plan.fadeMs}ms` }}
           data-testid="brief-gate-actions"
           aria-hidden={complete ? undefined : true}
         >
