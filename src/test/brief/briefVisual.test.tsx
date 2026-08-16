@@ -2,7 +2,7 @@
  * BRIEF-VRATA — vizualni predah: koreografija bez pomicanja, tipografske akcije.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import BriefGate from '@/pages/BriefGate';
 import type { BriefSnapshot } from '@/lib/brief/types';
@@ -111,7 +111,10 @@ describe('koreografija vrata', () => {
     rpcMock.mockResolvedValue({ data: twoTruths, error: null });
     renderGate();
     await screen.findByTestId('brief-gate-message');
-    expect(screen.getByTestId('brief-gate').getAttribute('data-complete')).toBe('true');
+    // `complete` postavlja pasivni ucinak; findBy moze rijesiti prije njegova ispiranja.
+    await waitFor(() =>
+      expect(screen.getByTestId('brief-gate').getAttribute('data-complete')).toBe('true'),
+    );
   });
 
   it('ponovni prikaz istog dana (>= 4 h) => bez koreografije', async () => {
@@ -119,7 +122,9 @@ describe('koreografija vrata', () => {
     rpcMock.mockResolvedValue({ data: twoTruths, error: null });
     renderGate();
     await screen.findByTestId('brief-gate-message');
-    expect(screen.getByTestId('brief-gate').getAttribute('data-complete')).toBe('true');
+    await waitFor(() =>
+      expect(screen.getByTestId('brief-gate').getAttribute('data-complete')).toBe('true'),
+    );
   });
 
   it('tiho stanje: pozdrav i rečenica u istom koraku', () => {
