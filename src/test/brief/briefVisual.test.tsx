@@ -9,6 +9,7 @@ import type { BriefSnapshot } from '@/lib/brief/types';
 import { BRIEF_GATE_LAST_SHOWN_KEY } from '@/lib/briefGate';
 import { describeDueWhen } from '@/lib/brief/dueWhen';
 import {
+  BRIEF_ACTION_PAUSE_MS,
   BRIEF_FADE_MS,
   BRIEF_PAUSE_MAX_MS,
   BRIEF_PAUSE_MIN_MS,
@@ -176,8 +177,8 @@ describe('koreografija vrata', () => {
     expect(pauseAfter(Array.from({ length: 80 }, () => 'riječ').join(' '))).toBe(BRIEF_PAUSE_MAX_MS);
   });
 
-  it('fade je 550 ms za sve elemente', () => {
-    expect(BRIEF_FADE_MS).toBe(550);
+  it('fade je 750 ms za sve elemente', () => {
+    expect(BRIEF_FADE_MS).toBe(750);
     const plan = planChoreography({
       firstDaily: true,
       reducedMotion: false,
@@ -185,7 +186,46 @@ describe('koreografija vrata', () => {
       greetingText: 'Dobro jutro.',
       lineTexts: ['Jedna rečenica.'],
     });
-    expect(plan.fadeMs).toBe(550);
+    expect(plan.fadeMs).toBe(750);
+  });
+
+  it('"Udi u Centar" dolazi strogo nakon "Pogledaj", tocno fade + BRIEF_ACTION_PAUSE_MS', () => {
+    const plan = planChoreography({
+      firstDaily: true,
+      reducedMotion: false,
+      calm: false,
+      greetingText: 'Dobro jutro, Milan.',
+      lineTexts: ['Dva dokumenta čekaju.', 'Najbliži račun dospijeva u ponedjeljak.'],
+      hasPrimaryAction: true,
+    });
+    expect(plan.primaryActionDelay).toBe(plan.actionsDelay);
+    expect(plan.enterActionDelay).toBeGreaterThan(plan.primaryActionDelay!);
+    expect(plan.enterActionDelay - plan.primaryActionDelay!).toBe(BRIEF_FADE_MS + BRIEF_ACTION_PAUSE_MS);
+  });
+
+  it('bez "Pogledaj": ulaz dolazi prema zadnjoj recenici, bez praznog koraka', () => {
+    const lines = ['Jedna rečenica.'];
+    const base = { firstDaily: true, reducedMotion: false, calm: false, greetingText: 'Dobro jutro.', lineTexts: lines };
+    const withPrimary = planChoreography({ ...base, hasPrimaryAction: true });
+    const withoutPrimary = planChoreography({ ...base, hasPrimaryAction: false });
+    expect(withoutPrimary.primaryActionDelay).toBeNull();
+    expect(withoutPrimary.enterActionDelay).toBe(withoutPrimary.actionsDelay);
+    expect(withoutPrimary.enterActionDelay).toBe(withPrimary.primaryActionDelay);
+  });
+
+  it('razmak medu akcijama ne ovisi o duljini teksta akcija', () => {
+    const mk = (lineTexts: string[]) =>
+      planChoreography({
+        firstDaily: true,
+        reducedMotion: false,
+        calm: false,
+        greetingText: 'Dobro jutro.',
+        lineTexts,
+        hasPrimaryAction: true,
+      });
+    for (const plan of [mk(['A.']), mk([Array.from({ length: 40 }, () => 'riječ').join(' ')])]) {
+      expect(plan.enterActionDelay - plan.primaryActionDelay!).toBe(BRIEF_FADE_MS + BRIEF_ACTION_PAUSE_MS);
+    }
   });
 
   it('ponovni ulazak i reduced-motion => bez koreografije', () => {
@@ -197,6 +237,7 @@ describe('koreografija vrata', () => {
       expect(plan.animated).toBe(false);
       expect(plan.lineDelays).toEqual([0, 0]);
       expect(plan.actionsDelay).toBe(0);
+      expect(plan.enterActionDelay).toBe(0);
     }
   });
 });
