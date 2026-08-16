@@ -7,12 +7,35 @@
  *
  * SIGURNOST: potvrdni link postaje KLIKABILAN GUMB samo ako su ISPUNJENA OBA
  * uvjeta: (1) poruka je autentificirana kao Googleova, (2) URL je striktno na
- * `https://mail-settings.google.com/`. Inače se prikazuje SAMO kod, uz
- * upozorenje. Nikad ne pretvaramo neprovjeren link u gumb.
+ * Googleovoj domeni potvrde (`mail-settings.google.com` ili `mail.google.com`).
+ * Inače se prikazuje SAMO kod, uz upozorenje. Nikad ne pretvaramo neprovjeren
+ * link u gumb.
+ *
+ * JEZICI: predmet stiže na jeziku korisnikova Gmaila ("Gmail Forwarding
+ * Confirmation", "Gmail Potvrda o prosljeđivanju", "Gmail-Weiterleitungs-
+ * bestätigung"…). Zato je pošiljatelj TVRDA ograda, a predmet meka: uz
+ * točnog pošiljatelja dovoljan je Googleov potvrdni link ili potvrdni kod.
  */
 
 export const GMAIL_FORWARDING_SENDER = 'forwarding-noreply@google.com';
 export const GMAIL_CONFIRM_ORIGIN = 'https://mail-settings.google.com/';
+/** Hostovi na kojima Google poslužuje potvrdu prosljeđivanja. */
+export const GMAIL_CONFIRM_HOSTS: readonly string[] = [
+  'mail-settings.google.com',
+  'mail.google.com',
+];
+
+/** Predmet potvrde — poznati oblici po jezicima (meka ograda). */
+const SUBJECT_PATTERNS: readonly RegExp[] = [
+  /forwarding confirmation/i,
+  /potvrda o proslje/i, // hr: "Potvrda o prosljeđivanju"
+  /potvrda proslje/i,
+  /weiterleitungsbest/i, // de: "Weiterleitungsbestätigung"
+  /bestätigung der weiterleitung/i,
+  /bestatigung der weiterleitung/i,
+  /confirmation de transfert/i,
+  /confirmación de reenvío/i,
+];
 
 export interface GmailVerificationInput {
   fromHeader: string | null | undefined;
@@ -30,6 +53,8 @@ export interface GmailVerificationResult {
   safeConfirmUrl: string | null;
   /** Nađen je potvrdni link, ali nije siguran za gumb. */
   linkWithheld: boolean;
+  /** Adresa koja se prosljeđuje (iz predmeta), ako je čitljiva. */
+  forwardedAddress: string | null;
   warnings: string[];
 }
 
@@ -54,39 +79,67 @@ export function extractCodeFromBody(bodyText: string): string | null {
   return m ? m[1] : null;
 }
 
+/** Adresa koja se prosljeđuje — zadnja e-adresa u predmetu ("… s adrese X"). */
+export function extractForwardedAddress(subject: string | null | undefined): string | null {
+  const all = (subject ?? '').match(/[^\s<>,;()]+@[^\s<>,;()]+/g);
+  if (!all || all.length === 0) return null;
+  return all[all.length - 1].replace(/[.,;:]+$/, '');
+}
+
 export function isGoogleConfirmUrl(url: string): boolean {
   const value = (url ?? '').trim();
-  // Striktno: točan origin i https. Bez `startsWith` trikova tipa
-  // "https://mail-settings.google.com.zlo.example/".
-  if (!value.toLowerCase().startsWith(GMAIL_CONFIRM_ORIGIN)) return false;
   try {
     const parsed = new URL(value);
-    return parsed.protocol === 'https:' && parsed.hostname === 'mail-settings.google.com';
+    // Striktno: https + TOČAN host. Bez `startsWith` trikova tipa
+    // "https://mail-settings.google.com.zlo.example/".
+    if (parsed.protocol !== 'https:') return false;
+    return GMAIL_CONFIRM_HOSTS.includes(parsed.hostname.toLowerCase());
   } catch {
     return false;
   }
 }
+
+/** Kandidat za potvrdni link — labavo prepoznavanje, sud donosi `isGoogleConfirmUrl`. */
+const looksLikeConfirmLink = (link: string): boolean =>
+  /mail-settings\.google\.com/i.test(link) || /mail\.google\.com\/mail\/vf-/i.test(link);
 
 export function detectGmailVerification(
   input: GmailVerificationInput,
 ): GmailVerificationResult {
   const sender = emailOf(input.fromHeader);
   const subject = input.subject ?? '';
-  const senderMatches = sender === GMAIL_FORWARDING_SENDER;
-  const subjectMatches = /gmail forwarding confirmation/i.test(subject);
+  const bodyText = input.bodyText ?? '';
+  const links = input.links ?? [];
 
-  if (!senderMatches || !subjectMatches) {
+  // TVRDA ograda: samo točan Googleov pošiljatelj. Slično ime ne prolazi.
+  if (sender !== GMAIL_FORWARDING_SENDER) {
     return {
       isVerification: false,
       code: null,
       safeConfirmUrl: null,
       linkWithheld: false,
+      forwardedAddress: null,
       warnings: [],
     };
   }
 
-  const code = extractConfirmationCode(subject) ?? extractCodeFromBody(input.bodyText ?? '');
-  const candidate = (input.links ?? []).find((l) => /mail-settings\.google\.com/i.test(l)) ?? null;
+  const candidate = links.find(looksLikeConfirmLink) ??
+    (looksLikeConfirmLink(bodyText) ? null : null);
+  const code = extractConfirmationCode(subject) ?? extractCodeFromBody(bodyText);
+  const subjectMatches = SUBJECT_PATTERNS.some((re) => re.test(subject));
+
+  // Meka ograda: predmet na bilo kojem jeziku ILI Googleov potvrdni trag.
+  if (!subjectMatches && candidate === null && code === null) {
+    return {
+      isVerification: false,
+      code: null,
+      safeConfirmUrl: null,
+      linkWithheld: false,
+      forwardedAddress: null,
+      warnings: [],
+    };
+  }
+
   const urlIsSafe = candidate !== null && isGoogleConfirmUrl(candidate);
   const allowButton = urlIsSafe && input.googleAuthenticated;
 
@@ -100,6 +153,7 @@ export function detectGmailVerification(
     code,
     safeConfirmUrl: allowButton ? candidate : null,
     linkWithheld: candidate !== null && !allowButton,
+    forwardedAddress: extractForwardedAddress(subject),
     warnings,
   };
 }
