@@ -2,7 +2,10 @@
  * Grep guard: sistemski dijalozi (window.prompt/confirm/alert) su zabranjeni u src/**.
  * Umjesto njih koristi ConfirmActionDialog (ili namjenski dijalog u stilu aplikacije).
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+
+// Grep guard skenira cijeli src/**; pod punim opterecenjem prelazi 5 s.
+vi.setConfig({ testTimeout: 30000 });
 import fs from "node:fs";
 import path from "node:path";
 
