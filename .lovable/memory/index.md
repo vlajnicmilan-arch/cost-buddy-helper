@@ -8,6 +8,6 @@
 - [Import nerazlučivi kandidati](mem://features/import-indistinguishable-pairing) — 1:1 automatsko uparivanje + opis ulazi u odluku o spajanju
 - [Kartični izvod + pravilo tišine](mem://features/mail-card-statement-and-silence-rule) — charge-kartični izvod prolazi lijevak; niska sigurnost s IBAN+iznosima nikad ne završi u tihom nije_za_nas
 - [Obavijest o dokumentu — samogašenje](mem://features/mail-pending-notification-lifecycle) — dedup po item_id, DB okidač, izuzeta iz „Za pažnju"
-- [Sva tri lock-a u istom commitu](mem://constraints/three-lockfiles-in-sync) — package.json + bun.lock + package-lock.json; resolved URL-ovi na registry.npmjs.org; npm ci --dry-run provjera
+- [bun.lock je jedini lockfile](mem://constraints/bun-lock-only) — package-lock.json obrisan i nikad se ne vraća; svi CI workflowi na bun install --frozen-lockfile
 - [Podsjetnici za dospijeće ulaznih računa](mem://features/invoice-due-reminders) — d3+d0, dedup, agregat prekoračenih, jedan prekidač
 - [Brief-vrata V1](mem://features/brief-gate-v1) — pozdravni ekran, flag + allowlist + učestalost/tišina
