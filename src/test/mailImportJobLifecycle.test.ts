@@ -170,8 +170,8 @@ const migrationsWith = (needle: string): string[] => {
 const claimSql = migrationsWith('FUNCTION public.mail_ingest_claim_jobs').slice(-1)[0] ?? '';
 // finish_job i reaper zive u vlastitim (ranijim) migracijama — claim se od tada
 // mijenjao neovisno, pa se svaka tvrdnja gleda u ZADNJOJ migraciji te funkcije.
-const finishSql = migrationsWith('FUNCTION public.mail_ingest_finish_job').slice(-1)[0] ?? '';
-const reaperSql = migrationsWith('FUNCTION public.mail_ingest_reap_stuck_jobs').slice(-1)[0] ?? '';
+const finishSql = migrationsWith('CREATE OR REPLACE FUNCTION public.mail_ingest_finish_job').slice(-1)[0] ?? '';
+const reaperSql = migrationsWith('CREATE OR REPLACE FUNCTION public.mail_ingest_reap_stuck_jobs').slice(-1)[0] ?? '';
 const confirmSql = migrationsWith('FUNCTION public.mail_item_confirm').slice(-1)[0] ?? '';
 
 describe('KVAR 1 — posao uvijek završi u terminalnom stanju', () => {
