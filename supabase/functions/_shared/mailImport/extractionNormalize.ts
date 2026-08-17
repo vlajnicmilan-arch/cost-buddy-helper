@@ -61,6 +61,10 @@ export function flattenUblExtraction(parsed: Record<string, unknown>): Record<st
     supplier_name: (supplier.name as string | null) ?? null,
     customer_oib: (customer.oib as string | null) ?? null,
     customer_name: (customer.name as string | null) ?? null,
+    // KUPAC pod istim imenom kao u ostalim granama — kartica i usmjeravanje
+    // čitaju SAMO `recipient_*`, pa UBL ne smije biti iznimka.
+    recipient_oib: (customer.oib as string | null) ?? null,
+    recipient_name: (customer.name as string | null) ?? null,
     invoice_number: (parsed.invoiceNumber as string | null) ?? null,
     issue_date: (parsed.issueDate as string | null) ?? null,
     due_date: (parsed.dueDate as string | null) ?? null,
