@@ -136,7 +136,12 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (existing) return json({ ok: true, replay: true });
 
-    // Alias lookup — bez valjanog AKTIVNOG aliasa NE nastaje NIŠTA.
+    // Alias lookup — bez POZNATOG aliasa NE nastaje NIŠTA.
+    //
+    // UGAŠENI alias se PRIHVAĆA: korisnikova pošta je korisnikova pošta i
+    // tiho bacanje je najgori mogući ishod (pošiljatelj dobije "dostavljeno",
+    // korisnik ne dobije ništa). Poruka se obrađuje normalno, uz obavijest
+    // "stigla je pošta na staru adresu". Aktivan alias uvijek ima prednost.
     const locals = extractRecipientLocals(
       [field("recipient"), field("To"), field("to")].filter(Boolean).join(","),
     );
@@ -144,16 +149,21 @@ Deno.serve(async (req) => {
 
     const { data: aliasRows } = await supabase
       .from("mail_aliases")
-      .select("id, user_id, created_at")
+      .select("id, user_id, alias_local, created_at, disabled_at")
       .in("alias_local", locals)
-      .is("disabled_at", null)
-      .order("created_at", { ascending: true })
-      .limit(1);
-    const aliasRow = (aliasRows ?? [])[0] ?? null;
-
+      .order("created_at", { ascending: true });
+    const rows = (aliasRows ?? []) as Array<{
+      id: string;
+      user_id: string;
+      alias_local: string;
+      created_at: string;
+      disabled_at: string | null;
+    }>;
+    const aliasRow = rows.find((r) => r.disabled_at === null) ?? rows[0] ?? null;
+    const staleAlias = aliasRow !== null && aliasRow.disabled_at !== null;
 
     if (!aliasRow) {
-      console.warn("[mail-ingest] nepoznat ili ugašen alias — odbacujem bez zapisa");
+      console.warn("[mail-ingest] nepoznat alias — odbacujem bez zapisa");
       return json({ ok: true, ignored: "unknown_alias" });
     }
 
