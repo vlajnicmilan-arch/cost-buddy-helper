@@ -275,6 +275,17 @@ Deno.serve(async (req) => {
       return json({ error: "store_failed" }, 500);
     }
 
+    // UGAŠENA ADRESA NIKAD TIHO: poruka je primljena i obrađuje se, ali
+    // korisnik mora doznati da pošiljatelj još gađa staru adresu.
+    if (staleAlias) {
+      await notifyStaleAlias(supabase, {
+        aliasId: aliasRow.id,
+        userId: aliasRow.user_id,
+        staleLocal: aliasRow.alias_local,
+        fromHeader: field("from") || field("From") || "",
+      });
+    }
+
     return json({ ok: true, ...(stored as Record<string, unknown>) });
   } catch (e) {
     console.error("[mail-ingest] unhandled", e);
