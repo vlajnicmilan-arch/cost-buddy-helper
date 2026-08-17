@@ -689,8 +689,8 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
       attachmentId: unit.attachmentId,
       row: {
         source: "mail",
-        scope_type: unitScope.scopeType,
-        scope_id: unitScope.scopeId,
+        scope_type: destination.scopeType,
+        scope_id: destination.scopeId,
         owner_user_id: ownerId,
         classification: result.classification,
         extraction: result.extraction,
