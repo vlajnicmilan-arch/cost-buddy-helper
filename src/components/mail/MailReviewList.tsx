@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { AlertTriangle, BadgeCheck, Check, Loader2, Pencil, ShieldAlert, X } from 'lucide-react';
+import { AlertTriangle, BadgeCheck, Check, FileText, Inbox, Loader2, Pencil, ShieldAlert, X } from 'lucide-react';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { showUndoToast } from '@/lib/undoToast';
 import { restoreIngestItem } from '@/lib/mailReviewStatus';
