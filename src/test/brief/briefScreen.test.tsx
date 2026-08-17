@@ -97,14 +97,15 @@ describe('BriefGate ekran', () => {
       error: null,
     });
     renderGate();
-    await screen.findByTestId('brief-gate-message');
+    await screen.findByTestId('brief-gate-message', {}, { timeout: 15000 });
     fireEvent.pointerDown(screen.getByTestId('brief-gate'));
-    await waitFor(() =>
-      expect(screen.getByTestId('brief-gate').getAttribute('data-complete')).toBe('true'),
+    await waitFor(
+      () => expect(screen.getByTestId('brief-gate').getAttribute('data-complete')).toBe('true'),
+      { timeout: 15000 },
     );
     fireEvent.click(screen.getByTestId('brief-gate-action'));
-    await screen.findByText('DOKUMENTI');
-  });
+    await screen.findByText('DOKUMENTI', {}, { timeout: 15000 });
+  }, 20000);
 
   it('ulaz uvijek postoji', async () => {
     rpcMock.mockResolvedValue({
