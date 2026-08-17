@@ -17,6 +17,8 @@ import { isValidOib } from './oib.ts';
 import { deterministicExtract } from './deterministicExtract.ts';
 import { flattenUblExtraction, mergeDeterministic } from './extractionNormalize.ts';
 import { carriesFinancialSubstance, classifyAsStatement } from './statementSignals.ts';
+import { carriesInvoiceSignal } from './invoiceSignals.ts';
+
 
 /** Tip dokumenta za mjesečni izvod charge/kreditne kartice. */
 export const CARD_STATEMENT_DOC_TYPE = 'izvod_kartica';
@@ -53,7 +55,16 @@ export interface ClassifyInput {
   ownOibs?: readonly string[];
   /** Tekst iz kojeg heuristika traži poznati OIB (tijelo ili ime datoteke). */
   searchText?: string;
+  /**
+   * Korisnikova ODLUKA o vrsti dokumenta ('racun' / 'izvod'), zapamćena na
+   * stavci. Ponovna obrada je NE smije pregaziti: kad korisnik kaže „ovo je
+   * račun", izvod-pitanje se više ne postavlja.
+   */
+  userClassification?: 'racun' | 'izvod' | null;
 }
+
+
+
 
 export interface ClassifyDeps {
   /** Deterministički UBL parser. Ne smije raditi mrežni poziv. */
@@ -201,7 +212,9 @@ export async function classifyDocument(
     .filter((p) => (p ?? '').trim().length > 0)
     .join('\n');
   const statement = classifyAsStatement(statementText, input.subject);
-  if (statement.isStatement) {
+  // Korisnik je već presudio da je ovo IZVOD — strojna sumnja se ne postavlja opet.
+  const userSaysInvoice = input.userClassification === 'racun';
+  if (statement.isStatement && !userSaysInvoice) {
     return {
       classification: 'izvod',
       // Kartični izvod se vodi zasebnim tipom — nije bankovni promet računa.
@@ -217,7 +230,14 @@ export async function classifyDocument(
       verification: null,
     };
   }
-  if (statement.needsHumanChoice) {
+  // KLASIFIKATORSKA LEKCIJA: slaba sumnja na izvod NE smije nadjačati doslovan
+  // račun-signal („Račun br.", „Dospijeće računa", naslov „Račun …") kad
+  // dokument nosi financijsku supstancu. Tada ide u račun-put, ne u pitanje.
+  const invoiceWins =
+    userSaysInvoice ||
+    (carriesInvoiceSignal(statementText, input.subject) &&
+      carriesFinancialSubstance(statementText));
+  if (statement.needsHumanChoice && !invoiceWins) {
     // Sumnja: jedan sidreni signal. Ne smije tiho pasti u `racun`.
     return {
       classification: 'nepoznato',
@@ -233,6 +253,8 @@ export async function classifyDocument(
       verification: null,
     };
   }
+  if (statement.needsHumanChoice && invoiceWins) warnings.push('racun_signal_jaci_od_izvoda');
+
 
   // ---- 3. Deterministički ulov iz teksta — nula troška, prije AI-ja ------
   const deterministic = deterministicExtract({
@@ -307,6 +329,22 @@ export async function classifyDocument(
   aiCalls += 1;
 
   if (ai.classification !== 'racun' && ai.classification !== 'ponuda') {
+    // Korisnikova odluka „ovo je račun" je jača od AI presude: dokument ostaje
+    // račun s onim što je AI uspio pročitati, nikad se ne vraća u pitanje.
+    if (invoiceWins) {
+      return {
+        classification: 'racun',
+        docType: '380',
+        extraction: mergeDeterministic(ai.extraction, deterministicFields),
+        confidence: 'niska',
+        route: 'ai',
+        aiCalls,
+        consumesQuota: true,
+        priority: false,
+        warnings: [...warnings, 'racun_signal_jaci_od_izvoda'],
+        verification: null,
+      };
+    }
     // PRAVILO TIŠINE: niska sigurnost NAD dokumentom s financijskom supstancom
     // (IBAN + iznosi/tablica) ide u ljudski red, nikad u tiho odbacivanje.
     // Visoka/srednja sigurnost i dalje smije odbaciti bez pitanja.
@@ -338,6 +376,7 @@ export async function classifyDocument(
       verification: null,
     };
   }
+
 
   return {
     classification: ai.classification,

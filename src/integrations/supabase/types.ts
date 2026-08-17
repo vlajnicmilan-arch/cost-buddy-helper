@@ -1474,6 +1474,8 @@ export type Database = {
           status: string
           trust_level: string | null
           updated_at: string
+          verification_clicked_at: string | null
+          verification_reactivated_at: string | null
           warnings: Json
         }
         Insert: {
@@ -1498,6 +1500,8 @@ export type Database = {
           status?: string
           trust_level?: string | null
           updated_at?: string
+          verification_clicked_at?: string | null
+          verification_reactivated_at?: string | null
           warnings?: Json
         }
         Update: {
@@ -1522,6 +1526,8 @@ export type Database = {
           status?: string
           trust_level?: string | null
           updated_at?: string
+          verification_clicked_at?: string | null
+          verification_reactivated_at?: string | null
           warnings?: Json
         }
         Relationships: [
@@ -7623,6 +7629,10 @@ export type Database = {
         }
         Returns: Json
       }
+      mail_item_decide: {
+        Args: { p_decision: string; p_item_id: string }
+        Returns: Json
+      }
       mail_item_reprocess: {
         Args: { p_classification?: string; p_item_id: string }
         Returns: Json
@@ -7632,6 +7642,8 @@ export type Database = {
         Returns: Json
       }
       mail_norm_date: { Args: { p_value: string }; Returns: string }
+      mail_verification_clicked: { Args: { p_item_id: string }; Returns: Json }
+      mail_verification_reactivate_stale: { Args: never; Returns: number }
       mark_guided_home_exited: { Args: never; Returns: string }
       member_sees_investor_price: {
         Args: { _project_id: string; _user_id: string }

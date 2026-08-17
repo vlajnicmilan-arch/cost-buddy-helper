@@ -26,6 +26,11 @@ import {
 } from "../_shared/mailImport/classify.ts";
 import { parseUbl } from "../_shared/mailImport/parseUblBridge.ts";
 import { upsertIngestItem } from "../_shared/mailImport/ingestItemUpsert.ts";
+import {
+  attachmentTypeLabel,
+  isUserFixableQuarantine,
+  UNSUPPORTED_ATTACHMENT_CLASSIFICATION,
+} from "../_shared/mailImport/quarantineVisibility.ts";
 import { resolveTransportDedup } from "../_shared/mailImport/transportDedup.ts";
 import { sendPushNotification } from "../_shared/sendPushNotification.ts";
 
@@ -177,6 +182,109 @@ async function knownCounterparties(supabase: Supa, userId: string) {
   return { byOib, oibs: Array.from(byOib.keys()) };
 }
 
+/** Adresa iz `From` zaglavlja, malim slovima — bez imena i zagrada. */
+export function senderEmail(fromHeader: string | null | undefined): string {
+  const m = (fromHeader ?? "").toLowerCase().match(/([^\s<>,;]+@[^\s<>,;]+)/);
+  return m ? m[1] : "";
+}
+
+/**
+ * OBAVIJEST „dokument čeka pregled" — JEDNO mjesto istine (dedup po stavci,
+ * samogašenje kroz DB okidač). Koriste je i dokumenti i karantena-kartica.
+ */
+async function notifyPending(supabase: Supa, ownerId: string, itemId: string, priority: boolean) {
+  const { error: notifError } = await supabase.from("notifications").insert({
+    user_id: ownerId,
+    type: "mail_document_pending",
+    title: "notifications.mail.pending.title",
+    message: "notifications.mail.pending.body",
+    data: {
+      item_id: itemId,
+      priority,
+      route: "/dokumenti",
+      fallback_route: "/dokumenti",
+      title_vars: {},
+      message_vars: {},
+    },
+    dedup_key: `mail_document_pending:${itemId}`,
+  });
+  // 23505 = već postoji živa obavijest za istu stavku (dedup), nije kvar.
+  if (notifError && notifError.code !== "23505") {
+    console.error("[mail-process] upis obavijesti nije uspio", notifError.message, notifError);
+  }
+
+  try {
+    await sendPushNotification({
+      user_id: ownerId,
+      title: "notifications.mail.pending.title",
+      body: "notifications.mail.pending.body",
+      data: {
+        type: "mail_document_pending",
+        category: "pending",
+        route: "/dokumenti",
+        item_id: itemId,
+        i18n_title_key: "notifications.mail.pending.title",
+        i18n_body_key: "notifications.mail.pending.body",
+      },
+      source: "mail-process",
+    });
+  } catch (pushErr) {
+    console.error("[mail-process] push nije poslan", pushErr);
+  }
+}
+
+/**
+ * ŽIVOTNI CIKLUS GMAIL POTVRDE — treće stanje.
+ * Prvi stvarni mail s adrese koju je korisnik dao Googleu na prosljeđivanje
+ * TRAJNO zatvara njegovu potvrdu. Podudaranje je po TOČNO izdvojenoj adresi
+ * pošiljatelja, nikad po naslovu ni djelomičnom tekstu.
+ */
+async function closeVerificationOnFirstMail(
+  supabase: Supa,
+  ownerId: string,
+  fromHeader: string | null,
+): Promise<void> {
+  const sender = senderEmail(fromHeader);
+  if (sender === "") return;
+  const { data } = await supabase
+    .from("document_ingest_items")
+    .select("id, extraction")
+    .eq("owner_user_id", ownerId)
+    .eq("classification", "verifikacija_prosljedjivanja")
+    .eq("status", "ceka_prvi_mail");
+  for (const row of (data ?? []) as Array<{ id: string; extraction: Record<string, unknown> | null }>) {
+    const address = String((row.extraction ?? {}).forwardedAddress ?? "").trim().toLowerCase();
+    if (address !== "" && address === sender) {
+      await supabase
+        .from("document_ingest_items")
+        .update({ status: "potvrdjen", updated_at: new Date().toISOString() })
+        .eq("id", row.id);
+    }
+  }
+}
+
+/** Korisnikova zapamćena odluka o vrsti dokumenta za (poruka, privitak). */
+async function userClassificationFor(
+  supabase: Supa,
+  messageId: string,
+  attachmentId: string | null,
+): Promise<"racun" | "izvod" | null> {
+  let query = supabase
+    .from("document_ingest_items")
+    .select("classification, classification_set_by_user")
+    .eq("message_id", messageId);
+  query = attachmentId ? query.eq("attachment_id", attachmentId) : query.is("attachment_id", null);
+  const { data } = await query.limit(1);
+  const row = (data ?? [])[0] as
+    | { classification: string | null; classification_set_by_user: boolean | null }
+    | undefined;
+  if (!row || row.classification_set_by_user !== true) return null;
+  return row.classification === "racun" || row.classification === "izvod"
+    ? (row.classification as "racun" | "izvod")
+    : null;
+}
+
+
 async function processMessage(supabase: Supa, messageId: string): Promise<void> {
   const { data: msg, error: msgErr } = await supabase
     .from("inbound_messages")
@@ -186,6 +294,10 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
   if (msgErr || !msg) throw new Error("poruka_ne_postoji");
 
   const ownerId = msg.owner_user_id as string;
+
+  // Prvi stvarni mail s adrese koju čeka Gmail potvrda zatvara tu potvrdu.
+  await closeVerificationOnFirstMail(supabase, ownerId, msg.from_header as string | null);
+
 
   const trust = evaluateTrust({
     spf: msg.spf_result,
@@ -278,8 +390,45 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
             quarantine_reason: verdict.quarantineReason,
           })
           .eq("id", unit.attachmentId as string);
+
+        // KARANTENA GOVORI: format koji korisnik MOŽE ispraviti dobiva vidljivu
+        // karticu i obavijest. Sigurnosni razlozi (sadržaj) ostaju tihi.
+        if (isUserFixableQuarantine(verdict.quarantineReason)) {
+          const scope = resolveScope({ text: "", ownOibs: ownOibEntries, ownerId });
+          const quarantined = await upsertIngestItem(supabase, {
+            messageId,
+            attachmentId: unit.attachmentId,
+            row: {
+              source: "mail",
+              scope_type: scope.scopeType,
+              scope_id: scope.scopeId,
+              owner_user_id: ownerId,
+              classification: UNSUPPORTED_ATTACHMENT_CLASSIFICATION,
+              extraction: {
+                attachment_type: attachmentTypeLabel(
+                  unit.att.mime_declared as string | null,
+                  verdict.sniffed,
+                ),
+                quarantine_reason: verdict.quarantineReason,
+              },
+              confidence: "niska",
+              status: "na_pregledu",
+              reason: verdict.quarantineReason,
+              trust_level: trust.level,
+              warnings: ["privitak_nepodrzan"],
+              ai_calls: 0,
+            },
+          });
+          const entered =
+            quarantined.id &&
+            (quarantined.action === "inserted" ||
+              (quarantined.action === "updated" && quarantined.previousStatus !== "na_pregledu"));
+          if (entered) await notifyPending(supabase, ownerId, quarantined.id as string, false);
+        }
         continue;
       }
+
+
 
 
       if (verdict.sniffed === "pdf") {
@@ -378,7 +527,11 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
     }
 
 
+    // Ponovna obrada NE pregazi korisnikovu odluku o vrsti dokumenta.
+    const userClassification = await userClassificationFor(supabase, messageId, unit.attachmentId);
+
     const input: ClassifyInput = {
+      userClassification,
       sniffed,
       xml,
       fromHeader: msg.from_header as string | null,
@@ -534,54 +687,9 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
       (upserted.action === "inserted" ||
         (upserted.action === "updated" && upserted.previousStatus !== "na_pregledu"));
     if (upserted.id && enteredReview) {
-      // Shema `notifications` NEMA title_key/body_key. Konvencija ostalih
-      // notify-* funkcija: i18n ključ ide u title/message, varijable i ruta u data.
-      const notifData = {
-        item_id: upserted.id,
-        priority: result.priority,
-        route: "/dokumenti",
-        fallback_route: "/dokumenti",
-        title_vars: {},
-        message_vars: {},
-      };
-      const { error: notifError } = await supabase.from("notifications").insert({
-        user_id: ownerId,
-        type: "mail_document_pending",
-        title: "notifications.mail.pending.title",
-        message: "notifications.mail.pending.body",
-        data: notifData,
-        // Dedup oznaka vezana uz stavku: ponovna obrada iste stavke ne stvara
-        // drugu obavijest, a okidac je moze ciljano ugasiti kad stavka ode
-        // iz reda "na pregledu".
-        dedup_key: `mail_document_pending:${upserted.id}`,
-      });
-      // Greška se NE guta — kvar je preživio mjesece jer nitko nije gledao.
-      // Iznimka: 23505 = vec postoji ziva obavijest za istu stavku (dedup).
-      if (notifError && notifError.code !== "23505") {
-        console.error("[mail-process] upis obavijesti nije uspio", notifError.message, notifError);
-      }
-
-
-      // Push kroz POSTOJEĆI sustav (send-push + kategorija 'pending').
-      try {
-        await sendPushNotification({
-          user_id: ownerId,
-          title: "notifications.mail.pending.title",
-          body: "notifications.mail.pending.body",
-          data: {
-            type: "mail_document_pending",
-            category: "pending",
-            route: "/dokumenti",
-            item_id: upserted.id,
-            i18n_title_key: "notifications.mail.pending.title",
-            i18n_body_key: "notifications.mail.pending.body",
-          },
-          source: "mail-process",
-        });
-      } catch (pushErr) {
-        console.error("[mail-process] push nije poslan", pushErr);
-      }
+      await notifyPending(supabase, ownerId, upserted.id as string, result.priority);
     }
+
 
 
   }

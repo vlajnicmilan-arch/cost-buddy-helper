@@ -245,6 +245,84 @@ export function useMailReviewQueue(enabled: boolean) {
     [fetchItems],
   );
 
+  /**
+   * „OVO JE RAČUN" — suprotan izlaz iz istog pitanja.
+   * Isti put kao potvrda izvoda: odluka se zapiše i poruka se vraća u obradu,
+   * gdje AI dopunjava polja računa. Stavka NIKAD ne ide u odbacivanje.
+   */
+  const confirmAsInvoice = useCallback(
+    async (itemId: string): Promise<{ ok: boolean; reason?: string }> => {
+      setWorking(true);
+      try {
+        const { data, error } = await supabase.rpc('mail_item_reprocess', {
+          p_item_id: itemId,
+          p_classification: 'racun',
+        });
+        if (error) {
+          console.warn(
+            '[useMailReviewQueue] confirmAsInvoice error:',
+            describeDbError(error, 'mail_item_reprocess'),
+          );
+          return { ok: false, reason: error.message };
+        }
+        const result = (data ?? {}) as { ok?: boolean; reason?: string };
+        if (result.ok === false) return { ok: false, reason: result.reason };
+        await fetchItems();
+        return { ok: true };
+      } finally {
+        setWorking(false);
+      }
+    },
+    [fetchItems],
+  );
+
+  /**
+   * „NEŠTO DRUGO — ZADRŽI": stavka izlazi iz reda pitanja, ostaje u Primljeno
+   * i više ne zvoca. Nije odbacivanje — dokument je i dalje tu.
+   */
+  const keepItem = useCallback(
+    async (itemId: string): Promise<boolean> => {
+      setWorking(true);
+      try {
+        const { data, error } = await supabase.rpc('mail_item_decide', {
+          p_item_id: itemId,
+          p_decision: 'zadrzi',
+        });
+        if (error) {
+          console.warn('[useMailReviewQueue] keepItem error:', describeDbError(error, 'mail_item_decide'));
+          return false;
+        }
+        const result = (data ?? {}) as { ok?: boolean };
+        if (result.ok === false) return false;
+        await fetchItems();
+        return true;
+      } finally {
+        setWorking(false);
+      }
+    },
+    [fetchItems],
+  );
+
+  /** Klik na Googleovu potvrdu: stavka odmah prelazi u „čeka prvi mail". */
+  const markVerificationClicked = useCallback(
+    async (itemId: string): Promise<boolean> => {
+      const { data, error } = await supabase.rpc('mail_verification_clicked', {
+        p_item_id: itemId,
+      });
+      if (error) {
+        console.warn(
+          '[useMailReviewQueue] markVerificationClicked error:',
+          describeDbError(error, 'mail_verification_clicked'),
+        );
+        return false;
+      }
+      const result = (data ?? {}) as { ok?: boolean };
+      if (result.ok === false) return false;
+      await fetchItems();
+      return true;
+    },
+    [fetchItems],
+  );
 
   return {
     items,
@@ -253,7 +331,11 @@ export function useMailReviewQueue(enabled: boolean) {
     confirmItem,
     discardItem,
     confirmAsStatement,
+    confirmAsInvoice,
+    keepItem,
+    markVerificationClicked,
     setScope,
     refetch: fetchItems,
   };
 }
+

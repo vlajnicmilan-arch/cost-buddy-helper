@@ -103,8 +103,20 @@ export const softensTrust = (knownCount: number, warnings: readonly string[]): b
 
 export const MailReviewList = ({ active, onCountChange }: Props) => {
   const { t } = useTranslation();
-  const { items, loading, working, confirmItem, discardItem, confirmAsStatement, setScope, refetch } =
-    useMailReviewQueue(active);
+  const {
+    items,
+    loading,
+    working,
+    confirmItem,
+    discardItem,
+    confirmAsStatement,
+    confirmAsInvoice,
+    keepItem,
+    markVerificationClicked,
+    setScope,
+    refetch,
+  } = useMailReviewQueue(active);
+
   const { profiles } = useBusinessProfiles();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Record<string, string>>({});
@@ -243,6 +255,37 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
     );
   };
 
+  const handleConfirmAsInvoice = async (item: MailReviewItem) => {
+    const result = await confirmAsInvoice(item.id);
+    if (result.ok) {
+      showSuccess(t('statements.invoiceQueued', 'Dokument je vraćen u obradu kao račun'));
+      onCountChange?.();
+      return;
+    }
+    showError(
+      result.reason
+        ? `${t('statements.choiceFailed')} (${result.reason})`
+        : t('statements.choiceFailed'),
+    );
+  };
+
+  const handleKeep = async (item: MailReviewItem) => {
+    const ok = await keepItem(item.id);
+    if (ok) {
+      showSuccess(t('statements.keptInInbox', 'Dokument ostaje u Primljeno'));
+      onCountChange?.();
+    } else {
+      showError(t('statements.choiceFailed'));
+    }
+  };
+
+  const handleVerificationClicked = async (item: MailReviewItem) => {
+    // Klik ne smije čekati Googleovu stranicu: stavka odmah izlazi iz reda.
+    const ok = await markVerificationClicked(item.id);
+    if (ok) onCountChange?.();
+  };
+
+
 
   const handleScopeChange = async (
     item: MailReviewItem,
@@ -280,7 +323,51 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
               item={item}
               disabled={working}
               onDiscard={() => handleDiscard(item)}
+              onOpenConfirm={() => void handleVerificationClicked(item)}
             />
+          );
+        }
+        // NEPODRŽAN PRIVITAK — karantena koju korisnik može ispraviti.
+        if (item.classification === 'privitak_nepodrzan') {
+          const type = String(
+            ((item.extraction ?? {}) as Record<string, unknown>).attachment_type ?? '—',
+          );
+          return (
+            <div
+              key={item.id}
+              data-testid="mail-unsupported-attachment-item"
+              className="rounded-lg border border-l-4 border-l-document-pending bg-document-pending-surface/40 p-3 space-y-3"
+            >
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-document-pending-foreground" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">
+                    {t('mailReview.unsupported.title', 'Privitak nije podržan ({{type}})', { type })}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {t(
+                      'mailReview.unsupported.body',
+                      'Mail je stigao, ali privitak ne možemo pročitati. Pošalji dokument kao PDF.',
+                    )}
+                  </p>
+                  <p className="text-xs text-muted-foreground break-all">
+                    {item.subject || t('mailImport.noSubject')} · {item.from_header || '—'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="min-h-[44px]"
+                  disabled={working}
+                  onClick={() => handleDiscard(item)}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  {t('mailReview.verification.dismiss', 'Odbaci')}
+                </Button>
+              </div>
+            </div>
           );
         }
         // BANKOVNI IZVOD ima svoju karticu — polja računa ovdje ne postoje.
@@ -314,6 +401,7 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
                   </p>
                 </div>
               </div>
+              {/* RASKRIŽJE: tri nedestruktivna izlaza; Odbaci je odvojen. */}
               <div className="flex flex-wrap gap-2">
                 <Button
                   size="sm"
@@ -326,18 +414,44 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
                 </Button>
                 <Button
                   size="sm"
+                  variant="secondary"
+                  className="min-h-[44px]"
+                  disabled={working}
+                  data-testid="mail-choice-invoice"
+                  onClick={() => handleConfirmAsInvoice(item)}
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  {t('statements.choiceInvoice', 'Ovo je račun')}
+                </Button>
+                <Button
+                  size="sm"
                   variant="outline"
                   className="min-h-[44px]"
                   disabled={working}
+                  data-testid="mail-choice-keep"
+                  onClick={() => handleKeep(item)}
+                >
+                  <Inbox className="h-4 w-4 mr-2" />
+                  {t('statements.choiceKeep', 'Nešto drugo — zadrži')}
+                </Button>
+              </div>
+              <div className="border-t pt-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="min-h-[44px] text-muted-foreground"
+                  disabled={working}
+                  data-testid="mail-choice-discard"
                   onClick={() => handleDiscard(item)}
                 >
                   <X className="h-4 w-4 mr-2" />
-                  {t('statements.choiceNo')}
+                  {t('mailReview.verification.dismiss', 'Odbaci')}
                 </Button>
               </div>
             </div>
           );
         }
+
         const extraction = (item.extraction ?? {}) as Record<string, unknown>;
         const isEditing = editingId === item.id;
         const mediumConfidence = item.confidence === 'srednja';
