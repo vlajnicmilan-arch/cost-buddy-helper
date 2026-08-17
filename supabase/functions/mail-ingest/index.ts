@@ -25,7 +25,61 @@ const TIMESTAMP_TOLERANCE_S = 300;
 // Brane po aliasu — iznad ovoga poruka se sprema sirova, bez posla u redu.
 const MAX_PER_HOUR = 30;
 const MAX_PER_DAY = 100;
+const MAIL_ALIAS_DOMAIN = "centar.vmbalance.com";
 
+/** `Ime <netko@example.com>` → `netko@example.com`. */
+function senderAddress(fromHeader: string): string {
+  const m = fromHeader.match(/<([^>]+)>/);
+  return (m ? m[1] : fromHeader).trim().toLowerCase();
+}
+
+/**
+ * OBAVIJEST „stigla je pošta na staru adresu" — jednom po pošiljatelju i danu
+ * (dedup ključ), da preusmjeravanje ne postane spam.
+ */
+async function notifyStaleAlias(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  params: { aliasId: string; userId: string; staleLocal: string; fromHeader: string },
+) {
+  const { data: activeRows } = await supabase
+    .from("mail_aliases")
+    .select("alias_local")
+    .eq("user_id", params.userId)
+    .is("disabled_at", null)
+    .order("created_at", { ascending: true })
+    .limit(1);
+  const activeLocal = (activeRows ?? [])[0]?.alias_local ?? null;
+  const sender = senderAddress(params.fromHeader);
+  const day = new Date().toISOString().slice(0, 10);
+
+  const vars = {
+    stale_address: `${params.staleLocal}@${MAIL_ALIAS_DOMAIN}`,
+    current_address: activeLocal ? `${activeLocal}@${MAIL_ALIAS_DOMAIN}` : "",
+    sender,
+  };
+
+  const { error } = await supabase.from("notifications").insert({
+    user_id: params.userId,
+    type: "mail_stale_alias",
+    title: "notifications.mail.staleAlias.title",
+    message: activeLocal
+      ? "notifications.mail.staleAlias.body"
+      : "notifications.mail.staleAlias.bodyNoActive",
+    data: {
+      route: "/dokumenti",
+      fallback_route: "/dokumenti",
+      title_vars: {},
+      message_vars: vars,
+      ...vars,
+    },
+    dedup_key: `mail_stale_alias:${params.aliasId}:${sender}:${day}`,
+  });
+  // 23505 = već obaviješten za tog pošiljatelja danas.
+  if (error && error.code !== "23505") {
+    console.error("[mail-ingest] obavijest o staroj adresi nije upisana", error.message);
+  }
+}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
