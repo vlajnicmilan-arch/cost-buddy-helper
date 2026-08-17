@@ -43,6 +43,7 @@ import { emptyToNull } from "../_shared/mailImport/extractionNormalize.ts";
 import { resolveScope, type OwnOibEntry } from "../_shared/mailImport/scopeRouting.ts";
 import { extractCustomer, mergeCustomer } from "../_shared/mailImport/customerExtract.ts";
 import { resolveDestination } from "../_shared/mailImport/mailDestination.ts";
+import { shouldNotifyPending } from "../_shared/mailImport/notifyAgeGuard.ts";
 import type { RoutableBusinessProfile } from "../_shared/businessRouting/receiptBusinessRouting.ts";
 import {
   findProbableDuplicate,
@@ -297,7 +298,11 @@ async function userClassificationFor(
 }
 
 
-async function processMessage(supabase: Supa, messageId: string): Promise<void> {
+async function processMessage(
+  supabase: Supa,
+  messageId: string,
+  options: { manualReprocess?: boolean } = {},
+): Promise<void> {
   const { data: msg, error: msgErr } = await supabase
     .from("inbound_messages")
     .select("*")
@@ -306,6 +311,14 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
   if (msgErr || !msg) throw new Error("poruka_ne_postoji");
 
   const ownerId = msg.owner_user_id as string;
+
+  // BRANA ZVONA: automatska obrada zvoni SAMO za svježu poštu (24 h). Ručni
+  // reprocess je izričita korisnikova radnja i uvijek smije zazvoniti.
+  const notifyAllowed = shouldNotifyPending({
+    receivedAt: msg.received_at as string | null,
+    now: Date.now(),
+    manualReprocess: options.manualReprocess === true,
+  });
 
   // Prvi stvarni mail s adrese koju čeka Gmail potvrda zatvara tu potvrdu.
   await closeVerificationOnFirstMail(supabase, ownerId, msg.from_header as string | null);
@@ -436,7 +449,9 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
             quarantined.id &&
             (quarantined.action === "inserted" ||
               (quarantined.action === "updated" && quarantined.previousStatus !== "na_pregledu"));
-          if (entered) await notifyPending(supabase, ownerId, quarantined.id as string, false);
+          if (entered && notifyAllowed) {
+            await notifyPending(supabase, ownerId, quarantined.id as string, false);
+          }
         }
         continue;
       }
@@ -727,7 +742,7 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
       status === "na_pregledu" &&
       (upserted.action === "inserted" ||
         (upserted.action === "updated" && upserted.previousStatus !== "na_pregledu"));
-    if (upserted.id && enteredReview) {
+    if (upserted.id && enteredReview && notifyAllowed) {
       await notifyPending(supabase, ownerId, upserted.id as string, result.priority);
     }
 
@@ -763,7 +778,7 @@ Deno.serve(async (req) => {
       return json({ error: "claim_failed" }, 500);
     }
 
-    const claimed = (jobs ?? []) as Array<{ job_id: string; message_id: string }>;
+    const claimed = (jobs ?? []) as Array<{ job_id: string; message_id: string; manual?: boolean }>;
     let ok = 0;
     let failed = 0;
 
@@ -772,7 +787,7 @@ Deno.serve(async (req) => {
       // ni iznimka ni rani return ne ostave posao u 'u_obradi'.
       let settled = false;
       try {
-        await processMessage(supabase, job.message_id);
+        await processMessage(supabase, job.message_id, { manualReprocess: job.manual === true });
         await supabase.rpc("mail_ingest_finish_job", { p_job_id: job.job_id, p_ok: true });
         settled = true;
         ok += 1;

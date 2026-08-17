@@ -168,6 +168,10 @@ const migrationsWith = (needle: string): string[] => {
 };
 
 const claimSql = migrationsWith('FUNCTION public.mail_ingest_claim_jobs').slice(-1)[0] ?? '';
+// finish_job i reaper zive u vlastitim (ranijim) migracijama — claim se od tada
+// mijenjao neovisno, pa se svaka tvrdnja gleda u ZADNJOJ migraciji te funkcije.
+const finishSql = migrationsWith('CREATE OR REPLACE FUNCTION public.mail_ingest_finish_job').slice(-1)[0] ?? '';
+const reaperSql = migrationsWith('CREATE OR REPLACE FUNCTION public.mail_ingest_reap_stuck_jobs').slice(-1)[0] ?? '';
 const confirmSql = migrationsWith('FUNCTION public.mail_item_confirm').slice(-1)[0] ?? '';
 
 describe('KVAR 1 — posao uvijek završi u terminalnom stanju', () => {
@@ -188,16 +192,16 @@ describe('KVAR 1 — posao uvijek završi u terminalnom stanju', () => {
   });
 
   it('finish_job koristi samo statuse dopuštene CHECK-om', () => {
-    expect(claimSql).toContain("status = 'zavrsen'");
-    expect(claimSql).toContain("status = 'neuspjeo'");
-    expect(claimSql).not.toContain("SET status = 'gotov'");
-    expect(claimSql).not.toContain("SET status = 'neuspjela_konacno'\n     WHERE id = p_job_id");
+    expect(finishSql).toContain("status = 'zavrsen'");
+    expect(finishSql).toContain("status = 'neuspjeo'");
+    expect(finishSql).not.toContain("SET status = 'gotov'");
+    expect(finishSql).not.toContain("SET status = 'neuspjela_konacno'\n     WHERE id = p_job_id");
   });
 
   it('reaper postoji i vraća zombija u ceka ili neuspjeo', () => {
-    expect(claimSql).toContain('FUNCTION public.mail_ingest_reap_stuck_jobs');
-    expect(claimSql).toContain('zombie_job_reaped');
-    expect(claimSql).toMatch(/make_interval\(mins =>/);
+    expect(reaperSql).toContain('FUNCTION public.mail_ingest_reap_stuck_jobs');
+    expect(reaperSql).toContain('zombie_job_reaped');
+    expect(reaperSql).toMatch(/make_interval\(mins =>/);
   });
 });
 
