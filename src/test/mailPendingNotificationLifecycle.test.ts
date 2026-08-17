@@ -27,7 +27,7 @@ const migrationSql = fs
 describe('mail_document_pending — samogašenje', () => {
   it('worker upisuje dedup oznaku vezanu uz stavku', () => {
     const worker = read('supabase/functions/mail-process/index.ts');
-    expect(worker).toContain('dedup_key: `mail_document_pending:${upserted.id}`');
+    expect(worker).toContain('dedup_key: `mail_document_pending:${itemId}`');
     // Duplikat (23505) nije kvar nego dedup — ne smije se logirati kao greška.
     expect(worker).toContain('notifError.code !== "23505"');
   });
