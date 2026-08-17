@@ -7,6 +7,7 @@ import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { useMailInbox } from '@/hooks/useMailInbox';
 import { useMailDiscardedItems } from '@/hooks/useMailDiscardedItems';
 import { formatHrAmount } from '@/lib/money';
+import { describeDiscardedItem } from '@/lib/mail/discardedDescription';
 
 /**
  * Stanja iz kojih korisnik smije ručno pokrenuti obradu.
