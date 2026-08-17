@@ -25,7 +25,8 @@ export type AiContentBlock =
 
 export const AI_JSON_TEMPLATE = [
   '{"classification":"racun|ponuda|nije_za_nas","confidence":"visoka|srednja|niska",',
-  '"supplier_oib":null,"supplier_name":null,"invoice_number":null,"issue_date":null,',
+  '"supplier_oib":null,"supplier_name":null,"recipient_oib":null,"recipient_name":null,',
+  '"invoice_number":null,"issue_date":null,',
   '"due_date":null,"total_amount":null,"vat_amount":null,"currency":"EUR","iban":null}',
 ].join('');
 
