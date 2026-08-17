@@ -6489,7 +6489,8 @@
       "nije_za_nas": "Nije za nas",
       "nepoznato": "Nepoznato",
       "duplikat_privitka": "Duplikat privitka",
-      "izvod": "Bankovni izvod"
+      "izvod": "Bankovni izvod",
+      "privitak_nepodrzan": "Nepodržan privitak"
     },
     "confidence": {
       "visoka": "Visoka pouzdanost",
@@ -6573,7 +6574,17 @@
       "code": "Kod za potvrdu",
       "noLink": "Poveznica nije provjereno Googleova, pa je ne otvaramo. Potvrdu dovrši u Gmail postavkama (Prosljeđivanje i POP/IMAP) upisom koda.",
       "open": "Otvori potvrdu",
-      "dismiss": "Odbaci"
+      "dismiss": "Odbaci",
+      "waitingFirstMail": "Potvrda je otvorena — čekamo prvi proslijeđeni mail s te adrese.",
+      "staleWarning": "S ove adrese još ništa nije stiglo — provjeri je li potvrda dovršena."
+    },
+    "unsupported": {
+      "title": "Privitak nije podržan ({{type}})",
+      "body": "Mail je stigao, ali privitak ne možemo pročitati. Pošalji dokument kao PDF."
+    },
+    "status": {
+      "zadrzano": "Zadržano",
+      "ceka_prvi_mail": "Čeka prvi mail"
     }
   },
   "documents": {
@@ -6656,7 +6667,11 @@
     },
     "createSource": "Stvori novi novčanik „{{name}}\"",
     "reprocessQueued": "Dokument je vraćen u obradu kao izvod",
-    "saveIdentifierToWallet": "Spremi ovaj IBAN na novčanik „{{name}}\""
+    "saveIdentifierToWallet": "Spremi ovaj IBAN na novčanik „{{name}}\"",
+    "choiceInvoice": "Ovo je račun",
+    "choiceKeep": "Nešto drugo — zadrži",
+    "invoiceQueued": "Dokument je vraćen u obradu kao račun",
+    "keptInInbox": "Dokument ostaje u Primljeno"
   },
   "rawLine": {
     "toggle": "Kako piše na izvodu",
