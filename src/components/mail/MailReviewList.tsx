@@ -16,7 +16,7 @@ import { showUndoToast } from '@/lib/undoToast';
 import { restoreIngestItem } from '@/lib/mailReviewStatus';
 import { useMailReviewQueue, type MailReviewItem } from '@/hooks/useMailReviewQueue';
 import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
-import { MailScopeChip } from '@/components/mail/MailScopeChip';
+import { MailDestinationRow } from '@/components/mail/MailDestinationRow';
 import { describeDbError } from '@/lib/eracun/dbError';
 import {
   MailReviewFieldInput,
