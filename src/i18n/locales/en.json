@@ -6489,6 +6489,7 @@
     },
     "warning": {
       "iban_ne_odgovara_povijesti": "IBAN does not match any previously confirmed for this tax ID",
+      "racun_signal_jaci_od_izvoda": "Recognised as an invoice — subject and text clearly indicate an invoice",
       "iban_prvi_put_vidjen": "IBAN seen for the first time",
       "mime_nesklad": "Declared file type does not match its content",
       "pdf_nepotpun": "PDF longer than 30 pages — only the beginning was processed",

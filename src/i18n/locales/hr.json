@@ -6499,6 +6499,7 @@
     },
     "warning": {
       "iban_ne_odgovara_povijesti": "IBAN se ne poklapa s dosad potvrđenima za taj OIB",
+      "racun_signal_jaci_od_izvoda": "Prepoznato kao račun — naslov i tekst jasno govore o računu",
       "iban_prvi_put_vidjen": "IBAN se prvi put pojavljuje",
       "mime_nesklad": "Deklarirani tip datoteke ne odgovara sadržaju",
       "pdf_nepotpun": "PDF je duži od 30 stranica — obrađen je samo početak",

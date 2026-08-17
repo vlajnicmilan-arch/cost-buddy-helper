@@ -6489,6 +6489,7 @@
     },
     "warning": {
       "iban_ne_odgovara_povijesti": "IBAN stimmt mit keiner bisher bestätigten für diese Steuernummer überein",
+      "racun_signal_jaci_od_izvoda": "Als Rechnung erkannt — Betreff und Text weisen eindeutig auf eine Rechnung hin",
       "iban_prvi_put_vidjen": "IBAN zum ersten Mal gesehen",
       "mime_nesklad": "Deklarierter Dateityp stimmt nicht mit dem Inhalt überein",
       "pdf_nepotpun": "PDF länger als 30 Seiten — nur der Anfang wurde verarbeitet",
