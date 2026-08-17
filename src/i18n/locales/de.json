@@ -2972,6 +2972,11 @@
       "pending": {
         "title": "Ein neues Dokument wartet auf Prüfung",
         "body": "Ein Dokument ist per E-Mail eingegangen. Öffne die Prüfung und bestätige."
+      },
+      "staleAlias": {
+        "title": "Post an deine alte Adresse",
+        "body": "{{sender}} sendet weiterhin an die alte Adresse {{stale_address}}. Leite den Versand auf {{current_address}} um.",
+        "bodyNoActive": "{{sender}} sendet weiterhin an die alte Adresse {{stale_address}}. Öffne Dokumente und aktiviere eine neue Adresse."
       }
     },
     "invoice_due": {
@@ -6510,7 +6515,8 @@
       "vise_vlastitih_oib": "Das Dokument enthält OIBs mehrerer deiner Firmen — persönlich zugeordnet",
       "vjerojatno_duplikat": "Eine Rechnung mit dieser Nummer und diesem Lieferanten existiert vermutlich bereits",
       "dopunjeno_iz_zapamcenog": "Aus gemerktem Aussteller ergänzt — bitte prüfen",
-      "vise_kandidata_sifra_mjesta": "Mehrere mögliche Abrechnungsstellen-Codes — keiner übernommen"
+      "vise_kandidata_sifra_mjesta": "Mehrere mögliche Abrechnungsstellen-Codes — keiner übernommen",
+      "odrediste_ponuda": "Kunde nur über den Namen erkannt — Ziel prüfen."
     },
     "field": {
       "supplierName": "Lieferant",
@@ -6576,6 +6582,16 @@
     "status": {
       "zadrzano": "Behalten",
       "ceka_prvi_mail": "Wartet auf erste E-Mail"
+    },
+    "customer": {
+      "label": "Kunde"
+    },
+    "destination": {
+      "label": "Wird gespeichert in",
+      "wrong": "Falsches Ziel?",
+      "confirmTitle": "Als falsch erkannt markieren",
+      "confirmBody": "Das Ziel richtet sich nach dem Kunden auf dem Dokument. Ändere es nur, wenn die Erkennung falsch war.",
+      "confirmAction": "Ja, falsch erkannt"
     }
   },
   "documents": {
@@ -6589,7 +6605,33 @@
     "restoreFailed": "Wiederherstellen fehlgeschlagen",
     "discarded": {
       "title": "Verworfen (letzte 30 Tage)",
-      "empty": "Keine verworfenen Dokumente."
+      "empty": "Keine verworfenen Dokumente.",
+      "kind": {
+        "verifikacija_prosljedjivanja": {
+          "title": "Gmail-Weiterleitungsbestätigung",
+          "reason": "Bestätigungsnachricht von Google — kein Dokument."
+        },
+        "privitak_nepodrzan": {
+          "title": "Anhang nicht unterstützt",
+          "reason": "Die Mail kam an, der Anhang war nicht lesbar."
+        },
+        "duplikat_privitka": {
+          "title": "Doppelter Anhang",
+          "reason": "Derselbe Anhang wurde bereits verarbeitet."
+        },
+        "izvod": {
+          "title": "Kontoauszug",
+          "reason": "Der Auszug wurde keinem Zahlungskonto zugeordnet."
+        },
+        "nije_za_nas": {
+          "title": "Kein zu verarbeitendes Dokument",
+          "reason": "Keine Rechnung und kein Auszug in dieser Nachricht."
+        },
+        "nepoznato": {
+          "title": "Nicht erkannte Nachricht",
+          "reason": "Der Dokumenttyp konnte nicht bestimmt werden."
+        }
+      }
     },
     "pendingCard": {
       "title": "Dokumente zur Prüfung",
