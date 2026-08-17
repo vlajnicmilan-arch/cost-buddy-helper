@@ -47,6 +47,7 @@ export function buildAiPrompt(input: AiRequestInput): string {
     AI_JSON_TEMPLATE,
     'Polje koje ne možeš pouzdano pročitati postavi na null. NIKAD ne vraćaj prazan string.',
     'Datume vraćaj ISKLJUČIVO u obliku YYYY-MM-DD (nikad 28.02.2026.).',
+    'supplier_* je IZDAVATELJ dokumenta, recipient_* je KUPAC (obveznik/platitelj/primatelj) — nikad ih ne zamijeni.',
 
     known.length > 0 ? `Već provjereno (ne mijenjaj): ${known.join(', ')}` : '',
     '',
