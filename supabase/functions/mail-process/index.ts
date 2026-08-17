@@ -41,6 +41,9 @@ import { extractPdfText } from "../_shared/mailImport/pdfText.ts";
 import { buildAiRequest } from "../_shared/mailImport/aiRequest.ts";
 import { emptyToNull } from "../_shared/mailImport/extractionNormalize.ts";
 import { resolveScope, type OwnOibEntry } from "../_shared/mailImport/scopeRouting.ts";
+import { extractCustomer, mergeCustomer } from "../_shared/mailImport/customerExtract.ts";
+import { resolveDestination } from "../_shared/mailImport/mailDestination.ts";
+import type { RoutableBusinessProfile } from "../_shared/businessRouting/receiptBusinessRouting.ts";
 import {
   findProbableDuplicate,
   PROBABLE_DUPLICATE_WARNING,
