@@ -7,22 +7,27 @@ const SRC = readFileSync(
   join(process.cwd(), 'supabase/functions/mail-ingest/index.ts'),
   'utf8'
 );
+/** Tijelo obrađivača — pomoćnici iznad njega (npr. obavijest) nisu tok zahtjeva. */
+const HANDLER = SRC.slice(SRC.indexOf('function json(body: unknown'));
 
 describe('mail-ingest — čuvar 1: alias', () => {
   it('nepoznat alias vraća 200 bez ijednog zapisa', () => {
-    const aliasBlock = SRC.slice(SRC.indexOf('if (!aliasRow)'));
+    const aliasBlock = HANDLER.slice(HANDLER.indexOf('if (!aliasRow)'));
     const earlyReturn = aliasBlock.indexOf('ignored: "unknown_alias"');
     expect(earlyReturn).toBeGreaterThan(-1);
     // Prije te grane nema nijednog upisa u tablice ni u pohranu.
-    const beforeAlias = SRC.slice(0, SRC.indexOf('if (!aliasRow)'));
-    expect(beforeAlias).not.toMatch(/supabase\s*\n?\s*\.from\([^)]*\)[\s\S]{0,120}\.insert\(/);
+    const beforeAlias = HANDLER.slice(0, HANDLER.indexOf('if (!aliasRow)'));
+    expect(beforeAlias).not.toMatch(/\.insert\(/);
     expect(beforeAlias).not.toMatch(/storage\s*\n?\s*\.from\("inbound-mail"\)\s*\n?\s*\.upload/);
     expect(beforeAlias).not.toMatch(/mail_ingest_store_message/);
   });
 
   it('UGAŠEN alias se PRIHVAĆA (nikad tiho bacanje), aktivan ima prednost', () => {
     // Lookup više ne filtrira po disabled_at — uzima poznate aliase i bira.
-    const lookup = SRC.slice(SRC.indexOf('from("mail_aliases")'), SRC.indexOf('if (!aliasRow)'));
+    const lookup = HANDLER.slice(
+      HANDLER.indexOf('from("mail_aliases")'),
+      HANDLER.indexOf('if (!aliasRow)'),
+    );
     expect(lookup).not.toMatch(/is\("disabled_at", null\)/);
     expect(SRC).toMatch(/rows\.find\(\(r\) => r\.disabled_at === null\) \?\? rows\[0\]/);
     expect(SRC).toMatch(/const staleAlias = aliasRow !== null && aliasRow\.disabled_at !== null/);
