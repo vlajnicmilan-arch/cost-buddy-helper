@@ -6479,7 +6479,8 @@
       "nije_za_nas": "Nicht relevant",
       "nepoznato": "Unbekannt",
       "duplikat_privitka": "Doppelter Anhang",
-      "izvod": "Kontoauszug"
+      "izvod": "Kontoauszug",
+      "privitak_nepodrzan": "Nicht unterstützter Anhang"
     },
     "confidence": {
       "visoka": "Hohe Zuverlässigkeit",
@@ -6488,6 +6489,7 @@
     },
     "warning": {
       "iban_ne_odgovara_povijesti": "IBAN stimmt mit keiner bisher bestätigten für diese Steuernummer überein",
+      "racun_signal_jaci_od_izvoda": "Als Rechnung erkannt — Betreff und Text weisen eindeutig auf eine Rechnung hin",
       "iban_prvi_put_vidjen": "IBAN zum ersten Mal gesehen",
       "mime_nesklad": "Deklarierter Dateityp stimmt nicht mit dem Inhalt überein",
       "pdf_nepotpun": "PDF länger als 30 Seiten — nur der Anfang wurde verarbeitet",
@@ -6563,7 +6565,17 @@
       "code": "Bestätigungscode",
       "noLink": "Der Link stammt nicht nachweislich von Google, daher öffnen wir ihn nicht. Schließen Sie die Bestätigung in den Gmail-Einstellungen (Weiterleitung und POP/IMAP) mit dem Code ab.",
       "open": "Bestätigung öffnen",
-      "dismiss": "Verwerfen"
+      "dismiss": "Verwerfen",
+      "waitingFirstMail": "Bestätigung geöffnet — wir warten auf die erste weitergeleitete E-Mail von dieser Adresse.",
+      "staleWarning": "Von dieser Adresse ist noch nichts angekommen — prüfe, ob die Bestätigung abgeschlossen wurde."
+    },
+    "unsupported": {
+      "title": "Anhang wird nicht unterstützt ({{type}})",
+      "body": "Die E-Mail ist angekommen, aber der Anhang ist nicht lesbar. Bitte sende das Dokument als PDF."
+    },
+    "status": {
+      "zadrzano": "Behalten",
+      "ceka_prvi_mail": "Wartet auf erste E-Mail"
     }
   },
   "documents": {
@@ -6645,7 +6657,11 @@
     },
     "createSource": "Neues Wallet „{{name}}“ erstellen",
     "reprocessQueued": "Dokument wurde erneut als Kontoauszug eingereiht",
-    "saveIdentifierToWallet": "Diese IBAN im Wallet „{{name}}“ speichern"
+    "saveIdentifierToWallet": "Diese IBAN im Wallet „{{name}}“ speichern",
+    "choiceInvoice": "Das ist eine Rechnung",
+    "choiceKeep": "Etwas anderes — behalten",
+    "invoiceQueued": "Dokument wurde als Rechnung erneut verarbeitet",
+    "keptInInbox": "Dokument bleibt in Empfangen"
   },
   "rawLine": {
     "toggle": "So steht es im Kontoauszug",

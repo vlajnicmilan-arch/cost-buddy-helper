@@ -29,7 +29,7 @@ const insertBlock = (() => {
 
 describe('mail-process → notifications insert', () => {
   it('koristi samo stupce koji postoje u shemi', () => {
-    const keys = [...insertBlock.matchAll(/^\s{8}([a-z_]+):/gm)].map((m) => m[1]);
+    const keys = [...insertBlock.matchAll(/^\s{4}([a-z_]+):/gm)].map((m) => m[1]);
     expect(keys.length).toBeGreaterThan(0);
     const allowed: Array<keyof NotificationInsert> = [
       'user_id',
@@ -66,7 +66,9 @@ describe('mail-process → notifications insert', () => {
   });
 
   it('nosi dedup oznaku vezanu uz stavku (samogašenje + bez duplikata)', () => {
-    expect(insertBlock).toContain('dedup_key: `mail_document_pending:${upserted.id}`');
+    // Upis je jedan zajednički pomoćnik (notifyPending) — oznaka je vezana uz
+    // stavku preko njegova parametra, ne uz ime pozivateljeve varijable.
+    expect(insertBlock).toContain('dedup_key: `mail_document_pending:${itemId}`');
   });
 
   it('push ide kroz postojeći sendPushNotification uz kategoriju', () => {

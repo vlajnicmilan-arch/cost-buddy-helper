@@ -17,9 +17,15 @@ interface Props {
   item: MailReviewItem;
   disabled?: boolean;
   onDiscard: () => void;
+  /**
+   * Klik na „Otvori potvrdu": stavka ODMAH napušta red „Na pregled" i prelazi
+   * u stanje čekanja prvog maila. Ne čeka se povratak s Googleove stranice.
+   */
+  onOpenConfirm: () => void;
 }
 
-export const VerificationReviewCard = ({ item, disabled, onDiscard }: Props) => {
+export const VerificationReviewCard = ({ item, disabled, onDiscard, onOpenConfirm }: Props) => {
+
   const { t } = useTranslation();
   const extraction = (item.extraction ?? {}) as Record<string, unknown>;
   const confirmUrl = typeof extraction.confirmUrl === 'string' ? extraction.confirmUrl : null;
@@ -85,6 +91,7 @@ export const VerificationReviewCard = ({ item, disabled, onDiscard }: Props) => 
             size="sm"
             className="min-h-[44px]"
             data-testid="mail-verification-open"
+            onClick={onOpenConfirm}
           >
             <a href={confirmUrl} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="h-4 w-4 mr-2" />
@@ -92,6 +99,7 @@ export const VerificationReviewCard = ({ item, disabled, onDiscard }: Props) => 
             </a>
           </Button>
         )}
+
         <Button
           size="sm"
           variant="outline"

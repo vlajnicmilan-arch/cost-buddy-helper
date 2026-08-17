@@ -6479,7 +6479,8 @@
       "nije_za_nas": "Not for us",
       "nepoznato": "Unknown",
       "duplikat_privitka": "Duplicate attachment",
-      "izvod": "Bank statement"
+      "izvod": "Bank statement",
+      "privitak_nepodrzan": "Unsupported attachment"
     },
     "confidence": {
       "visoka": "High confidence",
@@ -6488,6 +6489,7 @@
     },
     "warning": {
       "iban_ne_odgovara_povijesti": "IBAN does not match any previously confirmed for this tax ID",
+      "racun_signal_jaci_od_izvoda": "Recognised as an invoice — subject and text clearly indicate an invoice",
       "iban_prvi_put_vidjen": "IBAN seen for the first time",
       "mime_nesklad": "Declared file type does not match its content",
       "pdf_nepotpun": "PDF longer than 30 pages — only the beginning was processed",
@@ -6563,7 +6565,17 @@
       "code": "Confirmation code",
       "noLink": "The link is not verifiably Google's, so we do not open it. Finish the confirmation in Gmail settings (Forwarding and POP/IMAP) by entering the code.",
       "open": "Open confirmation",
-      "dismiss": "Dismiss"
+      "dismiss": "Dismiss",
+      "waitingFirstMail": "Confirmation opened — waiting for the first forwarded email from that address.",
+      "staleWarning": "Nothing has arrived from this address yet — check whether the confirmation was completed."
+    },
+    "unsupported": {
+      "title": "Attachment not supported ({{type}})",
+      "body": "The email arrived, but we cannot read the attachment. Send the document as a PDF."
+    },
+    "status": {
+      "zadrzano": "Kept",
+      "ceka_prvi_mail": "Waiting for first email"
     }
   },
   "documents": {
@@ -6645,7 +6657,11 @@
     },
     "createSource": "Create new wallet “{{name}}”",
     "reprocessQueued": "Document was re-queued as a bank statement",
-    "saveIdentifierToWallet": "Save this IBAN to wallet “{{name}}”"
+    "saveIdentifierToWallet": "Save this IBAN to wallet “{{name}}”",
+    "choiceInvoice": "This is a bill",
+    "choiceKeep": "Something else — keep it",
+    "invoiceQueued": "Document was sent back for processing as a bill",
+    "keptInInbox": "Document stays in Received"
   },
   "rawLine": {
     "toggle": "As printed on the statement",
