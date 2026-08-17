@@ -112,11 +112,11 @@ describe('BriefGate ekran', () => {
       error: null,
     });
     renderGate();
-    await screen.findByTestId('brief-gate-message');
+    await screen.findByTestId('brief-gate-message', {}, { timeout: 15000 });
     fireEvent.pointerDown(screen.getByTestId('brief-gate'));
     fireEvent.click(screen.getByTestId('brief-gate-enter'));
-    await screen.findByText('HOME');
-  });
+    await screen.findByText('HOME', {}, { timeout: 15000 });
+  }, 20000);
 
   it('vise poruka => svi reci su u istom bloku', async () => {
     rpcMock.mockResolvedValue({

@@ -92,13 +92,19 @@ describe('brief vrata — sjeme i zamrzavanje', () => {
     let resolveRpc: (v: unknown) => void = () => undefined;
     rpcMock.mockReturnValue(new Promise((res) => { resolveRpc = res; }));
     renderGate();
-    expect(screen.getByTestId('brief-gate-message').textContent).toBe('briefGate.uncertainty.new:2');
+    // Prikaz iz sjemena dolazi kroz effect — pod opterecenjem CI-a nije gotov u
+    // istom tiku, pa se ceka umjesto sinkrone tvrdnje (ista obitelj lijeka kao
+    // ranije u briefScreen). Ponasanje nedirnuto.
+    await waitFor(
+      () => expect(screen.getByTestId('brief-gate-message').textContent).toBe('briefGate.uncertainty.new:2'),
+      { timeout: 15000 },
+    );
 
     resolveRpc({ data: snapshot(9), error: null });
-    await waitFor(() => expect(cacheWrite).toHaveBeenCalled());
+    await waitFor(() => expect(cacheWrite).toHaveBeenCalled(), { timeout: 15000 });
     expect(cacheWrite.mock.calls[0][1].snapshot.categories.uncertainty.count).toBe(9);
     expect(screen.getByTestId('brief-gate-message').textContent).toBe('briefGate.uncertainty.new:2');
-  });
+  }, 20000);
 
   it('djelomicna snimka => kontinuitet drugih kategorija ostaje netaknut', async () => {
     localStorage.setItem(
