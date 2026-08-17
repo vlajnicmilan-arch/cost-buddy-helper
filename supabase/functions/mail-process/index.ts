@@ -121,17 +121,26 @@ async function aiAnalyze(input: ClassifyInput): Promise<{
 }
 
 /**
- * OIB-i vlasnika aliasa — na tudjem racunu smo KUPAC, ne izdavatelj.
- * JEDAN izvor istine: vraca par (oib, profileId); goli popis OIB-ova se IZVODI
- * iz njega (`ownOibs`), pa se usmjeravanje i filtriranje ne mogu raziici.
+ * Poslovni profili vlasnika aliasa — na tudjem racunu smo KUPAC, ne izdavatelj.
+ * JEDAN izvor istine: i usmjeravanje po kupcu (`resolveDestination`) i rezerva
+ * (`resolveScope`) i filtriranje vlastitih OIB-a IZVODE se iz ovog popisa.
  */
-async function ownOibsFor(supabase: Supa, userId: string): Promise<OwnOibEntry[]> {
+async function ownProfilesFor(
+  supabase: Supa,
+  userId: string,
+): Promise<RoutableBusinessProfile[]> {
   const { data } = await supabase
     .from("business_profiles")
-    .select("id, oib")
+    .select("id, company_name, oib")
     .eq("user_id", userId);
-  return ((data ?? []) as Array<{ id: string; oib: string | null }>)
-    .map((r) => ({ profileId: r.id, oib: (r.oib ?? "").replace(/[^0-9]/g, "") }))
+  return ((data ?? []) as Array<{ id: string; company_name: string | null; oib: string | null }>)
+    .map((r) => ({ id: r.id, name: r.company_name ?? "", oib: r.oib ?? null }));
+}
+
+/** Goli par (oib, profileId) za rezervno usmjeravanje po tekstu. */
+function ownOibEntriesFrom(profiles: readonly RoutableBusinessProfile[]): OwnOibEntry[] {
+  return profiles
+    .map((p) => ({ profileId: p.id, oib: (p.oib ?? "").replace(/[^0-9]/g, "") }))
     .filter((e) => e.oib.length === 11);
 }
 
