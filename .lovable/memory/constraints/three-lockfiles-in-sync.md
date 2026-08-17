@@ -1,24 +1,15 @@
 ---
-name: Sva tri lock-a u istom commitu
-description: Svaki bump ovisnosti mora uskladiti package.json + bun.lock + package-lock.json u istom commitu, inače npm ci u CI-ju pada
+name: bun.lock je jedini lockfile
+description: Repo ima samo bun.lock; package-lock.json je obrisan i NIKAD se ne vraća, svi CI workflowi instaliraju bunom
 type: constraint
 ---
 
-Repo ima DVA install puta: `bun` (agent/sandbox) i `npm ci --legacy-peer-deps` (GitHub Actions `test.yml`).
+Od 17.8.2026. repo ima **jedan jedini lockfile: `bun.lock`**.
 
-Pravilo: svaka promjena ovisnosti — uključujući platformske bumpove (npr. `@lovable.dev/vite-plugin-hmr-gate`) — MORA u ISTOM commitu ažurirati:
-1. `package.json`
-2. `bun.lock`
-3. `package-lock.json`
+Pravila:
+1. `package-lock.json` je obrisan i **nikad se ne vraća** — ni ručno, ni alatom, ni kao nusprodukt `npm install`. Ako se pojavi, obriši ga.
+2. Ne pokretati `npm install` / `npm ci` u ovom repou. Instalacija ide isključivo kroz `bun install` / `bun add` / `bun remove`.
+3. Svi GitHub workflowi (`test.yml`, `e2e.yml`, `security-audit.yml`, `stress-smoke.yml`) koriste `oven-sh/setup-bun@v2` + `bun install --frozen-lockfile`.
+4. `bun.lock` mora imati čiste `https://registry.npmjs.org/` URL-ove; sandbox proxy URL-ovi (`europe-west*-npm.pkg.dev/lovable-core-prod/...`) nisu dostupni s GitHub runnera.
 
-Regeneracija: `npm install --package-lock-only --legacy-peer-deps`.
-
-**Dodatno**: sandbox npm resolvira preko internog proxyja (`europe-west*-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache`). Takvi `resolved` URL-ovi su nedostupni s GitHub runnera — nakon regeneracije obavezno prepiši ih natrag na `https://registry.npmjs.org/`:
-
-```sh
-sed -i 's#https://europe-west[0-9]-npm\.pkg\.dev/lovable-core-prod/sandbox-npm-cache/#https://registry.npmjs.org/#g' package-lock.json
-```
-
-Provjera prije završetka: `npm ci --dry-run --legacy-peer-deps` mora proći bez `EUSAGE` greške.
-
-**Why:** raskorak lock-ova ruši CI prije ijednog testa (mail "vitest CI crven" iako su testovi zeleni). Ista klasa kvara kao srpanjski APK/CI incident.
+**Why:** platforma sinkronizira samo `bun.lock` kod platformskih bumpova (npr. `@lovable.dev/vite-plugin-hmr-gate`). `package-lock.json` je zaostajao pri svakom bumpu i rušio `npm ci` s EUSAGE prije ijednog testa (runs #996–#999). Datoteka koju nitko ne održava mora nestati.
