@@ -620,6 +620,34 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
     }
 
     const extraction = (result.extraction ?? {}) as Record<string, unknown>;
+
+    // KUPAC S DOKUMENTA — deterministički iz teksta, AI samo za rupe.
+    // Iz kupca se izvodi ODREDIŠTE; izvor adrese ostaje samo rezerva.
+    const customer = mergeCustomer(
+      extractCustomer({
+        text: [bodyText ?? "", pdfText ?? "", xml ?? ""].join("\n"),
+        ownOibs,
+      }),
+      extraction,
+    );
+    if (result.extraction) {
+      extraction.recipient_oib = customer.recipient_oib;
+      extraction.recipient_name = customer.recipient_name;
+    }
+
+    const destination = resolveDestination({
+      recipientOib: customer.recipient_oib,
+      recipientName: customer.recipient_name,
+      profiles: ownProfiles,
+      fallback: { scopeType: unitScope.scopeType, scopeId: unitScope.scopeId },
+    });
+    warnings.push(...destination.warnings);
+    if (result.extraction) {
+      extraction.destination_source = destination.source;
+      extraction.destination_offer_profile_id = destination.offer?.profileId ?? null;
+      extraction.destination_offer_profile_name = destination.offer?.profileName ?? null;
+    }
+
     const oib = String(extraction.supplier_oib ?? "");
     if (oib && extraction.iban) {
       // JEDAN MOZAK: povijest IBAN-a = potvrđeni računi + IBAN-i zapamćeni uz
@@ -640,8 +668,8 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
         totalAmount: extraction.total_amount as number | string | null,
         dueDate: extraction.due_date as string | null,
         issueDate: extraction.issue_date as string | null,
-        scopeType: unitScope.scopeType,
-        scopeId: unitScope.scopeId,
+        scopeType: destination.scopeType,
+        scopeId: destination.scopeId,
         ownerUserId: ownerId,
       })
     ) {
