@@ -41,7 +41,9 @@ export function useMailDiscardedItems(enabled: boolean) {
         'id, classification, extraction, created_at, inbound_messages(subject, from_header)'
       )
       .eq('owner_user_id', user.id)
-      .eq('status', 'odbacio_korisnik')
+      // I sustavno odbačene stavke (duplikat privitka i sl.) pripadaju ovdje —
+      // inače nestanu bez traga i popis laže da se ništa nije dogodilo.
+      .in('status', ['odbacio_korisnik', 'odbaceno'])
       .gte('created_at', since)
       .order('created_at', { ascending: false })
       .limit(100);
