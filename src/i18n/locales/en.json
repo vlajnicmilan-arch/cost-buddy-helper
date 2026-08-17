@@ -2972,6 +2972,11 @@
       "pending": {
         "title": "A new document is waiting for review",
         "body": "A document arrived by e-mail. Open the review and confirm."
+      },
+      "staleAlias": {
+        "title": "Mail sent to your old address",
+        "body": "{{sender}} still sends to your old address {{stale_address}}. Redirect sending to {{current_address}}.",
+        "bodyNoActive": "{{sender}} still sends to your old address {{stale_address}}. Open Documents and enable a new address."
       }
     },
     "invoice_due": {
@@ -6510,7 +6515,8 @@
       "vise_vlastitih_oib": "Document contains OIBs of several of your companies — routed to personal",
       "vjerojatno_duplikat": "An invoice with this number and supplier probably already exists",
       "dopunjeno_iz_zapamcenog": "Filled in from a remembered issuer — please check",
-      "vise_kandidata_sifra_mjesta": "Several possible billing point codes — none was used"
+      "vise_kandidata_sifra_mjesta": "Several possible billing point codes — none was used",
+      "odrediste_ponuda": "Customer matched by name only — check the destination."
     },
     "field": {
       "supplierName": "Supplier",
@@ -6576,6 +6582,16 @@
     "status": {
       "zadrzano": "Kept",
       "ceka_prvi_mail": "Waiting for first email"
+    },
+    "customer": {
+      "label": "Customer"
+    },
+    "destination": {
+      "label": "Saving to",
+      "wrong": "Wrong destination?",
+      "confirmTitle": "Mark as misrecognised",
+      "confirmBody": "The destination follows the customer on the document. Change it only if recognition got it wrong.",
+      "confirmAction": "Yes, it was misrecognised"
     }
   },
   "documents": {
@@ -6589,7 +6605,33 @@
     "restoreFailed": "Restore failed",
     "discarded": {
       "title": "Discarded (last 30 days)",
-      "empty": "No discarded documents."
+      "empty": "No discarded documents.",
+      "kind": {
+        "verifikacija_prosljedjivanja": {
+          "title": "Gmail forwarding confirmation",
+          "reason": "A Google forwarding confirmation message — not a document."
+        },
+        "privitak_nepodrzan": {
+          "title": "Attachment not supported",
+          "reason": "The mail arrived but the attachment could not be read."
+        },
+        "duplikat_privitka": {
+          "title": "Duplicate attachment",
+          "reason": "The same attachment was already processed."
+        },
+        "izvod": {
+          "title": "Bank statement",
+          "reason": "The statement was not linked to a payment account."
+        },
+        "nije_za_nas": {
+          "title": "Not a document to process",
+          "reason": "No invoice or statement in this message."
+        },
+        "nepoznato": {
+          "title": "Unrecognised message",
+          "reason": "The document type could not be determined."
+        }
+      }
     },
     "pendingCard": {
       "title": "Documents to review",

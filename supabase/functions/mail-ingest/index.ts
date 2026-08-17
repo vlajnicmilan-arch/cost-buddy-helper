@@ -25,7 +25,61 @@ const TIMESTAMP_TOLERANCE_S = 300;
 // Brane po aliasu — iznad ovoga poruka se sprema sirova, bez posla u redu.
 const MAX_PER_HOUR = 30;
 const MAX_PER_DAY = 100;
+const MAIL_ALIAS_DOMAIN = "centar.vmbalance.com";
 
+/** `Ime <netko@example.com>` → `netko@example.com`. */
+function senderAddress(fromHeader: string): string {
+  const m = fromHeader.match(/<([^>]+)>/);
+  return (m ? m[1] : fromHeader).trim().toLowerCase();
+}
+
+/**
+ * OBAVIJEST „stigla je pošta na staru adresu" — jednom po pošiljatelju i danu
+ * (dedup ključ), da preusmjeravanje ne postane spam.
+ */
+async function notifyStaleAlias(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  params: { aliasId: string; userId: string; staleLocal: string; fromHeader: string },
+) {
+  const { data: activeRows } = await supabase
+    .from("mail_aliases")
+    .select("alias_local")
+    .eq("user_id", params.userId)
+    .is("disabled_at", null)
+    .order("created_at", { ascending: true })
+    .limit(1);
+  const activeLocal = (activeRows ?? [])[0]?.alias_local ?? null;
+  const sender = senderAddress(params.fromHeader);
+  const day = new Date().toISOString().slice(0, 10);
+
+  const vars = {
+    stale_address: `${params.staleLocal}@${MAIL_ALIAS_DOMAIN}`,
+    current_address: activeLocal ? `${activeLocal}@${MAIL_ALIAS_DOMAIN}` : "",
+    sender,
+  };
+
+  const { error } = await supabase.from("notifications").insert({
+    user_id: params.userId,
+    type: "mail_stale_alias",
+    title: "notifications.mail.staleAlias.title",
+    message: activeLocal
+      ? "notifications.mail.staleAlias.body"
+      : "notifications.mail.staleAlias.bodyNoActive",
+    data: {
+      route: "/dokumenti",
+      fallback_route: "/dokumenti",
+      title_vars: {},
+      message_vars: vars,
+      ...vars,
+    },
+    dedup_key: `mail_stale_alias:${params.aliasId}:${sender}:${day}`,
+  });
+  // 23505 = već obaviješten za tog pošiljatelja danas.
+  if (error && error.code !== "23505") {
+    console.error("[mail-ingest] obavijest o staroj adresi nije upisana", error.message);
+  }
+}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -136,7 +190,12 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (existing) return json({ ok: true, replay: true });
 
-    // Alias lookup — bez valjanog AKTIVNOG aliasa NE nastaje NIŠTA.
+    // Alias lookup — bez POZNATOG aliasa NE nastaje NIŠTA.
+    //
+    // UGAŠENI alias se PRIHVAĆA: korisnikova pošta je korisnikova pošta i
+    // tiho bacanje je najgori mogući ishod (pošiljatelj dobije "dostavljeno",
+    // korisnik ne dobije ništa). Poruka se obrađuje normalno, uz obavijest
+    // "stigla je pošta na staru adresu". Aktivan alias uvijek ima prednost.
     const locals = extractRecipientLocals(
       [field("recipient"), field("To"), field("to")].filter(Boolean).join(","),
     );
@@ -144,16 +203,21 @@ Deno.serve(async (req) => {
 
     const { data: aliasRows } = await supabase
       .from("mail_aliases")
-      .select("id, user_id, created_at")
+      .select("id, user_id, alias_local, created_at, disabled_at")
       .in("alias_local", locals)
-      .is("disabled_at", null)
-      .order("created_at", { ascending: true })
-      .limit(1);
-    const aliasRow = (aliasRows ?? [])[0] ?? null;
-
+      .order("created_at", { ascending: true });
+    const rows = (aliasRows ?? []) as Array<{
+      id: string;
+      user_id: string;
+      alias_local: string;
+      created_at: string;
+      disabled_at: string | null;
+    }>;
+    const aliasRow = rows.find((r) => r.disabled_at === null) ?? rows[0] ?? null;
+    const staleAlias = aliasRow !== null && aliasRow.disabled_at !== null;
 
     if (!aliasRow) {
-      console.warn("[mail-ingest] nepoznat ili ugašen alias — odbacujem bez zapisa");
+      console.warn("[mail-ingest] nepoznat alias — odbacujem bez zapisa");
       return json({ ok: true, ignored: "unknown_alias" });
     }
 
@@ -263,6 +327,17 @@ Deno.serve(async (req) => {
     if (rpcErr) {
       console.error("[mail-ingest] transakcijski upis nije uspio", rpcErr);
       return json({ error: "store_failed" }, 500);
+    }
+
+    // UGAŠENA ADRESA NIKAD TIHO: poruka je primljena i obrađuje se, ali
+    // korisnik mora doznati da pošiljatelj još gađa staru adresu.
+    if (staleAlias) {
+      await notifyStaleAlias(supabase, {
+        aliasId: aliasRow.id,
+        userId: aliasRow.user_id,
+        staleLocal: aliasRow.alias_local,
+        fromHeader: field("from") || field("From") || "",
+      });
     }
 
     return json({ ok: true, ...(stored as Record<string, unknown>) });

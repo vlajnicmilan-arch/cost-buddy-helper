@@ -25,7 +25,8 @@ export type AiContentBlock =
 
 export const AI_JSON_TEMPLATE = [
   '{"classification":"racun|ponuda|nije_za_nas","confidence":"visoka|srednja|niska",',
-  '"supplier_oib":null,"supplier_name":null,"invoice_number":null,"issue_date":null,',
+  '"supplier_oib":null,"supplier_name":null,"recipient_oib":null,"recipient_name":null,',
+  '"invoice_number":null,"issue_date":null,',
   '"due_date":null,"total_amount":null,"vat_amount":null,"currency":"EUR","iban":null}',
 ].join('');
 
@@ -46,6 +47,7 @@ export function buildAiPrompt(input: AiRequestInput): string {
     AI_JSON_TEMPLATE,
     'Polje koje ne možeš pouzdano pročitati postavi na null. NIKAD ne vraćaj prazan string.',
     'Datume vraćaj ISKLJUČIVO u obliku YYYY-MM-DD (nikad 28.02.2026.).',
+    'supplier_* je IZDAVATELJ dokumenta, recipient_* je KUPAC (obveznik/platitelj/primatelj) — nikad ih ne zamijeni.',
 
     known.length > 0 ? `Već provjereno (ne mijenjaj): ${known.join(', ')}` : '',
     '',

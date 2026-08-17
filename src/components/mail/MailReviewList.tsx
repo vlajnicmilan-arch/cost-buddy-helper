@@ -16,7 +16,7 @@ import { showUndoToast } from '@/lib/undoToast';
 import { restoreIngestItem } from '@/lib/mailReviewStatus';
 import { useMailReviewQueue, type MailReviewItem } from '@/hooks/useMailReviewQueue';
 import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
-import { MailScopeChip } from '@/components/mail/MailScopeChip';
+import { MailDestinationRow } from '@/components/mail/MailDestinationRow';
 import { describeDbError } from '@/lib/eracun/dbError';
 import {
   MailReviewFieldInput,
@@ -498,18 +498,23 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
               <Badge variant="outline">
                 {t(`mailReview.confidence.${item.confidence}`, item.confidence ?? '—')}
               </Badge>
-              <MailScopeChip
-                scopeType={item.scope_type}
-                scopeId={item.scope_id}
-                profiles={profiles}
-                disabled={working}
-                onChange={(type, id) => handleScopeChange(item, type, id)}
-              />
             </div>
 
             <div className="text-xs text-muted-foreground break-all">
               {item.subject || t('mailImport.noSubject', '(bez naslova)')} · {item.from_header || '—'}
             </div>
+
+            {/* KUPAC + ODREDIŠTE — uvijek vidljivo prije potvrde. */}
+            <MailDestinationRow
+              itemId={item.id}
+              customerName={(extraction.recipient_name as string | null) ?? null}
+              customerOib={(extraction.recipient_oib as string | null) ?? null}
+              scopeType={item.scope_type}
+              scopeId={item.scope_id}
+              profiles={profiles}
+              disabled={working}
+              onChange={(type, id) => handleScopeChange(item, type, id)}
+            />
 
             {ibanAlarm && (
               <div

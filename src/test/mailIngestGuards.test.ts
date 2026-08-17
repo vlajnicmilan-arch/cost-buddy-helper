@@ -7,21 +7,44 @@ const SRC = readFileSync(
   join(process.cwd(), 'supabase/functions/mail-ingest/index.ts'),
   'utf8'
 );
+/** Tijelo obrađivača — pomoćnici iznad njega (npr. obavijest) nisu tok zahtjeva. */
+const HANDLER = SRC.slice(SRC.indexOf('function json(body: unknown'));
 
 describe('mail-ingest — čuvar 1: alias', () => {
-  it('nepoznat/ugašen alias vraća 200 bez ijednog zapisa', () => {
-    const aliasBlock = SRC.slice(SRC.indexOf('if (!aliasRow)'));
+  it('nepoznat alias vraća 200 bez ijednog zapisa', () => {
+    const aliasBlock = HANDLER.slice(HANDLER.indexOf('if (!aliasRow)'));
     const earlyReturn = aliasBlock.indexOf('ignored: "unknown_alias"');
     expect(earlyReturn).toBeGreaterThan(-1);
     // Prije te grane nema nijednog upisa u tablice ni u pohranu.
-    const beforeAlias = SRC.slice(0, SRC.indexOf('if (!aliasRow)'));
+    const beforeAlias = HANDLER.slice(0, HANDLER.indexOf('if (!aliasRow)'));
     expect(beforeAlias).not.toMatch(/\.insert\(/);
     expect(beforeAlias).not.toMatch(/storage\s*\n?\s*\.from\("inbound-mail"\)\s*\n?\s*\.upload/);
     expect(beforeAlias).not.toMatch(/mail_ingest_store_message/);
   });
 
-  it('alias lookup traži samo aktivne aliase', () => {
-    expect(SRC).toMatch(/from\("mail_aliases"\)[\s\S]{0,200}is\("disabled_at", null\)/);
+  it('UGAŠEN alias se PRIHVAĆA (nikad tiho bacanje), aktivan ima prednost', () => {
+    // Lookup više ne filtrira po disabled_at — uzima poznate aliase i bira.
+    const lookup = HANDLER.slice(
+      HANDLER.indexOf('from("mail_aliases")'),
+      HANDLER.indexOf('if (!aliasRow)'),
+    );
+    expect(lookup).not.toMatch(/is\("disabled_at", null\)/);
+    expect(SRC).toMatch(/rows\.find\(\(r\) => r\.disabled_at === null\) \?\? rows\[0\]/);
+    expect(SRC).toMatch(/const staleAlias = aliasRow !== null && aliasRow\.disabled_at !== null/);
+  });
+
+  it('pošta na ugašenu adresu javlja se korisniku, dedup po pošiljatelju i danu', () => {
+    expect(SRC).toMatch(/if \(staleAlias\)[\s\S]{0,200}notifyStaleAlias\(/);
+    expect(SRC).toMatch(/type: "mail_stale_alias"/);
+    expect(SRC).toMatch(/dedup_key: `mail_stale_alias:\$\{params\.aliasId\}:\$\{sender\}:\$\{day\}`/);
+    // Obavijest ide TEK nakon uspješnog transakcijskog upisa poruke.
+    expect(SRC.indexOf('mail_ingest_store_message')).toBeLessThan(SRC.indexOf('if (staleAlias)'));
+  });
+
+  it('važeći (aktivan) alias ne pokreće obavijest o staroj adresi', () => {
+    // Jedini poziv obavijesti je iza `staleAlias` grane — aktivan alias je nikad ne dosegne.
+    const calls = SRC.match(/notifyStaleAlias\(/g) ?? [];
+    expect(calls.length).toBe(2); // definicija + jedan poziv
   });
 });
 

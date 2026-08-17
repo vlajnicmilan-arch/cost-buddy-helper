@@ -7,6 +7,7 @@ import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { useMailInbox } from '@/hooks/useMailInbox';
 import { useMailDiscardedItems } from '@/hooks/useMailDiscardedItems';
 import { formatHrAmount } from '@/lib/money';
+import { describeDiscardedItem } from '@/lib/mail/discardedDescription';
 
 /**
  * Stanja iz kojih korisnik smije ručno pokrenuti obradu.
@@ -88,16 +89,43 @@ export const DocumentsReceivedTab = ({
           <ul className="divide-y rounded-lg border">
             {discarded.map((item) => {
               const e = (item.extraction ?? {}) as Record<string, unknown>;
+              const desc = describeDiscardedItem({
+                classification: item.classification,
+                extraction: item.extraction,
+                subject: item.subject,
+              });
               return (
-                <li key={item.id} className="flex flex-wrap items-center gap-2 p-3 text-xs">
+                <li
+                  key={item.id}
+                  data-testid="discarded-item"
+                  className="flex flex-wrap items-center gap-2 p-3 text-xs"
+                >
                   <div className="min-w-0 flex-1">
-                    <div className="font-medium break-all">
-                      {String(e.supplier_name ?? item.subject ?? t('mailImport.noSubject', '(bez naslova)'))}
-                    </div>
-                    <div className="text-muted-foreground break-all">
-                      {String(e.invoice_number ?? '—')} ·{' '}
-                      {formatHrAmount(e.total_amount as number | string) || '—'}
-                    </div>
+                    {desc.kind === 'special' ? (
+                      <>
+                        <div className="font-medium break-all">
+                          {t(desc.titleKey, desc.titleFallback)}
+                        </div>
+                        <div className="text-muted-foreground break-all">
+                          {t(desc.reasonKey, desc.reasonFallback)}
+                        </div>
+                        {item.subject && (
+                          <div className="text-muted-foreground break-all">{item.subject}</div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <div className="font-medium break-all">
+                          {String(
+                            e.supplier_name ?? item.subject ?? t('mailImport.noSubject', '(bez naslova)'),
+                          )}
+                        </div>
+                        <div className="text-muted-foreground break-all">
+                          {String(e.invoice_number ?? '—')} ·{' '}
+                          {formatHrAmount(e.total_amount as number | string) || '—'}
+                        </div>
+                      </>
+                    )}
                   </div>
                   <Button
                     variant="outline"

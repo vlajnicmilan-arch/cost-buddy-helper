@@ -2978,6 +2978,11 @@
       "pending": {
         "title": "Novi dokument čeka pregled",
         "body": "Stigao je dokument e-poštom. Otvori pregled i potvrdi."
+      },
+      "staleAlias": {
+        "title": "Pošta na staru adresu",
+        "body": "Pošiljatelj {{sender}} još šalje na staru adresu {{stale_address}}. Preusmjeri slanje na {{current_address}}.",
+        "bodyNoActive": "Pošiljatelj {{sender}} još šalje na staru adresu {{stale_address}}. Otvori Dokumente i uključi novu adresu."
       }
     },
     "invoice_due": {
@@ -6520,7 +6525,8 @@
       "vise_vlastitih_oib": "Dokument sadrži OIB-e više tvojih tvrtki — usmjeren je na osobno",
       "vjerojatno_duplikat": "Račun s tim brojem i dobavljačem vjerojatno već postoji",
       "dopunjeno_iz_zapamcenog": "Dopunjeno iz zapamćenog izdavatelja — provjeri",
-      "vise_kandidata_sifra_mjesta": "Više mogućih šifri obračunskog mjesta — nije upisana"
+      "vise_kandidata_sifra_mjesta": "Više mogućih šifri obračunskog mjesta — nije upisana",
+      "odrediste_ponuda": "Kupac je prepoznat samo po nazivu — provjeri odredište."
     },
     "field": {
       "supplierName": "Dobavljač",
@@ -6586,6 +6592,16 @@
     "status": {
       "zadrzano": "Zadržano",
       "ceka_prvi_mail": "Čeka prvi mail"
+    },
+    "customer": {
+      "label": "Kupac"
+    },
+    "destination": {
+      "label": "Sprema se u",
+      "wrong": "Krivo odredište?",
+      "confirmTitle": "Označi kao krivo prepoznato",
+      "confirmBody": "Odredište je određeno prema kupcu s dokumenta. Promijeni ga samo ako je prepoznavanje pogriješilo.",
+      "confirmAction": "Da, krivo je prepoznato"
     }
   },
   "documents": {
@@ -6599,7 +6615,33 @@
     "restoreFailed": "Vraćanje nije uspjelo",
     "discarded": {
       "title": "Odbačeno (zadnjih 30 dana)",
-      "empty": "Nema odbačenih dokumenata."
+      "empty": "Nema odbačenih dokumenata.",
+      "kind": {
+        "verifikacija_prosljedjivanja": {
+          "title": "Gmail potvrda prosljeđivanja",
+          "reason": "Poruka od Googlea za potvrdu prosljeđivanja — nije dokument."
+        },
+        "privitak_nepodrzan": {
+          "title": "Privitak nije podržan",
+          "reason": "Mail je stigao, ali privitak nije bilo moguće pročitati."
+        },
+        "duplikat_privitka": {
+          "title": "Duplikat privitka",
+          "reason": "Isti privitak je već obrađen ranije."
+        },
+        "izvod": {
+          "title": "Bankovni izvod",
+          "reason": "Izvod nije spojen s računom plaćanja."
+        },
+        "nije_za_nas": {
+          "title": "Nije dokument za obradu",
+          "reason": "U poruci nema računa ni izvoda."
+        },
+        "nepoznato": {
+          "title": "Neprepoznata poruka",
+          "reason": "Vrstu dokumenta nije bilo moguće odrediti."
+        }
+      }
     },
     "pendingCard": {
       "title": "Dokumenti na pregled",
