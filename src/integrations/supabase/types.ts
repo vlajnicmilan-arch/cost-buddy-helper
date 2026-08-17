@@ -2659,6 +2659,7 @@ export type Database = {
           id: string
           last_error: string | null
           locked_at: string | null
+          manual: boolean
           message_id: string
           next_run_at: string
           status: string
@@ -2670,6 +2671,7 @@ export type Database = {
           id?: string
           last_error?: string | null
           locked_at?: string | null
+          manual?: boolean
           message_id: string
           next_run_at?: string
           status?: string
@@ -2681,6 +2683,7 @@ export type Database = {
           id?: string
           last_error?: string | null
           locked_at?: string | null
+          manual?: boolean
           message_id?: string
           next_run_at?: string
           status?: string
@@ -7570,6 +7573,7 @@ export type Database = {
         Returns: {
           attempts: number
           job_id: string
+          manual: boolean
           message_id: string
         }[]
       }
