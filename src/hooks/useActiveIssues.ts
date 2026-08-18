@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useAppResume } from "@/hooks/useAppResume";
 
 export type IssueSeverity = "info" | "warning" | "critical";
 
@@ -69,6 +70,9 @@ export const useActiveIssues = (enabled: boolean) => {
   }, [user?.id, enabled]);
 
   useEffect(() => { fetch(); }, [fetch]);
+
+  // Povratak u fokus / mrežu: „Za pažnju" se tiho osvježi (debounce unutra).
+  useAppResume(fetch, { enabled: enabled && !!user });
 
   useEffect(() => {
     const onChange = () => fetch();

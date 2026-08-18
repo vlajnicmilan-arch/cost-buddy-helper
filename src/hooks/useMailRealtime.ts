@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { needsResubscribe } from '@/lib/appResume';
 
 /**
  * MAIL UVOZ — živi kanal.
@@ -62,6 +63,9 @@ export const isPendingTransition = (
 
 export function useMailRealtime({ enabled, onNewPending }: Options) {
   const { user } = useAuth();
+  const onNewPendingRef = useRef(onNewPending);
+  onNewPendingRef.current = onNewPending;
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
     if (!enabled || !user?.id) return;
@@ -80,30 +84,49 @@ export function useMailRealtime({ enabled, onNewPending }: Options) {
         seen.add(id);
       }
       emitMailPendingChanged({ itemId: id });
-      if (pendingTransition) onNewPending?.(id);
+      if (pendingTransition) onNewPendingRef.current?.(id);
     };
 
     const filter = `owner_user_id=eq.${user.id}`;
-    const channel = supabase
-      .channel(`mail-ingest-${user.id}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'document_ingest_items', filter },
-        handle
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'document_ingest_items', filter },
-        handle
-      )
-      .subscribe();
+    const open = () =>
+      supabase
+        .channel(`mail-ingest-${user.id}`)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'document_ingest_items', filter },
+          handle
+        )
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'document_ingest_items', filter },
+          handle
+        )
+        .subscribe();
+
+    channelRef.current = open();
+
+    // ŽIVI KANAL PREKO NOĆI: WebSocket zna umrijeti dok je tab u backgroundu.
+    // Na povratak u fokus/mrežu provjeravamo stanje kanala i po potrebi ga
+    // dižemo ponovno — inače serverska promjena statusa ne stigne do ekrana.
+    const resume = () => {
+      const state = (channelRef.current as { state?: string } | null)?.state;
+      if (!needsResubscribe(state)) return;
+      if (channelRef.current) supabase.removeChannel(channelRef.current);
+      channelRef.current = open();
+      // Kanal je bio mrtav — red i brojač se odmah usklade sa serverom.
+      emitMailPendingChanged({ itemId: null });
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') resume();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('online', resume);
 
     return () => {
-      supabase.removeChannel(channel);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('online', resume);
+      if (channelRef.current) supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
     };
-    // onNewPending se namjerno ne veže u dependency lanac (host ga drži stabilnim
-    // kroz useCallback) — inače bi svaki render rušio i podizao kanal.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, user?.id]);
 }
-

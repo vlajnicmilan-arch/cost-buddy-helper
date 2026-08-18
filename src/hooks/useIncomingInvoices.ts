@@ -5,7 +5,7 @@
  * se ne dodiruju: trošak se stvara tek na „Plaćeno" i to kroz postojeći
  * `addExpense` put (jedini pisač u `expenses`).
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppState } from '@/contexts/AppStateContext';
@@ -14,6 +14,7 @@ import { describeDbError } from '@/lib/eracun/dbError';
 import { showError } from '@/hooks/useStatusFeedback';
 import i18n from '@/i18n';
 import type { EracunInsertRow } from '@/lib/eracun/intakeBatch';
+import { useAppResume } from '@/hooks/useAppResume';
 
 export interface IncomingInvoice {
   id: string;
@@ -50,11 +51,13 @@ export const useIncomingInvoices = () => {
   const { activeBusinessProfileId } = useAppState();
   const [invoices, setInvoices] = useState<IncomingInvoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const hydratedRef = useRef(false);
 
   const fetchInvoices = useCallback(async () => {
     if (!authReady) return;
     if (!user) { setInvoices([]); setLoading(false); return; }
-    setLoading(true);
+    // Prvi dohvat smije pokazati loading; pozadinska osvježenja su tiha.
+    if (!hydratedRef.current) setLoading(true);
     let query = supabase
       .from('incoming_invoices' as any)
       .select('*')
@@ -71,10 +74,14 @@ export const useIncomingInvoices = () => {
       return;
     }
     setInvoices(sortIncomingInvoices((data ?? []) as unknown as IncomingInvoice[]));
+    hydratedRef.current = true;
     setLoading(false);
   }, [user, authReady, activeBusinessProfileId]);
 
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
+
+  // Dospijeća se moraju probuditi s korisnikom — tiho, bez poruka o grešci.
+  useAppResume(fetchInvoices, { enabled: authReady && !!user });
 
   const existingFingerprints = useMemo(
     () => new Set(invoices.map((i) => i.fingerprint)),
