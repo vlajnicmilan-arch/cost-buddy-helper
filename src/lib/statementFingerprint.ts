@@ -116,6 +116,7 @@ export async function recordImportedStatement(params: {
   paymentSourceId?: string | null;
   fileHash?: string | null;
   contentHash?: string | null;
+  sourceDocumentItemId?: string | null;
   fileName?: string | null;
   fileSize?: number | null;
   mimeType?: string | null;
@@ -127,6 +128,7 @@ export async function recordImportedStatement(params: {
     payment_source_id: params.paymentSourceId ?? null,
     file_hash: params.fileHash ?? null,
     content_hash: params.contentHash ?? null,
+    source_document_item_id: params.sourceDocumentItemId ?? null,
     file_name: params.fileName ?? null,
     file_size: params.fileSize ?? null,
     mime_type: params.mimeType ?? null,

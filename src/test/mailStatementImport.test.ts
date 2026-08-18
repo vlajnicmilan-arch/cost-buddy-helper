@@ -51,6 +51,36 @@ describe('most prema postojećem uvozu izvoda', () => {
   it('uspješan uvoz označava stavku kao povezan', () => {
     expect(bridge).toContain("status: 'povezan'");
   });
+
+  it('nosi izvornu mail-stavku do serverskog zapisa kao SHA fallback', () => {
+    const context = read('src/contexts/PdfImportContext.tsx');
+    const host = read('src/components/pdf-import/GlobalPDFImportHost.tsx');
+    const review = read('src/pages/ImportReview.tsx');
+    expect(bridge).toContain('sourceDocumentItemId: params.mailItemId ?? null');
+    expect(context).toContain('sourceDocumentItemId?: string | null');
+    expect(host).toContain('sourceDocumentItemId: pdfImport._pendingPdfRef.current?.sourceDocumentItemId ?? null');
+    expect(review).toContain('sourceDocumentItemId: payload.statement.sourceDocumentItemId ?? null');
+  });
+});
+
+describe('serverska istina završetka uvoza', () => {
+  const migration = read('supabase/migrations/20260818035055_e0e614a0-3fb5-4d14-8b5a-1b43f9f1326f.sql');
+
+  it('povezuje samo istog vlasnika i isti SHA u aktivnim stanjima', () => {
+    expect(migration).toContain('item.owner_user_id = NEW.user_id');
+    expect(migration).toContain('attachment.content_sha256 = NEW.file_hash');
+    expect(migration).toContain("item.status IN ('na_pregledu', 'ceka_prvi_mail')");
+  });
+
+  it('ima idempotentni fallback na izričitu izvornu stavku', () => {
+    expect(migration).toContain('NEW.source_document_item_id IS NOT NULL');
+    expect(migration).toContain('item.id = NEW.source_document_item_id');
+    expect(migration).toContain('AFTER INSERT ON public.imported_statements');
+  });
+
+  it('okidačka funkcija nije dostupna klijentskim ulogama', () => {
+    expect(migration).toContain('FROM PUBLIC, anon, authenticated');
+  });
 });
 
 describe('pamćenje pripadnosti izvoru', () => {

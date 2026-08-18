@@ -422,6 +422,7 @@ const ImportReview = () => {
           paymentSourceId: payload.sourceId,
           fileHash: payload.statement.fileHash,
           contentHash: payload.statement.contentHash,
+          sourceDocumentItemId: payload.statement.sourceDocumentItemId ?? null,
           fileName: payload.statement.fileName,
           fileSize: payload.statement.fileSize,
           mimeType: payload.statement.mimeType,

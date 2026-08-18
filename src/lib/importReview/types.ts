@@ -143,6 +143,8 @@ export interface ImportReviewPayload {
   readonly statement?: {
     readonly fileHash: string | null;
     readonly contentHash: string | null;
+    /** Serverski fallback za mail-stavku kad sirovi SHA datoteke nije dostupan. */
+    readonly sourceDocumentItemId?: string | null;
     readonly fileName: string | null;
     readonly fileSize: number | null;
     readonly mimeType: string | null;

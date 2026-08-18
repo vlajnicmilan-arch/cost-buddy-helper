@@ -396,6 +396,7 @@ export const GlobalPDFImportHost = () => {
       paymentSourceId: pdfImport.source.id,
       fileHash: fileHashRef.current,
       contentHash,
+      sourceDocumentItemId: pdfImport._pendingPdfRef.current?.sourceDocumentItemId ?? null,
       fileName: fileMetaRef.current?.name ?? null,
       fileSize: fileMetaRef.current?.size ?? null,
       mimeType: fileMetaRef.current?.type ?? null,
@@ -768,6 +769,7 @@ export const GlobalPDFImportHost = () => {
         statement: {
           fileHash: fileHashRef.current,
           contentHash: statementContentHash,
+          sourceDocumentItemId: pdfImport._pendingPdfRef.current?.sourceDocumentItemId ?? null,
           fileName: fileMetaRef.current?.name ?? null,
           fileSize: fileMetaRef.current?.size ?? null,
           mimeType: fileMetaRef.current?.type ?? null,

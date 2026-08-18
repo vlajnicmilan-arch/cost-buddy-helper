@@ -70,6 +70,7 @@ export function useStatementImport() {
         await pdfImport.startPdfImport({
           file,
           source: params.source,
+          sourceDocumentItemId: params.mailItemId ?? null,
           forceImport: params.force === true,
           statementClosingBalance:
             typeof params.closingBalance === 'number' ? params.closingBalance : null,
