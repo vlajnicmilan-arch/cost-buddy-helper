@@ -11,7 +11,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
 import { sendPushNotificationToMany } from "../_shared/sendPushNotification.ts";
 import { translate } from "../_shared/i18n/index.ts";
-import { buildSummaryBodySelection } from "../_shared/digestSummary.ts";
+import { buildSummaryBodySelection } from "./digestSummary.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

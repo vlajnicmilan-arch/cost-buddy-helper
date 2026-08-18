@@ -5,7 +5,7 @@
 // notify-note-added, check-milestone-budgets). They are ALWAYS translated through
 // the shared server catalog before reaching the user; an unknown kind falls back to
 // the generic "change" label so a raw snake_case token can never leak into UI text.
-import { translate } from "./i18n/index.ts";
+import { translate } from "../_shared/i18n/index.ts";
 
 export const DIGEST_EVENT_KINDS = [
   "work_log_added",
