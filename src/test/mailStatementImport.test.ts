@@ -82,6 +82,12 @@ describe('serverska istina završetka uvoza', () => {
   it('okidačka funkcija nije dostupna klijentskim ulogama', () => {
     expect(migration).toContain('FROM PUBLIC, anon, authenticated');
   });
+
+  it('drugi uređaj osvježava red kad serverski status napusti pregled', () => {
+    const realtime = read('src/hooks/useMailRealtime.ts');
+    expect(realtime).toContain("prev?.status === PENDING && row?.status !== PENDING");
+    expect(realtime).toContain('if (pendingTransition) onNewPending?.(id)');
+  });
 });
 
 describe('pamćenje pripadnosti izvoru', () => {

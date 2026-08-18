@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
  * MAIL UVOZ — živi kanal.
  *
  * Jedan kanal po prijavljenom korisniku (montira se JEDNOM, u `MailRealtimeHost`).
- * Sluša INSERT u `document_ingest_items` za vlastite stavke i emitira interni
+ * Sluša INSERT/UPDATE u `document_ingest_items` za vlastite stavke i emitira interni
  * DOM event; postojeći `useState` hookovi (`useMailPendingCount`,
  * `useMailReviewQueue`) na taj event rade refetch — bez izlaska i ulaska u app.
  *
@@ -71,14 +71,16 @@ export function useMailRealtime({ enabled, onNewPending }: Options) {
     const handle = (payload: { new?: unknown; old?: unknown }) => {
       const row = (payload.new ?? null) as { id?: string; status?: string } | null;
       const prev = (payload.old ?? null) as { status?: string } | null;
-      if (!isPendingTransition(prev, row)) return;
+      const pendingTransition = isPendingTransition(prev, row);
+      const leftPending = prev?.status === PENDING && row?.status !== PENDING;
+      if (!pendingTransition && !leftPending) return;
       const id = row?.id ?? null;
-      if (id) {
+      if (pendingTransition && id) {
         if (seen.has(id)) return;
         seen.add(id);
       }
       emitMailPendingChanged({ itemId: id });
-      onNewPending?.(id);
+      if (pendingTransition) onNewPending?.(id);
     };
 
     const filter = `owner_user_id=eq.${user.id}`;
