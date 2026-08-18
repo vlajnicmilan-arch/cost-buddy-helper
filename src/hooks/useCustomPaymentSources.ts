@@ -9,6 +9,7 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useFeatureAccess, FREE_LIMITS } from '@/hooks/useFeatureAccess';
 import { tr } from '@/lib/errorMessages';
 import { instantCache } from '@/lib/instantCache';
+import { useAppResume } from '@/hooks/useAppResume';
 
 const paymentSourcesCacheKey = (
   userId: string | undefined,
@@ -292,20 +293,9 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
   // na `custom_payment_sources`. Realtime bi zahtijevao dodavanje tablice u
   // publikaciju + per-session kanal (bill), a benefit za sub-second sync ovdje
   // je marginalan jer je engine već konzistentan na serveru.
-  useEffect(() => {
-    if (isLocalMode || !user) return;
-    const onFocus = () => {
-      if (document.visibilityState === 'visible') {
-        fetchCustomPaymentSources();
-      }
-    };
-    window.addEventListener('focus', onFocus);
-    document.addEventListener('visibilitychange', onFocus);
-    return () => {
-      window.removeEventListener('focus', onFocus);
-      document.removeEventListener('visibilitychange', onFocus);
-    };
-  }, [isLocalMode, user, fetchCustomPaymentSources]);
+  // Zajednički okidač (visibilitychange → visible + online) s debounceom živi
+  // u `useAppResume`; ovaj hook samo tiho ponovi dohvat.
+  useAppResume(fetchCustomPaymentSources, { enabled: !isLocalMode && !!user });
 
   // Subscribe to reorder events via Context to sync state across hook instances
   useEffect(() => {

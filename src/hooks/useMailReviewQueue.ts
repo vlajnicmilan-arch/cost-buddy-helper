@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { describeDbError } from '@/lib/eracun/dbError';
 import { useMailPendingEvent } from '@/hooks/useMailRealtime';
+import { useAppResume } from '@/hooks/useAppResume';
 
 
 /**
@@ -59,6 +60,8 @@ export function useMailReviewQueue(enabled: boolean) {
   const [items, setItems] = useState<MailReviewItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
+  /** Prvi dohvat smije pokazati loading; pozadinska osvježenja su tiha. */
+  const hydratedRef = useRef(false);
 
   const fetchItems = useCallback(async () => {
     if (!enabled || !user?.id) {
@@ -66,7 +69,7 @@ export function useMailReviewQueue(enabled: boolean) {
       setLoading(false);
       return;
     }
-    setLoading(true);
+    if (!hydratedRef.current) setLoading(true);
     const { data, error } = await supabase
       .from('document_ingest_items')
       .select(
@@ -79,7 +82,8 @@ export function useMailReviewQueue(enabled: boolean) {
 
     if (error) {
       console.warn('[useMailReviewQueue] fetch error:', error.message);
-      setItems([]);
+      // Fail-safe: zadrži zadnji poznati red ako je već bio učitan.
+      if (!hydratedRef.current) setItems([]);
     } else {
       setItems(
         (data ?? []).map((row: any) => ({
@@ -101,6 +105,7 @@ export function useMailReviewQueue(enabled: boolean) {
           file_name: String(row.inbound_attachments?.storage_path ?? '').split('/').pop() || null,
         }))
       );
+      hydratedRef.current = true;
     }
     setLoading(false);
   }, [enabled, user?.id]);
@@ -111,6 +116,9 @@ export function useMailReviewQueue(enabled: boolean) {
 
   // Živi kanal (vidi useMailRealtime) — red se puni sam dok je app otvoren.
   useMailPendingEvent(fetchItems);
+
+  // Povratak u fokus / mrežu: red se tiho uskladi sa serverskom istinom.
+  useAppResume(fetchItems, { enabled });
 
 
   /**

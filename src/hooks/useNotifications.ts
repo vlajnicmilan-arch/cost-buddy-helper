@@ -6,6 +6,7 @@ import { useNotificationSound, showBrowserNotification } from '@/hooks/useNotifi
 import { useAppBadge } from '@/hooks/useAppBadge';
 import { resolveNotificationText } from '@/lib/notificationI18n';
 import i18n from '@/i18n';
+import { useAppResume } from '@/hooks/useAppResume';
 
 /**
  * Returns true if the notification represents an auto-reconciled "issue"
@@ -65,19 +66,7 @@ export const useNotifications = () => {
   // povratku vidljivosti / online eventu obnavlja zvono i badge bez spam-a
   // (jedan poziv po eventu, bez petlje jer fetchNotifications ne mijenja
   // dependency lanac koji bi ovaj efekt ponovno vezao).
-  useEffect(() => {
-    if (!user) return;
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') fetchNotifications();
-    };
-    const onOnline = () => fetchNotifications();
-    document.addEventListener('visibilitychange', onVisible);
-    window.addEventListener('online', onOnline);
-    return () => {
-      document.removeEventListener('visibilitychange', onVisible);
-      window.removeEventListener('online', onOnline);
-    };
-  }, [user, fetchNotifications]);
+  useAppResume(fetchNotifications, { enabled: !!user });
 
   // Subscribe to realtime notifications
   useEffect(() => {

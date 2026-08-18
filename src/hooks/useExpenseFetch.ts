@@ -16,6 +16,7 @@ import { withAuthRetry } from '@/lib/supabaseRetry';
 import { useHiddenPaymentSources } from './useHiddenPaymentSources';
 import { useWalletViewMode } from '@/contexts/WalletViewModeContext';
 import { instantCache } from '@/lib/instantCache';
+import { useAppResume } from '@/hooks/useAppResume';
 import { EXPENSE_LIST_SELECT } from '@/lib/expenseColumns';
 import { buildExpenseScopeFilter, belongsToMyScope, type ScopeContext } from '@/lib/expenseScope';
 
@@ -362,6 +363,10 @@ export const useExpenseFetch = () => {
       cancelled = true;
     };
   }, [fetchOwnedSources, fetchExpenses]);
+
+  // Svježina na povratku u fokus / mrežu — dashboard i novčanik brojke se
+  // tiho usklade sa serverskom istinom (loading se ne pali nakon hidracije).
+  useAppResume(() => fetchExpenses(), { enabled: !isLocalMode && !!user });
 
   // Realtime subscription for cloud mode
   useEffect(() => {

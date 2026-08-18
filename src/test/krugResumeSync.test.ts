@@ -89,14 +89,17 @@ describe('Krug Resume/Reconnect Sync Patch', () => {
   });
 
   describe('N7 — useNotifications resync na visibility/online', () => {
-    it('registrira visibilitychange i online listenere s fetchNotifications', () => {
+    it('resync ide kroz zajednički useAppResume (fokus + online, s debounceom)', () => {
       const src = read('src/hooks/useNotifications.ts');
-      expect(src).toMatch(/addEventListener\(['"]visibilitychange['"]/);
-      expect(src).toMatch(/addEventListener\(['"]online['"]/);
-      expect(src).toMatch(/removeEventListener\(['"]visibilitychange['"]/);
-      expect(src).toMatch(/removeEventListener\(['"]online['"]/);
-      // guard protiv petlje: fetch samo kad je tab vidljiv
-      expect(src).toMatch(/document\.visibilityState\s*===\s*['"]visible['"]/);
+      expect(src).toMatch(/useAppResume\(fetchNotifications/);
+
+      // Zajednički okidač drži listenere i guard protiv petlje.
+      const resume = read('src/hooks/useAppResume.ts');
+      expect(resume).toMatch(/addEventListener\(['"]visibilitychange['"]/);
+      expect(resume).toMatch(/addEventListener\(['"]online['"]/);
+      expect(resume).toMatch(/removeEventListener\(['"]visibilitychange['"]/);
+      expect(resume).toMatch(/removeEventListener\(['"]online['"]/);
+      expect(resume).toMatch(/document\.visibilityState\s*===\s*['"]visible['"]/);
     });
   });
 
