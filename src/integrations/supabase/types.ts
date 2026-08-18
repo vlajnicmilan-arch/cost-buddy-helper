@@ -2258,6 +2258,7 @@ export type Database = {
           reconciliation_state:
             | Database["public"]["Enums"]["reconciliation_state_type"]
             | null
+          source_document_item_id: string | null
           transactions_count: number | null
           user_id: string
         }
@@ -2276,6 +2277,7 @@ export type Database = {
           reconciliation_state?:
             | Database["public"]["Enums"]["reconciliation_state_type"]
             | null
+          source_document_item_id?: string | null
           transactions_count?: number | null
           user_id: string
         }
@@ -2294,10 +2296,19 @@ export type Database = {
           reconciliation_state?:
             | Database["public"]["Enums"]["reconciliation_state_type"]
             | null
+          source_document_item_id?: string | null
           transactions_count?: number | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "imported_statements_source_document_item_id_fkey"
+            columns: ["source_document_item_id"]
+            isOneToOne: false
+            referencedRelation: "document_ingest_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       inbound_attachments: {
         Row: {
