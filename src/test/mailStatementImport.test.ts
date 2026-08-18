@@ -97,7 +97,7 @@ describe('serverska istina završetka uvoza', () => {
   it('drugi uređaj osvježava red kad serverski status napusti pregled', () => {
     const realtime = read('src/hooks/useMailRealtime.ts');
     expect(realtime).toContain("prev?.status === PENDING && row?.status !== PENDING");
-    expect(realtime).toContain('if (pendingTransition) onNewPending?.(id)');
+    expect(realtime).toContain('if (pendingTransition) onNewPendingRef.current?.(id)');
   });
 });
 
