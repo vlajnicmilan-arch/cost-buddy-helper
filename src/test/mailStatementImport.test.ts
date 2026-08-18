@@ -65,7 +65,9 @@ describe('most prema postojećem uvozu izvoda', () => {
 });
 
 describe('serverska istina završetka uvoza', () => {
-  const migration = read('supabase/migrations/20260818035055_e0e614a0-3fb5-4d14-8b5a-1b43f9f1326f.sql');
+  const baseMigration = read('supabase/migrations/20260818035055_e0e614a0-3fb5-4d14-8b5a-1b43f9f1326f.sql');
+  const linkMigration = read('supabase/migrations/20260818035502_cadc3179-0185-4c32-9c62-5c24b96ae8ab.sql');
+  const migration = `${baseMigration}\n${linkMigration}`;
 
   it('povezuje samo istog vlasnika i isti SHA u aktivnim stanjima', () => {
     expect(migration).toContain('item.owner_user_id = NEW.user_id');
@@ -77,6 +79,15 @@ describe('serverska istina završetka uvoza', () => {
     expect(migration).toContain('NEW.source_document_item_id IS NOT NULL');
     expect(migration).toContain('item.id = NEW.source_document_item_id');
     expect(migration).toContain('AFTER INSERT ON public.imported_statements');
+  });
+
+  it('trajno veže stavku uz konkretan uvoz prije promjene statusa', () => {
+    const insertLink = linkMigration.indexOf('INSERT INTO public.document_links');
+    const updateStatus = linkMigration.indexOf('UPDATE public.document_ingest_items');
+    expect(insertLink).toBeGreaterThan(-1);
+    expect(linkMigration).toContain("SELECT id, 'imported_statement', NEW.id");
+    expect(linkMigration).toContain('ON CONFLICT (item_id) DO NOTHING');
+    expect(updateStatus).toBeGreaterThan(insertLink);
   });
 
   it('okidačka funkcija nije dostupna klijentskim ulogama', () => {
