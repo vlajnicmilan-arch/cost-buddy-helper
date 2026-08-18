@@ -58,7 +58,8 @@ describe('most prema postojećem uvozu izvoda', () => {
     const review = read('src/pages/ImportReview.tsx');
     expect(bridge).toContain('sourceDocumentItemId: params.mailItemId ?? null');
     expect(context).toContain('sourceDocumentItemId?: string | null');
-    expect(host).toContain('sourceDocumentItemId: pdfImport._pendingPdfRef.current?.sourceDocumentItemId ?? null');
+    expect(host).toContain('sourceDocumentItemIdRef.current = pendingPdf.sourceDocumentItemId ?? null');
+    expect(host).toContain('sourceDocumentItemId: sourceDocumentItemIdRef.current');
     expect(review).toContain('sourceDocumentItemId: payload.statement.sourceDocumentItemId ?? null');
   });
 });
