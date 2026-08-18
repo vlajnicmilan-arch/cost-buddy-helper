@@ -51,6 +51,54 @@ describe('most prema postojećem uvozu izvoda', () => {
   it('uspješan uvoz označava stavku kao povezan', () => {
     expect(bridge).toContain("status: 'povezan'");
   });
+
+  it('nosi izvornu mail-stavku do serverskog zapisa kao SHA fallback', () => {
+    const context = read('src/contexts/PdfImportContext.tsx');
+    const host = read('src/components/pdf-import/GlobalPDFImportHost.tsx');
+    const review = read('src/pages/ImportReview.tsx');
+    expect(bridge).toContain('sourceDocumentItemId: params.mailItemId ?? null');
+    expect(context).toContain('sourceDocumentItemId?: string | null');
+    expect(host).toContain('sourceDocumentItemIdRef.current = pendingPdf.sourceDocumentItemId ?? null');
+    expect(host).toContain('sourceDocumentItemId: sourceDocumentItemIdRef.current');
+    expect(review).toContain('sourceDocumentItemId: payload.statement.sourceDocumentItemId ?? null');
+  });
+});
+
+describe('serverska istina završetka uvoza', () => {
+  const baseMigration = read('supabase/migrations/20260818035055_e0e614a0-3fb5-4d14-8b5a-1b43f9f1326f.sql');
+  const linkMigration = read('supabase/migrations/20260818035502_cadc3179-0185-4c32-9c62-5c24b96ae8ab.sql');
+  const migration = `${baseMigration}\n${linkMigration}`;
+
+  it('povezuje samo istog vlasnika i isti SHA u aktivnim stanjima', () => {
+    expect(migration).toContain('item.owner_user_id = NEW.user_id');
+    expect(migration).toContain('attachment.content_sha256 = NEW.file_hash');
+    expect(migration).toContain("item.status IN ('na_pregledu', 'ceka_prvi_mail')");
+  });
+
+  it('ima idempotentni fallback na izričitu izvornu stavku', () => {
+    expect(migration).toContain('NEW.source_document_item_id IS NOT NULL');
+    expect(migration).toContain('item.id = NEW.source_document_item_id');
+    expect(migration).toContain('AFTER INSERT ON public.imported_statements');
+  });
+
+  it('trajno veže stavku uz konkretan uvoz prije promjene statusa', () => {
+    const insertLink = linkMigration.indexOf('INSERT INTO public.document_links');
+    const updateStatus = linkMigration.indexOf('UPDATE public.document_ingest_items');
+    expect(insertLink).toBeGreaterThan(-1);
+    expect(linkMigration).toContain("SELECT id, 'imported_statement', NEW.id");
+    expect(linkMigration).toContain('ON CONFLICT (item_id) DO NOTHING');
+    expect(updateStatus).toBeGreaterThan(insertLink);
+  });
+
+  it('okidačka funkcija nije dostupna klijentskim ulogama', () => {
+    expect(migration).toContain('FROM PUBLIC, anon, authenticated');
+  });
+
+  it('drugi uređaj osvježava red kad serverski status napusti pregled', () => {
+    const realtime = read('src/hooks/useMailRealtime.ts');
+    expect(realtime).toContain("prev?.status === PENDING && row?.status !== PENDING");
+    expect(realtime).toContain('if (pendingTransition) onNewPending?.(id)');
+  });
 });
 
 describe('pamćenje pripadnosti izvoru', () => {

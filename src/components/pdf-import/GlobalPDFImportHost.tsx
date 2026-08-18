@@ -80,6 +80,7 @@ export const GlobalPDFImportHost = () => {
   const [statementDup, setStatementDup] = useState<StatementDuplicate | null>(null);
   const fileHashRef = useRef<string | null>(null);
   const contentHashRef = useRef<string | null>(null);
+  const sourceDocumentItemIdRef = useRef<string | null>(null);
   const fileMetaRef = useRef<{ name: string; size: number; type: string } | null>(null);
 
   const storageKey = useMemo(() => (
@@ -101,6 +102,7 @@ export const GlobalPDFImportHost = () => {
     setStatementDup(null);
     fileHashRef.current = null;
     contentHashRef.current = null;
+    sourceDocumentItemIdRef.current = null;
     fileMetaRef.current = null;
     pdfImport._setIdle();
   }, [clearStoredJob, pdfImport._setIdle]);
@@ -193,6 +195,7 @@ export const GlobalPDFImportHost = () => {
     const run = async () => {
       try {
         if (pendingPdf) {
+          sourceDocumentItemIdRef.current = pendingPdf.sourceDocumentItemId ?? null;
           fileMetaRef.current = {
             name: pendingPdf.file.name,
             size: pendingPdf.file.size,
@@ -396,6 +399,7 @@ export const GlobalPDFImportHost = () => {
       paymentSourceId: pdfImport.source.id,
       fileHash: fileHashRef.current,
       contentHash,
+      sourceDocumentItemId: sourceDocumentItemIdRef.current,
       fileName: fileMetaRef.current?.name ?? null,
       fileSize: fileMetaRef.current?.size ?? null,
       mimeType: fileMetaRef.current?.type ?? null,
@@ -768,6 +772,7 @@ export const GlobalPDFImportHost = () => {
         statement: {
           fileHash: fileHashRef.current,
           contentHash: statementContentHash,
+          sourceDocumentItemId: sourceDocumentItemIdRef.current,
           fileName: fileMetaRef.current?.name ?? null,
           fileSize: fileMetaRef.current?.size ?? null,
           mimeType: fileMetaRef.current?.type ?? null,

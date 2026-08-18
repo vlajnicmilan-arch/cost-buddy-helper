@@ -34,6 +34,8 @@ interface PdfImportHandlers {
 interface StartPdfImportOptions {
   file: File;
   source: CustomPaymentSource;
+  /** Mail stavka iz koje je datoteka otvorena; serverski fallback kad SHA nije dostupan. */
+  sourceDocumentItemId?: string | null;
   releaseGuard?: () => void;
   forceImport?: boolean;
   /** Završni saldo ispisan na izvodu (mail ekstrakcija) — bankovna istina bez Open Bankinga. */
