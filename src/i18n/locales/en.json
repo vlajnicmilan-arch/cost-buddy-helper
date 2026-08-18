@@ -2894,10 +2894,12 @@
       "title": "Summary: „{{project}}\"",
       "body": {
         "empty": "No new events.",
-        "single_no_samples": "1 new change in the project",
+        "single_no_samples": "{{count}} new change in the project",
         "many_no_samples": "{{count}} new changes in the project",
-        "single_with_samples": "1 new change in the project: {{samples}}",
-        "many_with_samples": "{{count}} new changes in the project: {{samples}}"
+        "single_with_samples": "{{count}} new change in the project: {{samples}}",
+        "many_with_samples": "{{count}} new changes in the project: {{samples}}",
+        "few_no_samples": "{{count}} new changes in the project",
+        "few_with_samples": "{{count}} new changes in the project: {{samples}}"
       }
     },
     "invitation_accepted": {
@@ -2988,6 +2990,22 @@
         "title": "Invoice due today",
         "message": "{{supplier}} — {{amount}}, due {{date}}"
       }
+    },
+    "digest_kind": {
+      "work_log_added": "new work entry",
+      "work_log_updated": "work entry updated",
+      "work_log_deleted": "work entry deleted",
+      "milestone_added": "new phase",
+      "milestone_status_changed": "phase status changed",
+      "milestone_deleted": "phase deleted",
+      "project_transaction_created": "new transaction",
+      "project_transaction_updated": "transaction updated",
+      "pending_transaction_created": "transaction awaiting approval",
+      "project_note_added": "new note",
+      "milestone_budget_warning": "phase budget warning",
+      "milestone_budget_over": "phase budget exceeded",
+      "test_event": "test event",
+      "unknown": "change"
     }
   },
   "installments": {

@@ -135,13 +135,45 @@ export default {
   "notifications.participant_digest.body.empty":
     "Keine neuen Ereignisse.",
   "notifications.participant_digest.body.single_no_samples":
-    "1 neue Änderung im Projekt",
+    "{{count}} neue Änderung im Projekt",
   "notifications.participant_digest.body.many_no_samples":
     "{{count}} neue Änderungen im Projekt",
   "notifications.participant_digest.body.single_with_samples":
-    "1 neue Änderung im Projekt: {{samples}}",
+    "{{count}} neue Änderung im Projekt: {{samples}}",
+  "notifications.participant_digest.body.few_no_samples":
+    "{{count}} neue Änderungen im Projekt",
+  "notifications.participant_digest.body.few_with_samples":
+    "{{count}} neue Änderungen im Projekt: {{samples}}",
   "notifications.participant_digest.body.many_with_samples":
     "{{count}} neue Änderungen im Projekt: {{samples}}",
+  "notifications.digest_kind.work_log_added":
+    "neuer Arbeitseintrag",
+  "notifications.digest_kind.work_log_updated":
+    "Arbeitseintrag geändert",
+  "notifications.digest_kind.work_log_deleted":
+    "Arbeitseintrag gelöscht",
+  "notifications.digest_kind.milestone_added":
+    "neue Phase",
+  "notifications.digest_kind.milestone_status_changed":
+    "Phasenstatus geändert",
+  "notifications.digest_kind.milestone_deleted":
+    "Phase gelöscht",
+  "notifications.digest_kind.project_transaction_created":
+    "neue Transaktion",
+  "notifications.digest_kind.project_transaction_updated":
+    "Transaktion geändert",
+  "notifications.digest_kind.pending_transaction_created":
+    "Transaktion zur Freigabe",
+  "notifications.digest_kind.project_note_added":
+    "neue Notiz",
+  "notifications.digest_kind.milestone_budget_warning":
+    "Warnung zum Phasenbudget",
+  "notifications.digest_kind.milestone_budget_over":
+    "Phasenbudget überschritten",
+  "notifications.digest_kind.test_event":
+    "Testereignis",
+  "notifications.digest_kind.unknown":
+    "Änderung",
   "notifications.invitation_accepted.title":
     "Einladung angenommen",
   "notifications.invitation_accepted.message.project":

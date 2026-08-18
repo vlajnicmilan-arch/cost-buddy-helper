@@ -135,13 +135,45 @@ export default {
   "notifications.participant_digest.body.empty":
     "No new events.",
   "notifications.participant_digest.body.single_no_samples":
-    "1 new change in the project",
+    "{{count}} new change in the project",
   "notifications.participant_digest.body.many_no_samples":
     "{{count}} new changes in the project",
   "notifications.participant_digest.body.single_with_samples":
-    "1 new change in the project: {{samples}}",
+    "{{count}} new change in the project: {{samples}}",
+  "notifications.participant_digest.body.few_no_samples":
+    "{{count}} new changes in the project",
+  "notifications.participant_digest.body.few_with_samples":
+    "{{count}} new changes in the project: {{samples}}",
   "notifications.participant_digest.body.many_with_samples":
     "{{count}} new changes in the project: {{samples}}",
+  "notifications.digest_kind.work_log_added":
+    "new work entry",
+  "notifications.digest_kind.work_log_updated":
+    "work entry updated",
+  "notifications.digest_kind.work_log_deleted":
+    "work entry deleted",
+  "notifications.digest_kind.milestone_added":
+    "new phase",
+  "notifications.digest_kind.milestone_status_changed":
+    "phase status changed",
+  "notifications.digest_kind.milestone_deleted":
+    "phase deleted",
+  "notifications.digest_kind.project_transaction_created":
+    "new transaction",
+  "notifications.digest_kind.project_transaction_updated":
+    "transaction updated",
+  "notifications.digest_kind.pending_transaction_created":
+    "transaction awaiting approval",
+  "notifications.digest_kind.project_note_added":
+    "new note",
+  "notifications.digest_kind.milestone_budget_warning":
+    "phase budget warning",
+  "notifications.digest_kind.milestone_budget_over":
+    "phase budget exceeded",
+  "notifications.digest_kind.test_event":
+    "test event",
+  "notifications.digest_kind.unknown":
+    "change",
   "notifications.invitation_accepted.title":
     "Invitation accepted",
   "notifications.invitation_accepted.message.project":
