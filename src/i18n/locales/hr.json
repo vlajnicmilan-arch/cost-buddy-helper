@@ -2900,10 +2900,12 @@
       "title": "Sažetak: „{{project}}\"",
       "body": {
         "empty": "Nema novih događaja.",
-        "single_no_samples": "1 nova promjena u projektu",
+        "single_no_samples": "{{count}} nova promjena u projektu",
         "many_no_samples": "{{count}} novih promjena u projektu",
-        "single_with_samples": "1 nova promjena u projektu: {{samples}}",
-        "many_with_samples": "{{count}} novih promjena u projektu: {{samples}}"
+        "single_with_samples": "{{count}} nova promjena u projektu: {{samples}}",
+        "many_with_samples": "{{count}} novih promjena u projektu: {{samples}}",
+        "few_no_samples": "{{count}} nove promjene u projektu",
+        "few_with_samples": "{{count}} nove promjene u projektu: {{samples}}"
       }
     },
     "invitation_accepted": {
@@ -2994,6 +2996,22 @@
         "title": "Račun dospijeva danas",
         "message": "{{supplier}} — {{amount}}, dospijeće {{date}}"
       }
+    },
+    "digest_kind": {
+      "work_log_added": "novi radni unos",
+      "work_log_updated": "izmijenjen radni unos",
+      "work_log_deleted": "obrisan radni unos",
+      "milestone_added": "nova faza",
+      "milestone_status_changed": "promjena statusa faze",
+      "milestone_deleted": "obrisana faza",
+      "project_transaction_created": "nova transakcija",
+      "project_transaction_updated": "izmijenjena transakcija",
+      "pending_transaction_created": "transakcija na odobrenje",
+      "project_note_added": "nova bilješka",
+      "milestone_budget_warning": "upozorenje o budžetu faze",
+      "milestone_budget_over": "prekoračen budžet faze",
+      "test_event": "probni događaj",
+      "unknown": "promjena"
     }
   },
   "installments": {

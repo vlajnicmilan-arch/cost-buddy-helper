@@ -2894,10 +2894,12 @@
       "title": "Zusammenfassung: „{{project}}\"",
       "body": {
         "empty": "Keine neuen Ereignisse.",
-        "single_no_samples": "1 neue Änderung im Projekt",
+        "single_no_samples": "{{count}} neue Änderung im Projekt",
         "many_no_samples": "{{count}} neue Änderungen im Projekt",
-        "single_with_samples": "1 neue Änderung im Projekt: {{samples}}",
-        "many_with_samples": "{{count}} neue Änderungen im Projekt: {{samples}}"
+        "single_with_samples": "{{count}} neue Änderung im Projekt: {{samples}}",
+        "many_with_samples": "{{count}} neue Änderungen im Projekt: {{samples}}",
+        "few_no_samples": "{{count}} neue Änderungen im Projekt",
+        "few_with_samples": "{{count}} neue Änderungen im Projekt: {{samples}}"
       }
     },
     "invitation_accepted": {
@@ -2988,6 +2990,22 @@
         "title": "Rechnung heute fällig",
         "message": "{{supplier}} — {{amount}}, fällig am {{date}}"
       }
+    },
+    "digest_kind": {
+      "work_log_added": "neuer Arbeitseintrag",
+      "work_log_updated": "Arbeitseintrag geändert",
+      "work_log_deleted": "Arbeitseintrag gelöscht",
+      "milestone_added": "neue Phase",
+      "milestone_status_changed": "Phasenstatus geändert",
+      "milestone_deleted": "Phase gelöscht",
+      "project_transaction_created": "neue Transaktion",
+      "project_transaction_updated": "Transaktion geändert",
+      "pending_transaction_created": "Transaktion zur Freigabe",
+      "project_note_added": "neue Notiz",
+      "milestone_budget_warning": "Warnung zum Phasenbudget",
+      "milestone_budget_over": "Phasenbudget überschritten",
+      "test_event": "Testereignis",
+      "unknown": "Änderung"
     }
   },
   "installments": {

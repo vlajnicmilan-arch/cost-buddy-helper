@@ -135,13 +135,45 @@ export default {
   "notifications.participant_digest.body.empty":
     "Nema novih događaja.",
   "notifications.participant_digest.body.single_no_samples":
-    "1 nova promjena u projektu",
+    "{{count}} nova promjena u projektu",
   "notifications.participant_digest.body.many_no_samples":
     "{{count}} novih promjena u projektu",
   "notifications.participant_digest.body.single_with_samples":
-    "1 nova promjena u projektu: {{samples}}",
+    "{{count}} nova promjena u projektu: {{samples}}",
+  "notifications.participant_digest.body.few_no_samples":
+    "{{count}} nove promjene u projektu",
+  "notifications.participant_digest.body.few_with_samples":
+    "{{count}} nove promjene u projektu: {{samples}}",
   "notifications.participant_digest.body.many_with_samples":
     "{{count}} novih promjena u projektu: {{samples}}",
+  "notifications.digest_kind.work_log_added":
+    "novi radni unos",
+  "notifications.digest_kind.work_log_updated":
+    "izmijenjen radni unos",
+  "notifications.digest_kind.work_log_deleted":
+    "obrisan radni unos",
+  "notifications.digest_kind.milestone_added":
+    "nova faza",
+  "notifications.digest_kind.milestone_status_changed":
+    "promjena statusa faze",
+  "notifications.digest_kind.milestone_deleted":
+    "obrisana faza",
+  "notifications.digest_kind.project_transaction_created":
+    "nova transakcija",
+  "notifications.digest_kind.project_transaction_updated":
+    "izmijenjena transakcija",
+  "notifications.digest_kind.pending_transaction_created":
+    "transakcija na odobrenje",
+  "notifications.digest_kind.project_note_added":
+    "nova bilješka",
+  "notifications.digest_kind.milestone_budget_warning":
+    "upozorenje o budžetu faze",
+  "notifications.digest_kind.milestone_budget_over":
+    "prekoračen budžet faze",
+  "notifications.digest_kind.test_event":
+    "probni događaj",
+  "notifications.digest_kind.unknown":
+    "promjena",
   "notifications.invitation_accepted.title":
     "Pozivnica prihvaćena",
   "notifications.invitation_accepted.message.project":
