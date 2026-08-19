@@ -11,6 +11,14 @@ import {
   splitStatementLines,
   type RawLineSource,
 } from "../_shared/statement/rawLineMatch.ts";
+import {
+  blockYieldFailure,
+  buildBlockContext,
+  buildBlockPayload,
+  segmentStatementLines,
+  shouldSegment,
+  type StatementBlock,
+} from "../_shared/statement/segmentText.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -112,6 +120,12 @@ serve(async (req) => {
 
     const body = await req.json();
     const { pdfBase64, bankType, isImage, htmlContent } = body;
+    /**
+     * NAPREDAK: unutarnji (async) poziv nosi id posla kako bi segmentirano
+     * čitanje moglo javljati „obrađujem dio n/m" kroz postojeći poll.
+     */
+    const progressJobId: string | null =
+      isInternalSkipQuota(req) && typeof body.progressJobId === 'string' ? body.progressJobId : null;
 
     const isHTML = !!htmlContent;
 
@@ -143,7 +157,7 @@ serve(async (req) => {
 
       const processJob = async () => {
         try {
-          const directBody = { ...body, async: false };
+          const directBody = { ...body, async: false, progressJobId: job.id };
           const resultResponse = await fetch(`${supabaseUrl}/functions/v1/parse-pdf-statement`, {
             method: 'POST',
             headers: {
@@ -205,6 +219,8 @@ serve(async (req) => {
      */
     let sourceLines: string[] = [];
     let rawLineSource: RawLineSource = 'ai';
+    /** Tekstualni sloj PDF-a — ulaz u segmentirano čitanje velikih izvoda. */
+    let pdfPlainText = '';
     if (isHTML) {
       const extracted = extractLargestTableRows(htmlContent);
       if (extracted && extracted.rows.length > 0) {
@@ -227,6 +243,7 @@ serve(async (req) => {
         const textLayer = await extractPdfText(bytes);
         if (!textLayer.isScan) {
           sourceLines = splitStatementLines(textLayer.text);
+          pdfPlainText = textLayer.text;
           rawLineSource = 'text';
         }
         console.log(`raw_line izvor: ${rawLineSource}, redaka teksta: ${sourceLines.length}`);
