@@ -601,6 +601,16 @@
   display: none;
 }
 
+/* Vodoravne kartične liste (HorizontalCardRail) — sistemski scrollbar nestaje
+   samo ovdje, vertikalni scroll stranice je netaknut. */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 /* iOS dynamic viewport height fallback */
 @supports not (min-height: 100dvh) {
   .min-h-dvh {
