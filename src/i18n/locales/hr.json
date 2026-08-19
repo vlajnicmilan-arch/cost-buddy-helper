@@ -2986,6 +2986,11 @@
         "title": "Pošta na staru adresu",
         "body": "Pošiljatelj {{sender}} još šalje na staru adresu {{stale_address}}. Preusmjeri slanje na {{current_address}}.",
         "bodyNoActive": "Pošiljatelj {{sender}} još šalje na staru adresu {{stale_address}}. Otvori Dokumente i uključi novu adresu."
+      },
+      "duplicate": {
+        "title": "Primljen duplikat",
+        "body": "„{{subject}}“ je već u knjigama i dokumentima — nije uneseno dvaput.",
+        "bodyNoSubject": "Ta pošta je već u knjigama i dokumentima — nije uneseno dvaput."
       }
     },
     "invoice_due": {
