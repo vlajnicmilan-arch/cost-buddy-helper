@@ -5,6 +5,7 @@ import { checkAiQuota, consumeCoreScanQuota, refundCoreScanQuota, isInternalSkip
 import { callGemini, isGeminiTimeoutError } from "../_shared/geminiClient.ts";
 import { attemptJsonSalvage, stripFences, robustParseJson, logParseFailure } from "../_shared/jsonSalvage.ts";
 import { extractPdfText } from "../_shared/mailImport/pdfText.ts";
+import { extractStatementBalance } from "../_shared/mailImport/statementSignals.ts";
 import {
   capRawLine,
   matchRawLines,
@@ -951,6 +952,11 @@ DOSLOVAN REDAK (raw_line):
         holder_name: holderName,
         cards_detected: Array.from(cardGroups.keys()),
         statement_due_date: statementDueDate,
+        // Saldo ispisan na izvodu — ponuda „Poravnaj sa stanjem s izvoda"
+        // vrijedi jednako na disk-putu kao i na mail-putu.
+        closing_balance: statementBalance.closingBalance,
+        closing_currency: statementBalance.currency,
+        statement_period_to: statementBalance.periodTo,
         summary: {
           total_income: totalIncome,
           total_expenses: totalExpenses,
