@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { useMilestoneRevisions } from '@/hooks/useMilestoneRevisions';
 import { MilestoneRevisionTrendBadge } from './MilestoneRevisionTrendBadge';
+import { HorizontalCardRail } from '@/components/ui/horizontal-card-rail';
 
 interface MilestoneKanbanProps {
   milestones: ProjectMilestone[];
@@ -239,7 +240,7 @@ export const MilestoneKanban = ({ milestones, isManager, canDelete, projectId, o
             </div>
           );
         })}
-      </div>
-    </div>
+      </>
+    </HorizontalCardRail>
   );
 };
