@@ -181,6 +181,9 @@ function legacyResolve(type: string | null, d: Record<string, unknown>): {
       };
     // Mail uvoz: dom dokumenata je ekran `/dokumenti`, tab „Na pregled".
     case 'mail_document_pending':
+    // Tiha obavijest o duplikatu vodi na isti dom — stavka je odbačena,
+    // ali korisnik želi vidjeti da je pošta stigla.
+    case 'mail_document_duplicate':
       return {
         route: '/dokumenti',
         fallback_route: '/dokumenti',
