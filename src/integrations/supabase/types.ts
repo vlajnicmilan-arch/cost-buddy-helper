@@ -4350,6 +4350,7 @@ export type Database = {
           created_at: string
           error: string | null
           id: string
+          progress: string | null
           result: Json | null
           status: string
           updated_at: string
@@ -4359,6 +4360,7 @@ export type Database = {
           created_at?: string
           error?: string | null
           id?: string
+          progress?: string | null
           result?: Json | null
           status?: string
           updated_at?: string
@@ -4368,6 +4370,7 @@ export type Database = {
           created_at?: string
           error?: string | null
           id?: string
+          progress?: string | null
           result?: Json | null
           status?: string
           updated_at?: string
