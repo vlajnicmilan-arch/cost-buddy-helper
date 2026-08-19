@@ -61,8 +61,11 @@ export const MilestoneKanban = ({ milestones, isManager, canDelete, projectId, o
   };
 
   return (
-    <div className="overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide">
-      <div className="flex gap-3 min-w-max">
+    <HorizontalCardRail
+      scrollClassName="-mx-4 px-4 pr-12 pb-2"
+      contentClassName="gap-3 min-w-max"
+    >
+      <>
         {COLUMNS.map((col) => {
           const items = milestones.filter(m => m.status === col.id);
           return (

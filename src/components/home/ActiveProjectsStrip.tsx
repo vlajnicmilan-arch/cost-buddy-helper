@@ -19,6 +19,7 @@ import { getProjectStatusLine, type StatusLineTone } from '@/lib/projectStatusLi
 import { cn } from '@/lib/utils';
 import { TrialFeatureChip } from '@/components/TrialFeatureChip';
 import { useModuleGate } from '@/hooks/useModuleGate';
+import { HorizontalCardRail } from '@/components/ui/horizontal-card-rail';
 
 const STATUS_ICON_MAP = {
   Sparkles,
@@ -213,7 +214,11 @@ export const ActiveProjectsStrip = React.memo(({
         </button>
       </div>
 
-      <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory -mx-3 px-3 sm:-mx-4 sm:px-4 scrollbar-none">
+      <HorizontalCardRail
+        scrollClassName="pb-2 -mx-3 px-3 pr-10 sm:-mx-4 sm:px-4 sm:pr-12"
+        contentClassName="gap-3"
+        ariaLabel={t('nav.activeProjects', 'Aktivni projekti')}
+      >
         {activeProjects.map((data, idx) => {
           const { project, spent, baseline, remainderRatio, hasBaseline, level } = data;
           const color = project.color || DEFAULT_PROJECT_COLORS[idx % DEFAULT_PROJECT_COLORS.length];
@@ -448,7 +453,7 @@ export const ActiveProjectsStrip = React.memo(({
         )}
 
 
-      </div>
+      </HorizontalCardRail>
     </motion.div>
   );
 });
