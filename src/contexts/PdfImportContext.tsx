@@ -144,7 +144,17 @@ export const PdfImportProvider = ({ children }: { children: ReactNode }) => {
     setResult(nextResult);
     setJobId(nextJobId);
     setPhase('preview');
+    // SALDO PRIPADA IZVODU, NE PUTU: mail-put donese saldo već u
+    // `startPdfImport`, disk-put ga dobije tek iz čitanja (parse-pdf-statement).
+    // Mig s maila ima prednost — ovdje se puni SAMO kad ga još nema.
+    setStatementBalanceHint((current) => {
+      if (current && typeof current.closingBalance === 'number') return current;
+      const closing = nextResult.closing_balance;
+      if (typeof closing !== 'number' || !Number.isFinite(closing)) return current;
+      return { closingBalance: closing, statementDate: nextResult.statement_period_to ?? null };
+    });
   }, []);
+
 
   const _setDuplicates = useCallback(() => {
     setPhase('duplicates');
