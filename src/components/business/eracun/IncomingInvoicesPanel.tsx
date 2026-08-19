@@ -558,7 +558,12 @@ export const IncomingInvoicesPanel = ({ initialFilter = 'unpaid', initialHighlig
         invoice={linkTarget}
         open={!!linkTarget}
         onOpenChange={(open) => { if (!open) { setLinkTarget(null); setLinkPrecheck(false); } }}
-        suggestions={linkTarget ? expenseMatch.suggestionsForInvoice(linkTarget.id) : []}
+        suggestions={linkOffer.rows.map((r) => ({
+          transaction: r.transaction,
+          amount: r.amount,
+          confidence: r.confidence,
+        }))}
+        highlight={linkOffer.highlight}
         links={linkTarget ? expenseMatch.linksForInvoice(linkTarget.id) : []}
         loading={expenseMatch.loading}
         search={expenseMatch.searchExpenses}

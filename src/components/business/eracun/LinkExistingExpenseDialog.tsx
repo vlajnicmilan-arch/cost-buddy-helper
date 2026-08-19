@@ -66,6 +66,8 @@ export const LinkExistingExpenseDialog = ({
     : 0;
   const isPaid = !!invoice?.paid_at;
 
+  const fmtDate = (d: string) => format(new Date(d), 'd. MMM yyyy', { locale: hr });
+
   const searchResults = useMemo(() => (query.trim() ? search(query) : []), [query, search]);
 
   const confidenceLabel = (c: MatchConfidence) => {
@@ -196,6 +198,30 @@ export const LinkExistingExpenseDialog = ({
 
         {!isPaid && (
           <>
+            {/* JEDNOZNAČAN PAR — jedan dodir. Nikad automatski bez dodira. */}
+            {highlight && !loading && (
+              <div className="p-3 rounded-lg border border-primary/40 bg-primary/5 space-y-2">
+                <p className="text-xs font-medium">
+                  {t('eracun.linkExpense.suggestedTitle', 'Ovo izgleda kao plaćanje ovog računa')}
+                </p>
+                <p className="text-sm">
+                  {formatAmount(highlight.transaction.amount)} · {fmtDate(highlight.transaction.date)}
+                </p>
+                <p className="text-[11px] text-muted-foreground break-words">
+                  {highlight.transaction.description || highlight.transaction.merchantName || '—'}
+                </p>
+                <Button
+                  size="sm"
+                  disabled={busy || isPaid}
+                  className="min-h-[36px]"
+                  onClick={() => doLink(highlight.transaction.id, highlight.amount)}
+                >
+                  <Link2 className="w-3.5 h-3.5 mr-1" />
+                  {t('eracun.linkExpense.link', 'Poveži')}
+                </Button>
+              </div>
+            )}
+
             <div className="space-y-1">
               <p className="text-xs font-medium">{t('eracun.linkExpense.suggestionsTitle', 'Prijedlozi')}</p>
               {loading ? (
@@ -209,7 +235,7 @@ export const LinkExistingExpenseDialog = ({
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {suggestions.map((s) => expenseRow(s.transaction, s.amount, s.candidate.confidence))}
+                  {suggestions.map((s) => expenseRow(s.transaction, s.amount, s.confidence))}
                 </div>
               )}
             </div>
