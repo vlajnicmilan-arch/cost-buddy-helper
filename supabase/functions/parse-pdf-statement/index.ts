@@ -5,6 +5,7 @@ import { checkAiQuota, consumeCoreScanQuota, refundCoreScanQuota, isInternalSkip
 import { callGemini, isGeminiTimeoutError } from "../_shared/geminiClient.ts";
 import { attemptJsonSalvage, stripFences, robustParseJson, logParseFailure } from "../_shared/jsonSalvage.ts";
 import { extractPdfText } from "../_shared/mailImport/pdfText.ts";
+import { extractStatementBalance } from "../_shared/mailImport/statementSignals.ts";
 import {
   capRawLine,
   matchRawLines,
@@ -251,6 +252,20 @@ serve(async (req) => {
         console.warn('raw_line: tekstualni sloj nije pročitan', (e as Error)?.message);
       }
     }
+
+    // SALDO S PAPIRA (disk-put) — isti deterministički čitač zaglavlja koji
+    // presuđuje na mail-putu. Čita se nad CIJELIM tekstom, prije segmentacije;
+    // rezultat putuje ISTIM kanalom (statementClosingBalance) do izvršitelja.
+    // Bez prepoznatog salda ostaje null — nagađanja nema.
+    const statementBalance = pdfPlainText
+      ? extractStatementBalance(pdfPlainText)
+      : { closingBalance: null, currency: null, periodTo: null };
+    if (statementBalance.closingBalance !== null) {
+      console.log(
+        `saldo s izvoda: ${statementBalance.closingBalance} ${statementBalance.currency ?? ''} (razdoblje do ${statementBalance.periodTo ?? '—'})`,
+      );
+    }
+
 
 
     // PRIKVAČEN MODEL (2026-08-11): PDF/foto izvod ide na `google/gemini-3.5-flash`
@@ -937,6 +952,11 @@ DOSLOVAN REDAK (raw_line):
         holder_name: holderName,
         cards_detected: Array.from(cardGroups.keys()),
         statement_due_date: statementDueDate,
+        // Saldo ispisan na izvodu — ponuda „Poravnaj sa stanjem s izvoda"
+        // vrijedi jednako na disk-putu kao i na mail-putu.
+        closing_balance: statementBalance.closingBalance,
+        closing_currency: statementBalance.currency,
+        statement_period_to: statementBalance.periodTo,
         summary: {
           total_income: totalIncome,
           total_expenses: totalExpenses,

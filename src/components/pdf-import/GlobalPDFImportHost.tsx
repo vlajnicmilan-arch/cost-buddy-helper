@@ -774,8 +774,17 @@ export const GlobalPDFImportHost = () => {
         availableTargets,
         // Saldo s papira (mail izvod) — jedina bankovna istina kad izvor nema
         // redak u bank_accounts. Executor ga koristi samo tada.
-        statementClosingBalance: pdfImport.statementBalanceHint?.closingBalance ?? null,
-        statementDate: pdfImport.statementBalanceHint?.statementDate ?? null,
+        // Mail-put donese saldo migom; disk-put ga nosi u rezultatu čitanja.
+        // Isti kanal, ista ponuda poravnanja — bez paralelnog mehanizma.
+        statementClosingBalance:
+          pdfImport.statementBalanceHint?.closingBalance
+          ?? (typeof pdfImport.result.closing_balance === 'number'
+            ? pdfImport.result.closing_balance
+            : null),
+        statementDate:
+          pdfImport.statementBalanceHint?.statementDate
+          ?? pdfImport.result.statement_period_to
+          ?? null,
         statement: {
           fileHash: fileHashRef.current,
           contentHash: statementContentHash,

@@ -47,6 +47,11 @@ export interface PDFParseResult {
   holder_name: string | null;
   cards_detected: string[];
   statement_due_date?: string | null;
+  /** Završni saldo ISPISAN NA IZVODU (deterministički čitač zaglavlja). */
+  closing_balance?: number | null;
+  closing_currency?: string | null;
+  /** Kraj razdoblja izvoda — datum na koji saldo vrijedi. */
+  statement_period_to?: string | null;
   summary: {
     total_income: number;
     total_expenses: number;
@@ -122,6 +127,13 @@ const toParseResult = (data: any): PDFParseResult => ({
   holder_name: data.holder_name || null,
   cards_detected: data.cards_detected || [],
   statement_due_date: data.statement_due_date ?? null,
+  closing_balance:
+    typeof data.closing_balance === 'number' && Number.isFinite(data.closing_balance)
+      ? data.closing_balance
+      : null,
+  closing_currency: typeof data.closing_currency === 'string' ? data.closing_currency : null,
+  statement_period_to:
+    typeof data.statement_period_to === 'string' ? data.statement_period_to : null,
   summary: data.summary
 });
 
