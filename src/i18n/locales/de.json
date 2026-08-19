@@ -123,7 +123,9 @@
     "clearSearch": "Suche löschen",
     "dismiss": "Ausblenden",
     "actions": "Aktionen",
-    "ok": "OK"
+    "ok": "OK",
+    "scrollLeft": "Nach links scrollen",
+    "scrollRight": "Nach rechts scrollen"
   },
   "aiInsights": {
     "title": "KI-Einblicke"

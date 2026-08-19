@@ -123,7 +123,9 @@
     "clearSearch": "Clear search",
     "dismiss": "Dismiss",
     "actions": "Actions",
-    "ok": "OK"
+    "ok": "OK",
+    "scrollLeft": "Scroll left",
+    "scrollRight": "Scroll right"
   },
   "aiInsights": {
     "title": "AI insights"
