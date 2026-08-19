@@ -126,12 +126,12 @@ describe('istaknuti prijedlog samo za jednoznačan par', () => {
     expect(offer.highlight?.transaction.id).toBe('b');
   });
 
-  it('dva kandidata istog iznosa → obična lista (živi Meta slučaj)', () => {
+  it('dva kandidata istog iznosa u prozoru → obična lista', () => {
     const offer = buildLinkOffer({
       invoice: invoice(),
       candidates: [
-        cand(tx('e1', 15, '2026-08-08', 'Facebook - Paypal *facebook')),
-        cand(tx('e2', 15, '2026-08-09', 'Facebook - Paypal *facebook')),
+        cand(tx('e1', 15, '2026-08-18', 'Facebook - Paypal *facebook')),
+        cand(tx('e2', 15, '2026-08-19', 'Facebook - Paypal *facebook')),
       ],
       otherInvoices: [],
     });
@@ -142,7 +142,7 @@ describe('istaknuti prijedlog samo za jednoznačan par', () => {
   it('ista transakcija je kandidat i drugom računu → bez prijedloga', () => {
     const offer = buildLinkOffer({
       invoice: invoice(),
-      candidates: [cand(tx('e1', 15, '2026-08-08', 'Facebook'))],
+      candidates: [cand(tx('e1', 15, '2026-08-18', 'Facebook'))],
       otherInvoices: [
         { id: 'inv-2', supplierName: 'Meta Platforms, Inc.', remaining: 15, issueDate: '2026-08-17' },
       ],
@@ -150,6 +150,7 @@ describe('istaknuti prijedlog samo za jednoznačan par', () => {
     expect(offer.rows).toHaveLength(1);
     expect(offer.highlight).toBeNull();
   });
+
 
   it('LIDL 1,29 — isti iznos, sudar naziva → nikad istaknuto', () => {
     const offer = buildLinkOffer({
