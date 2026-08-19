@@ -247,6 +247,45 @@ async function notifyPending(supabase: Supa, ownerId: string, itemId: string, pr
 }
 
 /**
+ * TIHA OBAVIJEST NA DUPLIKAT — informacija, ne uzbuna.
+ *
+ * Kvar iz života (19.8.2026): korisnik je drugi put ovoga tjedna proslijedio
+ * isti izvadak jer je mislio da pošta NIJE stigla. Lijevak je ispravno odbacio
+ * duplikat, ali je šutio. Od sada duplikat GOVORI: in-app zapis bez pusha, bez
+ * kartice na pregledu, dedup po PORUCI (isti mail ne javlja dvaput).
+ */
+async function notifyDuplicate(
+  supabase: Supa,
+  ownerId: string,
+  messageId: string,
+  subject: string | null,
+): Promise<void> {
+  const title = (subject ?? "").trim();
+  const { error } = await supabase.from("notifications").insert({
+    user_id: ownerId,
+    type: "mail_document_duplicate",
+    severity: "info",
+    title: "notifications.mail.duplicate.title",
+    message: title
+      ? "notifications.mail.duplicate.body"
+      : "notifications.mail.duplicate.bodyNoSubject",
+    data: {
+      message_id: messageId,
+      route: "/dokumenti",
+      fallback_route: "/dokumenti",
+      title_vars: {},
+      message_vars: title ? { subject: title } : {},
+    },
+    dedup_key: `mail_document_duplicate:${messageId}`,
+  });
+  // 23505 = isti mail je već javljen (dedup), nije kvar.
+  if (error && error.code !== "23505") {
+    console.error("[mail-process] obavijest o duplikatu nije upisana", error.message);
+  }
+  // NAMJERNO BEZ PUSHA: duplikat je informacija, ne poziv na radnju.
+}
+
+/**
  * ŽIVOTNI CIKLUS GMAIL POTVRDE — treće stanje.
  * Prvi stvarni mail s adrese koju je korisnik dao Googleu na prosljeđivanje
  * TRAJNO zatvara njegovu potvrdu. Podudaranje je po TOČNO izdvojenoj adresi
@@ -551,6 +590,10 @@ async function processMessage(
           ai_calls: 0,
         },
       });
+      // Odbačeno ostaje odbačeno — ali korisnik mora ZNATI da je pošta stigla.
+      if (notifyAllowed) {
+        await notifyDuplicate(supabase, ownerId, messageId, msg.subject as string | null);
+      }
       continue;
     }
 

@@ -2980,6 +2980,11 @@
         "title": "Post an deine alte Adresse",
         "body": "{{sender}} sendet weiterhin an die alte Adresse {{stale_address}}. Leite den Versand auf {{current_address}} um.",
         "bodyNoActive": "{{sender}} sendet weiterhin an die alte Adresse {{stale_address}}. Öffne Dokumente und aktiviere eine neue Adresse."
+      },
+      "duplicate": {
+        "title": "Duplikat empfangen",
+        "body": "„{{subject}}“ ist bereits in Büchern und Dokumenten — nichts wurde doppelt erfasst.",
+        "bodyNoSubject": "Diese E-Mail ist bereits in Büchern und Dokumenten — nichts wurde doppelt erfasst."
       }
     },
     "invoice_due": {
@@ -6356,7 +6361,8 @@
       "placeEdit": "Ortsbezeichnung bearbeiten",
       "placeSaved": "Ortsbezeichnung gespeichert",
       "placeFailed": "Speichern der Ortsbezeichnung fehlgeschlagen",
-      "emptyOverdue": "Keine überfälligen Rechnungen."
+      "emptyOverdue": "Keine überfälligen Rechnungen.",
+      "issued": "ausgestellt"
     },
     "match": {
       "open": "Zahlungen zuordnen",
@@ -6432,7 +6438,10 @@
       "confidenceCertain": "Sicher",
       "confidenceStrong": "Stark",
       "confidenceLikely": "Wahrscheinlich",
-      "confidencePossible": "Möglich"
+      "confidencePossible": "Möglich",
+      "issued": "ausgestellt",
+      "due": "fällig",
+      "suggestedTitle": "Das sieht nach der Zahlung dieser Rechnung aus"
     }
   },
   "mailImport": {

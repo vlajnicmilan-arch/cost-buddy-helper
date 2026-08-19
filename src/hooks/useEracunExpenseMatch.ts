@@ -24,6 +24,11 @@ import {
   type MatchTransaction,
   type PaymentSuggestion,
 } from '@/lib/eracun/matchPayments';
+import {
+  buildLinkOffer,
+  type LinkOffer,
+  type LinkOfferInvoice,
+} from '@/lib/eracun/linkCandidates';
 import type { IncomingInvoice } from '@/hooks/useIncomingInvoices';
 
 export interface LinkedExpenseRow {
@@ -179,6 +184,37 @@ export const useEracunExpenseMatch = (invoices: readonly IncomingInvoice[]) => {
     [suggestions, expenses],
   );
 
+  /**
+   * IZOŠTRENA PONUDA — isti kandidati, ali suženi datumskim prozorom oko
+   * `issue_date` računa i rangirani po podudaranju naziva. Jednoznačan par
+   * dobiva istaknut prijedlog; odluka je i dalje ISKLJUČIVO korisnikov dodir.
+   */
+  const offerForInvoice = useCallback(
+    (invoiceId: string): LinkOffer => {
+      const inv = invoices.find((i) => i.id === invoiceId);
+      if (!inv) return { rows: [], highlight: null };
+      const toOfferInvoice = (row: IncomingInvoice): LinkOfferInvoice => ({
+        id: row.id,
+        supplierName: row.counterparty_name ?? row.supplier_name ?? null,
+        remaining:
+          Math.round((Number(row.total_amount) - Number(row.settled_amount ?? 0)) * 100) / 100,
+        issueDate: row.issue_date ?? null,
+      });
+      return buildLinkOffer({
+        invoice: toOfferInvoice(inv),
+        candidates: suggestionsForInvoice(invoiceId).map((s) => ({
+          transaction: s.transaction,
+          amount: s.amount,
+          confidence: s.candidate.confidence,
+        })),
+        otherInvoices: invoices
+          .filter((i) => i.id !== invoiceId && !i.paid_at)
+          .map(toOfferInvoice),
+      });
+    },
+    [invoices, suggestionsForInvoice],
+  );
+
   const linksForInvoice = useCallback(
     (invoiceId: string) => links.filter((l) => l.invoiceId === invoiceId),
     [links],
@@ -225,6 +261,7 @@ export const useEracunExpenseMatch = (invoices: readonly IncomingInvoice[]) => {
     expenses,
     suggestions,
     suggestionsForInvoice,
+    offerForInvoice,
     linksForInvoice,
     linkExpense,
     unlinkExpense,

@@ -2986,6 +2986,11 @@
         "title": "Pošta na staru adresu",
         "body": "Pošiljatelj {{sender}} još šalje na staru adresu {{stale_address}}. Preusmjeri slanje na {{current_address}}.",
         "bodyNoActive": "Pošiljatelj {{sender}} još šalje na staru adresu {{stale_address}}. Otvori Dokumente i uključi novu adresu."
+      },
+      "duplicate": {
+        "title": "Primljen duplikat",
+        "body": "„{{subject}}“ je već u knjigama i dokumentima — nije uneseno dvaput.",
+        "bodyNoSubject": "Ta pošta je već u knjigama i dokumentima — nije uneseno dvaput."
       }
     },
     "invoice_due": {
@@ -6366,7 +6371,8 @@
       "placeEdit": "Uredi oznaku mjesta",
       "placeSaved": "Oznaka mjesta je spremljena",
       "placeFailed": "Spremanje oznake mjesta nije uspjelo",
-      "emptyOverdue": "Nema prekoračenih računa."
+      "emptyOverdue": "Nema prekoračenih računa.",
+      "issued": "izdan"
     },
     "match": {
       "open": "Poveži uplate",
@@ -6442,7 +6448,10 @@
       "confidenceCertain": "Siguran",
       "confidenceStrong": "Jak",
       "confidenceLikely": "Vjerojatan",
-      "confidencePossible": "Moguć"
+      "confidencePossible": "Moguć",
+      "issued": "izdan",
+      "due": "dospijeće",
+      "suggestedTitle": "Ovo izgleda kao plaćanje ovog računa"
     }
   },
   "mailImport": {

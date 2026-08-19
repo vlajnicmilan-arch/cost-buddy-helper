@@ -52,6 +52,8 @@ export const useActiveIssues = (enabled: boolean) => {
         // /dokumenti — ona JE poziv na radnju. Zvono/push pri dolasku ostaje,
         // ali stavka ne visi trajno u "Za paznju".
         .neq("type", "mail_document_pending")
+        // Duplikat je informacija, ne poziv na radnju — nikad u "Za paznju".
+        .neq("type", "mail_document_duplicate")
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;

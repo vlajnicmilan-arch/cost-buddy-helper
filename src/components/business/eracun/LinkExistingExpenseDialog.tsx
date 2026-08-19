@@ -25,12 +25,13 @@ import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { describeDbError } from '@/lib/eracun/dbError';
 import type { IncomingInvoice } from '@/hooks/useIncomingInvoices';
 import type { MatchConfidence, MatchTransaction } from '@/lib/eracun/matchPayments';
+import type { RankedLinkCandidate } from '@/lib/eracun/linkCandidates';
 import type { LinkedExpenseRow } from '@/hooks/useEracunExpenseMatch';
 
 export interface LinkSuggestionRow {
   readonly transaction: MatchTransaction;
-  readonly candidate: { readonly confidence: MatchConfidence; readonly reason: string };
   readonly amount: number;
+  readonly confidence: MatchConfidence;
 }
 
 interface Props {
@@ -38,6 +39,8 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   suggestions: readonly LinkSuggestionRow[];
+  /** Jednoznačan par — istaknut prijedlog s jednim dodirom (nikad automatski). */
+  highlight?: RankedLinkCandidate | null;
   links: readonly LinkedExpenseRow[];
   loading: boolean;
   search: (query: string) => MatchTransaction[];
@@ -50,7 +53,7 @@ interface Props {
 }
 
 export const LinkExistingExpenseDialog = ({
-  invoice, open, onOpenChange, suggestions, links, loading,
+  invoice, open, onOpenChange, suggestions, highlight, links, loading,
   search, onLink, onUnlink, onDone, precheck, onCreateAnyway,
 }: Props) => {
   const { t } = useTranslation();
@@ -62,6 +65,8 @@ export const LinkExistingExpenseDialog = ({
     ? Math.round((Number(invoice.total_amount) - Number(invoice.settled_amount ?? 0)) * 100) / 100
     : 0;
   const isPaid = !!invoice?.paid_at;
+
+  const fmtDate = (d: string) => format(new Date(d), 'd. MMM yyyy', { locale: hr });
 
   const searchResults = useMemo(() => (query.trim() ? search(query) : []), [query, search]);
 
@@ -151,6 +156,13 @@ export const LinkExistingExpenseDialog = ({
         {invoice && (
           <p className="text-xs text-muted-foreground">
             {invoice.invoice_number} · {formatAmount(Number(invoice.total_amount))}
+            {/* DATUMI NA EKRANU: bez njih se dva ista iznosa ne razlikuju. */}
+            {invoice.issue_date && (
+              <> · {t('eracun.linkExpense.issued', 'izdan')} {fmtDate(invoice.issue_date)}</>
+            )}
+            {invoice.due_date && (
+              <> · {t('eracun.linkExpense.due', 'dospijeće')} {fmtDate(invoice.due_date)}</>
+            )}
             {Number(invoice.settled_amount ?? 0) > 0 && (
               <> · {t('eracun.linkExpense.remaining', 'preostalo {{amount}}', { amount: formatAmount(remaining) })}</>
             )}
@@ -186,6 +198,30 @@ export const LinkExistingExpenseDialog = ({
 
         {!isPaid && (
           <>
+            {/* JEDNOZNAČAN PAR — jedan dodir. Nikad automatski bez dodira. */}
+            {highlight && !loading && (
+              <div className="p-3 rounded-lg border border-primary/40 bg-primary/5 space-y-2">
+                <p className="text-xs font-medium">
+                  {t('eracun.linkExpense.suggestedTitle', 'Ovo izgleda kao plaćanje ovog računa')}
+                </p>
+                <p className="text-sm">
+                  {formatAmount(highlight.transaction.amount)} · {fmtDate(highlight.transaction.date)}
+                </p>
+                <p className="text-[11px] text-muted-foreground break-words">
+                  {highlight.transaction.description || highlight.transaction.merchantName || '—'}
+                </p>
+                <Button
+                  size="sm"
+                  disabled={busy || isPaid}
+                  className="min-h-[36px]"
+                  onClick={() => doLink(highlight.transaction.id, highlight.amount)}
+                >
+                  <Link2 className="w-3.5 h-3.5 mr-1" />
+                  {t('eracun.linkExpense.link', 'Poveži')}
+                </Button>
+              </div>
+            )}
+
             <div className="space-y-1">
               <p className="text-xs font-medium">{t('eracun.linkExpense.suggestionsTitle', 'Prijedlozi')}</p>
               {loading ? (
@@ -199,7 +235,7 @@ export const LinkExistingExpenseDialog = ({
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {suggestions.map((s) => expenseRow(s.transaction, s.amount, s.candidate.confidence))}
+                  {suggestions.map((s) => expenseRow(s.transaction, s.amount, s.confidence))}
                 </div>
               )}
             </div>

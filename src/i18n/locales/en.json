@@ -2980,6 +2980,11 @@
         "title": "Mail sent to your old address",
         "body": "{{sender}} still sends to your old address {{stale_address}}. Redirect sending to {{current_address}}.",
         "bodyNoActive": "{{sender}} still sends to your old address {{stale_address}}. Open Documents and enable a new address."
+      },
+      "duplicate": {
+        "title": "Duplicate received",
+        "body": "“{{subject}}” is already in your books and documents — it was not entered twice.",
+        "bodyNoSubject": "That mail is already in your books and documents — it was not entered twice."
       }
     },
     "invoice_due": {
@@ -6356,7 +6361,8 @@
       "placeEdit": "Edit place label",
       "placeSaved": "Place label saved",
       "placeFailed": "Saving the place label failed",
-      "emptyOverdue": "No past-due invoices."
+      "emptyOverdue": "No past-due invoices.",
+      "issued": "issued"
     },
     "match": {
       "open": "Match payments",
@@ -6432,7 +6438,10 @@
       "confidenceCertain": "Certain",
       "confidenceStrong": "Strong",
       "confidenceLikely": "Likely",
-      "confidencePossible": "Possible"
+      "confidencePossible": "Possible",
+      "issued": "issued",
+      "due": "due",
+      "suggestedTitle": "This looks like the payment of this invoice"
     }
   },
   "mailImport": {
