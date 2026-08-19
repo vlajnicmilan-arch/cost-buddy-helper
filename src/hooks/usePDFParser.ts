@@ -60,13 +60,16 @@ interface PDFParseJobRow {
   status: PDFParseJobStatus;
   result: any | null;
   error: string | null;
+  /** Napredak segmentiranog čitanja velikih izvoda, npr. „2/5". */
+  progress?: string | null;
 }
 
 const wait = (ms: number) => new Promise(resolve => window.setTimeout(resolve, ms));
 const POLL_REQUEST_TIMEOUT_MS = 12_000;
-// 100 polls: first 10 × 1 s, then 90 × 2 s = 190 s nominal wait.
-// This stays above the server AI budget (140 s) plus response/job persistence.
-const PDF_PARSE_MAX_POLL_ATTEMPTS = 100;
+// SEGMENTIRANO ČITANJE: veliki izvod ide blok po blok, svaki blok do 140 s.
+// 400 pollova: prvih 10 × 1 s, zatim 390 × 2 s ≈ 13 min — pokriva i izvod od
+// nekoliko blokova, a i dalje ima kraj (posao ne visi zauvijek).
+const PDF_PARSE_MAX_POLL_ATTEMPTS = 400;
 
 const isAbortLikeError = (error: unknown) => {
   if (error instanceof DOMException && error.name === 'AbortError') return true;
@@ -230,7 +233,7 @@ export const usePDFParser = () => {
   const fetchPDFParseJob = async (jobId: string, abortSignal?: AbortSignal): Promise<PDFParseJobRow | null> => {
     let query = (supabase as any)
       .from('pdf_parse_jobs')
-      .select('status,result,error')
+      .select('status,result,error,progress')
       .eq('id', jobId)
       .maybeSingle();
 
@@ -250,7 +253,7 @@ export const usePDFParser = () => {
     const since = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
     const { data: job, error } = await (supabase as any)
       .from('pdf_parse_jobs')
-      .select('id,status,result,error,created_at')
+      .select('id,status,result,error,progress,created_at')
       .gte('created_at', since)
       .in('status', ['processing', 'completed'])
       .order('created_at', { ascending: false })
@@ -268,7 +271,7 @@ export const usePDFParser = () => {
 
   const waitForPDFParseJob = async (
     jobId: string,
-    options?: { onStatus?: (status: PDFParseJobStatus, attempt: number) => void }
+    options?: { onStatus?: (status: PDFParseJobStatus, attempt: number, progress?: string | null) => void }
   ): Promise<PDFParseResult | null> => {
     let lastStatus: PDFParseJobStatus | null = null;
     logDiagnostic('pdf_parse_job_poll_started', { job_id: jobId });
@@ -293,7 +296,7 @@ export const usePDFParser = () => {
         logDiagnostic('pdf_parse_job_poll_status', { job_id: jobId, status: job.status, attempt });
       }
       lastStatus = job.status;
-      options?.onStatus?.(job.status, attempt);
+      options?.onStatus?.(job.status, attempt, job.progress ?? null);
 
       if (job.status === 'failed') throw new Error(job.error || 'Greška pri analizi izvoda');
       if (job.status === 'completed' && job.result) {
