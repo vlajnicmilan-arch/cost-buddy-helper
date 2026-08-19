@@ -154,6 +154,13 @@ export const LinkExistingExpenseDialog = ({
         {invoice && (
           <p className="text-xs text-muted-foreground">
             {invoice.invoice_number} · {formatAmount(Number(invoice.total_amount))}
+            {/* DATUMI NA EKRANU: bez njih se dva ista iznosa ne razlikuju. */}
+            {invoice.issue_date && (
+              <> · {t('eracun.linkExpense.issued', 'izdan')} {fmtDate(invoice.issue_date)}</>
+            )}
+            {invoice.due_date && (
+              <> · {t('eracun.linkExpense.due', 'dospijeće')} {fmtDate(invoice.due_date)}</>
+            )}
             {Number(invoice.settled_amount ?? 0) > 0 && (
               <> · {t('eracun.linkExpense.remaining', 'preostalo {{amount}}', { amount: formatAmount(remaining) })}</>
             )}
