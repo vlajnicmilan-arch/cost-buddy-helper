@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 import hr from '@/i18n/locales/hr.json';
 import en from '@/i18n/locales/en.json';
 import de from '@/i18n/locales/de.json';
-import { resolveNotificationRoute } from '@/lib/notificationPayload';
+import { normalizePayload } from '@/lib/notificationPayload';
 
 const src = readFileSync('supabase/functions/mail-process/index.ts', 'utf8');
 
@@ -54,7 +54,7 @@ describe('tekstovi i usmjeravanje', () => {
   });
 
   it('vodi na Dokumente', () => {
-    const p = resolveNotificationRoute({ type: 'mail_document_duplicate', data: {} } as any);
+    const p = normalizePayload('mail_document_duplicate', {});
     expect(p.route).toBe('/dokumenti');
   });
 });
