@@ -2098,7 +2098,8 @@
       "newHint": "Stvori novu transakciju iz izvoda.",
       "skipHint": "Ne uvezi ovaj redak.",
       "noMatchToMerge": "Nema postojeće transakcije za spajanje"
-    }
+    },
+    "pdfProcessingPart": "Obrađujem dio {{current}}/{{total}}"
   },
   "bulk": {
     "paymentSource": "Grupno plaćanje",

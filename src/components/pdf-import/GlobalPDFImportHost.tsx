@@ -72,6 +72,8 @@ export const GlobalPDFImportHost = () => {
   const { user } = useAuth();
   const { startPDFParseJob, waitForPDFParseJob, fetchPDFParseJob, normalizeJobResult, parseHTML } = usePDFParser();
   const [resumeVisible, setResumeVisible] = useState(false);
+  /** Napredak segmentiranog čitanja („2/5") — dolazi kroz postojeći poll. */
+  const [parseProgress, setParseProgress] = useState<string | null>(null);
   const [duplicateInfo, setDuplicateInfo] = useState<DuplicateInfo | null>(null);
   const [includeDuplicates, setIncludeDuplicates] = useState(false);
   const [fuzzyDecisions, setFuzzyDecisions] = useState<Map<number, RowDecision>>(new Map());
@@ -230,7 +232,10 @@ export const GlobalPDFImportHost = () => {
             }));
           } catch {}
           pdfImport._setProcessing(source, jobId);
-          const result = await waitForPDFParseJob(jobId);
+          setParseProgress(null);
+          const result = await waitForPDFParseJob(jobId, {
+            onStatus: (_status, _attempt, progress) => setParseProgress(progress ?? null),
+          });
           if (!result) return;
           if (result.transactions.length === 0) {
             showWarning(t('toasts.pdfNoTransactions'), { module: 'wallet' });
@@ -368,7 +373,9 @@ export const GlobalPDFImportHost = () => {
           return;
         }
         pdfImport._setProcessing(source, stored.jobId);
-        const result = await waitForPDFParseJob(stored.jobId);
+        const result = await waitForPDFParseJob(stored.jobId, {
+          onStatus: (_status, _attempt, progress) => setParseProgress(progress ?? null),
+        });
         try { localStorage.removeItem(`${prefix}${stored.sourceId}`); } catch {}
         if (result?.transactions.length) pdfImport._setPreview(result, stored.jobId);
       } catch (error) {
@@ -974,7 +981,15 @@ export const GlobalPDFImportHost = () => {
               <Loader2 className="w-10 h-10 animate-spin text-primary" />
               <div className="space-y-1">
                 <h2 className="text-lg font-semibold">{t(pdfImport.phase === 'starting' ? 'import.pdfStarting' : 'import.pdfProcessing')}</h2>
-                <p className="text-sm text-muted-foreground">{t('import.pdfProcessingDescription')}</p>
+                <p className="text-sm text-muted-foreground">
+                  {parseProgress
+                    ? t('import.pdfProcessingPart', {
+                        current: parseProgress.split('/')[0],
+                        total: parseProgress.split('/')[1],
+                        defaultValue: 'Obrađujem dio {{current}}/{{total}}',
+                      })
+                    : t('import.pdfProcessingDescription')}
+                </p>
               </div>
               <div className="h-2 w-48 overflow-hidden rounded-full bg-secondary">
                 <motion.div className="h-full bg-primary rounded-full" initial={{ x: '-100%' }} animate={{ x: '100%' }} transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }} style={{ width: '40%' }} />

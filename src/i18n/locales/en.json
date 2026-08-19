@@ -2093,7 +2093,8 @@
       "newHint": "Create a new transaction from the statement.",
       "skipHint": "Do not import this row.",
       "noMatchToMerge": "No existing transaction to merge with"
-    }
+    },
+    "pdfProcessingPart": "Processing part {{current}}/{{total}}"
   },
   "bulk": {
     "paymentSource": "Bulk Payment",
