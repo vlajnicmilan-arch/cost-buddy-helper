@@ -24,6 +24,11 @@ import {
   type MatchTransaction,
   type PaymentSuggestion,
 } from '@/lib/eracun/matchPayments';
+import {
+  buildLinkOffer,
+  type LinkOffer,
+  type LinkOfferInvoice,
+} from '@/lib/eracun/linkCandidates';
 import type { IncomingInvoice } from '@/hooks/useIncomingInvoices';
 
 export interface LinkedExpenseRow {
