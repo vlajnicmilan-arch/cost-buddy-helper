@@ -614,3 +614,71 @@ export function carriesFinancialSubstance(rawText: string | null | undefined): b
   const amounts = text.match(new RegExp(AMOUNT, 'g')) ?? [];
   return amounts.length >= MIN_AMOUNTS_FOR_SUBSTANCE;
 }
+
+
+/**
+ * SALDO S PAPIRA ZA SVAKI UVOZNI PUT.
+ *
+ * Isti mehanizam koji već presuđuje na mail-putu (`detectSummaryClosingBalance`
+ * → Revolutov „Sažetak salda", pa `detectClosingBalance` → „Konačno/Novo
+ * stanje"), samo dostupan i disk-putu (parse-pdf-statement, tekstualni sloj).
+ * NEMA novog parsera: istina o saldu pripada IZVODU, ne putu kojim je ušao.
+ *
+ * Čita se nad CIJELIM tekstom (zaglavlje), nikad po segmentacijskim blokovima.
+ * Bez prepoznatog salda vraća `null` — nagađanja nema.
+ */
+export interface StatementBalanceReading {
+  closingBalance: number | null;
+  /** Valuta ako stoji uz sam iznos; inače null. */
+  currency: string | null;
+  /** Kraj razdoblja — datum na koji saldo vrijedi. */
+  periodTo: string | null;
+}
+
+const CURRENCY_SYMBOLS: readonly (readonly [RegExp, string])[] = [
+  [/€|\bEUR\b/i, 'EUR'],
+  [/\$|\bUSD\b/i, 'USD'],
+  [/£|\bGBP\b/i, 'GBP'],
+];
+
+/** Valuta iz retka u kojem je pročitan saldo. */
+function currencyFromLine(line: string): string | null {
+  for (const [re, code] of CURRENCY_SYMBOLS) {
+    if (re.test(line)) return code;
+  }
+  return null;
+}
+
+/** Redak iz kojeg je saldo pročitan — služi samo za valutu i dijagnostiku. */
+function closingBalanceLine(lines: readonly string[], value: number): string | null {
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    const amounts = lines[i].match(new RegExp(AMOUNT, 'g'));
+    if (!amounts) continue;
+    for (const raw of amounts) {
+      const parsed = parseHrNumber(raw);
+      if (parsed !== null && Math.abs(parsed - value) < 0.005) return lines[i];
+    }
+  }
+  return null;
+}
+
+export function extractStatementBalance(
+  rawText: string | null | undefined,
+): StatementBalanceReading {
+  const text = normalizeSpace(rawText ?? '');
+  if (text.trim().length === 0) return { closingBalance: null, currency: null, periodTo: null };
+  const lines = text.split(/\r?\n/);
+  const zone = issuerZone(lines);
+  const closing = detectSummaryClosingBalance(zone) ?? detectClosingBalance(lines);
+  const period = detectPeriodRange(zone.join('\n')) ?? detectPeriodRange(text);
+  if (closing === null) {
+    return { closingBalance: null, currency: null, periodTo: period?.to ?? null };
+  }
+  const line = closingBalanceLine(zone.length > 0 ? zone : lines, closing)
+    ?? closingBalanceLine(lines, closing);
+  return {
+    closingBalance: closing,
+    currency: line ? currencyFromLine(line) : null,
+    periodTo: period?.to ?? null,
+  };
+}
