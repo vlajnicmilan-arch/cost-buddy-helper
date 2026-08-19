@@ -6361,7 +6361,8 @@
       "placeEdit": "Edit place label",
       "placeSaved": "Place label saved",
       "placeFailed": "Saving the place label failed",
-      "emptyOverdue": "No past-due invoices."
+      "emptyOverdue": "No past-due invoices.",
+      "issued": "issued"
     },
     "match": {
       "open": "Match payments",
@@ -6437,7 +6438,10 @@
       "confidenceCertain": "Certain",
       "confidenceStrong": "Strong",
       "confidenceLikely": "Likely",
-      "confidencePossible": "Possible"
+      "confidencePossible": "Possible",
+      "issued": "issued",
+      "due": "due",
+      "suggestedTitle": "This looks like the payment of this invoice"
     }
   },
   "mailImport": {

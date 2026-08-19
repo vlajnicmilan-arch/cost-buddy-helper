@@ -6371,7 +6371,8 @@
       "placeEdit": "Uredi oznaku mjesta",
       "placeSaved": "Oznaka mjesta je spremljena",
       "placeFailed": "Spremanje oznake mjesta nije uspjelo",
-      "emptyOverdue": "Nema prekoračenih računa."
+      "emptyOverdue": "Nema prekoračenih računa.",
+      "issued": "izdan"
     },
     "match": {
       "open": "Poveži uplate",
@@ -6447,7 +6448,10 @@
       "confidenceCertain": "Siguran",
       "confidenceStrong": "Jak",
       "confidenceLikely": "Vjerojatan",
-      "confidencePossible": "Moguć"
+      "confidencePossible": "Moguć",
+      "issued": "izdan",
+      "due": "dospijeće",
+      "suggestedTitle": "Ovo izgleda kao plaćanje ovog računa"
     }
   },
   "mailImport": {

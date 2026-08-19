@@ -6361,7 +6361,8 @@
       "placeEdit": "Ortsbezeichnung bearbeiten",
       "placeSaved": "Ortsbezeichnung gespeichert",
       "placeFailed": "Speichern der Ortsbezeichnung fehlgeschlagen",
-      "emptyOverdue": "Keine überfälligen Rechnungen."
+      "emptyOverdue": "Keine überfälligen Rechnungen.",
+      "issued": "ausgestellt"
     },
     "match": {
       "open": "Zahlungen zuordnen",
@@ -6437,7 +6438,10 @@
       "confidenceCertain": "Sicher",
       "confidenceStrong": "Stark",
       "confidenceLikely": "Wahrscheinlich",
-      "confidencePossible": "Möglich"
+      "confidencePossible": "Möglich",
+      "issued": "ausgestellt",
+      "due": "fällig",
+      "suggestedTitle": "Das sieht nach der Zahlung dieser Rechnung aus"
     }
   },
   "mailImport": {
