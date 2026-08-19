@@ -53,7 +53,7 @@ describe('prozor je sidren na datum izdavanja', () => {
   it('kartični obrazac: terećenje istog dana ulazi i daje istaknuti prijedlog', () => {
     const offer = buildLinkOffer({
       invoice: invoice(),
-      candidates: [cand(tx('card', 15, '2026-08-18', 'Facebook - Paypal *facebook'))],
+      candidates: [cand(tx('card', 15, '2026-08-18', 'Meta Platforms Inc'))],
       otherInvoices: [],
     });
     expect(offer.rows).toHaveLength(1);
