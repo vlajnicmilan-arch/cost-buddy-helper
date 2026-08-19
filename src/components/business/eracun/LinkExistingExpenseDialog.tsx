@@ -53,7 +53,7 @@ interface Props {
 }
 
 export const LinkExistingExpenseDialog = ({
-  invoice, open, onOpenChange, suggestions, links, loading,
+  invoice, open, onOpenChange, suggestions, highlight, links, loading,
   search, onLink, onUnlink, onDone, precheck, onCreateAnyway,
 }: Props) => {
   const { t } = useTranslation();
