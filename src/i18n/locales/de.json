@@ -2093,7 +2093,8 @@
       "newHint": "Neue Transaktion aus dem Auszug erstellen.",
       "skipHint": "Diese Zeile nicht importieren.",
       "noMatchToMerge": "Keine vorhandene Transaktion zum Zusammenführen"
-    }
+    },
+    "pdfProcessingPart": "Verarbeite Teil {{current}}/{{total}}"
   },
   "bulk": {
     "paymentSource": "Massen-Zahlung",

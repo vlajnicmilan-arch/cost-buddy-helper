@@ -1,0 +1,1 @@
+ALTER TABLE public.pdf_parse_jobs ADD COLUMN IF NOT EXISTS progress text;
