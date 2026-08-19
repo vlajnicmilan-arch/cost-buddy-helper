@@ -25,12 +25,13 @@ import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { describeDbError } from '@/lib/eracun/dbError';
 import type { IncomingInvoice } from '@/hooks/useIncomingInvoices';
 import type { MatchConfidence, MatchTransaction } from '@/lib/eracun/matchPayments';
+import type { RankedLinkCandidate } from '@/lib/eracun/linkCandidates';
 import type { LinkedExpenseRow } from '@/hooks/useEracunExpenseMatch';
 
 export interface LinkSuggestionRow {
   readonly transaction: MatchTransaction;
-  readonly candidate: { readonly confidence: MatchConfidence; readonly reason: string };
   readonly amount: number;
+  readonly confidence: MatchConfidence;
 }
 
 interface Props {
@@ -38,6 +39,8 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   suggestions: readonly LinkSuggestionRow[];
+  /** Jednoznačan par — istaknut prijedlog s jednim dodirom (nikad automatski). */
+  highlight?: RankedLinkCandidate | null;
   links: readonly LinkedExpenseRow[];
   loading: boolean;
   search: (query: string) => MatchTransaction[];
