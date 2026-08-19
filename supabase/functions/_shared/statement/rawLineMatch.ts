@@ -88,7 +88,8 @@ function lineHasDate(line: string, tokens: readonly string[]): boolean {
   return tokens.some((tok) => lower.includes(tok.toLowerCase()));
 }
 
-function isContinuation(line: string): boolean {
+/** Redak je nastavak prethodne transakcije (Revolut „Primatelj:", OTP zagrada). */
+export function isRowContinuation(line: string): boolean {
   const lower = line.toLowerCase();
   // OTP prelama redak: nastavak počinje zagradom "(31.01.,ACode:...,Kart:0214) -53,87 ..."
   if (lower.startsWith('(')) return true;
@@ -98,7 +99,7 @@ function isContinuation(line: string): boolean {
 function buildBlock(lines: readonly string[], start: number): string {
   let out = lines[start];
   for (let i = start + 1; i < lines.length; i += 1) {
-    if (!isContinuation(lines[i])) break;
+    if (!isRowContinuation(lines[i])) break;
     const next = `${out} ${lines[i]}`;
     if (next.length > RAW_LINE_MAX_CHARS) break;
     out = next;
