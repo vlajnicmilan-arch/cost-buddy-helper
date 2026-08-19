@@ -106,6 +106,12 @@ export const IncomingInvoicesPanel = ({ initialFilter = 'unpaid', initialHighlig
     [invoices],
   );
   const expenseMatch = useEracunExpenseMatch(incoming);
+  const { offerForInvoice } = expenseMatch;
+  // Izoštrena ponuda za otvoreni račun: prozor oko datuma izdavanja + rang po nazivu.
+  const linkOffer = useMemo(
+    () => (linkTarget ? offerForInvoice(linkTarget.id) : { rows: [], highlight: null }),
+    [linkTarget, offerForInvoice],
+  );
   const unpaid = useMemo(() => scoped.filter((i) => !i.paid_at), [scoped]);
   /** Prekoračeni = neplaćeni s dospijećem u prošlosti (isti pojam kao detektor). */
   const overdue = useMemo(
@@ -407,6 +413,7 @@ export const IncomingInvoicesPanel = ({ initialFilter = 'unpaid', initialHighlig
                   </p>
                   <p className="text-[11px] text-muted-foreground truncate">
                     {inv.invoice_number}
+                    {inv.issue_date ? ` · ${t('eracun.list.issued', 'izdan')} ${format(new Date(inv.issue_date), 'd. MMM yyyy', { locale: hr })}` : ''}
                     {inv.due_date ? ` · ${t('eracun.list.due', 'dospijeće')} ${format(new Date(inv.due_date), 'd. MMM yyyy', { locale: hr })}` : ''}
                   </p>
                   <div className="mt-1 flex flex-wrap items-center gap-1">
