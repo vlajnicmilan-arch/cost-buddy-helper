@@ -37,14 +37,40 @@ const invoice = (over: Partial<Parameters<typeof buildLinkOffer>[0]['invoice']> 
 });
 
 describe('prozor je sidren na datum izdavanja', () => {
-  it('prihvaća plaćanje do 14 dana PRIJE izdavanja (živi Meta slučaj)', () => {
+  it('odbacuje terećenja 8.–10.8. za račun od 18.8. (krivo sparivanje)', () => {
     const offer = buildLinkOffer({
       invoice: invoice(),
-      candidates: [cand(tx('e1', 15, '2026-08-08', 'Facebook - Paypal *facebook'))],
+      candidates: [
+        cand(tx('e1', 15, '2026-08-08', 'Facebook - Paypal *facebook')),
+        cand(tx('e2', 15, '2026-08-10', 'Facebook - Paypal *facebook')),
+      ],
+      otherInvoices: [],
+    });
+    expect(offer.rows).toHaveLength(0);
+    expect(offer.highlight).toBeNull();
+  });
+
+  it('kartični obrazac: terećenje istog dana ulazi i daje istaknuti prijedlog', () => {
+    const offer = buildLinkOffer({
+      invoice: invoice(),
+      candidates: [cand(tx('card', 15, '2026-08-18', 'Meta Platforms Inc'))],
       otherInvoices: [],
     });
     expect(offer.rows).toHaveLength(1);
-    expect(offer.rows[0].dayOffset).toBe(-10);
+    expect(offer.rows[0].dayOffset).toBe(0);
+    expect(offer.highlight?.transaction.id).toBe('card');
+  });
+
+  it('dan prije izdavanja (knjiženje) još ulazi, tri dana prije ne', () => {
+    const offer = buildLinkOffer({
+      invoice: invoice(),
+      candidates: [
+        cand(tx('d1', 15, '2026-08-17', 'Facebook')),
+        cand(tx('d3', 15, '2026-08-15', 'Facebook')),
+      ],
+      otherInvoices: [],
+    });
+    expect(offer.rows.map((r) => r.transaction.id)).toEqual(['d1']);
   });
 
   it('odbacuje transakciju izvan prozora s obje strane', () => {
@@ -59,11 +85,12 @@ describe('prozor je sidren na datum izdavanja', () => {
     expect(offer.rows).toHaveLength(0);
   });
 
-  it('prozor je imenovan −14/+45', () => {
-    expect(LINK_WINDOW_BEFORE_DAYS).toBe(14);
+  it('prozor je imenovan −2/+45', () => {
+    expect(LINK_WINDOW_BEFORE_DAYS).toBe(2);
     expect(LINK_WINDOW_AFTER_DAYS).toBe(45);
   });
 });
+
 
 describe('naziv diže rang, nikad ne isključuje', () => {
   it('transakcija bez imena (KEKS) ostaje u ponudi', () => {
@@ -99,12 +126,12 @@ describe('istaknuti prijedlog samo za jednoznačan par', () => {
     expect(offer.highlight?.transaction.id).toBe('b');
   });
 
-  it('dva kandidata istog iznosa → obična lista (živi Meta slučaj)', () => {
+  it('dva kandidata istog iznosa u prozoru → obična lista', () => {
     const offer = buildLinkOffer({
       invoice: invoice(),
       candidates: [
-        cand(tx('e1', 15, '2026-08-08', 'Facebook - Paypal *facebook')),
-        cand(tx('e2', 15, '2026-08-09', 'Facebook - Paypal *facebook')),
+        cand(tx('e1', 15, '2026-08-18', 'Facebook - Paypal *facebook')),
+        cand(tx('e2', 15, '2026-08-19', 'Facebook - Paypal *facebook')),
       ],
       otherInvoices: [],
     });
@@ -115,7 +142,7 @@ describe('istaknuti prijedlog samo za jednoznačan par', () => {
   it('ista transakcija je kandidat i drugom računu → bez prijedloga', () => {
     const offer = buildLinkOffer({
       invoice: invoice(),
-      candidates: [cand(tx('e1', 15, '2026-08-08', 'Facebook'))],
+      candidates: [cand(tx('e1', 15, '2026-08-18', 'Facebook'))],
       otherInvoices: [
         { id: 'inv-2', supplierName: 'Meta Platforms, Inc.', remaining: 15, issueDate: '2026-08-17' },
       ],
@@ -123,6 +150,7 @@ describe('istaknuti prijedlog samo za jednoznačan par', () => {
     expect(offer.rows).toHaveLength(1);
     expect(offer.highlight).toBeNull();
   });
+
 
   it('LIDL 1,29 — isti iznos, sudar naziva → nikad istaknuto', () => {
     const offer = buildLinkOffer({
