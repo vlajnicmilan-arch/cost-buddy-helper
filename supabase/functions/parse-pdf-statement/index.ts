@@ -502,141 +502,254 @@ DOSLOVAN REDAK (raw_line):
         // za tool-call argumente pa ih Google odsiječe usred niza (regresija 2026-08-25).
         max_tokens: 32768,
     };
-    const aiResponse = await callGemini(aiRequestBody, { timeoutMs: PDF_AI_TIMEOUT_MS });
+    const withUserContent = (content: unknown[]) => ({
+      ...aiRequestBody,
+      messages: [aiRequestBody.messages[0], { role: 'user', content }],
+    });
 
-    if (!aiResponse.ok) {
-      if (!skipQuota) await refundCoreScanQuota(supabase);
-      if (aiResponse.status === 429) {
-        return new Response(
-          JSON.stringify({ error: 'Previše zahtjeva. Pokušaj ponovno za minutu.' }), 
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      recordAiCost(supabase, "parse-pdf-statement").catch(() => {});
-      if (aiResponse.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'Nedostaje kredita za AI obradu.' }), 
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      const errorText = await aiResponse.text();
-      console.error('AI gateway error:', aiResponse.status, errorText);
-      throw new Error('AI gateway error');
-    }
-
-    const aiData = await aiResponse.json();
-    console.log('AI response structure:', JSON.stringify(aiData, null, 2));
-
-    // Check if the response contains an error
-    if (aiData.error) {
-      console.error('AI gateway returned error:', aiData.error);
-      return new Response(
-        JSON.stringify({ error: `AI greška: ${aiData.error.message || 'Nepoznata greška'}` }), 
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Extract from tool call response
-    let statementData: { 
-      transactions: any[]; 
-      total_income: number; 
+    type StatementPayload = {
+      transactions: any[];
+      total_income: number;
       total_expenses: number;
       detected_bank?: string | null;
       account_iban?: string | null;
-    } = { transactions: [], total_income: 0, total_expenses: 0, detected_bank: null, account_iban: null };
-    
-    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-    let finishReason: string | null = aiData.choices?.[0]?.finish_reason || null;
-    let parseMode: string | null = null;
-    let parseError: unknown = null;
-    let truncated = finishReason === 'length';
+      holder_name?: string | null;
+      statement_due_date?: string | null;
+    };
 
-    if (toolCall?.function?.arguments) {
-      const rawArgs: string = toolCall.function.arguments;
-      // Odsječen odgovor NIKAD ne spašavamo tiho — pola izvoda je gubitak
-      // podataka, a ne rezultat. Salvage se koristi samo kad odgovor nije
-      // odsječen (npr. višak proze oko JSON-a).
-      if (!truncated) {
-        try {
-          statementData = JSON.parse(rawArgs);
-          parseMode = 'clean';
-        } catch (e) { parseError = e; }
-        if (!parseMode) {
-          const salvaged = attemptJsonSalvage(rawArgs.trim());
-          if (salvaged) {
-            try {
-              statementData = JSON.parse(salvaged);
-              parseMode = 'salvage';
-            } catch (e) { parseError = e; }
-          }
+    type ExtractionOutcome =
+      | { kind: 'ok'; data: StatementPayload; parseMode: string }
+      | { kind: 'fail'; reason: 'truncated' | 'no_json'; finishReason: string | null }
+      | { kind: 'http'; response: Response };
+
+    const emptyPayload = (): StatementPayload => ({
+      transactions: [],
+      total_income: 0,
+      total_expenses: 0,
+      detected_bank: null,
+      account_iban: null,
+    });
+
+    /**
+     * JEDAN AI prolaz — cijeli izvod ili jedan blok. `label` ulazi u SVAKU
+     * poruku o kvaru: posao nikad ne pada bezimeno, ni ne vraća pola izvoda.
+     */
+    const runExtraction = async (requestBody: any, label: string): Promise<ExtractionOutcome> => {
+      let aiResponse: Response;
+      try {
+        aiResponse = await callGemini(requestBody, { timeoutMs: PDF_AI_TIMEOUT_MS });
+      } catch (error) {
+        throw new Error(`${getPdfParseErrorMessage(error)} (${label})`);
+      }
+
+      if (!aiResponse.ok) {
+        if (!skipQuota) await refundCoreScanQuota(supabase);
+        if (aiResponse.status === 429) {
+          return {
+            kind: 'http',
+            response: new Response(
+              JSON.stringify({ error: 'Previše zahtjeva. Pokušaj ponovno za minutu.' }),
+              { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+            ),
+          };
         }
+        recordAiCost(supabase, "parse-pdf-statement").catch(() => {});
+        if (aiResponse.status === 402) {
+          return {
+            kind: 'http',
+            response: new Response(
+              JSON.stringify({ error: 'Nedostaje kredita za AI obradu.' }),
+              { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+            ),
+          };
+        }
+        const errorText = await aiResponse.text();
+        console.error('AI gateway error:', label, aiResponse.status, errorText);
+        throw new Error(`AI gateway error (${label})`);
       }
-      if (!parseMode) {
-        console.error('Failed to parse tool call arguments:', parseError, 'finish_reason:', finishReason);
-        void logParseFailure('parse_pdf_failed', userId, {
-          cause: truncated ? 'truncated' : 'schema-miss',
-          finish_reason: finishReason,
-          content_length: rawArgs.length,
-          error_message: parseError instanceof Error ? parseError.message : String(parseError),
-          tail: rawArgs.slice(-200),
-        });
-      }
-    } else {
-      // Model nije ni pokušao pozvati alat. Ne pretpostavljamo JSON u prozi —
-      // ponavljamo poziv s izričitim strukturiranim izlazom (json_object).
-      console.warn('parse-pdf-statement: no tool call, retrying with response_format=json_object');
-      const retryResponse = await callGemini({
-        ...aiRequestBody,
-        tools: undefined,
-        tool_choice: undefined,
-        response_format: { type: 'json_object' },
-      }, { timeoutMs: PDF_AI_TIMEOUT_MS });
 
-      if (retryResponse.ok) {
-        const retryData = await retryResponse.json();
-        finishReason = retryData.choices?.[0]?.finish_reason || finishReason;
-        truncated = finishReason === 'length';
-        const content = retryData.choices?.[0]?.message?.content || '';
+      const aiData = await aiResponse.json();
+
+      if (aiData.error) {
+        console.error('AI gateway returned error:', label, aiData.error);
+        return {
+          kind: 'http',
+          response: new Response(
+            JSON.stringify({ error: `AI greška: ${aiData.error.message || 'Nepoznata greška'} (${label})` }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+          ),
+        };
+      }
+
+      let data: StatementPayload = emptyPayload();
+      const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+      let finishReason: string | null = aiData.choices?.[0]?.finish_reason || null;
+      let parseMode: string | null = null;
+      let parseError: unknown = null;
+      let truncated = finishReason === 'length';
+
+      if (toolCall?.function?.arguments) {
+        const rawArgs: string = toolCall.function.arguments;
+        // Odsječen odgovor NIKAD ne spašavamo tiho — pola izvoda je gubitak
+        // podataka, a ne rezultat.
         if (!truncated) {
-          const parsed = robustParseJson<typeof statementData>(content, 'object');
-          if (parsed) {
-            statementData = parsed.value;
-            parseMode = `json_object:${parsed.mode}`;
+          try {
+            data = JSON.parse(rawArgs);
+            parseMode = 'clean';
+          } catch (e) { parseError = e; }
+          if (!parseMode) {
+            const salvaged = attemptJsonSalvage(rawArgs.trim());
+            if (salvaged) {
+              try {
+                data = JSON.parse(salvaged);
+                parseMode = 'salvage';
+              } catch (e) { parseError = e; }
+            }
           }
         }
         if (!parseMode) {
-          console.error('json_object retry failed, finish_reason:', finishReason);
+          console.error('Failed to parse tool call arguments:', label, parseError, 'finish_reason:', finishReason);
           void logParseFailure('parse_pdf_failed', userId, {
-            cause: truncated ? 'truncated' : 'no-json',
-            stage: 'json_object_retry',
+            cause: truncated ? 'truncated' : 'schema-miss',
+            block: label,
             finish_reason: finishReason,
-            content_length: content.length,
-            tail: content.slice(-200),
+            content_length: rawArgs.length,
+            error_message: parseError instanceof Error ? parseError.message : String(parseError),
+            tail: rawArgs.slice(-200),
           });
         }
       } else {
-        console.error('json_object retry HTTP error:', retryResponse.status);
-        void logParseFailure('parse_pdf_failed', userId, {
-          cause: 'retry-http-error',
-          stage: 'json_object_retry',
-          status: retryResponse.status,
-        });
-      }
-    }
+        // Model nije ni pokušao pozvati alat. Ne pretpostavljamo JSON u prozi —
+        // ponavljamo poziv s izričitim strukturiranim izlazom (json_object).
+        console.warn('parse-pdf-statement: no tool call, retrying with response_format=json_object', label);
+        let retryResponse: Response;
+        try {
+          retryResponse = await callGemini({
+            ...requestBody,
+            tools: undefined,
+            tool_choice: undefined,
+            response_format: { type: 'json_object' },
+          }, { timeoutMs: PDF_AI_TIMEOUT_MS });
+        } catch (error) {
+          throw new Error(`${getPdfParseErrorMessage(error)} (${label})`);
+        }
 
-    // GLASNA GREŠKA: odsječen ili neparsiran odgovor NIKAD ne završava kao
-    // "nisu pronađene transakcije". Klijent na `parse_incomplete` prikazuje
-    // "Obrada nije dovršena — pokušaj ponovno".
-    if (!parseMode) {
-      return new Response(
-        JSON.stringify({
-          error: 'parse_incomplete',
-          reason: truncated ? 'truncated' : 'no_json',
-          finish_reason: finishReason,
-        }),
+        if (retryResponse.ok) {
+          const retryData = await retryResponse.json();
+          finishReason = retryData.choices?.[0]?.finish_reason || finishReason;
+          truncated = finishReason === 'length';
+          const content = retryData.choices?.[0]?.message?.content || '';
+          if (!truncated) {
+            const parsed = robustParseJson<StatementPayload>(content, 'object');
+            if (parsed) {
+              data = parsed.value;
+              parseMode = `json_object:${parsed.mode}`;
+            }
+          }
+          if (!parseMode) {
+            console.error('json_object retry failed:', label, 'finish_reason:', finishReason);
+            void logParseFailure('parse_pdf_failed', userId, {
+              cause: truncated ? 'truncated' : 'no-json',
+              stage: 'json_object_retry',
+              block: label,
+              finish_reason: finishReason,
+              content_length: content.length,
+              tail: content.slice(-200),
+            });
+          }
+        } else {
+          console.error('json_object retry HTTP error:', label, retryResponse.status);
+          void logParseFailure('parse_pdf_failed', userId, {
+            cause: 'retry-http-error',
+            stage: 'json_object_retry',
+            block: label,
+            status: retryResponse.status,
+          });
+        }
+      }
+
+      if (!parseMode) {
+        return { kind: 'fail', reason: truncated ? 'truncated' : 'no_json', finishReason };
+      }
+      return { kind: 'ok', data, parseMode };
+    };
+
+    const incompleteResponse = (reason: string, finishReason: string | null, block?: string) =>
+      new Response(
+        JSON.stringify({ error: 'parse_incomplete', reason, finish_reason: finishReason, block: block ?? null }),
         { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
+
+    /** Napredak kroz postojeći posao — bez novog UI sklopa. */
+    const reportProgress = async (block: StatementBlock) => {
+      if (!progressJobId) return;
+      try {
+        const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+        if (!serviceKey) return;
+        const admin = createClient(supabaseUrl, serviceKey);
+        await admin
+          .from('pdf_parse_jobs')
+          .update({ progress: `${block.index}/${block.total}` })
+          .eq('id', progressJobId);
+      } catch (_e) {
+        // Napredak je kozmetika — nikad ne ruši obradu.
+      }
+    };
+
+    // SEGMENTACIJA: veliki izvod s tekstualnim slojem ide blok po blok, svaki
+    // unutar iste vremenske granice. Mali izvodi ostaju jedan poziv kao dosad.
+    const segmentedBlocks: StatementBlock[] =
+      !isHTML && !isImage && rawLineSource === 'text' && shouldSegment(pdfPlainText)
+        ? segmentStatementLines(sourceLines)
+        : [];
+
+    let statementData: StatementPayload = emptyPayload();
+
+    if (segmentedBlocks.length > 1) {
+      const context = buildBlockContext(sourceLines);
+      console.log(`Segmentirano čitanje: ${segmentedBlocks.length} blokova, ${pdfPlainText.length} znakova teksta`);
+      const merged: any[] = [];
+      for (const block of segmentedBlocks) {
+        await reportProgress(block);
+        const outcome = await runExtraction(
+          withUserContent([{ type: 'text', text: buildBlockPayload(block, context) }]),
+          block.label,
+        );
+        if (outcome.kind === 'http') return outcome.response;
+        if (outcome.kind === 'fail') return incompleteResponse(outcome.reason, outcome.finishReason, block.label);
+
+        const blockTx = Array.isArray(outcome.data.transactions) ? outcome.data.transactions : [];
+        // POSTKONDICIJA PO BLOKU: tiho manje NIJE dopušteno.
+        const underflow = blockYieldFailure(block, blockTx.length);
+        if (underflow) {
+          console.error(underflow);
+          void logParseFailure('parse_pdf_failed', userId, {
+            cause: 'block-underflow',
+            block: block.label,
+            expected: block.candidateRows,
+            returned: blockTx.length,
+          });
+          return incompleteResponse('block_underflow', null, block.label);
+        }
+
+        merged.push(...blockTx);
+        statementData.detected_bank = statementData.detected_bank ?? outcome.data.detected_bank ?? null;
+        statementData.account_iban = statementData.account_iban ?? outcome.data.account_iban ?? null;
+        statementData.holder_name = statementData.holder_name ?? outcome.data.holder_name ?? null;
+        statementData.statement_due_date = statementData.statement_due_date ?? outcome.data.statement_due_date ?? null;
+        console.log(`${block.label}: ${blockTx.length} redaka (vidljivo ~${block.candidateRows})`);
+      }
+      statementData.transactions = merged;
+      // Zbrojevi se računaju nizvodno iz spojenih redaka.
+      statementData.total_income = 0;
+      statementData.total_expenses = 0;
+    } else {
+      const outcome = await runExtraction(aiRequestBody, 'cijeli izvod');
+      if (outcome.kind === 'http') return outcome.response;
+      if (outcome.kind === 'fail') return incompleteResponse(outcome.reason, outcome.finishReason);
+      statementData = outcome.data;
     }
+
 
 
     // Sanitize text: remove garbled/binary characters
