@@ -590,6 +590,10 @@ async function processMessage(
           ai_calls: 0,
         },
       });
+      // Odbačeno ostaje odbačeno — ali korisnik mora ZNATI da je pošta stigla.
+      if (notifyAllowed) {
+        await notifyDuplicate(supabase, ownerId, messageId, msg.subject as string | null);
+      }
       continue;
     }
 
