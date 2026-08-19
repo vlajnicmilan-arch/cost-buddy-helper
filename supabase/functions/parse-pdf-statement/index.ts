@@ -252,6 +252,20 @@ serve(async (req) => {
       }
     }
 
+    // SALDO S PAPIRA (disk-put) — isti deterministički čitač zaglavlja koji
+    // presuđuje na mail-putu. Čita se nad CIJELIM tekstom, prije segmentacije;
+    // rezultat putuje ISTIM kanalom (statementClosingBalance) do izvršitelja.
+    // Bez prepoznatog salda ostaje null — nagađanja nema.
+    const statementBalance = pdfPlainText
+      ? extractStatementBalance(pdfPlainText)
+      : { closingBalance: null, currency: null, periodTo: null };
+    if (statementBalance.closingBalance !== null) {
+      console.log(
+        `saldo s izvoda: ${statementBalance.closingBalance} ${statementBalance.currency ?? ''} (razdoblje do ${statementBalance.periodTo ?? '—'})`,
+      );
+    }
+
+
 
     // PRIKVAČEN MODEL (2026-08-11): PDF/foto izvod ide na `google/gemini-3.5-flash`
     // — izravan ključ, bez aliasa koji bi gateway/mapa mogli preusmjeriti na
