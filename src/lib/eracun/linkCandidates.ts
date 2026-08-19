@@ -10,10 +10,12 @@
  * opisi uopće nemaju ime dobavljača — nalaz 9.8.), služi samo za rang i za
  * ogradu istaknutog prijedloga.
  *
- * PROZOR −14 / +45 dana:
- *  - unatrag 14 dana jer se kartično/pretplatničko plaćanje redovito dogodi
- *    PRIJE izdavanja računa (živi Meta slučaj: terećenje 8.–10.8., račun
- *    17./18.8.),
+ * PROZOR −2 / +45 dana:
+ *  - unatrag samo 2 dana: plaćanje PRIJE izdavanja postoji isključivo kod
+ *    kartičnih naplata, gdje terećenje pada ISTI DAN kad račun nastane (±1–2
+ *    dana zbog knjiženja). Širi prozor (−14) proizvodio je KRIVA sparivanja:
+ *    Metina terećenja 8.–10.8. nisu plaćanja računa od 17./18.8., nego starijih
+ *    računa koji nikad nisu ušli u Centar,
  *  - unaprijed 45 dana jer standardno dospijeće (15/30 dana) uz kašnjenje
  *    plaćanja stane unutar tog raspona.
  *
@@ -23,7 +25,7 @@ import { areMerchantsSimilar } from '@/lib/duplicateDetection';
 import { deriveComparableName, hasSignificantWord } from '@/lib/importReview/comparableName';
 import type { MatchConfidence, MatchTransaction } from '@/lib/eracun/matchPayments';
 
-export const LINK_WINDOW_BEFORE_DAYS = 14;
+export const LINK_WINDOW_BEFORE_DAYS = 2;
 export const LINK_WINDOW_AFTER_DAYS = 45;
 const EPS = 0.005;
 
