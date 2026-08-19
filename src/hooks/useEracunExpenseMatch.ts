@@ -261,6 +261,7 @@ export const useEracunExpenseMatch = (invoices: readonly IncomingInvoice[]) => {
     expenses,
     suggestions,
     suggestionsForInvoice,
+    offerForInvoice,
     linksForInvoice,
     linkExpense,
     unlinkExpense,
