@@ -25,6 +25,8 @@ import {
   type StatementSourceMatchReason,
 } from '@/lib/mail/statementSourceMatch';
 import { useStatementImport } from '@/hooks/useStatementImport';
+import { checkAccountIdentity } from '@/lib/importReview/accountIdentityGuard';
+import { AccountIdentityMismatchDialog } from '@/components/import/AccountIdentityMismatchDialog';
 import { useAuth } from '@/hooks/useAuth';
 import type { MailReviewItem } from '@/hooks/useMailReviewQueue';
 import type { ExistingStatement } from '@/lib/statementFingerprint';
@@ -74,6 +76,9 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
   const [saveToWallet, setSaveToWallet] = useState(true);
   const [duplicate, setDuplicate] = useState<ExistingStatement | null>(null);
   const [awaitingImport, setAwaitingImport] = useState(false);
+  const [identityAsk, setIdentityAsk] = useState<
+    { statement: string; wallet: string; name: string; force: boolean } | null
+  >(null);
 
   // PREDODABIR: pravilo > IBAN mapiranje > ime banke ↔ ime novčanika.
   // Razlog se prikazuje ispod pickera da izbor nikad ne bude neobjašnjen.
@@ -196,8 +201,19 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
     },
   ];
 
-  const runImport = async (force: boolean) => {
+  const runImport = async (force: boolean, identityConfirmed = false) => {
     if (!selectedSource || !item.storage_path) return;
+    // Tuđi izvod nikad tiho — ni kad je novčanik odabran ručno iz izbornika.
+    const identity = checkAccountIdentity(accountIdentifier, selectedSource.account_identifier);
+    if (identity.status === 'mismatch' && !identityConfirmed) {
+      setIdentityAsk({
+        statement: identity.statement,
+        wallet: identity.wallet,
+        name: selectedSource.name,
+        force,
+      });
+      return;
+    }
     setDuplicate(null);
     const result = await startImport({
       storagePath: item.storage_path,
