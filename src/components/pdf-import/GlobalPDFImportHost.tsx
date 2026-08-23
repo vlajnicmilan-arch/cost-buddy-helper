@@ -22,6 +22,8 @@ import { computeImportFingerprint } from '@/lib/importFingerprint';
 import { savePayload as saveReviewPayload, hasResumableReview, clearDraft as clearReviewDraft, clearPayload as clearReviewPayload, saveStatementHint, clearStatementHint } from '@/lib/importReview/draft';
 import { findLateCardMatches } from '@/lib/importReview/lateCardMatch';
 import type { ImportReviewPayload, ImportReviewRow, ManualCandidateInfo, TransferTargetOption } from '@/lib/importReview/types';
+import { checkAccountIdentity } from '@/lib/importReview/accountIdentityGuard';
+import { AccountIdentityMismatchDialog } from '@/components/import/AccountIdentityMismatchDialog';
 import { loadTransferRules, matchTransferRule, markTransferRulesUsed } from '@/lib/importReview/transferRules';
 import { resolveTransferDirection, statementDirectionFromType } from '@/lib/importReview/transferDirection';
 import { classifyTransferDescription, type MoneyDirection } from '@/lib/moneyDirection';
@@ -72,6 +74,10 @@ export const GlobalPDFImportHost = () => {
   const { user } = useAuth();
   const { startPDFParseJob, waitForPDFParseJob, fetchPDFParseJob, normalizeJobResult, parseHTML } = usePDFParser();
   const [resumeVisible, setResumeVisible] = useState(false);
+  // BRANA IDENTITETA: izvod na drugi račun od novčanika → uvoz staje i pita.
+  // Potvrda vrijedi samo za ovaj uvoz i nigdje se ne pamti.
+  const [identityAsk, setIdentityAsk] = useState<{ statement: string; wallet: string; name: string } | null>(null);
+  const identityConfirmedRef = useRef(false);
   /** Napredak segmentiranog čitanja („2/5") — dolazi kroz postojeći poll. */
   const [parseProgress, setParseProgress] = useState<string | null>(null);
   const [duplicateInfo, setDuplicateInfo] = useState<DuplicateInfo | null>(null);
@@ -96,6 +102,8 @@ export const GlobalPDFImportHost = () => {
 
   const resetAll = useCallback(() => {
     clearStoredJob();
+    setIdentityAsk(null);
+    identityConfirmedRef.current = false;
     setDuplicateInfo(null);
     setIncludeDuplicates(false);
     setFuzzyDecisions(new Map());
@@ -456,6 +464,20 @@ export const GlobalPDFImportHost = () => {
    */
   const handleImport = async () => {
     if (!pdfImport.source || !pdfImport.result || !user?.id) return;
+    // Tuđi izvod nikad tiho: identitet s izvoda vs. identitet novčanika.
+    const identity = checkAccountIdentity(
+      pdfImport.result.account_iban,
+      pdfImport.source.account_identifier,
+    );
+    if (identity.status === 'mismatch' && !identityConfirmedRef.current) {
+      setIdentityAsk({
+        statement: identity.statement,
+        wallet: identity.wallet,
+        name: pdfImport.source.name,
+      });
+      try { logDiagnostic('import_identity_mismatch_asked', { source_id: pdfImport.source.id }); } catch {}
+      return;
+    }
     const transactions = toParsedTransactions();
     const sourceId = pdfImport.source.id;
     const paymentSourceValue = `custom:${sourceId}`;
@@ -1080,6 +1102,20 @@ export const GlobalPDFImportHost = () => {
 
             </motion.div>
           </motion.div>
+        )}
+        {identityAsk && (
+          <AccountIdentityMismatchDialog
+            open
+            statementIdentifier={identityAsk.statement}
+            walletIdentifier={identityAsk.wallet}
+            walletName={identityAsk.name}
+            onCancel={() => { setIdentityAsk(null); resetAll(); }}
+            onConfirm={() => {
+              identityConfirmedRef.current = true;
+              setIdentityAsk(null);
+              void handleImport();
+            }}
+          />
         )}
       </AnimatePresence>
 

@@ -2096,7 +2096,15 @@
       "skipHint": "Diese Zeile nicht importieren.",
       "noMatchToMerge": "Keine vorhandene Transaktion zum Zusammenführen"
     },
-    "pdfProcessingPart": "Verarbeite Teil {{current}}/{{total}}"
+    "pdfProcessingPart": "Verarbeite Teil {{current}}/{{total}}",
+    "identityMismatch": {
+      "title": "Dieser Auszug gehört zu einem anderen Konto",
+      "statement": "Der Auszug lautet auf",
+      "wallet": "Wallet {{name}} ist",
+      "hint": "Wähle eine andere Wallet oder brich den Import ab. Wenn du trotzdem fortfährst, wird dies nicht als Regel gespeichert.",
+      "cancel": "Import abbrechen",
+      "confirm": "Trotzdem importieren"
+    }
   },
   "bulk": {
     "paymentSource": "Massen-Zahlung",

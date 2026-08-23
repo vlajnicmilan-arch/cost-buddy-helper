@@ -2096,7 +2096,15 @@
       "skipHint": "Do not import this row.",
       "noMatchToMerge": "No existing transaction to merge with"
     },
-    "pdfProcessingPart": "Processing part {{current}}/{{total}}"
+    "pdfProcessingPart": "Processing part {{current}}/{{total}}",
+    "identityMismatch": {
+      "title": "This statement belongs to a different account",
+      "statement": "The statement is issued to",
+      "wallet": "Wallet {{name}} is",
+      "hint": "Choose another wallet or cancel the import. If you continue anyway, this will not be remembered as a rule.",
+      "cancel": "Cancel import",
+      "confirm": "Import anyway"
+    }
   },
   "bulk": {
     "paymentSource": "Bulk Payment",

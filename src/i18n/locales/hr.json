@@ -2101,7 +2101,15 @@
       "skipHint": "Ne uvezi ovaj redak.",
       "noMatchToMerge": "Nema postojeće transakcije za spajanje"
     },
-    "pdfProcessingPart": "Obrađujem dio {{current}}/{{total}}"
+    "pdfProcessingPart": "Obrađujem dio {{current}}/{{total}}",
+    "identityMismatch": {
+      "title": "Izvod ne pripada ovom novčaniku",
+      "statement": "Izvod glasi na",
+      "wallet": "Novčanik {{name}} je",
+      "hint": "Odaberi drugi novčanik ili prekini uvoz. Ako svejedno nastaviš, ovo se neće zapamtiti kao pravilo.",
+      "cancel": "Prekini uvoz",
+      "confirm": "Svejedno uvezi"
+    }
   },
   "bulk": {
     "paymentSource": "Grupno plaćanje",
