@@ -102,6 +102,8 @@ export const GlobalPDFImportHost = () => {
 
   const resetAll = useCallback(() => {
     clearStoredJob();
+    setIdentityAsk(null);
+    identityConfirmedRef.current = false;
     setDuplicateInfo(null);
     setIncludeDuplicates(false);
     setFuzzyDecisions(new Map());
@@ -1100,6 +1102,20 @@ export const GlobalPDFImportHost = () => {
 
             </motion.div>
           </motion.div>
+        )}
+        {identityAsk && (
+          <AccountIdentityMismatchDialog
+            open
+            statementIdentifier={identityAsk.statement}
+            walletIdentifier={identityAsk.wallet}
+            walletName={identityAsk.name}
+            onCancel={() => { setIdentityAsk(null); resetAll(); }}
+            onConfirm={() => {
+              identityConfirmedRef.current = true;
+              setIdentityAsk(null);
+              void handleImport();
+            }}
+          />
         )}
       </AnimatePresence>
 
