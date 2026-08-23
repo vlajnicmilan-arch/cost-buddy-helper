@@ -6103,6 +6103,7 @@
     "cancelTransfer": "Keine Überweisung",
     "plannedSummaryV2": "{{merges}} Zusammenführungen · {{news}} neu · {{transfers}} Überweisungen · {{skipped}} übersprungen",
     "confirmedSummaryV2": "{{merged}} zusammengeführt, {{inserted}} hinzugefügt, {{transfers}} Überweisungen, {{skipped}} übersprungen.",
+    "confirmedSummaryV3": "{{merged}} zusammengeführt, {{inserted}} hinzugefügt, {{transfers}} Überweisungen, {{skipped}} übersprungen. Übersprungen, weil bereits vorhanden: {{existing}}.",
     "historyExtended": "Historie ergänzt ({{count}} Konto/Konten). Der Auszug liegt vor dem Referenzpunkt des Saldos, daher bleibt der Saldo unverändert — der Abgleich erfolgt mit dem neuesten Auszug.",
     "transferFrom": "Von Wallet",
     "transferSourceRequired": "Wähle die Wallet, aus der das Geld kam",

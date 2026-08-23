@@ -402,6 +402,7 @@ const ImportReview = () => {
           skipped_fingerprint: result.skippedFingerprint,
           skipped_merged: result.skippedMerged,
           skipped_duplicate: result.skippedDuplicate,
+          skipped_existing_unique: result.skippedExistingUnique,
           fulfilled_existing: result.fulfilledExisting,
           completed_outcomes: result.completedOutcomes,
           duration_ms: result.durationMs,
@@ -431,11 +432,12 @@ const ImportReview = () => {
         });
       }
 
-      toast.success(t('importReview.confirmedSummaryV2', {
+      toast.success(t('importReview.confirmedSummaryV3', {
         merged: result.merged,
         inserted: result.inserted,
         transfers: result.transfersCreated,
         skipped: result.skippedByUser + result.skippedFingerprint + result.skippedMerged + result.skippedDuplicate,
+        existing: result.fulfilledExisting + result.skippedExistingUnique,
       }), {
         duration: 10000,
         action: batchId ? {

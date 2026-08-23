@@ -46,9 +46,12 @@ function makeFakeClient(opts: {
   updateAffected?: (manualId: string) => number;
   insertedCount?: (rows: any[]) => number;
   existingFingerprints?: string[];
+  uniqueConflictFingerprint?: string;
+  upsertError?: { code: string; message: string };
 } = {}) {
   const calls: any[] = [];
   const persisted = new Set(opts.existingFingerprints ?? []);
+  let uniqueConflictPending = Boolean(opts.uniqueConflictFingerprint);
   const client: ExecutorSupabaseClient = {
     from() {
       return {
@@ -94,6 +97,18 @@ function makeFakeClient(opts: {
           return {
             async select() {
               calls.push({ op: 'upsert', rows });
+              if (opts.upsertError) return { data: null, error: opts.upsertError };
+              if (uniqueConflictPending && opts.uniqueConflictFingerprint) {
+                uniqueConflictPending = false;
+                persisted.add(opts.uniqueConflictFingerprint);
+                return {
+                  data: null,
+                  error: {
+                    code: '23505',
+                    message: 'duplicate key value violates unique constraint "uniq_expenses_user_bank_tx"',
+                  },
+                };
+              }
               const n = opts.insertedCount ? opts.insertedCount(rows) : rows.length;
               for (const row of rows.slice(0, n)) persisted.add(row.bank_transaction_id);
               return { data: Array.from({ length: n }, (_, i) => ({ id: rows[i]?.bank_transaction_id })), error: null };
@@ -189,6 +204,53 @@ describe('importReview/executor', () => {
     expect(result.completedOutcomes).toBe(2);
     const upsert = retry.calls.find(call => call.op === 'upsert');
     expect(upsert.rows.map((row: any) => row.bank_transaction_id)).toEqual(['fp-1']);
+  });
+
+  it('23505 iz starijeg batcha preskače postojeći redak i dovršava ostale ishode', async () => {
+    const p = payload({
+      importedTransactions: [
+        tx(50, { amount: 42.43, description: 'Baustoff+Metall', fingerprint: 'fp-baustoff' }),
+        tx(51, { fingerprint: 'fp-new' }),
+      ],
+      rows: [
+        { index: 50, classification: { kind: 'new', existsByFingerprint: false } },
+        { index: 51, classification: { kind: 'new', existsByFingerprint: false } },
+      ] as any,
+    });
+    const fake = makeFakeClient({ uniqueConflictFingerprint: 'fp-baustoff' });
+    const result = await executeDecisions({
+      supabase: fake.client,
+      userId: 'u1',
+      activeBusinessProfileId: null,
+      payload: p,
+      decisions: baseDecisions({ newRows: { 50: true, 51: true } }),
+    });
+
+    expect(result.skippedExistingUnique).toBe(1);
+    expect(result.inserted).toBe(1);
+    expect(result.completedOutcomes).toBe(2);
+    expect(result.errors).toEqual([]);
+    expect(fake.calls.filter(call => call.op === 'upsert')).toHaveLength(2);
+  });
+
+  it('ne-unique DB greška ostaje glasna', async () => {
+    const p = payload({
+      importedTransactions: [tx(0)],
+      rows: [{ index: 0, classification: { kind: 'new', existsByFingerprint: false } }] as any,
+    });
+    const fake = makeFakeClient({ upsertError: { code: '42501', message: 'permission denied' } });
+
+    await expect(executeDecisions({
+      supabase: fake.client,
+      userId: 'u1',
+      activeBusinessProfileId: null,
+      payload: p,
+      decisions: baseDecisions({ newRows: { 0: true } }),
+    })).rejects.toMatchObject({
+      expectedOutcomes: 1,
+      actualOutcomes: 0,
+      executionErrors: ['insert:permission denied'],
+    });
   });
 
   it('question=new inserts; question=merge merges', async () => {

@@ -131,6 +131,8 @@ export interface ExecutorResult {
   readonly skippedMerged: number;
   /** INSERT conflict on (user_id, bank_transaction_id) — already inserted earlier. */
   readonly skippedDuplicate: number;
+  /** A 23505 race/older-batch conflict confirmed against uniq_expenses_user_bank_tx. */
+  readonly skippedExistingUnique: number;
   /** Planned outcomes already present before this attempt (idempotent retry). */
   readonly fulfilledExisting: number;
   /** All planned outcomes present after execution, regardless of when written. */
@@ -374,6 +376,7 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
 
   let merged = 0;
   let skippedMerged = 0;
+  let skippedExistingUnique = 0;
   const writeErrorsByFingerprint = new Map<string, string>();
 
   // --- MERGE branch ---
@@ -399,6 +402,18 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
         .eq('user_id', input.userId)
         .is('bank_transaction_id', null)
         .select('id');
+      if (res.error && isBankTransactionUniqueViolation(res.error)) {
+        const persisted = await findPersistedFingerprints(input.supabase, input.userId, [m.tx.fingerprint]);
+        if (persisted.has(m.tx.fingerprint)) {
+          skippedExistingUnique += 1;
+          continue;
+        }
+        const detail = errorDetail(res.error);
+        errors.push(`merge:${m.manualId}:${detail}`);
+        writeErrorsByFingerprint.set(m.tx.fingerprint, detail);
+        skippedMerged += 1;
+        continue;
+      }
       if (res.error) {
         errors.push(`merge:${m.manualId}:${res.error.message}`);
         writeErrorsByFingerprint.set(m.tx.fingerprint, res.error.message);
@@ -409,7 +424,14 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
       if (affected > 0) merged += 1;
       else skippedMerged += 1;
     } catch (e) {
-      const detail = e instanceof Error ? e.message : String(e);
+      if (isBankTransactionUniqueViolation(e)) {
+        const persisted = await findPersistedFingerprints(input.supabase, input.userId, [m.tx.fingerprint]);
+        if (persisted.has(m.tx.fingerprint)) {
+          skippedExistingUnique += 1;
+          continue;
+        }
+      }
+      const detail = errorDetail(e);
       errors.push(`merge:${m.manualId}:${detail}`);
       writeErrorsByFingerprint.set(m.tx.fingerprint, detail);
       skippedMerged += 1;
@@ -444,22 +466,18 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
       // OZNAKA "BEZ OBJAŠNJENJA" — samo ako je korisnik sam kvačio taj redak.
       needs_explanation: isNeedsExplanation(input.decisions, tx.index),
     }));
-    try {
-      const res = await input.supabase
-        .from('expenses')
-        .upsert(rows, { onConflict: 'user_id,bank_transaction_id', ignoreDuplicates: true })
-        .select('id');
-      if (res.error) {
-        errors.push(`insert:${res.error.message}`);
-        for (const item of pendingInserts) writeErrorsByFingerprint.set(item.tx.fingerprint, res.error.message);
-      } else {
-        inserted = res.data?.length ?? 0;
-        skippedDuplicate = rows.length - inserted;
-      }
-    } catch (e) {
-      const detail = e instanceof Error ? e.message : String(e);
-      errors.push(`insert:${detail}`);
-      for (const item of pendingInserts) writeErrorsByFingerprint.set(item.tx.fingerprint, detail);
+    const write = await upsertRecoveringExistingUnique({
+      supabase: input.supabase,
+      userId: input.userId,
+      rows,
+      branch: 'insert',
+    });
+    inserted = write.inserted;
+    skippedDuplicate = write.skippedDuplicate;
+    skippedExistingUnique += write.skippedExistingUnique;
+    for (const failure of write.failures) {
+      errors.push(`insert:${failure.detail}`);
+      writeErrorsByFingerprint.set(failure.fingerprint, failure.detail);
     }
   }
 
@@ -497,23 +515,18 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
       needs_explanation: isNeedsExplanation(input.decisions, tx.index),
       };
     });
-    try {
-      const res = await input.supabase
-        .from('expenses')
-        .upsert(rows, { onConflict: 'user_id,bank_transaction_id', ignoreDuplicates: true })
-        .select('id');
-      if (res.error) {
-        errors.push(`transfer:${res.error.message}`);
-        for (const item of pendingTransfers) writeErrorsByFingerprint.set(item.tx.fingerprint, res.error.message);
-      } else {
-        transfersCreated = res.data?.length ?? 0;
-        // Duplicates on retry counted as skippedDuplicate.
-        skippedDuplicate += rows.length - transfersCreated;
-      }
-    } catch (e) {
-      const detail = e instanceof Error ? e.message : String(e);
-      errors.push(`transfer:${detail}`);
-      for (const item of pendingTransfers) writeErrorsByFingerprint.set(item.tx.fingerprint, detail);
+    const write = await upsertRecoveringExistingUnique({
+      supabase: input.supabase,
+      userId: input.userId,
+      rows,
+      branch: 'transfer',
+    });
+    transfersCreated = write.inserted;
+    skippedDuplicate += write.skippedDuplicate;
+    skippedExistingUnique += write.skippedExistingUnique;
+    for (const failure of write.failures) {
+      errors.push(`transfer:${failure.detail}`);
+      writeErrorsByFingerprint.set(failure.fingerprint, failure.detail);
     }
   }
 
@@ -560,12 +573,112 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
     skippedFingerprint: plan.skippedFingerprint,
     skippedMerged,
     skippedDuplicate,
+    skippedExistingUnique,
     fulfilledExisting: existingBefore.size,
     completedOutcomes: actualOutcomes,
     durationMs: now() - start,
     errors,
     reconciliationSummary,
   };
+}
+
+type ExpenseUpsertRow = Record<string, unknown> & { bank_transaction_id: string };
+
+interface RecoveringUpsertResult {
+  readonly inserted: number;
+  readonly skippedDuplicate: number;
+  readonly skippedExistingUnique: number;
+  readonly failures: readonly { fingerprint: string; detail: string }[];
+}
+
+/** Only this exact DB outcome is recoverable; every other write error stays loud. */
+function isBankTransactionUniqueViolation(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const value = error as { code?: unknown; message?: unknown; details?: unknown; constraint?: unknown };
+  const text = [value.message, value.details, value.constraint]
+    .filter(part => typeof part === 'string')
+    .join(' ')
+    .toLowerCase();
+  return value.code === '23505' && text.includes('uniq_expenses_user_bank_tx');
+}
+
+function errorDetail(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === 'string') return message;
+  }
+  return String(error);
+}
+
+/**
+ * A concurrent/older-batch row can surface as 23505 even with ignoreDuplicates.
+ * Confirm which fingerprints now exist, count those as fulfilled, then retry only
+ * the untouched rows. If the conflict cannot be proven, stop and report it.
+ */
+async function upsertRecoveringExistingUnique(input: {
+  readonly supabase: ExecutorSupabaseClient;
+  readonly userId: string;
+  readonly rows: readonly ExpenseUpsertRow[];
+  readonly branch: 'insert' | 'transfer';
+}): Promise<RecoveringUpsertResult> {
+  let remaining = [...input.rows];
+  let inserted = 0;
+  let skippedDuplicate = 0;
+  let skippedExistingUnique = 0;
+
+  while (remaining.length > 0) {
+    let data: readonly unknown[] | null = null;
+    let writeError: unknown = null;
+    try {
+      const res = await input.supabase
+        .from('expenses')
+        .upsert(remaining, { onConflict: 'user_id,bank_transaction_id', ignoreDuplicates: true })
+        .select('id');
+      data = res.data;
+      writeError = res.error;
+    } catch (error) {
+      writeError = error;
+    }
+
+    if (!writeError) {
+      const written = data?.length ?? 0;
+      inserted += written;
+      skippedDuplicate += remaining.length - written;
+      return { inserted, skippedDuplicate, skippedExistingUnique, failures: [] };
+    }
+
+    if (!isBankTransactionUniqueViolation(writeError)) {
+      const detail = errorDetail(writeError);
+      return {
+        inserted,
+        skippedDuplicate,
+        skippedExistingUnique,
+        failures: remaining.map(row => ({ fingerprint: row.bank_transaction_id, detail })),
+      };
+    }
+
+    const persisted = await findPersistedFingerprints(
+      input.supabase,
+      input.userId,
+      remaining.map(row => row.bank_transaction_id),
+    );
+    const retry = remaining.filter(row => !persisted.has(row.bank_transaction_id));
+    const recovered = remaining.length - retry.length;
+    if (recovered === 0) {
+      const detail = `${input.branch}:${errorDetail(writeError)}`;
+      return {
+        inserted,
+        skippedDuplicate,
+        skippedExistingUnique,
+        failures: remaining.map(row => ({ fingerprint: row.bank_transaction_id, detail })),
+      };
+    }
+    skippedExistingUnique += recovered;
+    remaining = retry;
+  }
+
+  return { inserted, skippedDuplicate, skippedExistingUnique, failures: [] };
 }
 
 type OutcomePlan = MergePlan | InsertPlan | TransferPlan;
