@@ -6103,7 +6103,7 @@
     "cancelTransfer": "Not a transfer",
     "plannedSummaryV2": "{{merges}} merges · {{news}} new · {{transfers}} transfers · {{skipped}} skipped",
     "confirmedSummaryV2": "Merged {{merged}}, added {{inserted}}, transfers {{transfers}}, skipped {{skipped}}.",
-    "confirmedSummaryV3": "Merged {{merged}}, added {{inserted}}, transfers {{transfers}}, skipped {{skipped}}. Skipped because already present: {{existing}}.",
+    "confirmedSummaryV3": "Merged {{merged}}, added {{inserted}}, transfers {{transfers}}, skipped {{skipped}} (already present: {{existing}}).",
     "historyExtended": "History extended ({{count}} account(s)). This statement predates the balance reference point, so the balance is unchanged — it will reconcile once you import the latest statement.",
     "transferFrom": "From wallet",
     "transferSourceRequired": "Pick the wallet the money came from",

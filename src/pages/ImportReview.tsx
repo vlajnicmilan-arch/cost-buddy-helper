@@ -436,8 +436,10 @@ const ImportReview = () => {
         merged: result.merged,
         inserted: result.inserted,
         transfers: result.transfersCreated,
-        skipped: result.skippedByUser + result.skippedFingerprint + result.skippedMerged + result.skippedDuplicate,
-        existing: result.fulfilledExisting + result.skippedExistingUnique,
+        skipped: result.skippedByUser + result.skippedFingerprint + result.skippedMerged + result.skippedDuplicate
+          + result.fulfilledExisting + result.skippedExistingUnique,
+        existing: result.skippedFingerprint + result.skippedDuplicate
+          + result.fulfilledExisting + result.skippedExistingUnique,
       }), {
         duration: 10000,
         action: batchId ? {
