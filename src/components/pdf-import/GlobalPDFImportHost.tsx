@@ -462,6 +462,20 @@ export const GlobalPDFImportHost = () => {
    */
   const handleImport = async () => {
     if (!pdfImport.source || !pdfImport.result || !user?.id) return;
+    // Tuđi izvod nikad tiho: identitet s izvoda vs. identitet novčanika.
+    const identity = checkAccountIdentity(
+      pdfImport.result.account_iban,
+      pdfImport.source.account_identifier,
+    );
+    if (identity.status === 'mismatch' && !identityConfirmedRef.current) {
+      setIdentityAsk({
+        statement: identity.statement,
+        wallet: identity.wallet,
+        name: pdfImport.source.name,
+      });
+      try { logDiagnostic('import_identity_mismatch_asked', { source_id: pdfImport.source.id }); } catch {}
+      return;
+    }
     const transactions = toParsedTransactions();
     const sourceId = pdfImport.source.id;
     const paymentSourceValue = `custom:${sourceId}`;
