@@ -405,6 +405,21 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
           {t('mailReview.discard', 'Odbaci')}
         </Button>
       </div>
+
+      {identityAsk && (
+        <AccountIdentityMismatchDialog
+          open
+          statementIdentifier={identityAsk.statement}
+          walletIdentifier={identityAsk.wallet}
+          walletName={identityAsk.name}
+          onCancel={() => setIdentityAsk(null)}
+          onConfirm={() => {
+            const force = identityAsk.force;
+            setIdentityAsk(null);
+            void runImport(force, true);
+          }}
+        />
+      )}
     </div>
   );
 };
