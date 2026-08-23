@@ -6112,6 +6112,7 @@
     "cancelTransfer": "Nije prijenos",
     "plannedSummaryV2": "{{merges}} spajanja · {{news}} novih · {{transfers}} prijenosa · {{skipped}} preskočeno",
     "confirmedSummaryV2": "Spojeno {{merged}}, dodano {{inserted}}, prijenosa {{transfers}}, preskočeno {{skipped}}.",
+    "confirmedSummaryV3": "Spojeno {{merged}}, dodano {{inserted}}, prijenosa {{transfers}}, preskočeno {{skipped}} (već postoji: {{existing}}).",
     "historyExtended": "Povijest je dopunjena ({{count}} računa). Izvod je stariji od referentne točke salda, pa se stanje ne mijenja — uskladit će se kad uvezete najnoviji izvod.",
     "transferFrom": "S kojeg izvora",
     "transferSourceRequired": "Odaberi izvor s kojeg je novac došao",
