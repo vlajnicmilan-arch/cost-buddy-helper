@@ -18,7 +18,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { classifyImport, type ClassifierImportedRow, type ClassifierManualCandidate } from '@/lib/importClassifier';
 import { emitQuestionTraces } from '@/lib/importReview/questionTrace';
 import { COMMIT_SHA } from '@/lib/version';
-import { computeImportFingerprint } from '@/lib/importFingerprint';
+import { computeImportFingerprint, computeImportKeys } from '@/lib/importFingerprint';
+import { COUNTED_EXPENSE_STATUSES } from '@/lib/countedExpense';
 import { savePayload as saveReviewPayload, hasResumableReview, clearDraft as clearReviewDraft, clearPayload as clearReviewPayload, saveStatementHint, clearStatementHint } from '@/lib/importReview/draft';
 import { findLateCardMatches } from '@/lib/importReview/lateCardMatch';
 import { lookupFingerprintStates, type ExecutorSupabaseClient } from '@/lib/importReview/executor';
@@ -511,8 +512,18 @@ export const GlobalPDFImportHost = () => {
     try {
       pdfImport._setImporting(true);
 
-      // Compute fingerprints for imported rows (uses Korak 2 balance_after).
-      const fingerprints = await Promise.all(transactions.map(tx =>
+      // KLJUČ V2 — identitet retka bez AI-teksta (datum+iznos+saldo, inače
+      // redni broj). Stari otisak (ime trgovca) ostaje SAMO kao zamjenska
+      // provjera "je li već u knjigama" za retke uvezene prije prijelaza.
+      const keysV2 = await computeImportKeys(transactions.map(tx => ({
+        userId: user.id,
+        paymentSource: paymentSourceValue,
+        date: tx.date,
+        type: tx.type,
+        amount: tx.amount,
+        balanceAfter: tx.balance_after ?? null,
+      })));
+      const legacyFingerprints = await Promise.all(transactions.map(tx =>
         computeImportFingerprint({
           userId: user.id,
           paymentSource: paymentSourceValue,
@@ -527,21 +538,35 @@ export const GlobalPDFImportHost = () => {
 
       // SELECT (a) fingerprint hits — TRI stanja: živ redak / ranije obrisan
       // redak (otisak i dalje zauzet u indeksu) / retka nema.
-      let existingFpSet = new Set<string>();
-      let deletedFpSet = new Set<string>();
-      if (fingerprints.length > 0) {
+      let liveKeys = new Set<string>();
+      let deletedKeys = new Set<string>();
+      if (keysV2.length > 0) {
         try {
           const states = await lookupFingerprintStates(
             supabase as unknown as ExecutorSupabaseClient,
             user.id,
-            fingerprints,
+            [...keysV2, ...legacyFingerprints],
           );
-          existingFpSet = states.live;
-          deletedFpSet = states.deleted;
+          liveKeys = states.live;
+          deletedKeys = states.deleted;
         } catch (e) {
           try { logDiagnostic('import_review_fp_lookup_failed', { message: e instanceof Error ? e.message : String(e) }); } catch {}
         }
       }
+
+      // Djelotvoran otisak retka: v2 je pravilo; stari otisak preuzima SAMO
+      // kad taj redak stvarno postoji u bazi pod starim ključem (živ ili
+      // obrisan), da spajanje/vraćanje pogodi postojeći zapis.
+      const fingerprints = transactions.map((_, i) => {
+        const v2 = keysV2[i];
+        if (liveKeys.has(v2) || deletedKeys.has(v2)) return v2;
+        const legacy = legacyFingerprints[i];
+        if (liveKeys.has(legacy) || deletedKeys.has(legacy)) return legacy;
+        return v2;
+      });
+      const existingFpSet = liveKeys;
+      const deletedFpSet = deletedKeys;
+
 
       // SELECT (b) manual candidates on this source (no bank_transaction_id).
       const dates = transactions.map(tx => tx.date.getTime());
@@ -567,6 +592,49 @@ export const GlobalPDFImportHost = () => {
       } catch (e) {
         try { logDiagnostic('import_review_manual_lookup_failed', { message: e instanceof Error ? e.message : String(e) }); } catch {}
       }
+
+      // PRIJELAZ — retci koje je raniji uvoz SPOJIO s ručnim unosom nose stari
+      // otisak (ime trgovca) i nemaju zapisan saldo, pa se v2 ključ za njih ne
+      // može preračunati. Da ponovni uvoz ne bi stvorio njihov duplikat, takav
+      // redak se prepoznaje istim ogradama kao ponuda kartičnog kašnjenja:
+      // isti novčanik i tip, iznos do centa, ručni unos prije izvoda (≤4 dana)
+      // i strogo 1:1. Bez svih ograda — šutnja.
+      let confirmedRows: Array<{ id: string; date: string; amount: number; type: string }> = [];
+      try {
+        const { data } = await supabase
+          .from('expenses')
+          .select('id,date,amount,type')
+          .eq('user_id', user.id)
+          .eq('payment_source', paymentSourceValue)
+          .eq('bank_match_status', 'confirmed')
+          .is('balance_after', null)
+          .in('status', [...COUNTED_EXPENSE_STATUSES])
+          .gte('date', isoFrom)
+          .lte('date', isoTo);
+        confirmedRows = (data ?? []) as typeof confirmedRows;
+      } catch (e) {
+        try { logDiagnostic('import_review_confirmed_lookup_failed', { message: e instanceof Error ? e.message : String(e) }); } catch {}
+      }
+      const confirmedTwinIdx = new Set<number>(
+        findLateCardMatches({
+          imported: transactions.map((tx, i) => ({
+            index: i,
+            paymentSource: paymentSourceValue,
+            type: tx.type,
+            amount: tx.amount,
+            date: tx.date,
+          })),
+          manualCandidates: confirmedRows.map(r => ({
+            id: r.id,
+            paymentSource: paymentSourceValue,
+            type: r.type,
+            amount: Number(r.amount),
+            date: r.date,
+          })),
+          maxDaysAfter: 4,
+        }).map(o => o.importedIndex),
+      );
+
 
       const manualCandidatesForClassifier: ClassifierManualCandidate[] = manualRows.map(m => ({
         id: m.id,
@@ -762,16 +830,18 @@ export const GlobalPDFImportHost = () => {
           };
         }
         const previouslyDeleted = !existingFpSet.has(fp) && deletedFpSet.has(fp);
+        const alreadyInBooks = existingFpSet.has(fp) || confirmedTwinIdx.has(baseRow.index);
         return {
           ...baseRow,
           classification: {
             kind: 'new' as const,
-            existsByFingerprint: existingFpSet.has(fp),
+            existsByFingerprint: alreadyInBooks,
             deletedByFingerprint: previouslyDeleted,
           },
-          lateMatchOffer: existingFpSet.has(fp) || previouslyDeleted
+          lateMatchOffer: alreadyInBooks || previouslyDeleted
             ? null
             : (lateOfferByIdx.get(baseRow.index) ?? null),
+
           deletedTwinDate: previouslyDeleted ? findLiveTwinDate(tx, manualRows) : null,
         };
       });

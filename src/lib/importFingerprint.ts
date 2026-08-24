@@ -136,3 +136,80 @@ export async function computeImportFingerprint(input: FingerprintInput): Promise
   const hash = await sha256Hex(parts.join('|'));
   return `${PREFIX}:${hash}`;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// V2 KLJUČ UVOZA — bez AI-teksta
+// ─────────────────────────────────────────────────────────────────────────────
+/**
+ * AI čitač svaki put drukčije napiše ime trgovca ("Facebook" / "Paypal
+ * *facebook" / "Facebook (Paypal)"), pa je otisak koji hashira taj tekst
+ * nestabilan i isti redak ulazi više puta. V2 ključ gradi identitet ISKLJUČIVO
+ * od onoga što banka daje stabilno:
+ *
+ *   user_id | payment_source | datum (UTC) | tip | iznos | saldo nakon retka
+ *
+ * Kad izvod nema stupac salda (npr. KEKS), umjesto salda ide redni broj među
+ * IDENTIČNIM redcima istog dana (`ord:N`) — nikad ime trgovca ni opis.
+ *
+ * Datum je UTC dan (`toISOString().slice(0,10)`), isti dan koji završi u
+ * `expenses.date`, pa ga SQL prijelaz može doslovno reproducirati.
+ */
+const PREFIX_V2 = 'imp2';
+
+export interface ImportKeyInput {
+  userId: string;
+  paymentSource?: string | null;
+  date: Date | string;
+  type: string;
+  amount: number;
+  balanceAfter?: number | null;
+  /** Redni broj među identičnim redcima (koristi se samo bez salda). */
+  ordinal?: number;
+}
+
+function toUtcDateKey(d: Date | string): string {
+  const date = d instanceof Date ? d : new Date(d);
+  if (Number.isNaN(date.getTime())) return 'invalid';
+  return date.toISOString().slice(0, 10);
+}
+
+/** Kanonski niz koji SQL prijelaz mora reproducirati znak po znak. */
+export function importKeyCanonicalString(input: ImportKeyInput): string {
+  const hasBalance = typeof input.balanceAfter === 'number' && Number.isFinite(input.balanceAfter);
+  const tail = hasBalance
+    ? `bal:${(input.balanceAfter as number).toFixed(2)}`
+    : `ord:${Number.isFinite(input.ordinal) ? Number(input.ordinal) : 0}`;
+  return [
+    'v2',
+    input.userId,
+    String(input.paymentSource ?? ''),
+    toUtcDateKey(input.date),
+    String(input.type ?? ''),
+    toAmountKey(input.amount),
+    tail,
+  ].join('|');
+}
+
+export async function computeImportKey(input: ImportKeyInput): Promise<string> {
+  const hash = await sha256Hex(importKeyCanonicalString(input));
+  return `${PREFIX_V2}:${hash}`;
+}
+
+/**
+ * Ključevi za cijeli izvod odjednom — jedino mjesto koje dodjeljuje `ord:N`
+ * redcima bez salda (redoslijed = redoslijed na izvodu).
+ */
+export async function computeImportKeys(
+  rows: readonly Omit<ImportKeyInput, 'ordinal'>[],
+): Promise<string[]> {
+  const seen = new Map<string, number>();
+  const inputs: ImportKeyInput[] = rows.map(row => {
+    const hasBalance = typeof row.balanceAfter === 'number' && Number.isFinite(row.balanceAfter);
+    if (hasBalance) return { ...row };
+    const groupKey = [row.userId, String(row.paymentSource ?? ''), toUtcDateKey(row.date), String(row.type ?? ''), toAmountKey(row.amount)].join('|');
+    const ordinal = seen.get(groupKey) ?? 0;
+    seen.set(groupKey, ordinal + 1);
+    return { ...row, ordinal };
+  });
+  return Promise.all(inputs.map(computeImportKey));
+}
