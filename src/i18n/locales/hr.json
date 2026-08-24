@@ -6109,7 +6109,8 @@
     "badges": {
       "fingerprintExists": "Već u aplikaciji — bit će preskočeno",
       "fromRule": "Iz pravila",
-      "recognizedTransfer": "Prepoznat prijenos"
+      "recognizedTransfer": "Prepoznat prijenos",
+      "previouslyDeleted": "ranije obrisano — neće se vratiti"
     },
     "markAsTransfer": "Ovo je prijenos",
     "transferTo": "Na novčanik",
@@ -6161,7 +6162,13 @@
     "blockers": {
       "transfers": "{{count}} prijenosa bez odredišta — odaberi novčanik ili „Otišlo izvan mojih računa”",
       "questions": "{{count}} pitanja bez odgovora"
-    }
+    },
+    "previouslyDeletedTwin": "Isti iznos već stoji {{date}} kao tvoj unos.",
+    "actions": {
+      "restoreDeleted": "Vrati u knjige",
+      "restoreDeletedOn": "Vraća se u knjige"
+    },
+    "skippedPreviouslyDeletedSummary": "Preskočeno jer je ranije obrisano: {{count}}"
   },
   "correctionDelete": {
     "title": "Brisanje zapisa o korekciji salda",

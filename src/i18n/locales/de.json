@@ -6100,7 +6100,8 @@
     "badges": {
       "fingerprintExists": "Bereits in der App — wird übersprungen",
       "fromRule": "Aus Regel",
-      "recognizedTransfer": "Erkannte Umbuchung"
+      "recognizedTransfer": "Erkannte Umbuchung",
+      "previouslyDeleted": "früher gelöscht — kehrt nicht zurück"
     },
     "markAsTransfer": "Dies ist eine Überweisung",
     "transferTo": "Zu Wallet",
@@ -6152,7 +6153,13 @@
     "blockers": {
       "transfers": "{{count}} Überweisungen ohne Ziel — Wallet wählen oder „Ging außerhalb meiner Konten“",
       "questions": "{{count}} unbeantwortete Fragen"
-    }
+    },
+    "previouslyDeletedTwin": "Derselbe Betrag steht bereits am {{date}} als deine Buchung.",
+    "actions": {
+      "restoreDeleted": "Zurück in die Bücher",
+      "restoreDeletedOn": "Wird zurückgeholt"
+    },
+    "skippedPreviouslyDeletedSummary": "Übersprungen, weil früher gelöscht: {{count}}"
   },
   "correctionDelete": {
     "title": "Saldo-Korrektur-Eintrag löschen",

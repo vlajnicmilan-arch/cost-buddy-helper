@@ -32,8 +32,10 @@ export function buildInitialDecisions(payload: ImportReviewPayload): ImportRevie
         questions[row.index] = null;
         break;
       case 'new':
-        // Default ON, ali OFF (i disabled) kad postoji fingerprint hit.
-        newRows[row.index] = !row.classification.existsByFingerprint;
+        // Default ON, ali OFF (i disabled) kad postoji fingerprint hit ili kad
+        // otisak pripada ranije obrisanom retku (koji se ne vraća sam).
+        newRows[row.index] =
+          !row.classification.existsByFingerprint && row.classification.deletedByFingerprint !== true;
         break;
       case 'transfer':
         // Rule already matched → default ON, rememberRule=false (rule postoji).
@@ -51,7 +53,8 @@ export function buildInitialDecisions(payload: ImportReviewPayload): ImportRevie
 
   // ZADANO PRAZNO — nijedan redak ne dolazi označen. Oznaka "Bez objašnjenja"
   // postoji samo ako je korisnik sam klikne.
-  return { autoMerge, questions, newRows, transfers, needsExplanation: {} };
+  // ZADANO PRAZNO i za "Vrati u knjige" — obrisani redak se ne vraća sam.
+  return { autoMerge, questions, newRows, transfers, needsExplanation: {}, restoreDeleted: {} };
 }
 
 export function setAutoMerge(
@@ -80,6 +83,35 @@ export function setNeedsExplanation(
     ...decisions,
     needsExplanation: { ...(decisions.needsExplanation ?? {}), [index]: value },
   };
+}
+
+/** Korisnikova radnja "Vrati u knjige" na ranije obrisanom retku. */
+export function setRestoreDeleted(
+  decisions: ImportReviewDecisions,
+  index: number,
+  value: boolean,
+): ImportReviewDecisions {
+  return {
+    ...decisions,
+    restoreDeleted: { ...(decisions.restoreDeleted ?? {}), [index]: value },
+  };
+}
+
+/** Jedini čitač te radnje — starim nacrtima bez polja vraća false. */
+export function isRestoreDeleted(
+  decisions: ImportReviewDecisions,
+  index: number,
+): boolean {
+  return decisions.restoreDeleted?.[index] === true;
+}
+
+/** Redak čiji otisak pripada ranije obrisanom (ali živom u bazi) zapisu. */
+export function isPreviouslyDeletedRow(row: ImportReviewRow): boolean {
+  return (
+    row.classification.kind === 'new' &&
+    !row.classification.existsByFingerprint &&
+    row.classification.deletedByFingerprint === true
+  );
 }
 
 /** Jedini čitač oznake — starim nacrtima bez polja vraća false. */
@@ -201,6 +233,10 @@ export function summarize(
         const offer = decisions.questions[row.index];
         if (row.classification.existsByFingerprint) {
           plannedSkipped += 1;
+        } else if (row.classification.deletedByFingerprint === true) {
+          // Ranije obrisano: ulazi u plan samo na izričito "Vrati u knjige".
+          if (isRestoreDeleted(decisions, row.index)) plannedNew += 1;
+          else plannedSkipped += 1;
         } else if (offer && offer.choice === 'merge') {
           // Prihvaćena ponuda spajanja (kartično kašnjenje) — jedan ishod.
           plannedMerges += 1;

@@ -33,7 +33,18 @@ export type ClassificationKind =
     }
 
   | { readonly kind: 'question'; readonly reason: QuestionReason; readonly candidateIds: readonly string[] }
-  | { readonly kind: 'new'; readonly existsByFingerprint: boolean }
+  | {
+      readonly kind: 'new';
+      /** Otisak pripada ŽIVOM retku u knjigama — redak se preskače. */
+      readonly existsByFingerprint: boolean;
+      /**
+       * TREĆE STANJE: otisak postoji, ali pripada RANIJE OBRISANOM retku.
+       * Jedinstveni indeks `uniq_expenses_user_bank_tx` ne mari za `deleted_at`,
+       * pa bi upis pao s 23505. Zadano se preskače ("ranije obrisano — neće se
+       * vratiti"); korisnik ga svjesnim dodirom može vratiti u knjige.
+       */
+      readonly deletedByFingerprint?: boolean;
+    }
   /**
    * Rule engine matched this row against a learned transfer rule. Executor will
    * insert as `type='transfer'` with income_source_id = targetIncomeSourceId.
@@ -77,6 +88,12 @@ export interface ImportReviewRow {
    * je razdvojeno, spaja se isključivo korisnikovim dodirom.
    */
   readonly lateMatchOffer?: string | null;
+  /**
+   * Kad je redak "ranije obrisan", a u istom novčaniku unutar ±4 dana postoji
+   * ŽIVI redak istog iznosa — datum (YYYY-MM-DD) tog retka. Služi samo objašnjenju
+   * ("isti iznos već stoji 08.08. kao tvoj unos"); ne mijenja nijednu odluku.
+   */
+  readonly deletedTwinDate?: string | null;
 }
 
 /**
@@ -198,6 +215,11 @@ export interface ImportReviewDecisions {
    * sessionStoragea.
    */
   readonly needsExplanation?: Readonly<Record<number, boolean>>;
+  /**
+   * "VRATI U KNJIGE" po retku — jedini put kojim se ranije obrisani redak
+   * vraća. Zadano prazno: obrisani redak se NIKAD ne vraća sam.
+   */
+  readonly restoreDeleted?: Readonly<Record<number, boolean>>;
 }
 
 export interface ImportReviewDraft {

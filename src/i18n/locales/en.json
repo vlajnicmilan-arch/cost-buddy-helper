@@ -6100,7 +6100,8 @@
     "badges": {
       "fingerprintExists": "Already in app — will be skipped",
       "fromRule": "From rule",
-      "recognizedTransfer": "Recognised transfer"
+      "recognizedTransfer": "Recognised transfer",
+      "previouslyDeleted": "previously deleted — will not return"
     },
     "markAsTransfer": "This is a transfer",
     "transferTo": "To wallet",
@@ -6152,7 +6153,13 @@
     "blockers": {
       "transfers": "{{count}} transfers without a destination — pick a wallet or \"Went outside my accounts\"",
       "questions": "{{count}} questions unanswered"
-    }
+    },
+    "previouslyDeletedTwin": "The same amount is already recorded on {{date}} as your entry.",
+    "actions": {
+      "restoreDeleted": "Restore to books",
+      "restoreDeletedOn": "Will be restored"
+    },
+    "skippedPreviouslyDeletedSummary": "Skipped because previously deleted: {{count}}"
   },
   "correctionDelete": {
     "title": "Delete balance correction record",
