@@ -245,7 +245,8 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
         account_identifier: accountIdentifier,
       });
     }
-    if (remember && accountIdentifier) {
+    // Svjesna potvrda na neslaganju identiteta se NIKAD ne pamti kao pravilo.
+    if (remember && accountIdentifier && identity.status !== 'mismatch') {
       await rememberRule({
         identifier: accountIdentifier,
         iban: iban || null,
@@ -255,6 +256,7 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
       });
     }
   };
+
 
   return (
     <div
