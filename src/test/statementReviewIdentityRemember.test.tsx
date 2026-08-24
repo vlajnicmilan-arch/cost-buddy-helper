@@ -47,28 +47,6 @@ vi.mock('@/hooks/useStatusFeedback', () => ({
   showSuccess: vi.fn(),
 }));
 
-const mocks = vi.hoisted(() => ({
-  rememberRule: vi.fn(() => Promise.resolve(true)),
-  suggestSourceId: vi.fn(() => null),
-  suggestSourceFromBankAccounts: vi.fn(() => Promise.resolve(null)),
-  updateCustomPaymentSource: vi.fn(() => Promise.resolve(true)),
-  addCustomPaymentSource: vi.fn(() => Promise.resolve(null)),
-  startImport: vi.fn(() => Promise.resolve({ kind: 'started' as const })),
-}));
-
-vi.mock('@/hooks/useStatementSourceMemory', () => ({
-  useStatementSourceMemory: () => ({
-    rules: [],
-    loading: false,
-    working: false,
-    suggestSourceId: mocks.suggestSourceId,
-    rememberRule: mocks.rememberRule,
-    forgetRule: vi.fn(),
-    refetch: vi.fn(),
-  }),
-  suggestSourceFromBankAccounts: mocks.suggestSourceFromBankAccounts,
-}));
-
 const buildSources = (accountIdentifier: string | null) => [
   {
     id: 'src-revolut',
@@ -83,20 +61,62 @@ const buildSources = (accountIdentifier: string | null) => [
   },
 ];
 
-vi.mock('@/hooks/useCustomPaymentSources', () => ({
-  useCustomPaymentSources: () => ({
-    get customPaymentSources() {
-      return buildSources((globalThis as any).__sourceIdentifier ?? null);
-    },
-    loading: false,
-    addCustomPaymentSource: mocks.addCustomPaymentSource,
-    updateCustomPaymentSource: mocks.updateCustomPaymentSource,
-  }),
-}));
+vi.mock('@/hooks/useStatementSourceMemory', () => {
+  const rememberRule = vi.fn(() => Promise.resolve(true));
+  const suggestSourceId = vi.fn(() => null);
+  const suggestSourceFromBankAccounts = vi.fn(() => Promise.resolve(null));
+  (globalThis as any).__statementReviewMocks = {
+    ...(globalThis as any).__statementReviewMocks,
+    rememberRule,
+    suggestSourceId,
+    suggestSourceFromBankAccounts,
+  };
+  return {
+    useStatementSourceMemory: () => ({
+      rules: [],
+      loading: false,
+      working: false,
+      suggestSourceId,
+      rememberRule,
+      forgetRule: vi.fn(),
+      refetch: vi.fn(),
+    }),
+    suggestSourceFromBankAccounts,
+  };
+});
 
-vi.mock('@/hooks/useStatementImport', () => ({
-  useStatementImport: () => ({ busy: false, startImport: mocks.startImport }),
-}));
+vi.mock('@/hooks/useCustomPaymentSources', () => {
+  const updateCustomPaymentSource = vi.fn(() => Promise.resolve(true));
+  const addCustomPaymentSource = vi.fn(() => Promise.resolve(null));
+  (globalThis as any).__statementReviewMocks = {
+    ...(globalThis as any).__statementReviewMocks,
+    updateCustomPaymentSource,
+    addCustomPaymentSource,
+  };
+  return {
+    useCustomPaymentSources: () => ({
+      get customPaymentSources() {
+        return buildSources((globalThis as any).__sourceIdentifier ?? null);
+      },
+      loading: false,
+      addCustomPaymentSource,
+      updateCustomPaymentSource,
+    }),
+  };
+});
+
+vi.mock('@/hooks/useStatementImport', () => {
+  const startImport = vi.fn(() => Promise.resolve({ kind: 'started' as const }));
+  (globalThis as any).__statementReviewMocks = {
+    ...(globalThis as any).__statementReviewMocks,
+    startImport,
+  };
+  return {
+    useStatementImport: () => ({ busy: false, startImport }),
+  };
+});
+
+const mocks = () => (globalThis as any).__statementReviewMocks;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -138,9 +158,9 @@ describe('neslaganje identiteta — mismatch', () => {
     const confirmBtn = await screen.findByTestId('identity-confirm');
     fireEvent.click(confirmBtn);
 
-    await waitFor(() => expect(mocks.startImport).toHaveBeenCalledTimes(1));
-    expect(mocks.rememberRule).not.toHaveBeenCalled();
-    expect(mocks.updateCustomPaymentSource).not.toHaveBeenCalled();
+    await waitFor(() => expect(mocks().startImport).toHaveBeenCalledTimes(1));
+    expect(mocks().rememberRule).not.toHaveBeenCalled();
+    expect(mocks().updateCustomPaymentSource).not.toHaveBeenCalled();
   });
 });
 
@@ -160,10 +180,10 @@ describe('podudaranje identiteta — match', () => {
     expect(screen.getByTestId('remember-statement-source')).toBeInTheDocument();
 
     fireEvent.click(importBtn);
-    await waitFor(() => expect(mocks.startImport).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mocks().startImport).toHaveBeenCalledTimes(1));
 
-    await waitFor(() => expect(mocks.rememberRule).toHaveBeenCalledTimes(1));
-    expect(mocks.rememberRule).toHaveBeenCalledWith(
+    await waitFor(() => expect(mocks().rememberRule).toHaveBeenCalledTimes(1));
+    expect(mocks().rememberRule).toHaveBeenCalledWith(
       expect.objectContaining({
         identifier: STATEMENT_IBAN,
         paymentSourceId: 'src-revolut',
@@ -188,7 +208,7 @@ describe('nepoznat identitet novčanika — unknown', () => {
     expect(screen.getByTestId('remember-statement-source')).toBeInTheDocument();
 
     fireEvent.click(importBtn);
-    await waitFor(() => expect(mocks.startImport).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(mocks.rememberRule).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mocks().startImport).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mocks().rememberRule).toHaveBeenCalledTimes(1));
   });
 });
