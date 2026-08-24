@@ -1303,6 +1303,11 @@ const ImportReview = () => {
               skipped: summary.plannedSkipped,
             })}
           </p>
+          {(payload.pendingReservations ?? 0) > 0 && (
+            <p className="text-xs text-muted-foreground text-center" data-testid="pending-reservations">
+              {t('importReview.pendingReservations', { count: payload.pendingReservations })}
+            </p>
+          )}
           {blockerMessages.length > 0 && !summary.canConfirm && (
             <div
               className="rounded-lg border border-destructive/60 bg-destructive/5 p-2 space-y-1"
