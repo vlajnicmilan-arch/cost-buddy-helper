@@ -47,27 +47,29 @@ vi.mock('@/hooks/useStatusFeedback', () => ({
   showSuccess: vi.fn(),
 }));
 
-const rememberRule = vi.fn(() => Promise.resolve(true));
-const suggestSourceId = vi.fn(() => null);
-const suggestSourceFromBankAccounts = vi.fn(() => Promise.resolve(null));
+const mocks = vi.hoisted(() => ({
+  rememberRule: vi.fn(() => Promise.resolve(true)),
+  suggestSourceId: vi.fn(() => null),
+  suggestSourceFromBankAccounts: vi.fn(() => Promise.resolve(null)),
+  updateCustomPaymentSource: vi.fn(() => Promise.resolve(true)),
+  addCustomPaymentSource: vi.fn(() => Promise.resolve(null)),
+  startImport: vi.fn(() => Promise.resolve({ kind: 'started' as const })),
+}));
 
 vi.mock('@/hooks/useStatementSourceMemory', () => ({
   useStatementSourceMemory: () => ({
     rules: [],
     loading: false,
     working: false,
-    suggestSourceId,
-    rememberRule,
+    suggestSourceId: mocks.suggestSourceId,
+    rememberRule: mocks.rememberRule,
     forgetRule: vi.fn(),
     refetch: vi.fn(),
   }),
-  suggestSourceFromBankAccounts,
+  suggestSourceFromBankAccounts: mocks.suggestSourceFromBankAccounts,
 }));
 
-const updateCustomPaymentSource = vi.fn(() => Promise.resolve(true));
-const addCustomPaymentSource = vi.fn(() => Promise.resolve(null));
-
-const buildSources = (sourcePatch: { account_identifier?: string | null }) => [
+const buildSources = (accountIdentifier: string | null) => [
   {
     id: 'src-revolut',
     name: 'Revolut',
@@ -77,23 +79,23 @@ const buildSources = (sourcePatch: { account_identifier?: string | null }) => [
     currency: 'EUR',
     isOwned: true,
     business_profile_id: null,
-    account_identifier: sourcePatch.account_identifier ?? null,
+    account_identifier: accountIdentifier,
   },
 ];
 
 vi.mock('@/hooks/useCustomPaymentSources', () => ({
   useCustomPaymentSources: () => ({
-    customPaymentSources: buildSources({ account_identifier: (globalThis as any).__sourceIdentifier }),
+    get customPaymentSources() {
+      return buildSources((globalThis as any).__sourceIdentifier ?? null);
+    },
     loading: false,
-    addCustomPaymentSource,
-    updateCustomPaymentSource,
+    addCustomPaymentSource: mocks.addCustomPaymentSource,
+    updateCustomPaymentSource: mocks.updateCustomPaymentSource,
   }),
 }));
 
-const startImport = vi.fn(() => Promise.resolve({ kind: 'started' as const }));
-
 vi.mock('@/hooks/useStatementImport', () => ({
-  useStatementImport: () => ({ busy: false, startImport }),
+  useStatementImport: () => ({ busy: false, startImport: mocks.startImport }),
 }));
 
 beforeEach(() => {
@@ -136,9 +138,9 @@ describe('neslaganje identiteta — mismatch', () => {
     const confirmBtn = await screen.findByTestId('identity-confirm');
     fireEvent.click(confirmBtn);
 
-    await waitFor(() => expect(startImport).toHaveBeenCalledTimes(1));
-    expect(rememberRule).not.toHaveBeenCalled();
-    expect(updateCustomPaymentSource).not.toHaveBeenCalled();
+    await waitFor(() => expect(mocks.startImport).toHaveBeenCalledTimes(1));
+    expect(mocks.rememberRule).not.toHaveBeenCalled();
+    expect(mocks.updateCustomPaymentSource).not.toHaveBeenCalled();
   });
 });
 
@@ -158,10 +160,10 @@ describe('podudaranje identiteta — match', () => {
     expect(screen.getByTestId('remember-statement-source')).toBeInTheDocument();
 
     fireEvent.click(importBtn);
-    await waitFor(() => expect(startImport).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mocks.startImport).toHaveBeenCalledTimes(1));
 
-    await waitFor(() => expect(rememberRule).toHaveBeenCalledTimes(1));
-    expect(rememberRule).toHaveBeenCalledWith(
+    await waitFor(() => expect(mocks.rememberRule).toHaveBeenCalledTimes(1));
+    expect(mocks.rememberRule).toHaveBeenCalledWith(
       expect.objectContaining({
         identifier: STATEMENT_IBAN,
         paymentSourceId: 'src-revolut',
@@ -186,7 +188,7 @@ describe('nepoznat identitet novčanika — unknown', () => {
     expect(screen.getByTestId('remember-statement-source')).toBeInTheDocument();
 
     fireEvent.click(importBtn);
-    await waitFor(() => expect(startImport).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(rememberRule).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mocks.startImport).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mocks.rememberRule).toHaveBeenCalledTimes(1));
   });
 });
