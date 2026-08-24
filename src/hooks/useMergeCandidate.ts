@@ -7,7 +7,7 @@ import {
   type MergeOfferNewTx,
 } from '@/lib/mergeOfferCandidate';
 import type { MergeCandidateExpense } from '@/lib/manualBankMergePair';
-import { applyCountedFilter } from '@/lib/countedExpense';
+import { COUNTED_EXPENSE_STATUSES } from '@/lib/countedExpense';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -44,17 +44,16 @@ export function useMergeCandidate() {
         const from = new Date(base.getTime() - (MERGE_OFFER_MAX_DAY_DIFF + 1) * MS_PER_DAY);
         const to = new Date(base.getTime() + (MERGE_OFFER_MAX_DAY_DIFF + 1) * MS_PER_DAY);
 
-        const { data, error } = await applyCountedFilter(
-          supabase
-            .from('expenses')
-            .select(SELECT_COLUMNS)
-            .eq('user_id', uid)
-            .is('deleted_at', null)
-            .not('bank_transaction_id', 'is', null)
-            .gte('date', from.toISOString())
-            .lte('date', to.toISOString())
-            .limit(50),
-        );
+        const { data, error } = await supabase
+          .from('expenses')
+          .select(SELECT_COLUMNS)
+          .eq('user_id', uid)
+          .is('deleted_at', null)
+          .in('status', COUNTED_EXPENSE_STATUSES as unknown as string[])
+          .not('bank_transaction_id', 'is', null)
+          .gte('date', from.toISOString())
+          .lte('date', to.toISOString())
+          .limit(50);
 
         if (error) throw error;
 
