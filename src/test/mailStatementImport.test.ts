@@ -114,6 +114,11 @@ describe('pamćenje pripadnosti izvoru', () => {
     expect(card).toContain('data-testid="remember-statement-source"');
   });
 
+  it('kod neslaganja identiteta kvačica se uopće ne nudi', () => {
+    expect(card).toContain("identity.status !== 'mismatch'");
+  });
+
+
   it('predodabir ide kroz slojeviti matcher (pravilo > IBAN > ime banke)', () => {
     const card2 = card.replace(/\s+/g, ' ');
     expect(card2).toContain('pickStatementSource({');

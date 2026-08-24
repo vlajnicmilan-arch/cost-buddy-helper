@@ -160,6 +160,12 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
     [customPaymentSources, sourceId],
   );
 
+  // Brana identiteta: tuđi izvod ne smije tiho ući u knjige.
+  const identity = useMemo(
+    () => checkAccountIdentity(accountIdentifier, selectedSource?.account_identifier ?? null),
+    [accountIdentifier, selectedSource?.account_identifier],
+  );
+
   // Ponuda spremanja: samo kad izvod nosi identitet, a odabrani novčanik ga
   // još nema i korisnik je njegov vlasnik (tuđi novčanik se ne dira).
   const offerSaveToWallet =
@@ -167,6 +173,7 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
     !!selectedSource &&
     selectedSource.isOwned !== false &&
     !String(selectedSource.account_identifier ?? '').trim();
+
 
   const isCardStatement = item.doc_type === 'izvod_kartica';
 
@@ -238,7 +245,8 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
         account_identifier: accountIdentifier,
       });
     }
-    if (remember && accountIdentifier) {
+    // Svjesna potvrda na neslaganju identiteta se NIKAD ne pamti kao pravilo.
+    if (remember && accountIdentifier && identity.status !== 'mismatch') {
       await rememberRule({
         identifier: accountIdentifier,
         iban: iban || null,
@@ -248,6 +256,7 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
       });
     }
   };
+
 
   return (
     <div
@@ -348,7 +357,7 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
           </label>
         )}
 
-        {accountIdentifier && (
+        {accountIdentifier && identity.status !== 'mismatch' && (
           <label
             data-testid="remember-statement-source"
             className="flex items-start gap-2 text-xs cursor-pointer"
@@ -365,6 +374,7 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
             </span>
           </label>
         )}
+
       </div>
 
       {duplicate && (
