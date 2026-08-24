@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeImportFingerprint } from '@/lib/importFingerprint';
+import { computeImportFingerprint, computeImportKey, computeImportKeys, importKeyCanonicalString } from '@/lib/importFingerprint';
 
 const user = '11111111-1111-1111-1111-111111111111';
 const base = {
@@ -121,5 +121,49 @@ describe('computeImportFingerprint', () => {
     expect(withNull).toBe(bare);
     expect(withUndef).toBe(bare);
     expect(withNaN).toBe(bare);
+  });
+});
+
+describe('computeImportKey (v2 — bez AI-teksta)', () => {
+  const b = {
+    userId: user,
+    paymentSource: 'custom:abc',
+    date: new Date('2026-05-19T00:00:00Z'),
+    type: 'expense',
+    amount: 12.5,
+  };
+
+  it('ignorira ime trgovca i opis u potpunosti', async () => {
+    const a = await computeImportKey({ ...b, balanceAfter: 100 });
+    const c = await computeImportKey({ ...b, balanceAfter: 100 });
+    expect(a).toBe(c);
+    expect(importKeyCanonicalString({ ...b, balanceAfter: 100 })).not.toMatch(/facebook/i);
+  });
+
+  it('razlikuje retke po saldu nakon retka', async () => {
+    const a = await computeImportKey({ ...b, balanceAfter: 100 });
+    const c = await computeImportKey({ ...b, balanceAfter: 87.5 });
+    expect(a).not.toBe(c);
+  });
+
+  it('bez salda koristi redni broj među identičnim redcima', async () => {
+    const rows = [
+      { ...b, balanceAfter: null },
+      { ...b, balanceAfter: null },
+      { ...b, amount: 30, balanceAfter: null },
+    ];
+    const keys = await computeImportKeys(rows);
+    expect(keys[0]).not.toBe(keys[1]);
+    expect(new Set(keys).size).toBe(3);
+    const again = await computeImportKeys(rows);
+    expect(again).toEqual(keys);
+  });
+
+  it('kanonski niz je stabilan i nosi prefiks imp2:', async () => {
+    expect(importKeyCanonicalString({ ...b, balanceAfter: 100 }))
+      .toBe(`v2|${user}|custom:abc|2026-05-19|expense|12.50|bal:100.00`);
+    expect(importKeyCanonicalString({ ...b, balanceAfter: null }))
+      .toBe(`v2|${user}|custom:abc|2026-05-19|expense|12.50|ord:0`);
+    expect((await computeImportKey({ ...b, balanceAfter: 100 })).startsWith('imp2:')).toBe(true);
   });
 });

@@ -7296,6 +7296,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      import_key_v2: {
+        Args: {
+          p_amount: number
+          p_balance_after: number
+          p_date: string
+          p_payment_source: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       incoming_invoice_set_place: {
         Args: { p_invoice_id: string; p_label: string }
         Returns: Json
