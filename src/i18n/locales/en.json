@@ -1616,15 +1616,23 @@
         "differentSource": "Different payment source",
         "differentCurrency": "Different currency",
         "differentAmount": "Amounts differ by more than 0.1%",
-        "dateTooFar": "Dates are too far apart (>3 days)",
+        "dateTooFar": "Dates are too far apart (>4 days)",
         "transferNature": "Transfers cannot be merged",
         "correctionNature": "Corrections cannot be merged",
         "alreadyConfirmed": "Manual is already confirmed",
         "advanceProtected": "Advances cannot be merged",
         "deleted": "Transaction is deleted",
         "differentUser": "Different users",
-        "notAuthorized": "Not allowed"
-      }
+        "notAuthorized": "Not allowed",
+        "manualNotFound": "Manual transaction not found",
+        "bankNotFound": "Bank transaction not found",
+        "manualDeleted": "Manual transaction was deleted",
+        "bankDeleted": "Bank transaction was deleted",
+        "notAuthenticated": "You are not signed in",
+        "missingId": "Transaction id is missing",
+        "unknown": "Unknown database error"
+      },
+      "savedButFailed": "The transaction was saved, but the merge failed: {{reason}}"
     },
     "attribution": {
       "unknownMember": "Former member"

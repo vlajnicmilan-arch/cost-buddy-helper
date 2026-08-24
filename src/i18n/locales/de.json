@@ -1616,15 +1616,23 @@
         "differentSource": "Unterschiedliche Zahlungsquelle",
         "differentCurrency": "Unterschiedliche Währung",
         "differentAmount": "Beträge unterscheiden sich um mehr als 0,1%",
-        "dateTooFar": "Daten zu weit auseinander (>3 Tage)",
+        "dateTooFar": "Daten liegen zu weit auseinander (>4 Tage)",
         "transferNature": "Überweisungen können nicht zusammengeführt werden",
         "correctionNature": "Korrekturen können nicht zusammengeführt werden",
         "alreadyConfirmed": "Manuell ist bereits bestätigt",
         "advanceProtected": "Vorauszahlungen können nicht zusammengeführt werden",
         "deleted": "Transaktion ist gelöscht",
         "differentUser": "Verschiedene Benutzer",
-        "notAuthorized": "Nicht erlaubt"
-      }
+        "notAuthorized": "Nicht erlaubt",
+        "manualNotFound": "Manuelle Transaktion nicht gefunden",
+        "bankNotFound": "Banktransaktion nicht gefunden",
+        "manualDeleted": "Manuelle Transaktion wurde gelöscht",
+        "bankDeleted": "Banktransaktion wurde gelöscht",
+        "notAuthenticated": "Du bist nicht angemeldet",
+        "missingId": "Transaktionskennung fehlt",
+        "unknown": "Unbekannter Datenbankfehler"
+      },
+      "savedButFailed": "Die Transaktion wurde gespeichert, aber das Zusammenführen ist fehlgeschlagen: {{reason}}"
     },
     "attribution": {
       "unknownMember": "Ehemaliges Mitglied"
