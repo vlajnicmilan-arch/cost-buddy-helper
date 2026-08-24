@@ -11,7 +11,12 @@
  * - MANUAL_MERGE_ENABLED — manual ↔ bank Spoji (useManualBankMerge).
  */
 export const CSV_IMPORT_ENABLED = false;
-export const MANUAL_MERGE_ENABLED = false;
+/**
+ * Manual ↔ bank merge. Odmrznuto nakon što je RPC `merge_manual_with_bank`
+ * pokriven testovima (pure helperi + SQL harness `supabase/tests/merge/`)
+ * i popravljen (bankovni identitet se seli, saldo se ne dira dvaput).
+ */
+export const MANUAL_MERGE_ENABLED = true;
 
 /**
  * BRIEF-VRATA (V1) — kill switch na razini builda.

@@ -18,6 +18,8 @@ import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { CustomIncomeCategoryDialog } from '@/components/custom-categories/CustomIncomeCategoryDialog';
 import { DuplicateWarningDialog } from '@/components/DuplicateWarningDialog';
+import { useMergeCandidate, type MergeCandidateRow } from '@/hooks/useMergeCandidate';
+import { useManualBankMerge } from '@/hooks/useManualBankMerge';
 import { ScanningOverlay } from '@/components/ScanningOverlay';
 import { useCategoryHabits } from '@/hooks/useCategoryHabits';
 import { useAICategorization } from '@/hooks/useAICategorization';
@@ -48,7 +50,7 @@ import { ScannedDataPreview } from './ScannedDataPreview';
 import { ManualExpenseForm } from './ManualExpenseForm';
 
 interface AddExpenseDialogProps {
-  onAdd: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[], isPendingMemberTransaction?: boolean) => Promise<void> | void;
+  onAdd: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[], isPendingMemberTransaction?: boolean) => Promise<Expense | void> | Expense | void;
   checkDuplicate?: (transaction: {
     amount: number;
     description: string;
@@ -183,8 +185,12 @@ export const AddExpenseDialog = ({
   const [krugPrivacy, setKrugPrivacy] = useState<'personal' | 'shared' | null>(null);
 
   
+  const { findMergeCandidate } = useMergeCandidate();
+  const { mergePair, isMerging } = useManualBankMerge();
   const [duplicateWarningOpen, setDuplicateWarningOpen] = useState(false);
   const [duplicateOf, setDuplicateOf] = useState<Expense | null>(null);
+  // Manual ↔ bank merge offer: single unambiguous bank row this entry belongs to.
+  const [mergeCandidate, setMergeCandidate] = useState<MergeCandidateRow | null>(null);
   const [pendingTransaction, setPendingTransaction] = useState<{
     expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
     items?: ReceiptItem[];
@@ -848,17 +854,26 @@ export const AddExpenseDialog = ({
         }
       }
 
-      if (checkDuplicate) {
-        const duplicate = checkDuplicate({
+      {
+        const duplicate = checkDuplicate ? checkDuplicate({
           amount: scannedData.amount,
           description: scannedData.description,
           date: new Date(scannedData.date || expenseDate),
           type: finalType,
           category: scannedData.category,
           merchant_name: scannedData.merchant || undefined
+        }) : null;
+        const candidate = await findMergeCandidate({
+          type: finalType,
+          amount: scannedData.amount,
+          date: new Date(scannedData.date || expenseDate),
+          payment_source: (newExpense as any).payment_source ?? null,
+          currency: (newExpense as any).currency ?? null,
+          expense_nature: (newExpense as any).expense_nature ?? null,
         });
-        if (duplicate) {
-          setDuplicateOf(duplicate);
+        if (duplicate || candidate) {
+          setDuplicateOf((candidate as unknown as Expense) ?? duplicate);
+          setMergeCandidate(candidate);
           setPendingTransaction({ expense: newExpense, items: validItems.length > 0 ? validItems : undefined });
           setDuplicateWarningOpen(true);
           setIsSaving(false);
@@ -992,7 +1007,7 @@ export const AddExpenseDialog = ({
         client_request_id: clientRequestIdRef.current,
         ...(locationName ? { location_name: locationName, location_coords: locationCoords } : {}),
       };
-      await onAdd(expenseWithLocation as typeof expense, validItems);
+      const created = await onAdd(expenseWithLocation as typeof expense, validItems);
       successVibration();
       maybeRequestReview();
       if (expense.merchant_name && expense.category && expense.type !== 'transfer') {
@@ -1012,6 +1027,7 @@ export const AddExpenseDialog = ({
       }
       setOpen(false);
       setTimeout(() => resetForm(), 150);
+      return (created ?? undefined) as Expense | undefined;
     } catch (error) {
       console.error('Error saving transaction:', error);
       showError(t('transactions.saveError') || 'Greška pri spremanju transakcije.');
@@ -1046,6 +1062,7 @@ export const AddExpenseDialog = ({
         await executeAdd(pendingTransaction.expense, pendingTransaction.items);
         setPendingTransaction(null);
         setDuplicateOf(null);
+        setMergeCandidate(null);
       } catch {
         /* executeAdd već prikazuje grešku */
       } finally {
@@ -1059,7 +1076,36 @@ export const AddExpenseDialog = ({
   const handleDuplicateCancel = () => {
     setPendingTransaction(null);
     setDuplicateOf(null);
+    setMergeCandidate(null);
     setDuplicateWarningOpen(false);
+  };
+
+  /**
+   * "Spoji s postojećom" — saves the manual/scanned row first (so it keeps its
+   * own content) and then hands both ids to the server RPC, which moves the
+   * bank identity onto it and archives the bank row. Never automatic.
+   */
+  const handleDuplicateMerge = async () => {
+    if (isSavingRef.current || !pendingTransaction || !mergeCandidate) return;
+    isSavingRef.current = true;
+    setIsSaving(true);
+    try {
+      const created = await executeAdd(pendingTransaction.expense, pendingTransaction.items);
+      if (created?.id) {
+        await mergePair(created.id, mergeCandidate.id);
+      } else {
+        showError(t('transactions.merge.errorGeneric', 'Spajanje nije uspjelo'));
+      }
+      setPendingTransaction(null);
+      setDuplicateOf(null);
+      setMergeCandidate(null);
+    } catch {
+      /* executeAdd already surfaced the error */
+    } finally {
+      isSavingRef.current = false;
+      setIsSaving(false);
+      setDuplicateWarningOpen(false);
+    }
   };
 
   /**
@@ -1237,17 +1283,26 @@ export const AddExpenseDialog = ({
       needs_explanation: needsExplanation,
     };
 
-    if (checkDuplicate && type !== 'transfer') {
-      const duplicate = checkDuplicate({
+    if (type !== 'transfer') {
+      const duplicate = checkDuplicate ? checkDuplicate({
         amount: parsedAmount,
         description,
         date: new Date(expenseDate),
         type,
         category,
         merchant_name: merchantName || undefined
+      }) : null;
+      const candidate = await findMergeCandidate({
+        type,
+        amount: parsedAmount,
+        date: new Date(expenseDate),
+        payment_source: (newExpense as any).payment_source ?? null,
+        currency: (newExpense as any).currency ?? null,
+        expense_nature: (newExpense as any).expense_nature ?? null,
       });
-      if (duplicate) {
-        setDuplicateOf(duplicate);
+      if (duplicate || candidate) {
+        setDuplicateOf((candidate as unknown as Expense) ?? duplicate);
+        setMergeCandidate(candidate);
         setPendingTransaction({ expense: newExpense, items: validItems.length > 0 ? validItems : undefined });
         setDuplicateWarningOpen(true);
         return;
@@ -1562,6 +1617,9 @@ export const AddExpenseDialog = ({
       } : null}
       onConfirm={handleDuplicateConfirm}
       onCancel={handleDuplicateCancel}
+      canMerge={!!mergeCandidate}
+      onMerge={handleDuplicateMerge}
+      isMerging={isMerging}
     />
 
     <LoanDetectionDialog

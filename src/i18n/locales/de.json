@@ -3079,7 +3079,9 @@
       "similarAmountSameWeek": "Ähnlicher Betrag und Händler innerhalb derselben Woche.",
       "differentType": "Anderer Transaktionstyp.",
       "noMatch": "Keine Übereinstimmung."
-    }
+    },
+    "mergeWithExisting": "Mit vorhandener zusammenführen",
+    "mergeHint": "Deine Inhalte (Beschreibung, Kategorie, Belegfoto) bleiben erhalten, zusammen mit der Bankidentität der Zeile."
   },
   "tutorial": {
     "start": "Anleitung starten",

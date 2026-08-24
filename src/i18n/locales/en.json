@@ -3079,7 +3079,9 @@
       "similarAmountSameWeek": "Similar amount and merchant within the same week.",
       "differentType": "Different transaction type.",
       "noMatch": "No match."
-    }
+    },
+    "mergeWithExisting": "Merge with existing",
+    "mergeHint": "Your content (description, category, receipt photo) is kept together with the bank identity of the row."
   },
   "tutorial": {
     "start": "Start guide",

@@ -389,7 +389,8 @@ const Index = () => {
     isPendingMemberTransaction?: boolean,
     entrySource?: any,
   ) => {
-    await addExpense(expense, items, isPendingMemberTransaction, entrySource);
+    // Return the created row: the manual ↔ bank merge offer needs its id.
+    const created = await addExpense(expense, items, isPendingMemberTransaction, entrySource);
     if (recurringTransactions.length > 0 && !isBusinessMode) {
       try {
         const matches = await findMatches([{
@@ -404,6 +405,7 @@ const Index = () => {
         }
       } catch (e) { console.error('Recurring match check failed:', e); }
     }
+    return created;
   }, [addExpense, recurringTransactions, isBusinessMode, findMatches]);
 
   // Wrapper: check for recurring matches after bulk import
