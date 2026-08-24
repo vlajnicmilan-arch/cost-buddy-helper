@@ -43,7 +43,7 @@ interface BusinessModeViewProps {
   expenses: Expense[];
   allExpenses: Expense[];
   expensesLoading: boolean;
-  onAddExpense: (expense: any) => Promise<void>;
+  onAddExpense: (expense: any) => Promise<any>;
   onUpdateExpense: (expense: Expense) => Promise<void>;
   onDeleteExpense: (id: string) => Promise<void>;
   bulkUpdateExpenses: (expenses: Expense[]) => Promise<void>;

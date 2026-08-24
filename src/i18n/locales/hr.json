@@ -3085,7 +3085,9 @@
       "similarAmountSameWeek": "Sličan iznos i trgovac unutar istog tjedna.",
       "differentType": "Različit tip transakcije.",
       "noMatch": "Nema poklapanja."
-    }
+    },
+    "mergeWithExisting": "Spoji s postojećom",
+    "mergeHint": "Zadržava se tvoj sadržaj (opis, kategorija, slika računa) i bankovni identitet retka."
   },
   "tutorial": {
     "start": "Pokreni vodič",

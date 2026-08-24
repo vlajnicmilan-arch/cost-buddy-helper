@@ -16,3 +16,10 @@
 20260618193820_*.sql  # CHECK constraint on expenses.payment_source string format
 20260621145942_*.sql  # Add expenses.recurring_transaction_id FK (no balance impact)
 20260628163350_*.sql  # Relax NOT NULL on event_at — trigger still populates
+
+# Manual ↔ bank merge writer — covered by its OWN gate
+# (.github/workflows/merge-sql-suite.yml + supabase/tests/merge/).
+# Balance-neutralan: uklanja ručnu balance aritmetiku iz RPC-a i prepušta
+# saldo isključivo triggeru; harness dokazuje da spajanje makne točno jedan
+# učinak (unanchored i anchored slučaj).
+20260824190123_*.sql  # merge_manual_with_bank: identitet se seli, bez dvostrukog reverta

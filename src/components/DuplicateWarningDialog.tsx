@@ -1,6 +1,6 @@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Merge } from 'lucide-react';
 import { Expense, Category, IncomeCategory, getCategoryInfo } from '@/types/expense';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
@@ -24,6 +24,13 @@ interface DuplicateWarningDialogProps {
   /** Optional centralized match metadata for richer messaging. */
   level?: 'strict' | 'fuzzy' | 'suspicious';
   reasonKey?: string;
+  /**
+   * Merge offer — shown only when the existing row is an unambiguous bank row
+   * the new manual/scanned entry belongs to. Never merges automatically.
+   */
+  canMerge?: boolean;
+  onMerge?: () => void;
+  isMerging?: boolean;
 }
 
 export const DuplicateWarningDialog = ({
@@ -35,6 +42,9 @@ export const DuplicateWarningDialog = ({
   onCancel,
   level,
   reasonKey,
+  canMerge = false,
+  onMerge,
+  isMerging = false,
 }: DuplicateWarningDialogProps) => {
   const { t, i18n } = useTranslation();
   const { formatAmount } = useCurrency();
@@ -127,16 +137,35 @@ export const DuplicateWarningDialog = ({
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter className="gap-2 sm:gap-0">
-          <AlertDialogCancel onClick={onCancel}>
-            {t('common.cancel')}
-          </AlertDialogCancel>
-          <AlertDialogAction 
+        <AlertDialogFooter className="flex-col gap-2 sm:flex-col sm:gap-2">
+          {canMerge && onMerge && (
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                onMerge();
+              }}
+              disabled={isMerging}
+              className="w-full min-h-[44px] bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              <Merge className="w-4 h-4 mr-2" />
+              {t('duplicates.mergeWithExisting', 'Spoji s postojećom')}
+            </AlertDialogAction>
+          )}
+          {canMerge && (
+            <p className="text-xs text-muted-foreground text-center">
+              {t('duplicates.mergeHint', 'Zadržava se tvoj sadržaj (opis, kategorija, slika računa) i bankovni identitet retka.')}
+            </p>
+          )}
+          <AlertDialogAction
             onClick={onConfirm}
-            className="bg-warning text-warning-foreground hover:bg-warning/90"
+            disabled={isMerging}
+            className={`w-full min-h-[44px] ${canMerge ? 'bg-muted text-foreground hover:bg-muted/80' : 'bg-warning text-warning-foreground hover:bg-warning/90'}`}
           >
             {t('duplicates.addAnyway', 'Dodaj svejedno')}
           </AlertDialogAction>
+          <AlertDialogCancel onClick={onCancel} disabled={isMerging} className="w-full min-h-[44px] mt-0">
+            {t('common.cancel')}
+          </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

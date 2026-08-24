@@ -1,0 +1,79 @@
+name: Manual↔Bank Merge SQL Suite
+
+# Deploy gate for `merge_manual_with_bank` — the RPC that writes merged rows
+# into the books. Same architecture as balance-sql-suite.yml: real Postgres 16,
+# curated baseline + balance migrations, then the merge migration and the
+# assertion harness (supabase/tests/merge/).
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/tests/merge/**'
+      - 'src/lib/manualBankMergePair.ts'
+      - 'src/lib/mergeOfferCandidate.ts'
+      - 'src/lib/featureFlags.ts'
+      - '.github/workflows/merge-sql-suite.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/tests/merge/**'
+      - 'src/lib/manualBankMergePair.ts'
+      - 'src/lib/mergeOfferCandidate.ts'
+      - 'src/lib/featureFlags.ts'
+      - '.github/workflows/merge-sql-suite.yml'
+
+jobs:
+  merge-sql:
+    name: Merge SQL suite (postgres:16, curated baseline)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: merge_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: merge_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install psql client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Wait for Postgres
+        run: |
+          for i in {1..30}; do
+            pg_isready -h localhost -p 5432 -U postgres && exit 0
+            sleep 1
+          done
+          echo "Postgres did not become ready" >&2
+          exit 1
+
+      - name: Run merge SQL harness
+        run: |
+          set -euo pipefail
+          bash supabase/tests/merge/run.sh 2>&1 | tee /tmp/merge.out
+          if grep -E '^(psql:.*ERROR|FAIL )' /tmp/merge.out; then
+            echo "Merge SQL suite reported failures" >&2
+            exit 1
+          fi
+          echo "Merge SQL suite: $(grep -c 'PASS ' /tmp/merge.out) assertions PASS"
