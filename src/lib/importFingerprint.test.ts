@@ -161,9 +161,21 @@ describe('computeImportKey (v2 — bez AI-teksta)', () => {
 
   it('kanonski niz je stabilan i nosi prefiks imp2:', async () => {
     expect(importKeyCanonicalString({ ...b, balanceAfter: 100 }))
-      .toBe(`v2|${user}|custom:abc|2026-05-19|expense|12.50|bal:100.00`);
+      .toBe(`v2|${user}|custom:abc|2026-05-19|12.50|bal:100.00`);
     expect(importKeyCanonicalString({ ...b, balanceAfter: null }))
-      .toBe(`v2|${user}|custom:abc|2026-05-19|expense|12.50|ord:0`);
+      .toBe(`v2|${user}|custom:abc|2026-05-19|12.50|ord:0`);
     expect((await computeImportKey({ ...b, balanceAfter: 100 })).startsWith('imp2:')).toBe(true);
+  });
+
+  it('tip NIJE dio ključa — expense i transfer daju isti ključ', async () => {
+    const a = await computeImportKey({ ...b, type: 'expense', balanceAfter: 4487.47 });
+    const c = await computeImportKey({ ...b, type: 'transfer', balanceAfter: 4487.47 });
+    expect(a).toBe(c);
+  });
+
+  it('isti iznos istog dana s različitim saldom ostaju dva ključa', async () => {
+    const a = await computeImportKey({ ...b, balanceAfter: 4487.47 });
+    const c = await computeImportKey({ ...b, balanceAfter: 4427.47 });
+    expect(a).not.toBe(c);
   });
 });
