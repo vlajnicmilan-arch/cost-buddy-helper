@@ -174,11 +174,13 @@ DO $$
 DECLARE v_m uuid; v_b uuid; v_before numeric; v_after numeric;
 BEGIN
   PERFORM pg_temp.reset_world();
-  UPDATE public.custom_payment_sources
-     SET correction_anchor_date = '2026-08-01 00:00+00',
-         correction_anchor_balance = 1000.00,
-         balance = 1000.00
-   WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+  -- Sanctioned anchor path (a raw balance UPDATE would auto-anchor to now()).
+  PERFORM public.set_source_anchor(
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,
+    '2026-08-01 00:00+00'::timestamptz,
+    1000.00,
+    NULL::jsonb
+  );
 
   v_m := pg_temp.mk_manual('00000000-0000-0000-0000-000000000001','custom:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','expense',21.50,'2026-08-17 10:00+00');
   v_b := pg_temp.mk_bank  ('00000000-0000-0000-0000-000000000001','custom:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','expense',21.50,'2026-08-18 00:00+00','imp2:anchored');
@@ -190,8 +192,9 @@ BEGIN
 
   SELECT balance INTO v_after FROM public.custom_payment_sources WHERE id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
   -- Exactly ONE expense effect disappears (the archived duplicate) — never two.
-  PERFORM pg_temp.assert_eq('3.0 anchored source: merge removes exactly one 21.50 effect',
-                            v_before + 21.50, v_after);
+  PERFORM pg_temp.assert_eq('3.0 anchored source: two rows before merge', 957.00, v_before);
+  PERFORM pg_temp.assert_eq('3.1 anchored source: merge removes exactly one 21.50 effect',
+                            978.50, v_after);
 END $$;
 
 -- ===========================================================================
