@@ -13,7 +13,7 @@
  * Čist modul — bez mreže i bez Deno/Node API-ja. Testira se vitestom.
  */
 
-import { amountTokens, dateTokens, isRowContinuation } from './rawLineMatch.ts';
+import { amountTokens, dateTokens, isRowContinuation } from '../_shared/statement/rawLineMatch.ts';
 
 /** Zaglavlje odjeljka rezervacija (hr / en / de dijalekti). */
 const PENDING_HEADER =

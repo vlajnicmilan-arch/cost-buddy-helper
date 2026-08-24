@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import {
   detectPendingRanges,
   markPendingTransactions,
-} from '../../supabase/functions/_shared/statement/pendingSection';
+} from '../../supabase/functions/parse-pdf-statement/pendingSection';
 import { splitStatementLines } from '../../supabase/functions/_shared/statement/rawLineMatch';
 
 /**

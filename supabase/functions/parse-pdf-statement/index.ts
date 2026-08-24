@@ -12,7 +12,7 @@ import {
   splitStatementLines,
   type RawLineSource,
 } from "../_shared/statement/rawLineMatch.ts";
-import { markPendingTransactions } from "../_shared/statement/pendingSection.ts";
+import { markPendingTransactions } from "./pendingSection.ts";
 import {
   blockYieldFailure,
   buildBlockContext,
