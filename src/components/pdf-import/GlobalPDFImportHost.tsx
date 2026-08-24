@@ -19,6 +19,7 @@ import { classifyImport, type ClassifierImportedRow, type ClassifierManualCandid
 import { emitQuestionTraces } from '@/lib/importReview/questionTrace';
 import { COMMIT_SHA } from '@/lib/version';
 import { computeImportFingerprint, computeImportKeys } from '@/lib/importFingerprint';
+import { applyCountedFilter } from '@/lib/countedExpense';
 import { savePayload as saveReviewPayload, hasResumableReview, clearDraft as clearReviewDraft, clearPayload as clearReviewPayload, saveStatementHint, clearStatementHint } from '@/lib/importReview/draft';
 import { findLateCardMatches } from '@/lib/importReview/lateCardMatch';
 import { lookupFingerprintStates, type ExecutorSupabaseClient } from '@/lib/importReview/executor';
@@ -600,15 +601,17 @@ export const GlobalPDFImportHost = () => {
       // i strogo 1:1. Bez svih ograda — šutnja.
       let confirmedRows: Array<{ id: string; date: string; amount: number; type: string }> = [];
       try {
-        const { data } = await supabase
-          .from('expenses')
-          .select('id,date,amount,type')
-          .eq('user_id', user.id)
-          .eq('payment_source', paymentSourceValue)
-          .eq('bank_match_status', 'confirmed')
-          .is('balance_after', null)
-          .gte('date', isoFrom)
-          .lte('date', isoTo);
+        const { data } = await applyCountedFilter(
+          supabase
+            .from('expenses')
+            .select('id,date,amount,type')
+            .eq('user_id', user.id)
+            .eq('payment_source', paymentSourceValue)
+            .eq('bank_match_status', 'confirmed')
+            .is('balance_after', null)
+            .gte('date', isoFrom)
+            .lte('date', isoTo),
+        );
         confirmedRows = (data ?? []) as typeof confirmedRows;
       } catch (e) {
         try { logDiagnostic('import_review_confirmed_lookup_failed', { message: e instanceof Error ? e.message : String(e) }); } catch {}
