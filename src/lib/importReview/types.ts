@@ -150,6 +150,11 @@ export interface ImportReviewPayload {
   readonly importedTransactions: readonly SerializedImportedTx[];
   /** Stable batch id — persisted so idempotent retry reuses it. */
   readonly batchId: string;
+  /**
+   * Redci iz bloka „Na čekanju" (rezervacije) — ne ulaze u knjige, ali se
+   * ne smiju tiho izgubiti: broj se prikazuje u sažetku uvoza.
+   */
+  readonly pendingReservations?: number;
   /** Wallets the user can pick as transfer destinations. */
   readonly availableTargets: readonly TransferTargetOption[];
   /**

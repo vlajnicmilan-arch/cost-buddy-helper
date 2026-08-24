@@ -6110,6 +6110,7 @@
     "rememberRule": "Für diesen Händler merken",
     "cancelRule": "Keine Überweisung — nach Vorzeichen importieren",
     "cancelTransfer": "Keine Überweisung",
+    "pendingReservations": "Reservierungen (noch nicht gebucht): {{count}}",
     "plannedSummaryV2": "{{merges}} Zusammenführungen · {{news}} neu · {{transfers}} Überweisungen · {{skipped}} übersprungen",
     "confirmedSummaryV2": "{{merged}} zusammengeführt, {{inserted}} hinzugefügt, {{transfers}} Überweisungen, {{skipped}} übersprungen.",
     "confirmedSummaryV3": "{{merged}} zusammengeführt, {{inserted}} hinzugefügt, {{transfers}} Überweisungen, {{skipped}} übersprungen (bereits vorhanden: {{existing}}).",

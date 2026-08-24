@@ -12,6 +12,7 @@ import {
   splitStatementLines,
   type RawLineSource,
 } from "../_shared/statement/rawLineMatch.ts";
+import { markPendingTransactions } from "../_shared/statement/pendingSection.ts";
 import {
   blockYieldFailure,
   buildBlockContext,
@@ -868,6 +869,23 @@ DOSLOVAN REDAK (raw_line):
       });
       console.log(`raw_line: ${determinstic}/${transactions.length} doslovno (${rawLineSource}), ostatak AI prepis`);
     }
+
+    // BLOK REZERVACIJA („Na čekanju") — deterministički, neovisno o AI-ju.
+    // Ista kupnja stoji i u rezervacijama i u proknjiženom dijelu; u knjige
+    // ide samo proknjižena. Banke bez salda (KEKS) ostaju netaknute.
+    if (sourceLines.length > 0) {
+      const pending = markPendingTransactions(
+        sourceLines,
+        transactions.map((t: any) => ({ date: t.date, amount: t.amount, balance_after: t.balance_after })),
+      );
+      let flagged = 0;
+      transactions.forEach((t: any, i: number) => {
+        if (pending[i] && !t.is_pending) { t.is_pending = true; flagged += 1; }
+      });
+      if (flagged > 0) console.log(`pending_block: ${flagged} rezervacija isključeno iz uvoza`);
+    }
+
+
 
 
     // Chain-validation: for consecutive settled rows with balance_after,

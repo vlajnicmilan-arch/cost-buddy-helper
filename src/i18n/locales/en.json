@@ -6110,6 +6110,7 @@
     "rememberRule": "Remember for this merchant",
     "cancelRule": "Not a transfer — import by sign",
     "cancelTransfer": "Not a transfer",
+    "pendingReservations": "reservations (not yet booked): {{count}}",
     "plannedSummaryV2": "{{merges}} merges · {{news}} new · {{transfers}} transfers · {{skipped}} skipped",
     "confirmedSummaryV2": "Merged {{merged}}, added {{inserted}}, transfers {{transfers}}, skipped {{skipped}}.",
     "confirmedSummaryV3": "Merged {{merged}}, added {{inserted}}, transfers {{transfers}}, skipped {{skipped}} (already present: {{existing}}).",

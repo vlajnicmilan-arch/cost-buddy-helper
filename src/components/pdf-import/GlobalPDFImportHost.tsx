@@ -827,6 +827,9 @@ export const GlobalPDFImportHost = () => {
         importedTransactions,
         batchId: (crypto as any)?.randomUUID?.() ?? `batch-${Date.now()}`,
         availableTargets,
+        pendingReservations: (pdfImport.result?.transactions ?? []).filter(
+          (tx) => tx.is_pending === true && tx.is_statement_total !== true,
+        ).length,
         // Saldo s papira (mail izvod) — jedina bankovna istina kad izvor nema
         // redak u bank_accounts. Executor ga koristi samo tada.
         // Mail-put donese saldo migom; disk-put ga nosi u rezultatu čitanja.
