@@ -1091,11 +1091,13 @@ export const AddExpenseDialog = ({
     setIsSaving(true);
     try {
       const created = await executeAdd(pendingTransaction.expense, pendingTransaction.items);
-      if (created?.id) {
-        await mergePair(created.id, mergeCandidate.id);
-      } else {
-        showError(t('transactions.merge.errorGeneric', 'Spajanje nije uspjelo'));
-      }
+      // The row is saved at this point — mergePair logs the outcome and, on
+      // failure, tells the user explicitly that two records now exist.
+      await mergePair(created?.id, mergeCandidate.id, {
+        rowAlreadySaved: true,
+        context: 'duplicate_dialog',
+      });
+
       setPendingTransaction(null);
       setDuplicateOf(null);
       setMergeCandidate(null);
