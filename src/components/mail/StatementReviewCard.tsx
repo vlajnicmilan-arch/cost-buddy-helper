@@ -160,6 +160,12 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
     [customPaymentSources, sourceId],
   );
 
+  // Brana identiteta: tuđi izvod ne smije tiho ući u knjige.
+  const identity = useMemo(
+    () => checkAccountIdentity(accountIdentifier, selectedSource?.account_identifier ?? null),
+    [accountIdentifier, selectedSource?.account_identifier],
+  );
+
   // Ponuda spremanja: samo kad izvod nosi identitet, a odabrani novčanik ga
   // još nema i korisnik je njegov vlasnik (tuđi novčanik se ne dira).
   const offerSaveToWallet =
@@ -167,6 +173,7 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
     !!selectedSource &&
     selectedSource.isOwned !== false &&
     !String(selectedSource.account_identifier ?? '').trim();
+
 
   const isCardStatement = item.doc_type === 'izvod_kartica';
 
