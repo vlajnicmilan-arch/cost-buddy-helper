@@ -1,0 +1,4 @@
+# Migracije koje harness primjenjuje NAKON balance whitelist-a.
+# Format identičan BALANCE_MIGRATIONS.txt.
+
+20260824190123_*.sql   # merge_manual_with_bank: identitet se seli, bez dvostrukog vraćanja salda, 4 dana
