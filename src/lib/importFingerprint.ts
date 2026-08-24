@@ -146,7 +146,10 @@ export async function computeImportFingerprint(input: FingerprintInput): Promise
  * nestabilan i isti redak ulazi više puta. V2 ključ gradi identitet ISKLJUČIVO
  * od onoga što banka daje stabilno:
  *
- *   user_id | payment_source | datum (UTC) | tip | iznos | saldo nakon retka
+ *   user_id | payment_source | datum (UTC) | iznos | saldo nakon retka
+ *
+ * TIP NIJE u ključu: isti bankovni redak korisnik (ili pravilo prijenosa) može
+ * pretvoriti u `transfer`, a čitač ga i dalje vraća kao `expense`.
  *
  * Kad izvod nema stupac salda (npr. KEKS), umjesto salda ide redni broj među
  * IDENTIČNIM redcima istog dana (`ord:N`) — nikad ime trgovca ni opis.
@@ -160,7 +163,9 @@ export interface ImportKeyInput {
   userId: string;
   paymentSource?: string | null;
   date: Date | string;
-  type: string;
+  /** Zadržan radi pozivatelja — NIJE dio ključa (isti bankovni redak može
+   *  biti trošak ili prijenos). */
+  type?: string;
   amount: number;
   balanceAfter?: number | null;
   /** Redni broj među identičnim redcima (koristi se samo bez salda). */
@@ -184,7 +189,6 @@ export function importKeyCanonicalString(input: ImportKeyInput): string {
     input.userId,
     String(input.paymentSource ?? ''),
     toUtcDateKey(input.date),
-    String(input.type ?? ''),
     toAmountKey(input.amount),
     tail,
   ].join('|');
@@ -206,7 +210,7 @@ export async function computeImportKeys(
   const inputs: ImportKeyInput[] = rows.map(row => {
     const hasBalance = typeof row.balanceAfter === 'number' && Number.isFinite(row.balanceAfter);
     if (hasBalance) return { ...row };
-    const groupKey = [row.userId, String(row.paymentSource ?? ''), toUtcDateKey(row.date), String(row.type ?? ''), toAmountKey(row.amount)].join('|');
+    const groupKey = [row.userId, String(row.paymentSource ?? ''), toUtcDateKey(row.date), toAmountKey(row.amount)].join('|');
     const ordinal = seen.get(groupKey) ?? 0;
     seen.set(groupKey, ordinal + 1);
     return { ...row, ordinal };
