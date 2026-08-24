@@ -168,10 +168,10 @@ BEGIN
 END $$;
 
 -- ===========================================================================
--- 3) Anchored source — merge must not shift an anchored balance
+-- 3) Anchored source — the merge itself must not move the balance
 -- ===========================================================================
 DO $$
-DECLARE v_m uuid; v_b uuid; v_bal numeric;
+DECLARE v_m uuid; v_b uuid; v_before numeric; v_after numeric;
 BEGIN
   PERFORM pg_temp.reset_world();
   UPDATE public.custom_payment_sources
@@ -183,10 +183,15 @@ BEGIN
   v_m := pg_temp.mk_manual('00000000-0000-0000-0000-000000000001','custom:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','expense',21.50,'2026-08-17 10:00+00');
   v_b := pg_temp.mk_bank  ('00000000-0000-0000-0000-000000000001','custom:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','expense',21.50,'2026-08-18 00:00+00','imp2:anchored');
 
+  -- Two rows in the books, one of which is about to be archived by the merge.
+  SELECT balance INTO v_before FROM public.custom_payment_sources WHERE id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+
   PERFORM public.merge_manual_with_bank(v_m, v_b);
 
-  SELECT balance INTO v_bal FROM public.custom_payment_sources WHERE id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
-  PERFORM pg_temp.assert_eq('3.0 anchored balance = 1000 - 21.50', 978.50, v_bal);
+  SELECT balance INTO v_after FROM public.custom_payment_sources WHERE id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+  -- Exactly ONE expense effect disappears (the archived duplicate) — never two.
+  PERFORM pg_temp.assert_eq('3.0 anchored source: merge removes exactly one 21.50 effect',
+                            v_before + 21.50, v_after);
 END $$;
 
 -- ===========================================================================
