@@ -7,6 +7,7 @@ import {
   type MergeOfferNewTx,
 } from '@/lib/mergeOfferCandidate';
 import type { MergeCandidateExpense } from '@/lib/manualBankMergePair';
+import { COUNTED_EXPENSE_STATUSES } from '@/lib/countedExpense';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -48,6 +49,7 @@ export function useMergeCandidate() {
           .select(SELECT_COLUMNS)
           .eq('user_id', uid)
           .is('deleted_at', null)
+          .in('status', [...COUNTED_EXPENSE_STATUSES])
           .not('bank_transaction_id', 'is', null)
           .gte('date', from.toISOString())
           .lte('date', to.toISOString())

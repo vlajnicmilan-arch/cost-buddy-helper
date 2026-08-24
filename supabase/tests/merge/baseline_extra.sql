@@ -30,3 +30,22 @@ ALTER TABLE public.expenses
 -- forces the merge to MOVE the fingerprint instead of copying it.
 CREATE UNIQUE INDEX IF NOT EXISTS uniq_expenses_user_bank_tx
   ON public.expenses (user_id, bank_transaction_id);
+
+-- ---------------------------------------------------------------------------
+-- Production parity: CHECK constraints on `expenses` that the merge path can
+-- violate. The 23514 failure of 24.08.2026 (bank_match_status =
+-- 'merged_into_manual' rejected in production) slipped past 30 green
+-- assertions precisely because the harness table had no constraints at all.
+-- Mirrors the production definitions as of migration 20260824201941.
+-- ---------------------------------------------------------------------------
+ALTER TABLE public.expenses DROP CONSTRAINT IF EXISTS expenses_bank_match_status_check;
+ALTER TABLE public.expenses ADD CONSTRAINT expenses_bank_match_status_check
+  CHECK (bank_match_status = ANY (ARRAY['manual','pending_bank','confirmed','bank_only','merged_into_manual']));
+
+ALTER TABLE public.expenses DROP CONSTRAINT IF EXISTS expenses_type_check;
+ALTER TABLE public.expenses ADD CONSTRAINT expenses_type_check
+  CHECK (type = ANY (ARRAY['expense','income','transfer']));
+
+ALTER TABLE public.expenses DROP CONSTRAINT IF EXISTS expenses_payment_source_canonical_check;
+ALTER TABLE public.expenses ADD CONSTRAINT expenses_payment_source_canonical_check
+  CHECK (payment_source IS NULL OR payment_source ~ '^(custom:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[a-z][a-z0-9_]*)$');
