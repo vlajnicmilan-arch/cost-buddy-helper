@@ -133,6 +133,10 @@ export interface ExecutorResult {
   readonly skippedDuplicate: number;
   /** A 23505 race/older-batch conflict confirmed against uniq_expenses_user_bank_tx. */
   readonly skippedExistingUnique: number;
+  /** Otisak pripada RANIJE OBRISANOM retku — preskočeno, nikad tihi 23505. */
+  readonly skippedPreviouslyDeleted: number;
+  /** Ranije obrisani redci koje je korisnik svjesno vratio u knjige. */
+  readonly restoredDeleted: number;
   /** Planned outcomes already present before this attempt (idempotent retry). */
   readonly fulfilledExisting: number;
   /** All planned outcomes present after execution, regardless of when written. */
@@ -205,8 +209,12 @@ export interface PlannedWork {
   readonly merges: readonly MergePlan[];
   readonly inserts: readonly InsertPlan[];
   readonly transfers: readonly TransferPlan[];
+  /** Ranije obrisani redci koje je korisnik svjesno vratio ("Vrati u knjige"). */
+  readonly restores: readonly InsertPlan[];
   readonly skippedByUser: number;
   readonly skippedFingerprint: number;
+  /** Ranije obrisani redci bez korisnikove radnje — ispunjen ishod, ne rupa. */
+  readonly skippedPreviouslyDeleted: number;
 }
 
 /**
@@ -226,8 +234,10 @@ export function planExecution(
   const merges: MergePlan[] = [];
   const inserts: InsertPlan[] = [];
   const transfers: TransferPlan[] = [];
+  const restores: InsertPlan[] = [];
   let skippedByUser = 0;
   let skippedFingerprint = 0;
+  let skippedPreviouslyDeleted = 0;
 
   for (const row of payload.rows) {
     const tx = txByIndex.get(row.index);
@@ -271,6 +281,14 @@ export function planExecution(
 
     if (row.classification.kind === 'new') {
       if (row.classification.existsByFingerprint) { skippedFingerprint += 1; continue; }
+      // TREĆE STANJE: otisak zauzet ranije obrisanim retkom. Bez korisnikove
+      // radnje redak se PRESKAČE (ispunjen ishod); s radnjom se stari redak
+      // VRAĆA u knjige — nikad se ne stvara drugi zapis s istim otiskom.
+      if (row.classification.deletedByFingerprint === true) {
+        if (decisions.restoreDeleted?.[row.index] === true) restores.push({ rowIndex: row.index, tx });
+        else skippedPreviouslyDeleted += 1;
+        continue;
+      }
       // PONUDA SPAJANJA (kartično kašnjenje): korisnikov dodir upisan je kao
       // odgovor 'merge' na tom retku. Spojeni par = JEDAN ishod (merge), pa
       // idempotentna postkondicija ostaje netaknuta.
@@ -297,7 +315,7 @@ export function planExecution(
     skippedByUser += 1;
   }
 
-  return { merges, inserts, transfers, skippedByUser, skippedFingerprint };
+  return { merges, inserts, transfers, restores, skippedByUser, skippedFingerprint, skippedPreviouslyDeleted };
 }
 
 export async function executeDecisions(input: ExecutorInput): Promise<ExecutorResult> {
@@ -307,15 +325,38 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
   const plan = planExecution(input.payload, input.decisions);
   const errors: string[] = [];
 
-  const allPlans = [...plan.merges, ...plan.inserts, ...plan.transfers];
-  const existingBefore = await findPersistedFingerprints(
+  const plannedAll = [...plan.merges, ...plan.inserts, ...plan.transfers, ...plan.restores];
+  const states = await lookupFingerprintStates(
     input.supabase,
     input.userId,
-    allPlans.map(item => item.tx.fingerprint),
+    plannedAll.map(item => item.tx.fingerprint),
   );
-  const pendingMerges = plan.merges.filter(item => !existingBefore.has(item.tx.fingerprint));
-  const pendingInserts = plan.inserts.filter(item => !existingBefore.has(item.tx.fingerprint));
-  const pendingTransfers = plan.transfers.filter(item => !existingBefore.has(item.tx.fingerprint));
+  const existingBefore = states.live;
+  const restoreWanted = new Set(plan.restores.map(item => item.tx.fingerprint));
+
+  // ŽELJEZNA PRED-PROVJERA: otisak zauzet obrisanim retkom nikad ne ide u upis
+  // (indeks ne mari za deleted_at → 23505). Do sudara s bazom ne smije doći.
+  const isBlockedByDeleted = (fingerprint: string): boolean =>
+    states.deleted.has(fingerprint) && !restoreWanted.has(fingerprint) && !existingBefore.has(fingerprint);
+
+  let skippedPreviouslyDeleted = plan.skippedPreviouslyDeleted;
+  const blockedPlans = [...plan.merges, ...plan.inserts, ...plan.transfers]
+    .filter(item => isBlockedByDeleted(item.tx.fingerprint));
+  skippedPreviouslyDeleted += blockedPlans.length;
+
+  const allPlans = [...plan.merges, ...plan.inserts, ...plan.transfers, ...plan.restores]
+    .filter(item => !isBlockedByDeleted(item.tx.fingerprint));
+
+  const pendingMerges = plan.merges.filter(
+    item => !existingBefore.has(item.tx.fingerprint) && !isBlockedByDeleted(item.tx.fingerprint),
+  );
+  const pendingInserts = plan.inserts.filter(
+    item => !existingBefore.has(item.tx.fingerprint) && !isBlockedByDeleted(item.tx.fingerprint),
+  );
+  const pendingTransfers = plan.transfers.filter(
+    item => !existingBefore.has(item.tx.fingerprint) && !isBlockedByDeleted(item.tx.fingerprint),
+  );
+  const pendingRestores = plan.restores.filter(item => !existingBefore.has(item.tx.fingerprint));
 
   // --- PRE-FLIGHT VALIDATION: no writes at all if any transfer decision is
   // missing a target wallet. This is the executor-side gate that matches the
@@ -530,6 +571,30 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
     }
   }
 
+  // --- RESTORE branch: svjesni povrat ranije obrisanog retka. Otisak je isti,
+  // pa se stari zapis oživljava umjesto da nastane drugi.
+  let restoredDeleted = 0;
+  for (const r of pendingRestores) {
+    try {
+      const res = typeof input.supabase.rpc === 'function'
+        ? await input.supabase.rpc('restore_deleted_import_row', {
+            p_fingerprint: r.tx.fingerprint,
+            p_batch_id: batchId,
+          })
+        : { data: null, error: { message: 'rpc_unavailable' } };
+      if (res.error) {
+        errors.push(`restore:${r.rowIndex}:${res.error.message}`);
+        writeErrorsByFingerprint.set(r.tx.fingerprint, res.error.message);
+        continue;
+      }
+      if (res.data === true) restoredDeleted += 1;
+    } catch (e) {
+      const detail = errorDetail(e);
+      errors.push(`restore:${r.rowIndex}:${detail}`);
+      writeErrorsByFingerprint.set(r.tx.fingerprint, detail);
+    }
+  }
+
   // ŽELJEZNA POSTKONDICIJA: potvrđeni posao ne smije tiho završiti s manje
   // ishoda od odluka. Conflict, RLS ili bilo koja greška znače NEUSPJEH cijelog
   // pokušaja; pozivatelj tada čuva draft i ne zapisuje imported_statements.
@@ -574,6 +639,8 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
     skippedMerged,
     skippedDuplicate,
     skippedExistingUnique,
+    skippedPreviouslyDeleted,
+    restoredDeleted,
     fulfilledExisting: existingBefore.size,
     completedOutcomes: actualOutcomes,
     durationMs: now() - start,
@@ -698,6 +765,53 @@ function failureFromPlan(
     reason,
     ...(detail ? { detail } : {}),
   };
+}
+
+export interface FingerprintStates {
+  /** Otisak pripada ŽIVOM (ne-obrisanom) retku u knjigama. */
+  readonly live: Set<string>;
+  /** Otisak postoji, ali SAMO na ranije obrisanim retcima (deleted_at IS NOT NULL). */
+  readonly deleted: Set<string>;
+}
+
+/**
+ * TRI STANJA umjesto dva. RLS polica `hide_soft_deleted` skriva obrisane retke
+ * iz svakog običnog SELECT-a, pa se treće stanje može doznati samo kroz
+ * SECURITY DEFINER `lookup_import_fingerprints`. Kad RPC nije dostupan (stariji
+ * klijent, test dvojnik), ponašanje pada natrag na staro dvostanjsko traženje.
+ */
+export async function lookupFingerprintStates(
+  supabase: ExecutorSupabaseClient,
+  userId: string,
+  fingerprints: readonly string[],
+): Promise<FingerprintStates> {
+  const unique = [...new Set(fingerprints.filter(Boolean))];
+  if (unique.length === 0) return { live: new Set(), deleted: new Set() };
+
+  if (typeof supabase.rpc === 'function') {
+    const live = new Set<string>();
+    const deleted = new Set<string>();
+    let ok = true;
+    for (let offset = 0; offset < unique.length && ok; offset += 200) {
+      const chunk = unique.slice(offset, offset + 200);
+      try {
+        const res = await supabase.rpc('lookup_import_fingerprints', { p_fingerprints: chunk });
+        if (res.error) { ok = false; break; }
+        for (const raw of (res.data ?? []) as Array<{ fingerprint?: unknown; is_deleted?: unknown }>) {
+          const fp = raw?.fingerprint;
+          if (typeof fp !== 'string') continue;
+          if (raw.is_deleted === true) deleted.add(fp);
+          else live.add(fp);
+        }
+      } catch {
+        ok = false;
+      }
+    }
+    if (ok) return { live, deleted };
+  }
+
+  const live = await findPersistedFingerprints(supabase, userId, unique);
+  return { live, deleted: new Set() };
 }
 
 async function findPersistedFingerprints(

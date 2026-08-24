@@ -35,6 +35,9 @@ import {
   buildInitialDecisions,
   isNeedsExplanation,
   isNewRowLocked,
+  isPreviouslyDeletedRow,
+  isRestoreDeleted,
+  setRestoreDeleted,
   setAutoMerge,
   setNeedsExplanation,
   setNewRow,
@@ -403,6 +406,8 @@ const ImportReview = () => {
           skipped_merged: result.skippedMerged,
           skipped_duplicate: result.skippedDuplicate,
           skipped_existing_unique: result.skippedExistingUnique,
+          skipped_previously_deleted: result.skippedPreviouslyDeleted,
+          restored_deleted: result.restoredDeleted,
           fulfilled_existing: result.fulfilledExisting,
           completed_outcomes: result.completedOutcomes,
           duration_ms: result.durationMs,
@@ -437,7 +442,7 @@ const ImportReview = () => {
         inserted: result.inserted,
         transfers: result.transfersCreated,
         skipped: result.skippedByUser + result.skippedFingerprint + result.skippedMerged + result.skippedDuplicate
-          + result.fulfilledExisting + result.skippedExistingUnique,
+          + result.fulfilledExisting + result.skippedExistingUnique + result.skippedPreviouslyDeleted,
         existing: result.skippedFingerprint + result.skippedDuplicate
           + result.fulfilledExisting + result.skippedExistingUnique,
       }), {
@@ -450,6 +455,12 @@ const ImportReview = () => {
           }),
         } : undefined,
       });
+
+      // Ranije obrisani redci se broje ODVOJENO od "već postoji" — korisnik mora
+      // vidjeti da ih baza i dalje drži i da se sami ne vraćaju.
+      if (result.skippedPreviouslyDeleted > 0) {
+        toast.info(t('importReview.skippedPreviouslyDeletedSummary', { count: result.skippedPreviouslyDeleted }), { duration: 8000 });
+      }
 
       // Povijesni izvod (završava prije sidra) ne traži odluku — samo informacija
       // da je povijest dopunjena i da će se stanje uskladiti na kraju.
@@ -486,6 +497,9 @@ const ImportReview = () => {
 
   const updateAuto = useCallback((idx: number, value: boolean) => {
     setDecisions(prev => (prev ? setAutoMerge(prev, idx, value) : prev));
+  }, []);
+  const updateRestoreDeleted = useCallback((idx: number, value: boolean) => {
+    setDecisions(prev => (prev ? setRestoreDeleted(prev, idx, value) : prev));
   }, []);
   const updateNew = useCallback((idx: number, value: boolean) => {
     setDecisions(prev => (prev ? setNewRow(prev, idx, value) : prev));
@@ -1203,7 +1217,9 @@ const ImportReview = () => {
             <ul className="space-y-2">
               {grouped.news.map((row) => {
                 const locked = isNewRowLocked(row);
-                const checked = decisions.newRows[row.index] === true;
+                const previouslyDeleted = isPreviouslyDeletedRow(row);
+                const restore = isRestoreDeleted(decisions, row.index);
+                const checked = previouslyDeleted ? restore : decisions.newRows[row.index] === true;
                 const rowId = `ir-new-${row.index}`;
                 return (
                   <li key={row.index} className={cn(
@@ -1214,7 +1230,7 @@ const ImportReview = () => {
                       <Checkbox
                         id={rowId}
                         checked={checked}
-                        disabled={locked}
+                        disabled={locked || previouslyDeleted}
                         onCheckedChange={(v) => updateNew(row.index, v === true)}
                         className="mt-1"
                       />
@@ -1233,12 +1249,40 @@ const ImportReview = () => {
                             {t('importReview.badges.fingerprintExists')}
                           </Badge>
                         )}
+                        {previouslyDeleted && (
+                          <div className="space-y-1 mt-1">
+                            <Badge variant="outline" className="text-[10px] border-muted-foreground/40 text-muted-foreground">
+                              <AlertTriangle className="w-3 h-3 mr-1" />
+                              {t('importReview.badges.previouslyDeleted')}
+                            </Badge>
+                            {row.deletedTwinDate && (
+                              <p className="text-[11px] text-muted-foreground">
+                                {t('importReview.previouslyDeletedTwin', { date: fmtDate(row.deletedTwinDate) })}
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </label>
                     {renderRawLine(row.index)}
-                    {!locked && renderNeedsExplanation(row.index)}
-                    {!locked && renderLateMatchOffer(row)}
-                    {!locked && renderTransferControls(row)}
+                    {previouslyDeleted && (
+                      <div className="mt-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={restore ? 'default' : 'outline'}
+                          className="min-h-11"
+                          onClick={() => updateRestoreDeleted(row.index, !restore)}
+                        >
+                          {restore
+                            ? t('importReview.actions.restoreDeletedOn')
+                            : t('importReview.actions.restoreDeleted')}
+                        </Button>
+                      </div>
+                    )}
+                    {!locked && !previouslyDeleted && renderNeedsExplanation(row.index)}
+                    {!locked && !previouslyDeleted && renderLateMatchOffer(row)}
+                    {!locked && !previouslyDeleted && renderTransferControls(row)}
                   </li>
                 );
               })}

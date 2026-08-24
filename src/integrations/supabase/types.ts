@@ -7557,6 +7557,13 @@ export type Database = {
           title: string
         }[]
       }
+      lookup_import_fingerprints: {
+        Args: { p_fingerprints: string[] }
+        Returns: {
+          fingerprint: string
+          is_deleted: boolean
+        }[]
+      }
       mail_alias_generate_local: { Args: never; Returns: string }
       mail_alias_get_or_create: {
         Args: never
@@ -7774,6 +7781,10 @@ export type Database = {
       resolve_stale_issues: {
         Args: { p_active_dedup_keys: string[]; p_type_prefix: string }
         Returns: number
+      }
+      restore_deleted_import_row: {
+        Args: { p_batch_id: string; p_fingerprint: string }
+        Returns: boolean
       }
       restore_trash_item: {
         Args: { p_entity: string; p_id: string }

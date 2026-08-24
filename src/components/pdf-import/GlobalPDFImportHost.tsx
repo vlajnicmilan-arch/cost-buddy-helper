@@ -21,6 +21,7 @@ import { COMMIT_SHA } from '@/lib/version';
 import { computeImportFingerprint } from '@/lib/importFingerprint';
 import { savePayload as saveReviewPayload, hasResumableReview, clearDraft as clearReviewDraft, clearPayload as clearReviewPayload, saveStatementHint, clearStatementHint } from '@/lib/importReview/draft';
 import { findLateCardMatches } from '@/lib/importReview/lateCardMatch';
+import { lookupFingerprintStates, type ExecutorSupabaseClient } from '@/lib/importReview/executor';
 import type { ImportReviewPayload, ImportReviewRow, ManualCandidateInfo, TransferTargetOption } from '@/lib/importReview/types';
 import { checkAccountIdentity } from '@/lib/importReview/accountIdentityGuard';
 import { AccountIdentityMismatchDialog } from '@/components/import/AccountIdentityMismatchDialog';
@@ -65,6 +66,29 @@ const readAsDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
   reader.onload = event => resolve(String(event.target?.result || ''));
   reader.readAsDataURL(file);
 });
+
+/**
+ * OBJAŠNJENJE UZ "RANIJE OBRISANO" — ako u istom novčaniku unutar ±4 dana
+ * (isti prozor koji koristi lateCardMatch) već stoji ŽIVI redak istog iznosa
+ * i tipa, vrati njegov datum. Samo objašnjenje; ne mijenja nijednu odluku.
+ */
+function findLiveTwinDate(
+  tx: { amount: number; type: string; date: string | Date },
+  manualRows: ReadonlyArray<{ date: string; amount: number; type: string }>,
+): string | null {
+  const amount = Number(tx.amount).toFixed(2);
+  const day = new Date(tx.date).getTime();
+  if (!Number.isFinite(day)) return null;
+  for (const m of manualRows) {
+    if (m.type !== tx.type) continue;
+    if (Number(m.amount).toFixed(2) !== amount) continue;
+    const md = new Date(m.date).getTime();
+    if (!Number.isFinite(md)) continue;
+    if (Math.abs(day - md) > 4 * 24 * 60 * 60 * 1000) continue;
+    return String(m.date).slice(0, 10);
+  }
+  return null;
+}
 
 export const GlobalPDFImportHost = () => {
   const { t } = useTranslation();
@@ -501,18 +525,19 @@ export const GlobalPDFImportHost = () => {
         })
       ));
 
-      // SELECT (a) fingerprint hits — rows already anchored in expenses.
-      const existingFpSet = new Set<string>();
+      // SELECT (a) fingerprint hits — TRI stanja: živ redak / ranije obrisan
+      // redak (otisak i dalje zauzet u indeksu) / retka nema.
+      let existingFpSet = new Set<string>();
+      let deletedFpSet = new Set<string>();
       if (fingerprints.length > 0) {
         try {
-          const { data } = await supabase
-            .from('expenses')
-            .select('bank_transaction_id')
-            .eq('user_id', user.id)
-            .in('bank_transaction_id', fingerprints);
-          for (const r of (data ?? []) as Array<{ bank_transaction_id: string | null }>) {
-            if (r.bank_transaction_id) existingFpSet.add(r.bank_transaction_id);
-          }
+          const states = await lookupFingerprintStates(
+            supabase as unknown as ExecutorSupabaseClient,
+            user.id,
+            fingerprints,
+          );
+          existingFpSet = states.live;
+          deletedFpSet = states.deleted;
         } catch (e) {
           try { logDiagnostic('import_review_fp_lookup_failed', { message: e instanceof Error ? e.message : String(e) }); } catch {}
         }
@@ -736,10 +761,18 @@ export const GlobalPDFImportHost = () => {
             },
           };
         }
+        const previouslyDeleted = !existingFpSet.has(fp) && deletedFpSet.has(fp);
         return {
           ...baseRow,
-          classification: { kind: 'new' as const, existsByFingerprint: existingFpSet.has(fp) },
-          lateMatchOffer: existingFpSet.has(fp) ? null : (lateOfferByIdx.get(baseRow.index) ?? null),
+          classification: {
+            kind: 'new' as const,
+            existsByFingerprint: existingFpSet.has(fp),
+            deletedByFingerprint: previouslyDeleted,
+          },
+          lateMatchOffer: existingFpSet.has(fp) || previouslyDeleted
+            ? null
+            : (lateOfferByIdx.get(baseRow.index) ?? null),
+          deletedTwinDate: previouslyDeleted ? findLiveTwinDate(tx, manualRows) : null,
         };
       });
 
