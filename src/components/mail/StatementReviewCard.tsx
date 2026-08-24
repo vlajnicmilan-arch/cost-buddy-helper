@@ -357,7 +357,7 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
           </label>
         )}
 
-        {accountIdentifier && (
+        {accountIdentifier && identity.status !== 'mismatch' && (
           <label
             data-testid="remember-statement-source"
             className="flex items-start gap-2 text-xs cursor-pointer"
@@ -374,6 +374,7 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
             </span>
           </label>
         )}
+
       </div>
 
       {duplicate && (
