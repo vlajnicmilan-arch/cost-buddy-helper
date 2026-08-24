@@ -180,7 +180,7 @@ export const BulkActionsToolbar = ({
 
   const handleMerge = async () => {
     if (!mergeCheck || !mergeCheck.ok) return;
-    const ok = await mergePair(mergeCheck.manual.id, mergeCheck.bank.id);
+    const ok = await mergePair(mergeCheck.manual.id, mergeCheck.bank.id, { context: 'bulk_toolbar' });
     setMergeConfirmOpen(false);
     if (ok) onClearSelection();
   };
