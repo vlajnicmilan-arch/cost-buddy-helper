@@ -49,7 +49,7 @@ export function useMergeCandidate() {
           .select(SELECT_COLUMNS)
           .eq('user_id', uid)
           .is('deleted_at', null)
-          .in('status', COUNTED_EXPENSE_STATUSES as unknown as string[])
+          .in('status', [...COUNTED_EXPENSE_STATUSES])
           .not('bank_transaction_id', 'is', null)
           .gte('date', from.toISOString())
           .lte('date', to.toISOString())
