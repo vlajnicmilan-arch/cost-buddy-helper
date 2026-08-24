@@ -144,6 +144,9 @@ BEGIN
   SELECT * INTO v_row FROM public.expenses WHERE id = v_b;
   PERFORM pg_temp.assert_text('1.11 bank row archived', 'yes', CASE WHEN v_row.deleted_at IS NOT NULL THEN 'yes' ELSE 'no' END);
   PERFORM pg_temp.assert_text('1.12 bank row released the fingerprint', '<null>', COALESCE(v_row.bank_transaction_id,'<null>'));
+  -- Guards the 23514 regression: the archive marker must be a value the
+  -- production CHECK constraint accepts (mirrored in baseline_extra.sql).
+  PERFORM pg_temp.assert_text('1.12b bank row marked merged', 'merged_into_manual', v_row.bank_match_status);
 
   SELECT balance INTO v_bal FROM public.custom_payment_sources WHERE id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
   PERFORM pg_temp.assert_eq('1.13 balance = one expense (no double revert)', -21.50, v_bal);
