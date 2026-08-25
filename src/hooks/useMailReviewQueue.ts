@@ -200,15 +200,23 @@ export function useMailReviewQueue(enabled: boolean) {
     [fetchItems]
   );
 
+  /**
+   * ODBACIVANJE KOJE UČI. RPC `mail_item_discard` uz promjenu stanja broji
+   * odbijanja te vrste poruke od tog pošiljatelja; drugo odbijanje utišava
+   * treće. Ništa se ne briše i sve se može poništiti (`mail_item_restore`).
+   */
   const discardItem = useCallback(
     async (itemId: string) => {
       setWorking(true);
       try {
-        const { error } = await supabase
-          .from('document_ingest_items')
-          .update({ status: 'odbacio_korisnik' })
-          .eq('id', itemId);
-        if (error) throw error;
+        const { error } = await supabase.rpc('mail_item_discard', { p_item_id: itemId });
+        if (error) {
+          await logMailDiagnostic('mail_item_discard_failed', {
+            item_id: itemId,
+            message: describeDbError(error, 'mail_item_discard'),
+          });
+          throw error;
+        }
         await fetchItems();
       } finally {
         setWorking(false);
@@ -216,6 +224,7 @@ export function useMailReviewQueue(enabled: boolean) {
     },
     [fetchItems]
   );
+
 
   /**
    * Korisnik potvrđuje da je sumnjiva stavka izvod.
