@@ -483,6 +483,9 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
         // Kvačica se nudi SAMO za novog izdavatelja — poznatog se ne pita opet.
         const offerRemember = supplierOib !== '' && knownCount === 0;
         // MEKA BRANA: kandidat duplikata (isti OIB + broj/iznos+datum).
+        const missingOib = supplierOib === '';
+        const noOibAcked = noOibAck[item.id] === true;
+        const sibling = siblings.get(item.id);
         const dupMatch = duplicateCandidates.get(item.id);
         const dupAcked = dupAck[item.id] === true;
         const visibleWarnings = item.warnings.filter(
@@ -626,6 +629,47 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
               </dl>
             )}
 
+            {sibling && (
+              <div
+                data-testid="sibling-document"
+                className="flex items-start gap-2 rounded-md border border-primary/40 bg-primary/5 p-2 text-xs"
+              >
+                <FileText className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
+                <span>
+                  {sibling.role === 'receipt'
+                    ? t(
+                        'mailReview.sibling.receipt',
+                        'Ovo je potvrda plaćanja za račun {{number}} iz iste poruke — potvrdom se veže na taj račun, novi se ne stvara.',
+                        { number: sibling.invoiceNumber },
+                      )
+                    : t(
+                        'mailReview.sibling.invoice',
+                        'Iz iste poruke stigla je i potvrda plaćanja za račun {{number}} — riječ je o jednoj obvezi, ne o dva računa.',
+                        { number: sibling.invoiceNumber },
+                      )}
+                </span>
+              </div>
+            )}
+
+            {missingOib && (
+              <label
+                data-testid="missing-oib-ack"
+                className="flex items-start gap-2 rounded-md border border-document-pending bg-document-pending-surface p-2 text-xs cursor-pointer"
+              >
+                <Checkbox
+                  className="mt-0.5"
+                  checked={noOibAcked}
+                  onCheckedChange={(v) => setNoOibAck((s) => ({ ...s, [item.id]: v === true }))}
+                />
+                <span>
+                  {t(
+                    'mailReview.missingOib',
+                    'Izdavatelj nema OIB (strani dobavljač) — svejedno unesi. Zaštita od dvostrukog unosa radi po nazivu i broju dokumenta.',
+                  )}
+                </span>
+              </label>
+            )}
+
             {offerRemember && (
               <label
                 data-testid="remember-issuer"
@@ -654,7 +698,10 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
                 size="sm"
                 className="min-h-[44px]"
                 disabled={
-                  working || (isEditing && draftHasError) || (dupMatch !== undefined && !dupAcked)
+                  working ||
+                  (isEditing && draftHasError) ||
+                  (dupMatch !== undefined && !dupAcked) ||
+                  (missingOib && !noOibAcked)
                 }
                 onClick={() => handleConfirm(item)}
               >
