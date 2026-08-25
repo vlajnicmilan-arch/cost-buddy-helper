@@ -134,8 +134,9 @@ export const PersonPayoutDialog = ({
       onPaid?.();
       onOpenChange(false);
     } else {
+      const message = (res as { message?: string }).message ?? '';
       showError(
-        res.message.includes('payout_exceeds_remaining')
+        message.includes('payout_exceeds_remaining')
           ? t('people.payout.exceeds', 'Iznos je veći od onoga što na angažmanu ostaje')
           : t('common.error'),
       );
