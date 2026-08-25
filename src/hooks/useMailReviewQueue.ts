@@ -77,7 +77,7 @@ export function useMailReviewQueue(enabled: boolean) {
     const { data, error } = await supabase
       .from('document_ingest_items')
       .select(
-        'id, classification, extraction, confidence, trust_level, warnings, doc_type, created_at, scope_type, scope_id, scope_set_by_user, attachment_id, inbound_messages(subject, from_header), inbound_attachments(storage_path)'
+        'id, message_id, classification, extraction, confidence, trust_level, warnings, doc_type, created_at, scope_type, scope_id, scope_set_by_user, attachment_id, inbound_messages(subject, from_header), inbound_attachments(storage_path)'
       )
       .eq('owner_user_id', user.id)
       .eq('status', 'na_pregledu')
@@ -92,6 +92,7 @@ export function useMailReviewQueue(enabled: boolean) {
       setItems(
         (data ?? []).map((row: any) => ({
           id: row.id,
+          message_id: row.message_id ?? null,
           classification: row.classification,
           extraction: (row.extraction ?? null) as Record<string, unknown> | null,
           confidence: row.confidence,

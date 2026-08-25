@@ -14,7 +14,7 @@ const STATEMENT_IBAN = 'LT433250072163608687';
 const WALLET_IBAN = 'LT183250041594525319';
 
 const baseItem = (extraction: Record<string, unknown> = {}): MailReviewItem => ({
-  id: 'item-1',
+  id: 'item-1', message_id: 'msg-1',
   classification: 'izvod',
   extraction,
   confidence: null,
