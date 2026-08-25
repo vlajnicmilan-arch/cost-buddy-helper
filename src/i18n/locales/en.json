@@ -1447,7 +1447,10 @@
     "notifKrugReminderDesc": "Every Monday 08:00 UTC: summary of outstanding items you owe.",
     "localReceiptUsage": "{{count}} images · {{size}}",
     "notifInvoiceDue": "Invoice due date reminders",
-    "notifInvoiceDueDesc": "3 days before the due date and on the due date."
+    "notifInvoiceDueDesc": "3 days before the due date and on the due date.",
+    "category": {
+      "myRejections": "What I dismissed"
+    }
   },
   "bankMatch": {
     "pendingBank": "Awaiting bank confirmation",
@@ -6532,7 +6535,9 @@
       "nije_dopusteno": "You are not allowed to act on this item.",
       "stavka_ne_postoji": "This item no longer exists.",
       "nije_prijavljen": "Your session expired — please sign in again.",
-      "baza": "The database rejected the save."
+      "baza": "The database rejected the save.",
+      "nedostaje_oib": "The issuer has no OIB — tick the box to record it anyway.",
+      "nedostaje_naziv": "Without an OIB the supplier name is required."
     },
     "classification": {
       "racun": "Invoice",
@@ -6573,7 +6578,8 @@
       "vjerojatno_duplikat": "An invoice with this number and supplier probably already exists",
       "dopunjeno_iz_zapamcenog": "Filled in from a remembered issuer — please check",
       "vise_kandidata_sifra_mjesta": "Several possible billing point codes — none was used",
-      "odrediste_ponuda": "Customer matched by name only — check the destination."
+      "odrediste_ponuda": "Customer matched by name only — check the destination.",
+      "nauceno_odbijanje": "You already dismissed messages like this from this sender — they no longer reach the review queue."
     },
     "field": {
       "supplierName": "Supplier",
@@ -6649,6 +6655,11 @@
       "confirmTitle": "Mark as misrecognised",
       "confirmBody": "The destination follows the customer on the document. Change it only if recognition got it wrong.",
       "confirmAction": "Yes, it was misrecognised"
+    },
+    "missingOib": "The issuer has no OIB (foreign supplier) — record it anyway. Duplicate protection uses supplier name and document number.",
+    "sibling": {
+      "receipt": "This is the payment receipt for invoice {{number}} from the same email — confirming links it to that invoice, no new one is created.",
+      "invoice": "The same email also carried a payment receipt for invoice {{number}} — this is one obligation, not two invoices."
     }
   },
   "documents": {
@@ -6831,5 +6842,17 @@
       "showAgain": "Show again on next entry",
       "showAgainDone": "The welcome screen will show on your next entry."
     }
+  },
+  "rejections": {
+    "title": "What I dismissed",
+    "description": "The same kind of message dismissed twice no longer reaches the review queue. Nothing is deleted — delete the rule and those messages come back.",
+    "empty": "No learned dismissals yet.",
+    "forget": "Forget rule",
+    "forgetTitle": "Forget this rule?",
+    "forgetDescription": "Messages like this will reach the review queue again.",
+    "forgotten": "Rule deleted",
+    "forgetFailed": "Deleting failed",
+    "muted": "Muted · dismissed {{count}}×",
+    "counting": "Dismissed {{count}}×"
   }
 }
