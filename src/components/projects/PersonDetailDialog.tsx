@@ -5,9 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import { Clock, Banknote, Wallet } from 'lucide-react';
-import type { PersonAggregate } from '@/lib/workerIdentity';
+import { Clock, Banknote, Wallet, Ban } from 'lucide-react';
+import { isLivePayout, type PayoutRow, type PersonAggregate } from '@/lib/workerIdentity';
 import { PersonPayoutDialog } from './PersonPayoutDialog';
+import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
+import { usePersonPayoutVoid } from '@/hooks/usePersonPayoutVoid';
+import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 
 interface PersonDetailDialogProps {
   open: boolean;
@@ -32,6 +35,31 @@ export const PersonDetailDialog = ({
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const [payoutOpen, setPayoutOpen] = useState(false);
+  const [voidTarget, setVoidTarget] = useState<PayoutRow | null>(null);
+  const { voidPayout, voiding } = usePersonPayoutVoid();
+
+  const handleVoid = async (reason?: string) => {
+    if (!voidTarget?.id) return;
+    const amount = Number(voidTarget.paid_amount) || 0;
+    const res = await voidPayout({
+      payoutId: voidTarget.id,
+      batchId: voidTarget.batch_id ?? null,
+      reason: (reason ?? '').trim(),
+      personId: personId ?? null,
+      amount,
+    });
+    if (res.ok) {
+      setVoidTarget(null);
+      showSuccess(
+        t('people.payoutVoidedToast', 'Isplata od {{amount}} je stornirana. Trošak je uklonjen, sati su ponovno slobodni.', {
+          amount: formatAmount(amount),
+        }),
+      );
+      onPaid?.();
+    } else {
+      showError(t('people.payoutVoidFailed', 'Storniranje nije uspjelo'));
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -160,6 +188,25 @@ export const PersonDetailDialog = ({
             </div>
           </div>
         )}
+
+        <ConfirmActionDialog
+          open={!!voidTarget}
+          onOpenChange={(v) => { if (!v) setVoidTarget(null); }}
+          title={t('people.payoutVoidTitle', 'Storniraj isplatu')}
+          description={
+            voidTarget?.batch_id
+              ? t('people.payoutVoidBatchDesc', 'Ova isplata je dio zbirne isplate — stornira se cijela zbirna isplata.')
+              : t('people.payoutVoidDesc', 'Trošak se uklanja iz knjiga, a sati se ponovno oslobađaju.')
+          }
+          reason={{
+            label: t('people.payoutVoidReasonLabel', 'Razlog storniranja'),
+            required: true,
+          }}
+          confirmLabel={t('people.payoutVoidAction', 'Storniraj')}
+          destructive
+          pending={voiding}
+          onConfirm={handleVoid}
+        />
 
         <PersonPayoutDialog
           open={payoutOpen}
