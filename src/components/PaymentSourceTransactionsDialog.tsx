@@ -10,6 +10,7 @@ import { TransactionDetailDialog } from './TransactionDetailDialog';
 import { BulkActionsToolbar } from './BulkActionsToolbar';
 import { ImportBatchDialog } from './ImportBatchDialog';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
+import { WalletAccountIdentifier } from '@/components/custom-payment-sources/WalletAccountIdentifier';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useInstallments } from '@/hooks/useInstallments';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
@@ -891,6 +892,10 @@ export const PaymentSourceTransactionsDialog = ({
                     <p className="text-xs text-muted-foreground">
                       {sourceExpenses.length} {t('transactions.transactions')}
                     </p>
+                    {/* IBAN je preselio s popisa računa ovamo — popis je time
+                        dobio jedan redak po računu, a IBAN je ostao vidljiv
+                        ondje gdje se račun stvarno otvara. */}
+                    <WalletAccountIdentifier identifier={paymentSource.account_identifier} />
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 min-w-0 sm:justify-end">
@@ -917,36 +922,12 @@ export const PaymentSourceTransactionsDialog = ({
                         )}
                         PDF
                       </Button>
-                      <input
-                        ref={htmlInputRef}
-                        type="file"
-                        accept=".html,.htm,text/html"
-                        onChange={handleHTMLSelect}
-                        className="hidden"
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openFilePickerWithGuard(htmlInputRef, 'html')}
-                        disabled={parsing}
-                        className="h-7 text-xs gap-1.5 border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-500/10"
-                      >
-                        {parsing ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <Code2 className="w-3.5 h-3.5" />
-                        )}
-                        HTML
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCsvImportOpen(true)}
-                        className="h-7 text-xs gap-1.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
-                      >
-                        <Upload className="w-3.5 h-3.5" />
-                        CSV
-                      </Button>
+                      {/* HTML ulaz uklonjen: išao je STARIM sinkronim putem
+                          (usePDFParser.parseHTML → izravan poziv, bez sustava
+                          poslova) pa nije dobivao segmentaciju velikih izvoda.
+                          CSV ulaz uklonjen: CSV_IMPORT_ENABLED = false, pa je
+                          gumb tražio cijeli posao od korisnika i tek na kraju
+                          odbijao uvoz. PDF put ostaje jedini ulaz s diska. */}
                     </>
                   )}
                   {filteredSourceExpenses.length > 0 && (

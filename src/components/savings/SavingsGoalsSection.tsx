@@ -69,21 +69,11 @@ export const SavingsGoalsSection = () => {
 
 
       {goals.length === 0 ? (
-        <div className="text-center py-6">
-          <PiggyBank className="w-10 h-10 mx-auto mb-2 text-muted-foreground/50" />
-          <p className="text-sm text-muted-foreground">{t('savingsGoals.noGoals')}</p>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={isReadOnly}
-            onClick={() => guard(() => setDialogOpen(true))}
-            className="mt-3"
-          >
-            <Plus className="w-3 h-3 mr-1" />
-            {t('savingsGoals.addGoal')}
-          </Button>
-
-        </div>
+        /* Prazno stanje više ne crta cijeli ekran (praščić + naslov + gumb):
+           jedan tihi redak, a ulaz ostaje "+" u zaglavlju kartice. */
+        <p className="text-sm text-muted-foreground">
+          {t('savingsGoals.noGoals')}
+        </p>
       ) : (
         <div className="space-y-3">
           {goals.map((goal) => {

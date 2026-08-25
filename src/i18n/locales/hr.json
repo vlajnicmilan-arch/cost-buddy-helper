@@ -1918,7 +1918,13 @@
     "hiddenFromDashboard": "Sakriveno s dashboarda",
     "shownOnDashboard": "Prikazano na dashboardu",
     "hiddenBadge": "Sakriveno",
-    "correctBalance": "Korigiraj saldo"
+    "correctBalance": "Korigiraj saldo",
+    "newAccount": "Račun",
+    "reorderAccounts": "Presloži račune",
+    "reorderHint": "Povuci račune na željeno mjesto",
+    "reorderDone": "Gotovo",
+    "showAll": "Prikaži sve ({{count}})",
+    "showLess": "Prikaži manje"
   },
   "incomeSources": {
     "title": "Izvori",

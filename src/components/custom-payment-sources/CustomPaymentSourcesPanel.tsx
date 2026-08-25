@@ -1,11 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Plus, Pencil, Trash2, CreditCard, Sparkles, GripVertical, Users, Settings2, Eye, EyeOff, MoreHorizontal } from 'lucide-react';
+import { Plus, Pencil, Trash2, CreditCard, GripVertical, Users, Settings2, Eye, EyeOff, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useHiddenPaymentSources } from '@/hooks/useHiddenPaymentSources';
 import { CustomPaymentSourceDialog } from './CustomPaymentSourceDialog';
-import { WalletAccountIdentifier } from './WalletAccountIdentifier';
 import { BalanceCorrectionDialog } from './BalanceCorrectionDialog';
 import { PaymentSourceMembersDialog } from './PaymentSourceMembersDialog';
 import { CustomPaymentSource, SUGGESTED_PAYMENT_SOURCES } from '@/types/customPaymentSource';
@@ -14,6 +13,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { saveLocalExpense } from '@/lib/storage/indexedDB';
 import { coerceCanonicalShape } from '@/lib/paymentSource/normalize';
+import { formatHrAmount } from '@/lib/money';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import {
   AlertDialog,
@@ -26,7 +26,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,8 +35,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { EmptyState } from '@/components/EmptyState';
 
 interface CustomPaymentSourcesPanelProps {
@@ -63,13 +60,38 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
   const [editingSource, setEditingSource] = useState<CustomPaymentSource | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [sourceToDelete, setSourceToDelete] = useState<CustomPaymentSource | null>(null);
-  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [initialData, setInitialData] = useState<{ name: string; icon: string; color: string; balance?: number } | undefined>();
   const [reorderMode, setReorderMode] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [membersDialogSource, setMembersDialogSource] = useState<CustomPaymentSource | null>(null);
   const [balanceCorrectionSource, setBalanceCorrectionSource] = useState<CustomPaymentSource | null>(null);
   const { t } = useTranslation();
+
+  /**
+   * Popis računa: prva 4 vidljiva, ostatak iza "Prikaži sve (N)".
+   * Stanje se pamti po korisniku (localStorage) da se odluka ne gubi
+   * pri svakom otvaranju Novčanika.
+   */
+  const VISIBLE_SOURCES_LIMIT = 4;
+  const SHOW_ALL_KEY = 'vmb-wallet-show-all-sources:v1';
+  const [showAllSources, setShowAllSources] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(SHOW_ALL_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const toggleShowAllSources = useCallback(() => {
+    setShowAllSources((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(SHOW_ALL_KEY, next ? '1' : '0');
+      } catch {
+        /* privatni način rada — stanje vrijedi samo za ovu sesiju */
+      }
+      return next;
+    });
+  }, []);
 
   const handleBalanceCorrection = async (newBalance: number) => {
     if (!balanceCorrectionSource) return;
@@ -195,19 +217,6 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
   }, [autoOpenNew]);
 
 
-  const handleSuggestionClick = (suggestion: { name: string; icon: string; color: string }) => {
-    // Check if already exists
-    const exists = customPaymentSources.some(
-      src => src.name.toLowerCase() === suggestion.name.toLowerCase()
-    );
-    if (exists) {
-      return;
-    }
-    setEditingSource(null);
-    setInitialData({ ...suggestion, balance: 0 });
-    setDialogOpen(true);
-  };
-
   // Filter out suggestions that are already added
   const availableSuggestions = SUGGESTED_PAYMENT_SOURCES.filter(
     suggestion => !customPaymentSources.some(
@@ -309,17 +318,15 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
 
   const content = (
     <div className="space-y-4">
-      {/* Reorder toggle */}
-      {customPaymentSources.length > 1 && (
-        <div className="flex items-center justify-end gap-2">
-          <Label htmlFor="reorder-mode" className="text-sm text-muted-foreground cursor-pointer">
-            {t('common.reorderMode', 'Preslagivanje')}
-          </Label>
-          <Switch
-            id="reorder-mode"
-            checked={reorderMode}
-            onCheckedChange={setReorderMode}
-          />
+      {/* Preslagivanje: ulazi se kroz "…" izbornik računa, izlazi ovim gumbom */}
+      {reorderMode && (
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-primary/40 bg-primary/5 px-3 py-2">
+          <span className="text-sm text-muted-foreground">
+            {t('paymentSources.reorderHint', 'Povuci račune na željeno mjesto')}
+          </span>
+          <Button size="sm" variant="outline" onClick={() => setReorderMode(false)}>
+            {t('paymentSources.reorderDone', 'Gotovo')}
+          </Button>
         </div>
       )}
 
@@ -339,6 +346,10 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
         <div className="space-y-2">
           {customPaymentSources.map((source, index) => {
             const hidden = isHidden(source.id);
+            // Rep popisa je skriven dok korisnik ne zatraži "Prikaži sve".
+            // U načinu preslagivanja uvijek se vide svi — inače se ne bi
+            // mogao presložiti račun koji je ispod granice.
+            if (!showAllSources && !reorderMode && index >= VISIBLE_SOURCES_LIMIT) return null;
             return (
             <div
               key={source.id}
@@ -364,13 +375,15 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
                 borderColor: source.color 
               } : undefined}
             >
-              {/* Row 1: Icon + Name + Description */}
+              {/* Jedan redak: ikona · ime · saldo · izbornik.
+                  IBAN i kartice žive u detalju/uređivanju računa — na popisu
+                  su trošile tri reda po računu i gurale sve ostalo ispod ruba. */}
               <div className="flex items-center gap-3">
                 {reorderMode && (
                   <GripVertical className="h-5 w-5 text-muted-foreground shrink-0" />
                 )}
                 <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-white shrink-0"
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-white shrink-0 text-sm"
                   style={{ backgroundColor: source.color }}
                 >
                   <span>{source.icon}</span>
@@ -402,19 +415,15 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
                     )}
                   </div>
                   {source.description && (
-                    <p className="text-xs text-muted-foreground">{source.description}</p>
+                    <p className="text-xs text-muted-foreground truncate">{source.description}</p>
                   )}
-                  <WalletAccountIdentifier identifier={source.account_identifier} />
                 </div>
-              </div>
-              {/* Row 2: Balance + Action buttons */}
-              <div className="flex items-center justify-between mt-2 pl-[52px]">
-                <span 
-                  className={`font-mono text-sm font-semibold cursor-pointer hover:underline ${(source.balance || 0) >= 0 ? 'text-income' : 'text-expense'}`}
+                <span
+                  className={`text-sm font-semibold tabular-nums cursor-pointer hover:underline shrink-0 ${(source.balance || 0) < 0 ? 'text-expense' : 'text-foreground'}`}
                   onClick={(e) => { e.stopPropagation(); setBalanceCorrectionSource(source); }}
                   title={t('paymentSources.correctBalance', 'Korigiraj saldo')}
                 >
-                  €{(source.balance || 0).toFixed(2)}
+                  {formatHrAmount(source.balance || 0)} €
                 </span>
                 {!reorderMode && (
                   <DropdownMenu>
@@ -449,6 +458,12 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
                         <Pencil className="h-3.5 w-3.5 mr-2" />
                         {t('common.edit', 'Uredi')}
                       </DropdownMenuItem>
+                      {customPaymentSources.length > 1 && (
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setReorderMode(true); }}>
+                          <GripVertical className="h-3.5 w-3.5 mr-2" />
+                          {t('paymentSources.reorderAccounts', 'Presloži račune')}
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         className="text-destructive focus:text-destructive"
@@ -461,61 +476,30 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
                   </DropdownMenu>
                 )}
               </div>
-              {/* Cards display */}
-              {source.cards && source.cards.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-border/50">
-                  {source.cards.map((card) => (
-                    <span 
-                      key={card.id} 
-                      className="inline-flex items-center gap-1 px-2 py-0.5 bg-muted rounded text-xs"
-                    >
-                      <CreditCard className="w-3 h-3" />
-                      {card.card_type && <span className="text-muted-foreground">{card.card_type}</span>}
-                      <span className="font-mono">****{card.last_four_digits}</span>
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
             );
           })}
+
+          {/* Rep popisa — vidljiv tek na zahtjev */}
+          {!reorderMode && customPaymentSources.length > VISIBLE_SOURCES_LIMIT && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full text-muted-foreground hover:text-foreground"
+              onClick={toggleShowAllSources}
+            >
+              {showAllSources
+                ? t('paymentSources.showLess', 'Prikaži manje')
+                : t('paymentSources.showAll', 'Prikaži sve ({{count}})', { count: customPaymentSources.length })}
+              <ChevronDown className={`h-4 w-4 ml-1 transition-transform ${showAllSources ? 'rotate-180' : ''}`} />
+            </Button>
+          )}
         </div>
       )}
 
-      {/* Suggested Payment Sources */}
-      {availableSuggestions.length > 0 && (
-        <Collapsible open={suggestionsOpen} onOpenChange={setSuggestionsOpen}>
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" className="w-full justify-between text-muted-foreground hover:text-foreground">
-              <span className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4" />
-                {t('common.suggestedPaymentSources')} ({availableSuggestions.length})
-              </span>
-              <ChevronDown className={`h-4 w-4 transition-transform ${suggestionsOpen ? 'rotate-180' : ''}`} />
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="pt-2">
-            <div className="flex flex-wrap gap-2">
-              {availableSuggestions.map((suggestion) => (
-                <button
-                  key={suggestion.name}
-                  onClick={() => handleSuggestionClick(suggestion)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-muted/30 hover:bg-muted/60 transition-colors text-sm"
-                >
-                  <span
-                    className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs"
-                    style={{ backgroundColor: suggestion.color }}
-                  >
-                    {suggestion.icon}
-                  </span>
-                  <span>{suggestion.name}</span>
-                  <Plus className="h-3 w-3 text-muted-foreground" />
-                </button>
-              ))}
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
-      )}
+      {/* Predlošci više NE stoje ispod korisnikovih računa — sele u dijalog
+          "novi račun" (CustomPaymentSourceDialog, prop `suggestions`), jer se
+          ovdje čitalo kao da su i oni korisnikovi računi. */}
 
       {/* Add button when in accordion mode */}
       {hideHeader && (
@@ -540,6 +524,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
           onDeleteCard={deleteCard}
           onUpdateCard={updateCard}
           initialData={initialData}
+          suggestions={availableSuggestions}
           onCorrectBalance={editingSource ? () => {
             const src = editingSource;
             setDialogOpen(false);
@@ -589,7 +574,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
             </CardTitle>
             <Button size="sm" variant="module" onClick={openNewDialog}>
               <Plus className="h-4 w-4 mr-1" />
-              {t('common.new')}
+              {t('paymentSources.newAccount', 'Račun')}
             </Button>
           </div>
         </CardHeader>
@@ -607,6 +592,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
         onDeleteCard={deleteCard}
         onUpdateCard={updateCard}
         initialData={initialData}
+        suggestions={availableSuggestions}
         onCorrectBalance={editingSource ? () => {
           const src = editingSource;
           setDialogOpen(false);
