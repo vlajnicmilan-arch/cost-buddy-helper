@@ -125,7 +125,24 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
   const [rememberOff, setRememberOff] = useState<Record<string, boolean>>({});
   // MEKA BRANA DUPLIKATA: svjesna potvrda po stavci (nikad tvrdo blokiranje).
   const [dupAck, setDupAck] = useState<Record<string, boolean>>({});
+  // STRANI IZDAVATELJ BEZ OIB-a: unos prolazi SAMO uz svjesnu potvrdu.
+  const [noOibAck, setNoOibAck] = useState<Record<string, boolean>>({});
   const duplicateCandidates = useMailDuplicateCandidates(items);
+  // Račun + potvrda plaćanja iz iste poruke = jedna obveza (vidi siblingDocuments.ts).
+  const siblings = useMemo(
+    () =>
+      findSiblingDocuments(
+        items.map((i) => ({
+          id: i.id,
+          message_id: i.message_id,
+          invoiceNumber: String((i.extraction ?? {}).invoice_number ?? '') || null,
+          fileName: i.file_name,
+          createdAt: i.created_at,
+        })),
+      ),
+    [items],
+  );
+
 
   const startEdit = (item: MailReviewItem) => {
     const source = (item.extraction ?? {}) as Record<string, unknown>;
