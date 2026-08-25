@@ -41,6 +41,8 @@ export interface MailReviewItem {
   attachment_id: string | null;
   storage_path: string | null;
   file_name: string | null;
+  /** Poruka iz koje stavka dolazi — račun i potvrda plaćanja dijele istu. */
+  message_id: string | null;
 }
 
 export interface ConfirmCollision {
