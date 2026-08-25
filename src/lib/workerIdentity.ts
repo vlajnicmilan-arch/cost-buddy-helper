@@ -123,6 +123,9 @@ export interface PersonProjectBreakdown {
   hours: number;
   earned: number;
   remaining: number;
+  /** Oldest / newest work date not yet covered by a payout. */
+  unpaidFrom: string | null;
+  unpaidTo: string | null;
 }
 
 export interface PersonAggregate {
