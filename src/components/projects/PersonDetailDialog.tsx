@@ -60,6 +60,16 @@ export const PersonDetailDialog = ({
               </div>
             </div>
 
+            <Button
+              className="w-full min-h-[44px]"
+              disabled={aggregate.totalRemaining <= 0.005}
+              onClick={() => setPayoutOpen(true)}
+            >
+              {t('people.payout.open', 'Isplati')}
+            </Button>
+
+
+
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-2">
                 {t('people.perProject', 'Po projektu')}
