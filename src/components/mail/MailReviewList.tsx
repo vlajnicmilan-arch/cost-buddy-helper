@@ -191,6 +191,8 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
     base.direction = 'in';
     // Učenje pamćenja se događa SAMO uz uključenu kvačicu — nikad tiho.
     base.remember_issuer = rememberOff[item.id] !== true;
+    // STRANI IZDAVATELJ: nedostatak OIB-a nije brana, nego svjesna potvrda.
+    base.allow_missing_oib = noOibAck[item.id] === true;
     return normalizeExtractionDates(base);
   };
 
