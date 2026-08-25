@@ -125,6 +125,16 @@ export const PersonDetailDialog = ({
             </div>
           </div>
         )}
+
+        <PersonPayoutDialog
+          open={payoutOpen}
+          onOpenChange={setPayoutOpen}
+          personId={personId ?? null}
+          name={name}
+          aggregate={aggregate}
+          projectNames={projectNames}
+          onPaid={onPaid}
+        />
       </DialogContent>
     </Dialog>
   );
