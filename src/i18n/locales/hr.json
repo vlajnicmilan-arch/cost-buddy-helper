@@ -775,7 +775,7 @@
     },
     "tooltips": {
       "team": "Drugi korisnici aplikacije s pristupom projektu",
-      "workers": "Tvoji zaposlenici (vodiš ih ti, plaćaš ih, evidencija sati)",
+      "workers": "Tvoji satni radnici (vodiš ih ti, plaćaš ih, evidencija sati)",
       "collaborators": "Vanjski podizvođači (drugi obrti/tvrtke s ugovorenim iznosom)",
       "projectTeam": "Svi ljudi na projektu: članovi aplikacije, radnici i vanjski suradnici",
       "workLog": "Upisani sati radnika po danima i obračun isplata"
@@ -814,7 +814,7 @@
     "alreadyMember": "Korisnik je već član projekta",
     "alreadyInvited": "Korisnik već ima aktivnu pozivnicu",
     "projectTeam": "Tim projekta",
-    "workers": "Radnici",
+    "workers": "Ljudi",
     "collaborators": "Suradnici",
     "invitationsDisabledClosed": "Projekt je završen ili arhiviran — pozivnice nisu moguće.",
     "complete": {
@@ -6874,5 +6874,31 @@
     "forgetFailed": "Brisanje nije uspjelo",
     "muted": "Utišano · odbačeno {{count}}×",
     "counting": "Odbačeno {{count}}×"
+  },
+  "people": {
+    "title": "Ljudi",
+    "empty": "Još nema ljudi",
+    "engagements": "{{count}} angažmana",
+    "remaining": "Ostaje za isplatu",
+    "remainingShort": "ostaje",
+    "totalEarned": "Ukupno zarađeno",
+    "totalPaid": "Ukupno isplaćeno",
+    "earned": "zarađeno",
+    "perProject": "Po projektu",
+    "unknownProject": "Projekt",
+    "noEngagements": "Nema angažmana",
+    "payoutHistory": "Povijest isplata",
+    "noPayouts": "Još nema isplata",
+    "migrationTitle": "Poveži angažmane s osobama",
+    "migrationQuestion": "{{name}} se pojavljuje na {{count}} projekta — je li to ista osoba?",
+    "migrationSingle": "{{name}} — dodaj među Ljude.",
+    "sameYes": "Da, isti",
+    "sameNo": "Ne, druge osobe",
+    "addToPeople": "Dodaj među Ljude",
+    "identityConfirmed": "Spremljeno",
+    "existsTitle": "Osoba već postoji",
+    "existsBody": "{{name}} već postoji među Ljudima. Želiš li ga dodati i na ovaj projekt?",
+    "useExisting": "Dodaj postojećeg",
+    "differentPerson": "Ovo je druga osoba"
   }
 }

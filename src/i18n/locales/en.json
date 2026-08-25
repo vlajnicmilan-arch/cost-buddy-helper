@@ -771,7 +771,7 @@
     },
     "tooltips": {
       "team": "Other app users with access to the project",
-      "workers": "Your employees (you manage them, pay them, track hours)",
+      "workers": "Your hourly workers (you manage them, you pay them, hours tracking)",
       "collaborators": "External subcontractors (other companies with agreed amounts)",
       "projectTeam": "Everyone on the project: app members, workers and external collaborators",
       "workLog": "Worker hours logged by day and payout calculation"
@@ -810,7 +810,7 @@
     "alreadyMember": "User is already a project member",
     "alreadyInvited": "User already has a pending invitation",
     "projectTeam": "Project Team",
-    "workers": "Workers",
+    "workers": "People",
     "collaborators": "Collaborators",
     "invitationsDisabledClosed": "Project is completed or archived — invitations are not allowed.",
     "complete": {
@@ -6860,5 +6860,31 @@
     "forgetFailed": "Deleting failed",
     "muted": "Muted · dismissed {{count}}×",
     "counting": "Dismissed {{count}}×"
+  },
+  "people": {
+    "title": "People",
+    "empty": "No people yet",
+    "engagements": "{{count}} engagements",
+    "remaining": "Left to pay",
+    "remainingShort": "left",
+    "totalEarned": "Total earned",
+    "totalPaid": "Total paid",
+    "earned": "earned",
+    "perProject": "Per project",
+    "unknownProject": "Project",
+    "noEngagements": "No engagements",
+    "payoutHistory": "Payout history",
+    "noPayouts": "No payouts yet",
+    "migrationTitle": "Link engagements to people",
+    "migrationQuestion": "{{name}} appears on {{count}} projects — is this the same person?",
+    "migrationSingle": "{{name}} — add to People.",
+    "sameYes": "Yes, same person",
+    "sameNo": "No, different people",
+    "addToPeople": "Add to People",
+    "identityConfirmed": "Saved",
+    "existsTitle": "Person already exists",
+    "existsBody": "{{name}} already exists in People. Add them to this project too?",
+    "useExisting": "Add existing",
+    "differentPerson": "This is a different person"
   }
 }

@@ -781,12 +781,12 @@
     "alreadyMember": "Benutzer ist bereits Mitglied des Projekts",
     "alreadyInvited": "Benutzer hat bereits eine ausstehende Einladung",
     "projectTeam": "Projektteam",
-    "workers": "Arbeiter",
+    "workers": "Personen",
     "collaborators": "Mitwirkende",
     "tooltips": {
       "projectTeam": "Alle Personen im Projekt: App-Mitglieder, Arbeiter und externe Mitwirkende",
       "team": "Teammitglieder",
-      "workers": "Arbeiter",
+      "workers": "Deine Stundenkräfte (du führst sie, du bezahlst sie, Stundenerfassung)",
       "collaborators": "Mitwirkende",
       "workLog": "Erfasste Arbeitsstunden pro Tag und Auszahlungsberechnung"
     },
@@ -6860,5 +6860,31 @@
     "forgetFailed": "Löschen fehlgeschlagen",
     "muted": "Stumm · {{count}}× verworfen",
     "counting": "{{count}}× verworfen"
+  },
+  "people": {
+    "title": "Personen",
+    "empty": "Noch keine Personen",
+    "engagements": "{{count}} Einsätze",
+    "remaining": "Offen zur Auszahlung",
+    "remainingShort": "offen",
+    "totalEarned": "Gesamt verdient",
+    "totalPaid": "Gesamt ausgezahlt",
+    "earned": "verdient",
+    "perProject": "Pro Projekt",
+    "unknownProject": "Unbekanntes Projekt",
+    "noEngagements": "Keine Einsätze",
+    "payoutHistory": "Auszahlungsverlauf",
+    "noPayouts": "Noch keine Auszahlungen",
+    "migrationTitle": "Einsätze mit Personen verknüpfen",
+    "migrationQuestion": "{{name}} erscheint in {{count}} Projekten — ist das dieselbe Person?",
+    "migrationSingle": "{{name}} — zu Personen hinzufügen.",
+    "sameYes": "Ja, dieselbe",
+    "sameNo": "Nein, andere Personen",
+    "addToPeople": "Zu Personen hinzufügen",
+    "identityConfirmed": "Gespeichert",
+    "existsTitle": "Person existiert bereits",
+    "existsBody": "{{name}} existiert bereits unter Personen. Auch zu diesem Projekt hinzufügen?",
+    "useExisting": "Vorhandene hinzufügen",
+    "differentPerson": "Das ist eine andere Person"
   }
 }
