@@ -25,11 +25,24 @@ describe('WalletAccountIdentifier', () => {
     expect(blank.container.firstChild).toBeNull();
   });
 
-  it('kartica novčanika prikazuje identifikator izvora', () => {
+  /**
+   * IBAN je 19.8. preselio s POPISA računa u DETALJ računa: popis je stisnut
+   * na jedan redak po računu, a jamstvo "IBAN je vidljiv" ostaje — samo se
+   * čuva na novom mjestu. Popis ga namjerno više ne crta.
+   */
+  it('detalj računa prikazuje identifikator izvora', () => {
+    const dialog = readFileSync(
+      join(process.cwd(), 'src/components/PaymentSourceTransactionsDialog.tsx'),
+      'utf8',
+    );
+    expect(dialog).toMatch(/<WalletAccountIdentifier identifier=\{paymentSource\.account_identifier\} \/>/);
+  });
+
+  it('popis računa više ne crta identifikator (stisnut redak)', () => {
     const panel = readFileSync(
       join(process.cwd(), 'src/components/custom-payment-sources/CustomPaymentSourcesPanel.tsx'),
       'utf8',
     );
-    expect(panel).toMatch(/<WalletAccountIdentifier identifier=\{source\.account_identifier\} \/>/);
+    expect(panel).not.toMatch(/<WalletAccountIdentifier/);
   });
 });

@@ -47,6 +47,14 @@ interface CustomPaymentSourceDialogProps {
   onUpdateCard?: (cardId: string, updates: Partial<Pick<PaymentSourceCard, 'card_name' | 'last_four_digits' | 'card_type'>>) => Promise<void>;
   initialData?: Partial<PaymentSourceData>;
   onCorrectBalance?: () => void;
+  /**
+   * Predlošci za brzo dodavanje računa (Revolut, Keš…). Prikazuju se SAMO
+   * pri stvaranju novog računa, na vrhu dijaloga — prije su stajali kao
+   * trajan popis ispod korisnikovih računa, gdje su ih ljudi čitali kao
+   * svoje račune.
+   */
+  suggestions?: { name: string; icon: string; color: string }[];
+  onSuggestionPick?: (suggestion: { name: string; icon: string; color: string }) => void;
 }
 
 export const CustomPaymentSourceDialog = ({
@@ -59,6 +67,8 @@ export const CustomPaymentSourceDialog = ({
   onUpdateCard,
   initialData,
   onCorrectBalance,
+  suggestions,
+  onSuggestionPick,
 }: CustomPaymentSourceDialogProps) => {
   const [name, setName] = useState('');
   const [icon, setIcon] = useState('💳');
@@ -244,6 +254,36 @@ export const CustomPaymentSourceDialog = ({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {/* Predlošci — samo pri stvaranju novog računa */}
+          {!source && suggestions && suggestions.length > 0 && (
+            <div className="space-y-2">
+              <Label>{t('common.suggestedPaymentSources')}</Label>
+              <div className="flex flex-wrap gap-2">
+                {suggestions.map((suggestion) => (
+                  <button
+                    key={suggestion.name}
+                    type="button"
+                    onClick={() => {
+                      setName(suggestion.name);
+                      setIcon(suggestion.icon);
+                      setColor(suggestion.color);
+                      onSuggestionPick?.(suggestion);
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-muted/30 hover:bg-muted/60 transition-colors text-sm"
+                  >
+                    <span
+                      className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs"
+                      style={{ backgroundColor: suggestion.color }}
+                    >
+                      {suggestion.icon}
+                    </span>
+                    <span>{suggestion.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Name */}
           <div className="space-y-2">
             <Label htmlFor="name">{t('common.name')}</Label>

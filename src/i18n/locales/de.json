@@ -1914,7 +1914,13 @@
     "hiddenFromDashboard": "Vom Dashboard ausgeblendet",
     "shownOnDashboard": "Im Dashboard angezeigt",
     "hiddenBadge": "Ausgeblendet",
-    "correctBalance": "Saldo korrigieren"
+    "correctBalance": "Saldo korrigieren",
+    "newAccount": "Konto",
+    "reorderAccounts": "Konten neu ordnen",
+    "reorderHint": "Ziehe die Konten in die gewünschte Reihenfolge",
+    "reorderDone": "Fertig",
+    "showAll": "Alle anzeigen ({{count}})",
+    "showLess": "Weniger anzeigen"
   },
   "incomeSources": {
     "title": "Quellen",

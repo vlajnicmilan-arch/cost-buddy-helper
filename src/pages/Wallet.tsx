@@ -5,9 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { CustomPaymentSourcesPanel } from '@/components/custom-payment-sources/CustomPaymentSourcesPanel';
 import { CustomCategoriesPanel } from '@/components/custom-categories/CustomCategoriesPanel';
-import { BankConnection } from '@/components/BankConnection';
 import { OpenBankingPanel } from '@/components/OpenBankingPanel';
-import { BackupRestore } from '@/components/BackupRestore';
 import { InstallmentsPanel } from '@/components/installments';
 import { BottomNav } from '@/components/BottomNav';
 import { PageHeader } from '@/components/PageHeader';
@@ -283,8 +281,6 @@ const Wallet = () => {
               <div className="mt-4 space-y-6">
                 <CustomCategoriesPanel />
                 <OpenBankingPanel />
-                <BankConnection onImportCSV={importFromCSV} findDuplicates={findDuplicates} existingExpenses={allExpenses} />
-                <BackupRestore onDataImported={refetch} />
               </div>
             </CollapsibleContent>
           </div>

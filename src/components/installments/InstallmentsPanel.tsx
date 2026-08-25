@@ -216,8 +216,14 @@ export const InstallmentsPanel = () => {
   const [isExpanded, setIsExpanded] = useState(false);
 
 
-  // Calculate totals for collapsed view
-  const totalRemaining = plans.reduce((sum, plan) => sum + plan.remainingAmount, 0);
+  // Calculate totals for collapsed view.
+  // Zaokruženje na cent + donja granica na nuli: preplaćen plan nosi
+  // mikroskopski negativan ostatak, pa je zbroj znao ispasti −0,004 i
+  // prikazati se kao "-0,00 €" — broj koji ne znači ništa.
+  const totalRemaining = Math.max(
+    0,
+    Math.round(plans.reduce((sum, plan) => sum + Math.max(0, plan.remainingAmount), 0) * 100) / 100,
+  );
   const totalPlans = plans.length;
 
   if (loading) {

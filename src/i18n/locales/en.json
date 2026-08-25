@@ -1914,7 +1914,13 @@
     "hiddenFromDashboard": "Hidden from dashboard",
     "shownOnDashboard": "Shown on dashboard",
     "hiddenBadge": "Hidden",
-    "correctBalance": "Correct balance"
+    "correctBalance": "Correct balance",
+    "newAccount": "Account",
+    "reorderAccounts": "Reorder accounts",
+    "reorderHint": "Drag accounts into the order you want",
+    "reorderDone": "Done",
+    "showAll": "Show all ({{count}})",
+    "showLess": "Show less"
   },
   "incomeSources": {
     "title": "Sources",
