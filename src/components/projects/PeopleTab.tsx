@@ -127,9 +127,11 @@ export const PeopleTab = () => {
       <PersonDetailDialog
         open={!!selected}
         onOpenChange={(o) => !o && setSelected(null)}
+        personId={selected}
         name={selectedPerson ? `${selectedPerson.first_name} ${selectedPerson.last_name}` : ''}
         aggregate={selected ? aggregates.get(selected) ?? null : null}
         projectNames={projectNames}
+        onPaid={refetch}
       />
     </div>
   );
