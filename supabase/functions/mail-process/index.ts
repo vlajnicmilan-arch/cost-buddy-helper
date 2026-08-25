@@ -755,6 +755,34 @@ async function processMessage(
         ? "nije_za_nas"
         : "na_pregledu";
 
+    // PAMĆENJE ODBIJANJA — ista vrsta poruke od istog pošiljatelja, odbačena
+    // DVAPUT, treći put ne gnjavi: ide izravno u odbačeno, uz zapis razloga.
+    // Ništa se ne briše — korisnik stavku može vratiti u red.
+    let finalStatus = status;
+    let mutedReason: string | null = null;
+    if (status === "na_pregledu") {
+      const { data: muted, error: mutedErr } = await supabase.rpc("mail_reject_muted", {
+        p_user_id: ownerId,
+        p_from_header: (msg.from_header as string | null) ?? "",
+        p_subject: (msg.subject as string | null) ?? "",
+        p_has_attachment: unit.attachmentId !== null,
+        p_classification: result.classification,
+      });
+      if (mutedErr) {
+        console.warn("[mail-process] provjera naučenog odbijanja nije uspjela", mutedErr.message);
+        await supabase.from("app_diagnostics_logs").insert({
+          event: "mail_reject_memory_check_failed",
+          user_id: ownerId,
+          session_id: "mail-process",
+          details: { message_id: messageId, attachment_id: unit.attachmentId, error: mutedErr.message },
+        });
+      } else if (muted === true) {
+        finalStatus = "odbaceno";
+        mutedReason = "nauceno_odbijanje";
+        warnings.push("nauceno_odbijanje");
+      }
+    }
+
     const upserted = await upsertIngestItem(supabase, {
       messageId,
       attachmentId: unit.attachmentId,
@@ -766,7 +794,8 @@ async function processMessage(
         classification: result.classification,
         extraction: result.extraction,
         confidence,
-        status,
+        status: finalStatus,
+        reason: mutedReason,
         doc_type: result.docType,
         trust_level: trust.level,
         warnings: [...new Set([...warnings, ...result.warnings])],
@@ -782,12 +811,13 @@ async function processMessage(
     // zazvoniti, inače korisnik i dalje ne vidi ništa. Ponovna obrada stavke
     // koja je već bila na pregledu NE zvoni opet.
     const enteredReview =
-      status === "na_pregledu" &&
+      finalStatus === "na_pregledu" &&
       (upserted.action === "inserted" ||
         (upserted.action === "updated" && upserted.previousStatus !== "na_pregledu"));
     if (upserted.id && enteredReview && notifyAllowed) {
       await notifyPending(supabase, ownerId, upserted.id as string, result.priority);
     }
+
 
 
 

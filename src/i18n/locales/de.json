@@ -1447,7 +1447,10 @@
     "notifKrugReminderDesc": "Montags 08:00 UTC: Übersicht offener Beträge, die du schuldest.",
     "localReceiptUsage": "{{count}} Bilder · {{size}}",
     "notifInvoiceDue": "Erinnerungen zur Rechnungsfälligkeit",
-    "notifInvoiceDueDesc": "3 Tage vor Fälligkeit und am Fälligkeitstag."
+    "notifInvoiceDueDesc": "3 Tage vor Fälligkeit und am Fälligkeitstag.",
+    "category": {
+      "myRejections": "Was ich verworfen habe"
+    }
   },
   "bankMatch": {
     "pendingBank": "Warte auf Bankbestätigung",
@@ -6532,7 +6535,9 @@
       "nije_dopusteno": "Du darfst diesen Eintrag nicht bearbeiten.",
       "stavka_ne_postoji": "Der Eintrag existiert nicht mehr.",
       "nije_prijavljen": "Sitzung abgelaufen — bitte erneut anmelden.",
-      "baza": "Die Datenbank hat das Speichern abgelehnt."
+      "baza": "Die Datenbank hat das Speichern abgelehnt.",
+      "nedostaje_oib": "Der Aussteller hat keine OIB — bestätige das Häkchen, um trotzdem zu erfassen.",
+      "nedostaje_naziv": "Ohne OIB ist der Lieferantenname Pflicht."
     },
     "classification": {
       "racun": "Rechnung",
@@ -6573,7 +6578,8 @@
       "vjerojatno_duplikat": "Eine Rechnung mit dieser Nummer und diesem Lieferanten existiert vermutlich bereits",
       "dopunjeno_iz_zapamcenog": "Aus gemerktem Aussteller ergänzt — bitte prüfen",
       "vise_kandidata_sifra_mjesta": "Mehrere mögliche Abrechnungsstellen-Codes — keiner übernommen",
-      "odrediste_ponuda": "Kunde nur über den Namen erkannt — Ziel prüfen."
+      "odrediste_ponuda": "Kunde nur über den Namen erkannt — Ziel prüfen.",
+      "nauceno_odbijanje": "Solche Nachrichten dieses Absenders hast du bereits verworfen — sie erscheinen nicht mehr zur Prüfung."
     },
     "field": {
       "supplierName": "Lieferant",
@@ -6649,6 +6655,11 @@
       "confirmTitle": "Als falsch erkannt markieren",
       "confirmBody": "Das Ziel richtet sich nach dem Kunden auf dem Dokument. Ändere es nur, wenn die Erkennung falsch war.",
       "confirmAction": "Ja, falsch erkannt"
+    },
+    "missingOib": "Der Aussteller hat keine OIB (ausländischer Lieferant) — trotzdem erfassen. Der Doppelschutz nutzt Lieferantenname und Belegnummer.",
+    "sibling": {
+      "receipt": "Das ist die Zahlungsbestätigung zur Rechnung {{number}} aus derselben E-Mail — die Bestätigung verknüpft sie, es entsteht keine neue Rechnung.",
+      "invoice": "Dieselbe E-Mail enthielt auch eine Zahlungsbestätigung zur Rechnung {{number}} — eine Verpflichtung, nicht zwei Rechnungen."
     }
   },
   "documents": {
@@ -6831,5 +6842,17 @@
       "showAgain": "Beim nächsten Einstieg erneut anzeigen",
       "showAgainDone": "Der Begrüßungsbildschirm erscheint beim nächsten Einstieg."
     }
+  },
+  "rejections": {
+    "title": "Was ich verworfen habe",
+    "description": "Zweimal verworfene Nachrichtenart erscheint nicht mehr zur Prüfung. Nichts wird gelöscht — Regel löschen und sie kommen wieder.",
+    "empty": "Noch keine gelernten Ablehnungen.",
+    "forget": "Regel vergessen",
+    "forgetTitle": "Regel vergessen?",
+    "forgetDescription": "Solche Nachrichten erscheinen wieder zur Prüfung.",
+    "forgotten": "Regel gelöscht",
+    "forgetFailed": "Löschen fehlgeschlagen",
+    "muted": "Stumm · {{count}}× verworfen",
+    "counting": "{{count}}× verworfen"
   }
 }

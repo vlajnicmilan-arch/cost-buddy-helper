@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { describeDbError } from '@/lib/eracun/dbError';
+import { logMailDiagnostic } from '@/lib/mailReviewStatus';
+
 import { useMailPendingEvent } from '@/hooks/useMailRealtime';
 import { useAppResume } from '@/hooks/useAppResume';
 
@@ -39,6 +41,8 @@ export interface MailReviewItem {
   attachment_id: string | null;
   storage_path: string | null;
   file_name: string | null;
+  /** Poruka iz koje stavka dolazi — račun i potvrda plaćanja dijele istu. */
+  message_id: string | null;
 }
 
 export interface ConfirmCollision {
@@ -73,7 +77,7 @@ export function useMailReviewQueue(enabled: boolean) {
     const { data, error } = await supabase
       .from('document_ingest_items')
       .select(
-        'id, classification, extraction, confidence, trust_level, warnings, doc_type, created_at, scope_type, scope_id, scope_set_by_user, attachment_id, inbound_messages(subject, from_header), inbound_attachments(storage_path)'
+        'id, message_id, classification, extraction, confidence, trust_level, warnings, doc_type, created_at, scope_type, scope_id, scope_set_by_user, attachment_id, inbound_messages(subject, from_header), inbound_attachments(storage_path)'
       )
       .eq('owner_user_id', user.id)
       .eq('status', 'na_pregledu')
@@ -88,6 +92,7 @@ export function useMailReviewQueue(enabled: boolean) {
       setItems(
         (data ?? []).map((row: any) => ({
           id: row.id,
+          message_id: row.message_id ?? null,
           classification: row.classification,
           extraction: (row.extraction ?? null) as Record<string, unknown> | null,
           confidence: row.confidence,
@@ -200,15 +205,23 @@ export function useMailReviewQueue(enabled: boolean) {
     [fetchItems]
   );
 
+  /**
+   * ODBACIVANJE KOJE UČI. RPC `mail_item_discard` uz promjenu stanja broji
+   * odbijanja te vrste poruke od tog pošiljatelja; drugo odbijanje utišava
+   * treće. Ništa se ne briše i sve se može poništiti (`mail_item_restore`).
+   */
   const discardItem = useCallback(
     async (itemId: string) => {
       setWorking(true);
       try {
-        const { error } = await supabase
-          .from('document_ingest_items')
-          .update({ status: 'odbacio_korisnik' })
-          .eq('id', itemId);
-        if (error) throw error;
+        const { error } = await supabase.rpc('mail_item_discard', { p_item_id: itemId });
+        if (error) {
+          await logMailDiagnostic('mail_item_discard_failed', {
+            item_id: itemId,
+            message: describeDbError(error, 'mail_item_discard'),
+          });
+          throw error;
+        }
         await fetchItems();
       } finally {
         setWorking(false);
@@ -216,6 +229,7 @@ export function useMailReviewQueue(enabled: boolean) {
     },
     [fetchItems]
   );
+
 
   /**
    * Korisnik potvrđuje da je sumnjiva stavka izvod.

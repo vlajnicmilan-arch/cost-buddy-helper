@@ -18,6 +18,8 @@ import { deterministicExtract } from './deterministicExtract.ts';
 import { flattenUblExtraction, mergeDeterministic } from './extractionNormalize.ts';
 import { carriesFinancialSubstance, classifyAsStatement } from './statementSignals.ts';
 import { carriesInvoiceSignal } from './invoiceSignals.ts';
+import { invoiceOverridesStatement } from './invoiceOverride.ts';
+
 
 
 /** Tip dokumenta za mjesečni izvod charge/kreditne kartice. */
@@ -214,7 +216,16 @@ export async function classifyDocument(
   const statement = classifyAsStatement(statementText, input.subject);
   // Korisnik je već presudio da je ovo IZVOD — strojna sumnja se ne postavlja opet.
   const userSaysInvoice = input.userClassification === 'racun';
-  if (statement.isStatement && !userSaysInvoice) {
+  // IZVOD BEZ IDENTITETA NIJE IZVOD: bez imena banke, broja izvoda i završnog
+  // stanja, a s oznakama računa — dokument ide u račun-put. Vidi invoiceOverride.ts.
+  const invoiceOverride = invoiceOverridesStatement({
+    text: statementText,
+    subject: input.subject,
+    statementExtraction: statement.extraction,
+    ownOibs: input.ownOibs ?? [],
+    userClassification: input.userClassification ?? null,
+  });
+  if (statement.isStatement && !userSaysInvoice && !invoiceOverride) {
     return {
       classification: 'izvod',
       // Kartični izvod se vodi zasebnim tipom — nije bankovni promet računa.
@@ -230,6 +241,10 @@ export async function classifyDocument(
       verification: null,
     };
   }
+  if (statement.isStatement && invoiceOverride && !userSaysInvoice) {
+    warnings.push('racun_signal_jaci_od_izvoda');
+  }
+
   // KLASIFIKATORSKA LEKCIJA: slaba sumnja na izvod NE smije nadjačati doslovan
   // račun-signal („Račun br.", „Dospijeće računa", naslov „Račun …") kad
   // dokument nosi financijsku supstancu. Tada ide u račun-put, ne u pitanje.

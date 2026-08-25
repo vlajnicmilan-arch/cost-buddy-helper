@@ -1451,7 +1451,10 @@
     "notifKrugReminderDesc": "Ponedjeljkom u 08:00 UTC: sažetak nepodmirenih stavki koje duguješ.",
     "localReceiptUsage": "{{count}} slika · {{size}}",
     "notifInvoiceDue": "Podsjetnici za dospijeće računa",
-    "notifInvoiceDueDesc": "3 dana prije dospijeća i na dan dospijeća."
+    "notifInvoiceDueDesc": "3 dana prije dospijeća i na dan dospijeća.",
+    "category": {
+      "myRejections": "Što sam odbacio"
+    }
   },
   "bankMatch": {
     "pendingBank": "Čeka potvrdu banke",
@@ -6542,7 +6545,9 @@
       "nije_dopusteno": "Nemaš pravo na ovu stavku.",
       "stavka_ne_postoji": "Stavka više ne postoji.",
       "nije_prijavljen": "Sesija je istekla — prijavi se ponovno.",
-      "baza": "Baza je odbila spremanje."
+      "baza": "Baza je odbila spremanje.",
+      "nedostaje_oib": "Izdavatelj nema OIB — potvrdi kvačicom da ga svejedno želiš unijeti.",
+      "nedostaje_naziv": "Bez OIB-a je naziv dobavljača obavezan."
     },
     "classification": {
       "racun": "Račun",
@@ -6583,7 +6588,8 @@
       "vjerojatno_duplikat": "Račun s tim brojem i dobavljačem vjerojatno već postoji",
       "dopunjeno_iz_zapamcenog": "Dopunjeno iz zapamćenog izdavatelja — provjeri",
       "vise_kandidata_sifra_mjesta": "Više mogućih šifri obračunskog mjesta — nije upisana",
-      "odrediste_ponuda": "Kupac je prepoznat samo po nazivu — provjeri odredište."
+      "odrediste_ponuda": "Kupac je prepoznat samo po nazivu — provjeri odredište.",
+      "nauceno_odbijanje": "Ovakve poruke od ovog pošiljatelja si već odbacio — ubuduće ne dolaze na pregled."
     },
     "field": {
       "supplierName": "Dobavljač",
@@ -6659,6 +6665,11 @@
       "confirmTitle": "Označi kao krivo prepoznato",
       "confirmBody": "Odredište je određeno prema kupcu s dokumenta. Promijeni ga samo ako je prepoznavanje pogriješilo.",
       "confirmAction": "Da, krivo je prepoznato"
+    },
+    "missingOib": "Izdavatelj nema OIB (strani dobavljač) — svejedno unesi. Zaštita od dvostrukog unosa radi po nazivu i broju dokumenta.",
+    "sibling": {
+      "receipt": "Ovo je potvrda plaćanja za račun {{number}} iz iste poruke — potvrdom se veže na taj račun, novi se ne stvara.",
+      "invoice": "Iz iste poruke stigla je i potvrda plaćanja za račun {{number}} — riječ je o jednoj obvezi, ne o dva računa."
     }
   },
   "documents": {
@@ -6845,5 +6856,17 @@
       "showAgain": "Prikaži ponovno pri sljedećem ulasku",
       "showAgainDone": "Pozdravni ekran će se prikazati pri sljedećem ulasku."
     }
+  },
+  "rejections": {
+    "title": "Što sam odbacio",
+    "description": "Ista vrsta poruke odbačena dvaput više ne ulazi u pregled. Ništa nije obrisano — brisanjem pravila te poruke opet dolaze.",
+    "empty": "Još nema naučenih odbijanja.",
+    "forget": "Zaboravi pravilo",
+    "forgetTitle": "Zaboraviti pravilo?",
+    "forgetDescription": "Takve poruke opet će dolaziti na pregled.",
+    "forgotten": "Pravilo je obrisano",
+    "forgetFailed": "Brisanje nije uspjelo",
+    "muted": "Utišano · odbačeno {{count}}×",
+    "counting": "Odbačeno {{count}}×"
   }
 }

@@ -2580,7 +2580,7 @@ export type Database = {
           settled_amount: number
           source_filename: string | null
           supplier_name: string | null
-          supplier_oib: string
+          supplier_oib: string | null
           total_amount: number
           updated_at: string
           user_id: string
@@ -2610,7 +2610,7 @@ export type Database = {
           settled_amount?: number
           source_filename?: string | null
           supplier_name?: string | null
-          supplier_oib: string
+          supplier_oib?: string | null
           total_amount: number
           updated_at?: string
           user_id: string
@@ -2640,7 +2640,7 @@ export type Database = {
           settled_amount?: number
           source_filename?: string | null
           supplier_name?: string | null
-          supplier_oib?: string
+          supplier_oib?: string | null
           total_amount?: number
           updated_at?: string
           user_id?: string
@@ -3660,6 +3660,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      mail_rejection_memory: {
+        Row: {
+          created_at: string
+          id: string
+          last_subject: string | null
+          reject_count: number
+          sender_email: string
+          signature: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_subject?: string | null
+          reject_count?: number
+          sender_email: string
+          signature: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_subject?: string | null
+          reject_count?: number
+          sender_email?: string
+          signature?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       mail_statement_source_map: {
         Row: {
@@ -7669,15 +7702,37 @@ export type Database = {
         Args: { p_decision: string; p_item_id: string }
         Returns: Json
       }
+      mail_item_discard: { Args: { p_item_id: string }; Returns: Json }
       mail_item_reprocess: {
         Args: { p_classification?: string; p_item_id: string }
         Returns: Json
       }
+      mail_item_restore: { Args: { p_item_id: string }; Returns: Json }
       mail_item_set_scope: {
         Args: { p_item_id: string; p_scope_id: string; p_scope_type: string }
         Returns: Json
       }
       mail_norm_date: { Args: { p_value: string }; Returns: string }
+      mail_norm_supplier_name: { Args: { p_name: string }; Returns: string }
+      mail_reject_muted: {
+        Args: {
+          p_classification: string
+          p_from_header: string
+          p_has_attachment: boolean
+          p_subject: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      mail_reject_signature: {
+        Args: {
+          p_classification: string
+          p_has_attachment: boolean
+          p_subject: string
+        }
+        Returns: string
+      }
+      mail_sender_email: { Args: { p_from_header: string }; Returns: string }
       mail_verification_clicked: { Args: { p_item_id: string }; Returns: Json }
       mail_verification_reactivate_stale: { Args: never; Returns: number }
       mark_guided_home_exited: { Args: never; Returns: string }

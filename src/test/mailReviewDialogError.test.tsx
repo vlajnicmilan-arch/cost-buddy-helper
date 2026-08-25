@@ -40,7 +40,9 @@ vi.mock('@/hooks/useMailReviewQueue', () => ({
       {
         id: 'item-1',
         classification: 'racun',
-        extraction: { supplier_name: 'ACME', invoice_number: '1' },
+        // OIB je prisutan: nedostatak OIB-a od kolovoza 2026 traži svjesnu
+        // kvačicu, pa bi inače pao klijentski uvjet prije RPC-a.
+        extraction: { supplier_name: 'ACME', supplier_oib: '69435151530', invoice_number: '1' },
         confidence: 'visoka',
         trust_level: 'T1',
         warnings: [],
