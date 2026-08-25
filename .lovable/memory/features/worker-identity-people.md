@@ -25,3 +25,10 @@ Svaki pad upisuje trag u `app_diagnostics_logs` (`worker_identity_*`).
 - `create_worker_payout` dobio `p_expense_id` i `p_batch_id` (default NULL) — kad je expense zadan, ne stvara vlastiti i ne postavlja `worker_payout_id`. Storniranje ide postojećim `void_worker_payout_batch`.
 - Klijent: `src/lib/personPayout.ts` (FIFO prijedlog, validacija, RPC args + testovi), `src/hooks/usePersonPayout.ts` (dijagnostika `worker_payout_ok` / `worker_payout_failed`), `src/components/projects/PersonPayoutDialog.tsx` (prvi kat = zarada po angažmanima, drugi kat = iznos + novčanik + promjenjiva raspodjela).
 - Migracija upisana u `BALANCE_MIGRATIONS_IGNORE.txt` (upis u expenses ide postojećim triggerom).
+
+## Storniranje s kartice čovjeka (3. isporuka)
+- Povijest isplata na `PersonDetailDialog` ima radnju "Storniraj" po retku; potvrda + OBAVEZAN razlog kroz `ConfirmActionDialog`.
+- Koristi POSTOJEĆE funkcije: `void_worker_payout` (pojedinačna) i `void_worker_payout_batch` (kad redak ima `batch_id`). Nema nove SQL logike ni migracije.
+- Stornirane isplate OSTAJU u povijesti (oznaka + razlog, precrtan iznos) i ne ulaze u "isplaćeno" — `aggregatePerson` vraća sve nevidljivo-neobrisane isplate (`isVisiblePayout`), a `totalPaid` broji samo `isLivePayout`.
+- Neuspjeh piše `worker_payout_void_failed` u `app_diagnostics_logs` (kod + doslovna poruka baze). Kod: `src/hooks/usePersonPayoutVoid.ts`.
+- Put storniranja iz projekta (`WorkerPayoutsDialog` → `useWorkerPayouts.voidPayout`) ostaje nepromijenjen.
