@@ -18,7 +18,7 @@ import type { IdentityGroupSuggestion } from '@/lib/workerIdentity';
 export const PeopleTab = () => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
-  const { rows, aggregates, people, projectNames, pendingGroups, loading, resolveGroup } =
+  const { rows, aggregates, people, projectNames, pendingGroups, loading, resolveGroup, refetch } =
     useWorkerIdentities();
   const [selected, setSelected] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
