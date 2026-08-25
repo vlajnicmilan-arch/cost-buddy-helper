@@ -6902,6 +6902,15 @@
       "confirm": "Pay",
       "done": "Payout recorded",
       "open": "Pay"
-    }
+    },
+    "payoutVoided": "voided",
+    "payoutVoidReason": "Reason",
+    "payoutVoidAction": "Void",
+    "payoutVoidTitle": "Void payout",
+    "payoutVoidDesc": "The expense is removed from the books and the hours become free again.",
+    "payoutVoidBatchDesc": "This payout is part of a combined payout — the whole batch will be voided.",
+    "payoutVoidReasonLabel": "Reason for voiding",
+    "payoutVoidedToast": "The payout of {{amount}} was voided. The expense is removed and the hours are free again.",
+    "payoutVoidFailed": "Voiding failed"
   }
 }

@@ -5,9 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import { Clock, Banknote, Wallet } from 'lucide-react';
-import type { PersonAggregate } from '@/lib/workerIdentity';
+import { Clock, Banknote, Wallet, Ban } from 'lucide-react';
+import { isLivePayout, type PayoutRow, type PersonAggregate } from '@/lib/workerIdentity';
 import { PersonPayoutDialog } from './PersonPayoutDialog';
+import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
+import { usePersonPayoutVoid } from '@/hooks/usePersonPayoutVoid';
+import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 
 interface PersonDetailDialogProps {
   open: boolean;
@@ -32,6 +35,31 @@ export const PersonDetailDialog = ({
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const [payoutOpen, setPayoutOpen] = useState(false);
+  const [voidTarget, setVoidTarget] = useState<PayoutRow | null>(null);
+  const { voidPayout, voiding } = usePersonPayoutVoid();
+
+  const handleVoid = async (reason?: string) => {
+    if (!voidTarget?.id) return;
+    const amount = Number(voidTarget.paid_amount) || 0;
+    const res = await voidPayout({
+      payoutId: voidTarget.id,
+      batchId: voidTarget.batch_id ?? null,
+      reason: (reason ?? '').trim(),
+      personId: personId ?? null,
+      amount,
+    });
+    if (res.ok) {
+      setVoidTarget(null);
+      showSuccess(
+        t('people.payoutVoidedToast', 'Isplata od {{amount}} je stornirana. Trošak je uklonjen, sati su ponovno slobodni.', {
+          amount: formatAmount(amount),
+        }),
+      );
+      onPaid?.();
+    } else {
+      showError(t('people.payoutVoidFailed', 'Storniranje nije uspjelo'));
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -110,21 +138,75 @@ export const PersonDetailDialog = ({
               {aggregate.payouts.length === 0 ? (
                 <p className="text-xs text-muted-foreground">{t('people.noPayouts', 'Još nema isplata')}</p>
               ) : (
-                <div className="space-y-1">
-                  {aggregate.payouts.map((p, i) => (
-                    <div key={`${p.worker_id}-${p.paid_at}-${i}`} className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">
-                        {new Date(p.paid_at).toLocaleDateString()} ·{' '}
-                        {(p.project_id && projectNames[p.project_id]) || ''}
-                      </span>
-                      <span className="font-medium">{formatAmount(p.paid_amount)}</span>
-                    </div>
-                  ))}
+                <div className="space-y-1.5">
+                  {aggregate.payouts.map((p, i) => {
+                    const voided = !isLivePayout(p);
+                    return (
+                      <div
+                        key={p.id ?? `${p.worker_id}-${p.paid_at}-${i}`}
+                        className="flex items-center justify-between gap-2 text-xs"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-muted-foreground truncate">
+                              {new Date(p.paid_at).toLocaleDateString()} ·{' '}
+                              {(p.project_id && projectNames[p.project_id]) || ''}
+                            </span>
+                            {voided && (
+                              <Badge variant="destructive" className="text-[10px]">
+                                {t('people.payoutVoided', 'stornirano')}
+                              </Badge>
+                            )}
+                          </div>
+                          {voided && p.void_reason && (
+                            <p className="text-[10px] text-muted-foreground truncate">
+                              {t('people.payoutVoidReason', 'Razlog')}: {p.void_reason}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <span className={voided ? 'font-medium line-through text-muted-foreground' : 'font-medium'}>
+                            {formatAmount(p.paid_amount)}
+                          </span>
+                          {!voided && p.id && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-9 px-2 text-destructive"
+                              onClick={() => setVoidTarget(p)}
+                            >
+                              <Ban className="w-3.5 h-3.5 mr-1" />
+                              {t('people.payoutVoidAction', 'Storniraj')}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
           </div>
         )}
+
+        <ConfirmActionDialog
+          open={!!voidTarget}
+          onOpenChange={(v) => { if (!v) setVoidTarget(null); }}
+          title={t('people.payoutVoidTitle', 'Storniraj isplatu')}
+          description={
+            voidTarget?.batch_id
+              ? t('people.payoutVoidBatchDesc', 'Ova isplata je dio zbirne isplate — stornira se cijela zbirna isplata.')
+              : t('people.payoutVoidDesc', 'Trošak se uklanja iz knjiga, a sati se ponovno oslobađaju.')
+          }
+          reason={{
+            label: t('people.payoutVoidReasonLabel', 'Razlog storniranja'),
+            required: true,
+          }}
+          confirmLabel={t('people.payoutVoidAction', 'Storniraj')}
+          destructive
+          pending={voiding}
+          onConfirm={handleVoid}
+        />
 
         <PersonPayoutDialog
           open={payoutOpen}

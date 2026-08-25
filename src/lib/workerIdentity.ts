@@ -30,8 +30,13 @@ export interface EngagementRow {
 }
 
 export interface PayoutRow {
+  /** project_worker_payouts.id */
+  id?: string;
   /** project_workers.id (engagement) */
   worker_id: string;
+  /** Set when the payout was made together with others (one expense). */
+  batch_id?: string | null;
+  void_reason?: string | null;
   paid_amount: number;
   paid_at: string;
   project_id: string | null;
@@ -138,8 +143,11 @@ export interface PersonAggregate {
   payouts: PayoutRow[];
 }
 
-const isLivePayout = (p: PayoutRow) =>
+export const isLivePayout = (p: PayoutRow) =>
   !p.deleted_at && !p.voided_at && (p.status ?? 'paid') !== 'voided';
+
+/** Voided payouts stay visible in history; deleted rows do not. */
+export const isVisiblePayout = (p: PayoutRow) => !p.deleted_at;
 
 /**
  * Sum a single person's hourly work across their engagements.
@@ -187,7 +195,8 @@ export function aggregatePerson(
     };
   });
 
-  const livePayouts = payouts.filter((p) => ids.has(p.worker_id) && isLivePayout(p));
+  const scopedPayouts = payouts.filter((p) => ids.has(p.worker_id) && isVisiblePayout(p));
+  const livePayouts = scopedPayouts.filter(isLivePayout);
 
   return {
     engagementCount: engagements.length,
@@ -196,7 +205,7 @@ export function aggregatePerson(
     totalPaid: livePayouts.reduce((s, p) => s + (Number(p.paid_amount) || 0), 0),
     totalRemaining: byProject.reduce((s, b) => s + b.remaining, 0),
     byProject,
-    payouts: [...livePayouts].sort((a, b) => (a.paid_at < b.paid_at ? 1 : -1)),
+    payouts: [...scopedPayouts].sort((a, b) => (a.paid_at < b.paid_at ? 1 : -1)),
   };
 }
 

@@ -6902,6 +6902,15 @@
       "confirm": "Auszahlen",
       "done": "Auszahlung erfasst",
       "open": "Auszahlen"
-    }
+    },
+    "payoutVoided": "storniert",
+    "payoutVoidReason": "Grund",
+    "payoutVoidAction": "Stornieren",
+    "payoutVoidTitle": "Auszahlung stornieren",
+    "payoutVoidDesc": "Die Ausgabe wird aus den Büchern entfernt und die Stunden werden wieder frei.",
+    "payoutVoidBatchDesc": "Diese Auszahlung gehört zu einer Sammelauszahlung — die gesamte Sammelauszahlung wird storniert.",
+    "payoutVoidReasonLabel": "Grund für die Stornierung",
+    "payoutVoidedToast": "Die Auszahlung von {{amount}} wurde storniert. Die Ausgabe wurde entfernt, die Stunden sind wieder frei.",
+    "payoutVoidFailed": "Stornierung fehlgeschlagen"
   }
 }
