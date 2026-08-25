@@ -7195,8 +7195,20 @@ export type Database = {
             }[]
           }
         | { Args: { _token: string; _user_id: string }; Returns: Json }
+      create_person_payout: {
+        Args: {
+          p_items: Json
+          p_lock_entries?: boolean
+          p_note?: string
+          p_paid_at: string
+          p_payment_source: string
+        }
+        Returns: Json
+      }
       create_worker_payout: {
         Args: {
+          p_batch_id?: string
+          p_expense_id?: string
           p_lock_entries?: boolean
           p_note?: string
           p_paid_amount: number
