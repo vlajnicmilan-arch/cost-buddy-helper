@@ -6916,6 +6916,15 @@
       "confirm": "Isplati",
       "done": "Isplata zabilježena",
       "open": "Isplati"
-    }
+    },
+    "payoutVoided": "stornirano",
+    "payoutVoidReason": "Razlog",
+    "payoutVoidAction": "Storniraj",
+    "payoutVoidTitle": "Storniraj isplatu",
+    "payoutVoidDesc": "Trošak se uklanja iz knjiga, a sati se ponovno oslobađaju.",
+    "payoutVoidBatchDesc": "Ova isplata je dio zbirne isplate — stornira se cijela zbirna isplata.",
+    "payoutVoidReasonLabel": "Razlog storniranja",
+    "payoutVoidedToast": "Isplata od {{amount}} je stornirana. Trošak je uklonjen, sati su ponovno slobodni.",
+    "payoutVoidFailed": "Storniranje nije uspjelo"
   }
 }
