@@ -6885,6 +6885,23 @@
     "existsTitle": "Person already exists",
     "existsBody": "{{name}} already exists in People. Add them to this project too?",
     "useExisting": "Add existing",
-    "differentPerson": "This is a different person"
+    "differentPerson": "This is a different person",
+    "payout": {
+      "title": "Payout — {{name}}",
+      "earnings": "Earnings per engagement",
+      "amount": "Payout amount",
+      "source": "Wallet",
+      "sourcePlaceholder": "Choose a wallet",
+      "distribution": "Distribution (oldest obligation first)",
+      "payAll": "Pay everything ({{amount}})",
+      "unallocated": "Unallocated: {{amount}}",
+      "exceeds": "Amount exceeds what remains on the engagement",
+      "exceedsTotal": "Amount exceeds the total outstanding ({{amount}})",
+      "nothingLeft": "No unpaid hours",
+      "note": "Note",
+      "confirm": "Pay",
+      "done": "Payout recorded",
+      "open": "Pay"
+    }
   }
 }

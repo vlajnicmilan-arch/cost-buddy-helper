@@ -6899,6 +6899,23 @@
     "existsTitle": "Osoba već postoji",
     "existsBody": "{{name}} već postoji među Ljudima. Želiš li ga dodati i na ovaj projekt?",
     "useExisting": "Dodaj postojećeg",
-    "differentPerson": "Ovo je druga osoba"
+    "differentPerson": "Ovo je druga osoba",
+    "payout": {
+      "title": "Isplata — {{name}}",
+      "earnings": "Zarada po angažmanima",
+      "amount": "Iznos isplate",
+      "source": "Novčanik",
+      "sourcePlaceholder": "Odaberi novčanik",
+      "distribution": "Raspodjela (najstarija obveza prva)",
+      "payAll": "Isplati sve ({{amount}})",
+      "unallocated": "Neraspoređeno: {{amount}}",
+      "exceeds": "Iznos je veći od onoga što na angažmanu ostaje",
+      "exceedsTotal": "Iznos je veći od ukupno nepodmirenog ({{amount}})",
+      "nothingLeft": "Nema nepodmirenih sati",
+      "note": "Bilješka",
+      "confirm": "Isplati",
+      "done": "Isplata zabilježena",
+      "open": "Isplati"
+    }
   }
 }
