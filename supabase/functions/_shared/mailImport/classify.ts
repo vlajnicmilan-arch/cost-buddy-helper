@@ -18,6 +18,8 @@ import { deterministicExtract } from './deterministicExtract.ts';
 import { flattenUblExtraction, mergeDeterministic } from './extractionNormalize.ts';
 import { carriesFinancialSubstance, classifyAsStatement } from './statementSignals.ts';
 import { carriesInvoiceSignal } from './invoiceSignals.ts';
+import { invoiceOverridesStatement } from './invoiceOverride.ts';
+
 
 
 /** Tip dokumenta za mjesečni izvod charge/kreditne kartice. */
