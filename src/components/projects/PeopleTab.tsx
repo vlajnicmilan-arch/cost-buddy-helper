@@ -18,7 +18,7 @@ import type { IdentityGroupSuggestion } from '@/lib/workerIdentity';
 export const PeopleTab = () => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
-  const { rows, aggregates, people, projectNames, pendingGroups, loading, resolveGroup } =
+  const { rows, aggregates, people, projectNames, pendingGroups, loading, resolveGroup, refetch } =
     useWorkerIdentities();
   const [selected, setSelected] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
@@ -127,9 +127,11 @@ export const PeopleTab = () => {
       <PersonDetailDialog
         open={!!selected}
         onOpenChange={(o) => !o && setSelected(null)}
+        personId={selected}
         name={selectedPerson ? `${selectedPerson.first_name} ${selectedPerson.last_name}` : ''}
         aggregate={selected ? aggregates.get(selected) ?? null : null}
         projectNames={projectNames}
+        onPaid={refetch}
       />
     </div>
   );

@@ -123,6 +123,9 @@ export interface PersonProjectBreakdown {
   hours: number;
   earned: number;
   remaining: number;
+  /** Oldest / newest work date not yet covered by a payout. */
+  unpaidFrom: string | null;
+  unpaidTo: string | null;
 }
 
 export interface PersonAggregate {
@@ -156,8 +159,21 @@ export function aggregatePerson(
 
   const totals = computeWorkerCostTotals(scopedEntries, rateHistory, fallback, now);
 
+  // Unpaid work window per engagement — the period a payout would cover.
+  const unpaid = new Map<string, { from: string; to: string }>();
+  for (const e of scopedEntries) {
+    if (e.payout_id) continue;
+    const cur = unpaid.get(e.worker_id);
+    if (!cur) unpaid.set(e.worker_id, { from: e.work_date, to: e.work_date });
+    else {
+      if (e.work_date < cur.from) cur.from = e.work_date;
+      if (e.work_date > cur.to) cur.to = e.work_date;
+    }
+  }
+
   const byProject: PersonProjectBreakdown[] = engagements.map((e) => {
     const t = totals[e.id];
+    const w = unpaid.get(e.id);
     return {
       engagementId: e.id,
       projectId: e.project_id,
@@ -166,6 +182,8 @@ export function aggregatePerson(
       hours: t?.totalHours ?? 0,
       earned: t?.totalCost ?? 0,
       remaining: t?.remainingCost ?? 0,
+      unpaidFrom: w?.from ?? null,
+      unpaidTo: w?.to ?? null,
     };
   });
 

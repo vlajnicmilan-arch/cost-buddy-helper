@@ -18,3 +18,10 @@ Pravila:
 
 Kod: `src/lib/workerIdentity.ts` (čiste funkcije + testovi), `src/hooks/useWorkerIdentities.ts`, `src/hooks/useWorkerIdentityAttach.ts`, `src/components/projects/PeopleTab.tsx`, `PersonDetailDialog.tsx`, `ExistingPersonPromptDialog.tsx`, prekidač u `src/pages/Projects.tsx`.
 Svaki pad upisuje trag u `app_diagnostics_logs` (`worker_identity_*`).
+
+## Isplata s kartice čovjeka (2. isporuka)
+- RPC `public.create_person_payout(p_items, p_payment_source, p_paid_at, p_note, p_lock_entries)`: validira vlasništvo i da iznos po angažmanu NE prelazi ono što ostaje (nema predujma, greška `payout_exceeds_remaining`).
+- Jedan angažman → postojeći jednostruki put (`create_worker_payout`, vlastiti trošak). Više angažmana → JEDAN trošak u `expenses` s `worker_payout_batch_id` + po redak u `project_worker_payouts` sa zajedničkim `batch_id`.
+- `create_worker_payout` dobio `p_expense_id` i `p_batch_id` (default NULL) — kad je expense zadan, ne stvara vlastiti i ne postavlja `worker_payout_id`. Storniranje ide postojećim `void_worker_payout_batch`.
+- Klijent: `src/lib/personPayout.ts` (FIFO prijedlog, validacija, RPC args + testovi), `src/hooks/usePersonPayout.ts` (dijagnostika `worker_payout_ok` / `worker_payout_failed`), `src/components/projects/PersonPayoutDialog.tsx` (prvi kat = zarada po angažmanima, drugi kat = iznos + novčanik + promjenjiva raspodjela).
+- Migracija upisana u `BALANCE_MIGRATIONS_IGNORE.txt` (upis u expenses ide postojećim triggerom).

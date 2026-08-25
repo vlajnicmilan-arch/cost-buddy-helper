@@ -6885,6 +6885,23 @@
     "existsTitle": "Person existiert bereits",
     "existsBody": "{{name}} existiert bereits unter Personen. Auch zu diesem Projekt hinzufügen?",
     "useExisting": "Vorhandene hinzufügen",
-    "differentPerson": "Das ist eine andere Person"
+    "differentPerson": "Das ist eine andere Person",
+    "payout": {
+      "title": "Auszahlung — {{name}}",
+      "earnings": "Verdienst pro Einsatz",
+      "amount": "Auszahlungsbetrag",
+      "source": "Geldbörse",
+      "sourcePlaceholder": "Geldbörse wählen",
+      "distribution": "Aufteilung (älteste Verpflichtung zuerst)",
+      "payAll": "Alles auszahlen ({{amount}})",
+      "unallocated": "Nicht zugeteilt: {{amount}}",
+      "exceeds": "Betrag übersteigt den Restbetrag des Einsatzes",
+      "exceedsTotal": "Betrag übersteigt den gesamten offenen Betrag ({{amount}})",
+      "nothingLeft": "Keine offenen Stunden",
+      "note": "Notiz",
+      "confirm": "Auszahlen",
+      "done": "Auszahlung erfasst",
+      "open": "Auszahlen"
+    }
   }
 }

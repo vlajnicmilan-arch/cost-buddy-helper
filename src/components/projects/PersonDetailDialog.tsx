@@ -1,29 +1,37 @@
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { Clock, Banknote, Wallet } from 'lucide-react';
 import type { PersonAggregate } from '@/lib/workerIdentity';
+import { PersonPayoutDialog } from './PersonPayoutDialog';
 
 interface PersonDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  personId?: string | null;
   name: string;
   aggregate: PersonAggregate | null;
   projectNames: Record<string, string>;
+  onPaid?: () => void;
 }
 
-/** Read-only unified view of ONE person's hourly work across projects. */
+/** Unified view of ONE person's hourly work across projects (+ payout action). */
 export const PersonDetailDialog = ({
   open,
   onOpenChange,
+  personId,
   name,
   aggregate,
   projectNames,
+  onPaid,
 }: PersonDetailDialogProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
+  const [payoutOpen, setPayoutOpen] = useState(false);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -51,6 +59,16 @@ export const PersonDetailDialog = ({
                 <p className="text-sm font-semibold text-primary">{formatAmount(aggregate.totalRemaining)}</p>
               </div>
             </div>
+
+            <Button
+              className="w-full min-h-[44px]"
+              disabled={aggregate.totalRemaining <= 0.005}
+              onClick={() => setPayoutOpen(true)}
+            >
+              {t('people.payout.open', 'Isplati')}
+            </Button>
+
+
 
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-2">
@@ -107,6 +125,16 @@ export const PersonDetailDialog = ({
             </div>
           </div>
         )}
+
+        <PersonPayoutDialog
+          open={payoutOpen}
+          onOpenChange={setPayoutOpen}
+          personId={personId ?? null}
+          name={name}
+          aggregate={aggregate}
+          projectNames={projectNames}
+          onPaid={onPaid}
+        />
       </DialogContent>
     </Dialog>
   );
