@@ -1,29 +1,37 @@
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { Clock, Banknote, Wallet } from 'lucide-react';
 import type { PersonAggregate } from '@/lib/workerIdentity';
+import { PersonPayoutDialog } from './PersonPayoutDialog';
 
 interface PersonDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  personId?: string | null;
   name: string;
   aggregate: PersonAggregate | null;
   projectNames: Record<string, string>;
+  onPaid?: () => void;
 }
 
-/** Read-only unified view of ONE person's hourly work across projects. */
+/** Unified view of ONE person's hourly work across projects (+ payout action). */
 export const PersonDetailDialog = ({
   open,
   onOpenChange,
+  personId,
   name,
   aggregate,
   projectNames,
+  onPaid,
 }: PersonDetailDialogProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
+  const [payoutOpen, setPayoutOpen] = useState(false);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
