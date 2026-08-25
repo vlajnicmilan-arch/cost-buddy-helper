@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -5958,6 +5958,7 @@ export type Database = {
           work_end_time: string | null
           work_hours: number
           work_start_time: string | null
+          worker_id: string | null
         }
         Insert: {
           business_profile_id?: string | null
@@ -5973,6 +5974,7 @@ export type Database = {
           work_end_time?: string | null
           work_hours?: number
           work_start_time?: string | null
+          worker_id?: string | null
         }
         Update: {
           business_profile_id?: string | null
@@ -5988,6 +5990,7 @@ export type Database = {
           work_end_time?: string | null
           work_hours?: number
           work_start_time?: string | null
+          worker_id?: string | null
         }
         Relationships: [
           {
@@ -6002,6 +6005,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_workers_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers"
             referencedColumns: ["id"]
           },
         ]
@@ -6822,6 +6832,56 @@ export type Database = {
           received_at?: string
         }
         Relationships: []
+      }
+      workers: {
+        Row: {
+          archived_at: string | null
+          business_profile_id: string | null
+          created_at: string
+          first_name: string
+          id: string
+          last_name: string
+          linked_user_id: string | null
+          note: string | null
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          business_profile_id?: string | null
+          created_at?: string
+          first_name: string
+          id?: string
+          last_name: string
+          linked_user_id?: string | null
+          note?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          archived_at?: string | null
+          business_profile_id?: string | null
+          created_at?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          linked_user_id?: string | null
+          note?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workers_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

@@ -36,6 +36,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { generateWorkRecordsPDF, generateWorkRecordsCSV, generateWorkRecordsJSON, WorkExportConfig } from '@/lib/workRecordsExport';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
+import { useWorkerIdentityAttach } from '@/hooks/useWorkerIdentityAttach';
+import { ExistingPersonPromptDialog } from './ExistingPersonPromptDialog';
+
 
 type PeriodKey = 'currentMonth' | 'previousMonth' | 'last30' | 'last90' | 'thisYear' | 'allTime' | 'custom';
 type SortKey = 'name' | 'position' | 'hourlyRate' | 'periodHours' | 'periodCost';
@@ -103,6 +106,15 @@ export const ProjectWorkersTab = ({
   const [scheduleWorker, setScheduleWorker] = useState<ProjectWorker | null>(null);
   const [payoutWorker, setPayoutWorker] = useState<ProjectWorker | null>(null);
   const [disclaimerOpen, setDisclaimerOpen] = useState(false);
+  const { findMatch, attach, createAndAttach } = useWorkerIdentityAttach();
+  const [pendingIdentity, setPendingIdentity] = useState<{
+    engagementId: string;
+    firstName: string;
+    lastName: string;
+    businessProfileId: string | null;
+    matchId: string;
+  } | null>(null);
+
 
   const handleExport = async (format: 'pdf' | 'csv' | 'json') => {
     try {
@@ -193,8 +205,24 @@ export const ProjectWorkersTab = ({
     if (editingWorker) {
       await updateWorker({ ...editingWorker, ...data });
     } else {
-      await addWorker(data);
+      const created = await addWorker(data);
+      if (created) {
+        const bpId = (created as any).business_profile_id ?? null;
+        const match = findMatch(data.first_name, data.last_name, bpId);
+        if (match) {
+          setPendingIdentity({
+            engagementId: created.id,
+            firstName: data.first_name,
+            lastName: data.last_name,
+            businessProfileId: bpId,
+            matchId: match.id,
+          });
+        } else {
+          await createAndAttach(created.id, data.first_name, data.last_name, bpId);
+        }
+      }
     }
+
     refetch();
     onRefetch?.();
   };
@@ -589,6 +617,22 @@ export const ProjectWorkersTab = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Identity: person already exists among "Ljudi" */}
+      <ExistingPersonPromptDialog
+        open={!!pendingIdentity}
+        name={pendingIdentity ? `${pendingIdentity.firstName} ${pendingIdentity.lastName}` : ''}
+        onUseExisting={async () => {
+          const p = pendingIdentity;
+          setPendingIdentity(null);
+          if (p) await attach(p.engagementId, p.matchId);
+        }}
+        onDifferentPerson={async () => {
+          const p = pendingIdentity;
+          setPendingIdentity(null);
+          if (p) await createAndAttach(p.engagementId, p.firstName, p.lastName, p.businessProfileId);
+        }}
+      />
     </div>
   );
 };
