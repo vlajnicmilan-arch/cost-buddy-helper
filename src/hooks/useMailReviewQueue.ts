@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { describeDbError } from '@/lib/eracun/dbError';
+import { logMailDiagnostic } from '@/lib/mailReviewStatus';
+
 import { useMailPendingEvent } from '@/hooks/useMailRealtime';
 import { useAppResume } from '@/hooks/useAppResume';
 
