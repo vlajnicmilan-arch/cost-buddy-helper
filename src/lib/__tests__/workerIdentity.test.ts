@@ -113,7 +113,13 @@ describe('aggregatePerson', () => {
     expect(a.totalEarned).toBe(a.byProject.reduce((s, b) => s + b.earned, 0));
   });
 
-  it('excludes voided and deleted payouts', () => {
+  it('keeps voided payouts visible in history but out of totalPaid', () => {
+    const a = aggregatePerson(engagements, entries, history, payouts, new Date('2026-07-01'));
+    expect(a.payouts).toHaveLength(2);
+    expect(a.totalPaid).toBe(100);
+  });
+
+  it('excludes deleted payouts entirely', () => {
     const a = aggregatePerson(
       engagements,
       [],

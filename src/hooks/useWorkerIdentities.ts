@@ -113,7 +113,7 @@ export const useWorkerIdentities = () => {
               .in('worker_id', engagementIds),
             supabase
               .from('project_worker_payouts')
-              .select('worker_id, project_id, paid_amount, paid_at, status, voided_at, deleted_at')
+              .select('id, worker_id, project_id, batch_id, paid_amount, paid_at, status, void_reason, voided_at, deleted_at')
               .in('worker_id', engagementIds),
           ]);
           if (entRes.error) throw entRes.error;
@@ -130,7 +130,10 @@ export const useWorkerIdentities = () => {
             effective_from: r.effective_from,
           }));
           payouts = (payRes.data ?? []).map((p: any) => ({
+            id: p.id,
             worker_id: p.worker_id,
+            batch_id: p.batch_id ?? null,
+            void_reason: p.void_reason ?? null,
             project_id: p.project_id ?? null,
             paid_amount: Number(p.paid_amount) || 0,
             paid_at: p.paid_at,
