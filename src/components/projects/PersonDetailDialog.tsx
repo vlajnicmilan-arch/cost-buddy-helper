@@ -175,6 +175,14 @@ export const PersonDetailDialog = ({
               </div>
             </div>
 
+            {aggregate.totalAdvance > 0.005 && (
+              <p className="text-[11px] text-muted-foreground">
+                {t('people.advanceNote', 'Predujam: {{amount}} (isplaćeno unaprijed, ne umanjuje ostatak)', {
+                  amount: formatAmount(aggregate.totalAdvance),
+                })}
+              </p>
+            )}
+
             <Button
               className="w-full min-h-[44px]"
               disabled={aggregate.totalRemaining <= 0.005}
@@ -182,6 +190,8 @@ export const PersonDetailDialog = ({
             >
               {t('people.payout.open', 'Isplati')}
             </Button>
+
+
 
 
 
