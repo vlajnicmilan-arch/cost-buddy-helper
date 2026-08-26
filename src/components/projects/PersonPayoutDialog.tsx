@@ -67,7 +67,7 @@ export const PersonPayoutDialog = ({
   projectNames,
   onPaid,
 }: PersonPayoutDialogProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { formatAmount } = useCurrency();
   const { customPaymentSources } = useCustomPaymentSources();
   const { payPerson, submitting } = usePersonPayout();
