@@ -4502,7 +4502,14 @@
     "archiveOfferBody": "You can archive them instead: they disappear from the project list, while payouts and history stay untouched.",
     "archive": "Archive",
     "archived": "Worker archived",
-    "unarchived": "Worker restored to the list"
+    "unarchived": "Worker restored to the list",
+    "deleteWithHoursTitle": "Delete the worker and their hours?",
+    "deleteWithHoursBody_one": "{{name}} has {{count}} work entry ({{hours}} h). Deleting permanently removes those hours too. This cannot be undone.",
+    "deleteWithHoursBody_other": "{{name}} has {{count}} work entries ({{hours}} h). Deleting permanently removes those hours too. This cannot be undone.",
+    "deleteWithHoursValue": "Those hours are worth {{value}}.",
+    "deleteArchiveAlternative": "Archive instead of deleting — the worker and their hours stay on record but disappear from the list.",
+    "archiveInstead": "Archive instead of deleting",
+    "deleteWorkerAndHours": "Delete worker and hours"
   },
   "collaboratorsFilters": {
     "filterStatus": "Status",

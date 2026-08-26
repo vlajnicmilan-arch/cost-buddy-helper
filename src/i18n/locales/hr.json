@@ -4508,7 +4508,15 @@
     "archiveOfferBody": "Možeš ga arhivirati: nestat će s popisa projekta, a isplate i povijest ostaju netaknute.",
     "archive": "Arhiviraj",
     "archived": "Radnik arhiviran",
-    "unarchived": "Radnik vraćen na popis"
+    "unarchived": "Radnik vraćen na popis",
+    "deleteWithHoursTitle": "Obrisati radnika i njegove sate?",
+    "deleteWithHoursBody_one": "{{name}} ima {{count}} unos rada ({{hours}} h). Brisanjem se trajno brišu i ti sati. Ovo se ne može poništiti.",
+    "deleteWithHoursBody_few": "{{name}} ima {{count}} unosa rada ({{hours}} h). Brisanjem se trajno brišu i ti sati. Ovo se ne može poništiti.",
+    "deleteWithHoursBody_other": "{{name}} ima {{count}} unosa rada ({{hours}} h). Brisanjem se trajno brišu i ti sati. Ovo se ne može poništiti.",
+    "deleteWithHoursValue": "Vrijednost tih sati je {{value}}.",
+    "deleteArchiveAlternative": "Arhiviraj umjesto brisanja — radnik i njegovi sati ostaju u evidenciji, ali nestaje s popisa.",
+    "archiveInstead": "Arhiviraj umjesto brisanja",
+    "deleteWorkerAndHours": "Obriši radnika i sate"
   },
   "collaboratorsFilters": {
     "filterStatus": "Status",
