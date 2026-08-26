@@ -33,7 +33,7 @@ const Projects = () => {
 
   // Free users get access if they are a member of at least one project (invited as worker/member)
   const [hasMemberships, setHasMemberships] = useState<boolean | null>(null);
-  const [view, setView] = useState<'projects' | 'people'>('projects');
+  const [view, setView] = useState<'projects' | 'people' | 'collaborators'>('projects');
 
 
   useEffect(() => {
