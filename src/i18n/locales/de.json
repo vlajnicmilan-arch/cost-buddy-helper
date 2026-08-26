@@ -4502,7 +4502,14 @@
     "archiveOfferBody": "Du kannst ihn archivieren: Er verschwindet aus der Projektliste, Auszahlungen und Historie bleiben unberührt.",
     "archive": "Archivieren",
     "archived": "Mitarbeiter archiviert",
-    "unarchived": "Mitarbeiter wieder in der Liste"
+    "unarchived": "Mitarbeiter wieder in der Liste",
+    "deleteWithHoursTitle": "Arbeiter und seine Stunden löschen?",
+    "deleteWithHoursBody_one": "{{name}} hat {{count}} Arbeitseintrag ({{hours}} h). Beim Löschen gehen diese Stunden dauerhaft verloren. Das kann nicht rückgängig gemacht werden.",
+    "deleteWithHoursBody_other": "{{name}} hat {{count}} Arbeitseinträge ({{hours}} h). Beim Löschen gehen diese Stunden dauerhaft verloren. Das kann nicht rückgängig gemacht werden.",
+    "deleteWithHoursValue": "Diese Stunden sind {{value}} wert.",
+    "deleteArchiveAlternative": "Archivieren statt löschen — Arbeiter und Stunden bleiben erfasst, verschwinden aber aus der Liste.",
+    "archiveInstead": "Archivieren statt löschen",
+    "deleteWorkerAndHours": "Arbeiter und Stunden löschen"
   },
   "collaboratorsFilters": {
     "filterStatus": "Status",

@@ -39,6 +39,8 @@ import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 import { useWorkerIdentityAttach } from '@/hooks/useWorkerIdentityAttach';
 import { ExistingPersonPromptDialog } from './ExistingPersonPromptDialog';
 import type { WorkerDeleteReason } from '@/lib/workerDeleteReason';
+import { summarizeWorkerDeleteImpact } from '@/lib/workerDeleteImpact';
+
 
 
 type PeriodKey = 'currentMonth' | 'previousMonth' | 'last30' | 'last90' | 'thisYear' | 'allTime' | 'custom';
@@ -184,6 +186,16 @@ export const ProjectWorkersTab = ({
     setDeleteConfirmOpen(true);
   };
 
+  const deleteTarget = workers.find((w) => w.id === workerToDelete) ?? null;
+  const deleteWorkerName = deleteTarget
+    ? `${deleteTarget.first_name} ${deleteTarget.last_name}`.trim()
+    : '';
+  const deleteImpact = summarizeWorkerDeleteImpact(entries, workerToDelete ?? '', {
+    hourlyRate: deleteTarget?.hourly_rate ?? null,
+    knownCost: deleteTarget?.actualCostTotal ?? null,
+  });
+
+
   const deleteFailureMessage = (reason: WorkerDeleteReason): string => {
     switch (reason.kind) {
       case 'has_payouts':
@@ -231,6 +243,18 @@ export const ProjectWorkersTab = ({
     const ok = await archiveWorker(id, true);
     if (ok) onRefetch?.();
   };
+
+  /** Archive chosen from the delete dialog itself (worker has hours). */
+  const archiveInsteadOfDelete = async () => {
+    if (!guard()) return;
+    if (!workerToDelete) return;
+    const id = workerToDelete;
+    setDeleteConfirmOpen(false);
+    setWorkerToDelete(null);
+    const ok = await archiveWorker(id, true);
+    if (ok) onRefetch?.();
+  };
+
 
   const handleSave = async (data: {
     first_name: string;
@@ -640,23 +664,64 @@ export const ProjectWorkersTab = ({
         canManage={canManageWorkerPayouts}
       />
 
-      {/* Delete Confirmation */}
+      {/* Delete Confirmation — with an explicit warning about hours that go away */}
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('workers.deleteConfirmTitle', 'Ukloni radnika?')}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {deleteImpact.entryCount > 0
+                ? t('workers.deleteWithHoursTitle', 'Obrisati radnika i njegove sate?')
+                : t('workers.deleteConfirmTitle', 'Ukloni radnika?')}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              {t('workers.deleteConfirmMessage', 'Jeste li sigurni da želite ukloniti ovog radnika? Ova radnja se ne može poništiti.')}
+              {deleteImpact.entryCount > 0 ? (
+                <>
+                  {t('workers.deleteWithHoursBody', {
+                    name: deleteWorkerName,
+                    count: deleteImpact.entryCount,
+                    hours: deleteImpact.hours,
+                    defaultValue:
+                      '{{name}} ima {{count}} unosa rada ({{hours}} h). Brisanjem se trajno brišu i ti sati. Ovo se ne može poništiti.',
+                  })}
+                  {deleteImpact.value !== null && (
+                    <>
+                      {' '}
+                      {t('workers.deleteWithHoursValue', {
+                        value: formatAmount(deleteImpact.value),
+                        defaultValue: 'Vrijednost tih sati je {{value}}.',
+                      })}
+                    </>
+                  )}
+                  {' '}
+                  {t(
+                    'workers.deleteArchiveAlternative',
+                    'Arhiviraj umjesto brisanja — radnik i njegovi sati ostaju u evidenciji, ali nestaje s popisa.',
+                  )}
+                </>
+              ) : (
+                t('workers.deleteConfirmMessage', 'Jeste li sigurni da želite ukloniti ovog radnika? Ova radnja se ne može poništiti.')
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
-              {t('common.delete')}
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="min-h-[44px]">{t('common.cancel')}</AlertDialogCancel>
+            {deleteImpact.entryCount > 0 && (
+              <Button variant="outline" className="min-h-[44px]" onClick={archiveInsteadOfDelete}>
+                {t('workers.archiveInstead', 'Arhiviraj umjesto brisanja')}
+              </Button>
+            )}
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="min-h-[44px] bg-destructive text-destructive-foreground"
+            >
+              {deleteImpact.entryCount > 0
+                ? t('workers.deleteWorkerAndHours', 'Obriši radnika i sate')
+                : t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
 
       {/* Deletion blocked — offer archiving instead */}
       <AlertDialog open={!!blockedDelete} onOpenChange={(open) => !open && setBlockedDelete(null)}>
