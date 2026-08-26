@@ -180,7 +180,21 @@ export const PersonPayoutDialog = ({
                       {t('people.remainingShort', 'ostaje')} {formatAmount(o.remaining)}
                     </span>
                   </div>
+                  {(o.shortfalls ?? []).map((s, i) => (
+                    <p key={s.payoutId ?? i} className="mt-1 text-[11px] text-muted-foreground">
+                      {t('people.payout.shortfallFrom', 'Nedoplaćeno iz {{month}}: {{amount}}', {
+                        month: s.periodEnd
+                          ? new Date(s.periodEnd).toLocaleDateString(i18n.language, {
+                              month: 'long',
+                              year: 'numeric',
+                            })
+                          : t('people.payout.earlierPeriod', 'ranijeg razdoblja'),
+                        amount: formatAmount(s.amount),
+                      })}
+                    </p>
+                  ))}
                 </div>
+
               ))}
             </div>
           </div>
