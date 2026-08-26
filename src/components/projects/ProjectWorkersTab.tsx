@@ -184,6 +184,16 @@ export const ProjectWorkersTab = ({
     setDeleteConfirmOpen(true);
   };
 
+  const deleteTarget = workers.find((w) => w.id === workerToDelete) ?? null;
+  const deleteWorkerName = deleteTarget
+    ? `${deleteTarget.first_name} ${deleteTarget.last_name}`.trim()
+    : '';
+  const deleteImpact = summarizeWorkerDeleteImpact(entries, workerToDelete ?? '', {
+    hourlyRate: deleteTarget?.hourly_rate ?? null,
+    knownCost: deleteTarget?.actualCostTotal ?? null,
+  });
+
+
   const deleteFailureMessage = (reason: WorkerDeleteReason): string => {
     switch (reason.kind) {
       case 'has_payouts':
