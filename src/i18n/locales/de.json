@@ -6901,7 +6901,9 @@
       "note": "Notiz",
       "confirm": "Auszahlen",
       "done": "Auszahlung erfasst",
-      "open": "Auszahlen"
+      "open": "Auszahlen",
+      "shortfallFrom": "Unterbezahlt aus {{month}}: {{amount}}",
+      "earlierPeriod": "einem früheren Zeitraum"
     },
     "payoutVoided": "storniert",
     "payoutVoidReason": "Grund",
@@ -6911,6 +6913,12 @@
     "payoutVoidBatchDesc": "Diese Auszahlung gehört zu einer Sammelauszahlung — die gesamte Sammelauszahlung wird storniert.",
     "payoutVoidReasonLabel": "Grund für die Stornierung",
     "payoutVoidedToast": "Die Auszahlung von {{amount}} wurde storniert. Die Ausgabe wurde entfernt, die Stunden sind wieder frei.",
-    "payoutVoidFailed": "Stornierung fehlgeschlagen"
+    "payoutVoidFailed": "Stornierung fehlgeschlagen",
+    "advanceNote": "Vorschuss: {{amount}} (im Voraus gezahlt, mindert den Restbetrag nicht)",
+    "payoutHistoryShowAll": "Alle anzeigen ({{count}})",
+    "payoutHistoryShowLess": "Weniger anzeigen",
+    "payoutCount": "{{count}} Auszahlungen",
+    "payoutShowVoided": "+ {{count}} storniert",
+    "payoutHideVoided": "Stornierte ausblenden"
   }
 }

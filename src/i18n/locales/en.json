@@ -6901,7 +6901,9 @@
       "note": "Note",
       "confirm": "Pay",
       "done": "Payout recorded",
-      "open": "Pay"
+      "open": "Pay",
+      "shortfallFrom": "Underpaid from {{month}}: {{amount}}",
+      "earlierPeriod": "an earlier period"
     },
     "payoutVoided": "voided",
     "payoutVoidReason": "Reason",
@@ -6911,6 +6913,12 @@
     "payoutVoidBatchDesc": "This payout is part of a combined payout — the whole batch will be voided.",
     "payoutVoidReasonLabel": "Reason for voiding",
     "payoutVoidedToast": "The payout of {{amount}} was voided. The expense is removed and the hours are free again.",
-    "payoutVoidFailed": "Voiding failed"
+    "payoutVoidFailed": "Voiding failed",
+    "advanceNote": "Advance: {{amount}} (paid ahead, does not reduce what is left)",
+    "payoutHistoryShowAll": "Show all ({{count}})",
+    "payoutHistoryShowLess": "Show less",
+    "payoutCount": "{{count}} payouts",
+    "payoutShowVoided": "+ {{count}} voided",
+    "payoutHideVoided": "Hide voided"
   }
 }
