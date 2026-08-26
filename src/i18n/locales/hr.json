@@ -6952,5 +6952,21 @@
     "payoutCount": "{{count}} isplata",
     "payoutShowVoided": "+ {{count}} storniranih",
     "payoutHideVoided": "Sakrij stornirane"
+  },
+  "collaboratorsOverview": {
+    "title": "Suradnici",
+    "empty": "Još nema suradnika",
+    "engagements_one": "{{count}} angažman",
+    "engagements_few": "{{count}} angažmana",
+    "engagements_other": "{{count}} angažmana",
+    "remaining": "Ostaje",
+    "agreed": "Dogovoreno",
+    "paid": "Plaćeno",
+    "paidShort": "plaćeno",
+    "noAmount": "iznos nije upisan",
+    "someUnpriced": "Neki angažmani nemaju upisan iznos.",
+    "engagementsTitle": "Angažmani",
+    "cancelled": "Otkazan",
+    "excludedFromTotals": "Otkazan — izvan zbroja"
   }
 }

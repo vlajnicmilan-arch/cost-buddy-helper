@@ -6937,5 +6937,20 @@
     "payoutCount": "{{count}} payouts",
     "payoutShowVoided": "+ {{count}} voided",
     "payoutHideVoided": "Hide voided"
+  },
+  "collaboratorsOverview": {
+    "title": "Collaborators",
+    "empty": "No collaborators yet",
+    "engagements_one": "{{count}} engagement",
+    "engagements_other": "{{count}} engagements",
+    "remaining": "Remaining",
+    "agreed": "Agreed",
+    "paid": "Paid",
+    "paidShort": "paid",
+    "noAmount": "amount not entered",
+    "someUnpriced": "Some engagements have no amount entered.",
+    "engagementsTitle": "Engagements",
+    "cancelled": "Cancelled",
+    "excludedFromTotals": "Cancelled — excluded from totals"
   }
 }
