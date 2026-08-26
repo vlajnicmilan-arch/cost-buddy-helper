@@ -4492,7 +4492,17 @@
     "rateEffectiveFromLabel": "New rate effective from",
     "rateEffectiveFromHint": "Retroactive changes are allowed only up to the first payout covering the period.",
     "rateEffectiveFromRequired": "Choose an \"effective from\" date",
-    "rateCollisionError": "A payout already covers this period. Earliest allowed date: {{date}}."
+    "rateCollisionError": "A payout already covers this period. Earliest allowed date: {{date}}.",
+    "deleteFailedPayouts": "This worker has {{count}} payouts and therefore cannot be deleted.",
+    "deleteFailedLocked": "This worker has hours locked by a payout and therefore cannot be deleted.",
+    "deleteFailedNotOwner": "Only the project owner can delete a worker.",
+    "deleteFailedNotFound": "This worker no longer exists.",
+    "deleteFailedOther": "Deletion is not possible: {{reason}}",
+    "archiveOfferTitle": "Deletion is not possible",
+    "archiveOfferBody": "You can archive them instead: they disappear from the project list, while payouts and history stay untouched.",
+    "archive": "Archive",
+    "archived": "Worker archived",
+    "unarchived": "Worker restored to the list"
   },
   "collaboratorsFilters": {
     "filterStatus": "Status",

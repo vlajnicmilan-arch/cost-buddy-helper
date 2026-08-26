@@ -4498,7 +4498,17 @@
     "rateEffectiveFromLabel": "Nova satnica vrijedi od",
     "rateEffectiveFromHint": "Retroaktivna promjena je dopuštena samo do prve isplate koja pokriva period.",
     "rateEffectiveFromRequired": "Odaberi datum \"vrijedi od\"",
-    "rateCollisionError": "Postoji isplata koja pokriva ovaj period. Najraniji dozvoljeni datum: {{date}}."
+    "rateCollisionError": "Postoji isplata koja pokriva ovaj period. Najraniji dozvoljeni datum: {{date}}.",
+    "deleteFailedPayouts": "Radnik ima {{count}} isplata i zato se ne može obrisati.",
+    "deleteFailedLocked": "Radnik ima sate zaključane isplatom i zato se ne može obrisati.",
+    "deleteFailedNotOwner": "Samo vlasnik projekta može obrisati radnika.",
+    "deleteFailedNotFound": "Radnik više ne postoji.",
+    "deleteFailedOther": "Brisanje nije moguće: {{reason}}",
+    "archiveOfferTitle": "Brisanje nije moguće",
+    "archiveOfferBody": "Možeš ga arhivirati: nestat će s popisa projekta, a isplate i povijest ostaju netaknute.",
+    "archive": "Arhiviraj",
+    "archived": "Radnik arhiviran",
+    "unarchived": "Radnik vraćen na popis"
   },
   "collaboratorsFilters": {
     "filterStatus": "Status",

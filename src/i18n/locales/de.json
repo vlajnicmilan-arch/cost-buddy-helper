@@ -4492,7 +4492,17 @@
     "rateEffectiveFromLabel": "Neuer Stundensatz gültig ab",
     "rateEffectiveFromHint": "Rückwirkende Änderungen sind nur bis zur ersten Auszahlung erlaubt, die den Zeitraum abdeckt.",
     "rateEffectiveFromRequired": "Datum \"gültig ab\" wählen",
-    "rateCollisionError": "Eine Auszahlung deckt diesen Zeitraum bereits ab. Frühestes zulässiges Datum: {{date}}."
+    "rateCollisionError": "Eine Auszahlung deckt diesen Zeitraum bereits ab. Frühestes zulässiges Datum: {{date}}.",
+    "deleteFailedPayouts": "Dieser Mitarbeiter hat {{count}} Auszahlungen und kann daher nicht gelöscht werden.",
+    "deleteFailedLocked": "Dieser Mitarbeiter hat durch eine Auszahlung gesperrte Stunden und kann daher nicht gelöscht werden.",
+    "deleteFailedNotOwner": "Nur der Projektinhaber kann einen Mitarbeiter löschen.",
+    "deleteFailedNotFound": "Dieser Mitarbeiter existiert nicht mehr.",
+    "deleteFailedOther": "Löschen nicht möglich: {{reason}}",
+    "archiveOfferTitle": "Löschen nicht möglich",
+    "archiveOfferBody": "Du kannst ihn archivieren: Er verschwindet aus der Projektliste, Auszahlungen und Historie bleiben unberührt.",
+    "archive": "Archivieren",
+    "archived": "Mitarbeiter archiviert",
+    "unarchived": "Mitarbeiter wieder in der Liste"
   },
   "collaboratorsFilters": {
     "filterStatus": "Status",

@@ -38,6 +38,7 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 import { useWorkerIdentityAttach } from '@/hooks/useWorkerIdentityAttach';
 import { ExistingPersonPromptDialog } from './ExistingPersonPromptDialog';
+import type { WorkerDeleteReason } from '@/lib/workerDeleteReason';
 
 
 type PeriodKey = 'currentMonth' | 'previousMonth' | 'last30' | 'last90' | 'thisYear' | 'allTime' | 'custom';
@@ -87,7 +88,7 @@ export const ProjectWorkersTab = ({
 }: ProjectWorkersTabProps) => {
   const { t } = useTranslation();
   const { formatAmount, currency } = useCurrency();
-  const { workers, entries, loading, addWorker, updateWorker, deleteWorker, totalCost, totalActualHours, totalRemainingCost, totalRemainingHours, refetch } = useProjectWorkers(projectId);
+  const { workers, entries, loading, addWorker, updateWorker, deleteWorker, archiveWorker, totalCost, totalActualHours, totalRemainingCost, totalRemainingHours, refetch } = useProjectWorkers(projectId);
   const { milestones } = useProjectMilestones(projectId);
   const [viewMode, setViewMode] = useState<string>('list');
   const { guard, canManageWorkerPayouts } = useProjectWriteGuard({ isReadOnly });
@@ -103,6 +104,7 @@ export const ProjectWorkersTab = ({
   const [editingWorker, setEditingWorker] = useState<ProjectWorker | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [workerToDelete, setWorkerToDelete] = useState<string | null>(null);
+  const [blockedDelete, setBlockedDelete] = useState<{ id: string; reason: WorkerDeleteReason } | null>(null);
   const [scheduleWorker, setScheduleWorker] = useState<ProjectWorker | null>(null);
   const [payoutWorker, setPayoutWorker] = useState<ProjectWorker | null>(null);
   const [disclaimerOpen, setDisclaimerOpen] = useState(false);
@@ -182,14 +184,52 @@ export const ProjectWorkersTab = ({
     setDeleteConfirmOpen(true);
   };
 
+  const deleteFailureMessage = (reason: WorkerDeleteReason): string => {
+    switch (reason.kind) {
+      case 'has_payouts':
+        return t('workers.deleteFailedPayouts', {
+          count: reason.payoutCount ?? 0,
+          defaultValue: 'Radnik ima {{count}} isplata i zato se ne može obrisati.',
+        });
+      case 'has_locked_entries':
+        return t('workers.deleteFailedLocked', 'Radnik ima sate zaključane isplatom i zato se ne može obrisati.');
+      case 'not_owner':
+        return t('workers.deleteFailedNotOwner', 'Samo vlasnik projekta može obrisati radnika.');
+      case 'not_found':
+        return t('workers.deleteFailedNotFound', 'Radnik više ne postoji.');
+      default:
+        return t('workers.deleteFailedOther', {
+          reason: reason.message || String(reason.code ?? ''),
+          defaultValue: 'Brisanje nije moguće: {{reason}}',
+        });
+    }
+  };
+
   const confirmDelete = async () => {
     if (!guard()) return;
-    if (workerToDelete) {
-      await deleteWorker(workerToDelete);
-      setDeleteConfirmOpen(false);
-      setWorkerToDelete(null);
+    if (!workerToDelete) return;
+    const id = workerToDelete;
+    const result = await deleteWorker(id);
+    setDeleteConfirmOpen(false);
+    setWorkerToDelete(null);
+    if (result.success !== false) {
       onRefetch?.();
+      return;
     }
+    const reason = result.reason as WorkerDeleteReason;
+    if (reason.archivable) {
+      setBlockedDelete({ id, reason });
+    } else {
+      showError(deleteFailureMessage(reason));
+    }
+  };
+
+  const confirmArchive = async () => {
+    if (!blockedDelete) return;
+    const id = blockedDelete.id;
+    setBlockedDelete(null);
+    const ok = await archiveWorker(id, true);
+    if (ok) onRefetch?.();
   };
 
   const handleSave = async (data: {
@@ -613,6 +653,26 @@ export const ProjectWorkersTab = ({
             <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
               {t('common.delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Deletion blocked — offer archiving instead */}
+      <AlertDialog open={!!blockedDelete} onOpenChange={(open) => !open && setBlockedDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('workers.archiveOfferTitle', 'Brisanje nije moguće')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {blockedDelete ? deleteFailureMessage(blockedDelete.reason) : ''}
+              {' '}
+              {t('workers.archiveOfferBody', 'Možeš ga arhivirati: nestat će s popisa projekta, a isplate i povijest ostaju netaknute.')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmArchive}>
+              {t('workers.archive', 'Arhiviraj')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

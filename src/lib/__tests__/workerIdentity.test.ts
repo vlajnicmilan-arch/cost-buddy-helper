@@ -144,7 +144,7 @@ describe('sortPeopleRows', () => {
 
 describe('aggregatePerson — remaining is measured in money, not in uncovered hours', () => {
   it('keeps the unpaid rest payable after a partial payout locked every hour', () => {
-    const engagement = { id: 'e1', project_id: 'p1', first_name: 'Petar', last_name: 'V', hourly_rate: 10, position: '' };
+    const engagement = { id: 'e1', project_id: 'p1', worker_id: null, business_profile_id: null, first_name: 'Petar', last_name: 'V', hourly_rate: 10, position: '' };
     // 57.4 h × 10 €/h = 574 € earned, all hours locked by one 500 € payout.
     const entries = Array.from({ length: 10 }, (_, i) => ({
       worker_id: 'e1',
@@ -177,7 +177,7 @@ describe('aggregatePerson — remaining is measured in money, not in uncovered h
   });
 
   it('shows an overpay as advance and never as negative remaining', () => {
-    const engagement = { id: 'e1', project_id: 'p1', first_name: 'A', last_name: 'B', hourly_rate: 10, position: '' };
+    const engagement = { id: 'e1', project_id: 'p1', worker_id: null, business_profile_id: null, first_name: 'A', last_name: 'B', hourly_rate: 10, position: '' };
     const entries = [{ worker_id: 'e1', work_date: '2026-07-01', actual_hours: 10, payout_id: 'pay1' }];
     const payouts = [
       { id: 'pay1', worker_id: 'e1', project_id: 'p1', gross_amount: 100, paid_amount: 150, paid_at: '2026-07-02T10:00:00Z' },
@@ -188,7 +188,7 @@ describe('aggregatePerson — remaining is measured in money, not in uncovered h
   });
 
   it('excludes voided payouts from paid and restores the debt', () => {
-    const engagement = { id: 'e1', project_id: 'p1', first_name: 'A', last_name: 'B', hourly_rate: 10, position: '' };
+    const engagement = { id: 'e1', project_id: 'p1', worker_id: null, business_profile_id: null, first_name: 'A', last_name: 'B', hourly_rate: 10, position: '' };
     const entries = [{ worker_id: 'e1', work_date: '2026-07-01', actual_hours: 10, payout_id: null }];
     const payouts = [
       {
