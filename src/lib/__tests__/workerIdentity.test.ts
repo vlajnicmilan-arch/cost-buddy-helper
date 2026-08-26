@@ -144,7 +144,7 @@ describe('sortPeopleRows', () => {
 
 describe('aggregatePerson — remaining is measured in money, not in uncovered hours', () => {
   it('keeps the unpaid rest payable after a partial payout locked every hour', () => {
-    const engagement = { id: 'e1', project_id: 'p1', first_name: 'Petar', last_name: 'V', hourly_rate: 10, position: '' };
+    const engagement = { id: 'e1', project_id: 'p1', worker_id: null, business_profile_id: null, first_name: 'Petar', last_name: 'V', hourly_rate: 10, position: '' };
     // 57.4 h × 10 €/h = 574 € earned, all hours locked by one 500 € payout.
     const entries = Array.from({ length: 10 }, (_, i) => ({
       worker_id: 'e1',
