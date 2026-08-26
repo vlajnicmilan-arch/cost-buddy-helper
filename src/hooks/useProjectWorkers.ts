@@ -243,19 +243,83 @@ export const useProjectWorkers = (projectId: string | null) => {
     }
   };
 
-  const deleteWorker = async (id: string): Promise<void> => {
+  /**
+   * Deleting an engagement goes through `delete_project_worker`, which tells
+   * us WHY it cannot be deleted (payouts, locked hours, ownership) instead of
+   * failing with a generic error. Every attempt is recorded in
+   * `app_diagnostics_logs` (ids only, no personal data).
+   */
+  const deleteWorker = async (id: string): Promise<WorkerDeleteResult> => {
     try {
-      const { error } = await supabase
-        .from('project_workers')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.rpc('delete_project_worker' as any, {
+        _worker_id: id,
+      });
       if (error) throw error;
+
       setWorkers((prev) => prev.filter((w) => w.id !== id));
       setEntries((prev) => prev.filter((e) => e.worker_id !== id));
+      logDiagnostic({
+        event: 'worker_delete_ok',
+        severity: 'info',
+        details: { engagement_id: id, project_id: projectId },
+      });
       showSuccess(t('workers.deleted', 'Radnik uklonjen'));
-    } catch (error) {
-      console.error('Error deleting worker:', error);
-      showError(t('common.error'));
+      return { success: true };
+    } catch (error: any) {
+      const reason = parseWorkerDeleteError(error);
+      logDiagnostic({
+        event: 'worker_delete_failed',
+        severity: 'error',
+        details: {
+          engagement_id: id,
+          project_id: projectId,
+          reason: reason.kind,
+          payout_count: reason.payoutCount ?? null,
+          db_code: reason.code,
+          db_message: reason.message,
+        },
+      });
+      return { success: false, reason };
+    }
+  };
+
+  /**
+   * Way out when deletion is impossible: the engagement disappears from the
+   * project list but stays in history and in payouts. Nothing financial is
+   * touched.
+   */
+  const archiveWorker = async (id: string, archived = true): Promise<boolean> => {
+    try {
+      const { error } = await supabase.rpc('archive_project_worker' as any, {
+        _worker_id: id,
+        _archived: archived,
+      });
+      if (error) throw error;
+      logDiagnostic({
+        event: archived ? 'worker_archive_ok' : 'worker_unarchive_ok',
+        severity: 'info',
+        details: { engagement_id: id, project_id: projectId },
+      });
+      await fetchWorkers();
+      showSuccess(
+        archived
+          ? t('workers.archived', 'Radnik arhiviran')
+          : t('workers.unarchived', 'Radnik vraćen na popis'),
+      );
+      return true;
+    } catch (error: any) {
+      logDiagnostic({
+        event: 'worker_archive_failed',
+        severity: 'error',
+        details: {
+          engagement_id: id,
+          project_id: projectId,
+          db_code: error?.code ?? null,
+          db_message: String(error?.message ?? error),
+        },
+      });
+      showError(String(error?.message ?? t('common.error')));
+      return false;
     }
   };
 
