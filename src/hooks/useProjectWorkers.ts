@@ -3,11 +3,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { ProjectWorker, ProjectWorkerInput } from '@/types/projectWorker';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { parseWorkerDeleteError, type WorkerDeleteReason } from '@/lib/workerDeleteReason';
 import {
   computeWorkerCostTotals,
   type RateHistoryRow,
   type WorkEntryForCost,
 } from '@/lib/workerRateHistory';
+
+export type WorkerDeleteResult =
+  | { success: true }
+  | { success: false; reason: WorkerDeleteReason };
 
 interface WorkEntryLite extends WorkEntryForCost {}
 
