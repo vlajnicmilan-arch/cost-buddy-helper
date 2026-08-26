@@ -86,11 +86,13 @@ export const PersonPayoutDialog = ({
         hours: b.hours,
         hourlyRate: b.hourlyRate,
         remaining: b.remaining,
+        shortfalls: b.shortfalls,
         unpaidFrom: b.unpaidFrom,
         unpaidTo: b.unpaidTo,
       })),
     [aggregate],
   );
+
 
   const payable = useMemo(() => payableObligations(obligations), [obligations]);
   const maxTotal = useMemo(() => totalRemaining(obligations), [obligations]);
