@@ -6915,7 +6915,9 @@
       "note": "Bilješka",
       "confirm": "Isplati",
       "done": "Isplata zabilježena",
-      "open": "Isplati"
+      "open": "Isplati",
+      "shortfallFrom": "Nedoplaćeno iz {{month}}: {{amount}}",
+      "earlierPeriod": "ranijeg razdoblja"
     },
     "payoutVoided": "stornirano",
     "payoutVoidReason": "Razlog",
@@ -6925,6 +6927,12 @@
     "payoutVoidBatchDesc": "Ova isplata je dio zbirne isplate — stornira se cijela zbirna isplata.",
     "payoutVoidReasonLabel": "Razlog storniranja",
     "payoutVoidedToast": "Isplata od {{amount}} je stornirana. Trošak je uklonjen, sati su ponovno slobodni.",
-    "payoutVoidFailed": "Storniranje nije uspjelo"
+    "payoutVoidFailed": "Storniranje nije uspjelo",
+    "advanceNote": "Predujam: {{amount}} (isplaćeno unaprijed, ne umanjuje ostatak)",
+    "payoutHistoryShowAll": "Prikaži sve ({{count}})",
+    "payoutHistoryShowLess": "Prikaži manje",
+    "payoutCount": "{{count}} isplata",
+    "payoutShowVoided": "+ {{count}} storniranih",
+    "payoutHideVoided": "Sakrij stornirane"
   }
 }

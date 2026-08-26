@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,10 +7,21 @@ import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { Clock, Banknote, Wallet, Ban } from 'lucide-react';
 import { isLivePayout, type PayoutRow, type PersonAggregate } from '@/lib/workerIdentity';
+import {
+  DEFAULT_VISIBLE_PAYOUTS,
+  groupPayoutsByMonth,
+  hiddenPayoutCount,
+  livePayouts,
+  visiblePayouts,
+  voidedPayouts,
+} from '@/lib/payoutHistory';
 import { PersonPayoutDialog } from './PersonPayoutDialog';
 import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
 import { usePersonPayoutVoid } from '@/hooks/usePersonPayoutVoid';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+
+const SHOW_ALL_KEY = 'vmbalance.people.payoutHistory.showAll';
+
 
 interface PersonDetailDialogProps {
   open: boolean;
@@ -37,6 +48,82 @@ export const PersonDetailDialog = ({
   const [payoutOpen, setPayoutOpen] = useState(false);
   const [voidTarget, setVoidTarget] = useState<PayoutRow | null>(null);
   const { voidPayout, voiding } = usePersonPayoutVoid();
+  const { i18n } = useTranslation();
+  const [showAll, setShowAllState] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(SHOW_ALL_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const setShowAll = (v: boolean) => {
+    setShowAllState(v);
+    try {
+      localStorage.setItem(SHOW_ALL_KEY, v ? '1' : '0');
+    } catch {
+      /* storage unavailable — the toggle still works for this session */
+    }
+  };
+  const [showVoided, setShowVoided] = useState(false);
+
+  const allPayouts = aggregate?.payouts ?? [];
+  const liveCount = useMemo(() => livePayouts(allPayouts).length, [allPayouts]);
+  const hiddenCount = useMemo(() => hiddenPayoutCount(allPayouts, DEFAULT_VISIBLE_PAYOUTS), [allPayouts]);
+  const voided = useMemo(() => voidedPayouts(allPayouts), [allPayouts]);
+  const monthGroups = useMemo(
+    () => groupPayoutsByMonth(visiblePayouts(allPayouts, showAll, DEFAULT_VISIBLE_PAYOUTS)),
+    [allPayouts, showAll],
+  );
+
+  const monthLabel = (d: Date) =>
+    d.toLocaleDateString(i18n.language, { month: 'long', year: 'numeric' });
+
+  const renderPayoutRow = (p: PayoutRow, i: number) => {
+    const isVoided = !isLivePayout(p);
+    return (
+      <div
+        key={p.id ?? `${p.worker_id}-${p.paid_at}-${i}`}
+        className="flex items-center justify-between gap-2 text-xs"
+      >
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-muted-foreground truncate">
+              {new Date(p.paid_at).toLocaleDateString(i18n.language)} ·{' '}
+              {(p.project_id && projectNames[p.project_id]) || ''}
+            </span>
+            {isVoided && (
+              <Badge variant="destructive" className="text-[10px]">
+                {t('people.payoutVoided', 'stornirano')}
+              </Badge>
+            )}
+          </div>
+          {isVoided && p.void_reason && (
+            <p className="text-[10px] text-muted-foreground truncate">
+              {t('people.payoutVoidReason', 'Razlog')}: {p.void_reason}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <span className={isVoided ? 'font-medium line-through text-muted-foreground' : 'font-medium'}>
+            {formatAmount(p.paid_amount)}
+          </span>
+          {!isVoided && p.id && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 px-2 text-destructive"
+              onClick={() => setVoidTarget(p)}
+            >
+              <Ban className="w-3.5 h-3.5 mr-1" />
+              {t('people.payoutVoidAction', 'Storniraj')}
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+
 
   const handleVoid = async (reason?: string) => {
     if (!voidTarget?.id) return;
@@ -88,6 +175,14 @@ export const PersonDetailDialog = ({
               </div>
             </div>
 
+            {aggregate.totalAdvance > 0.005 && (
+              <p className="text-[11px] text-muted-foreground">
+                {t('people.advanceNote', 'Predujam: {{amount}} (isplaćeno unaprijed, ne umanjuje ostatak)', {
+                  amount: formatAmount(aggregate.totalAdvance),
+                })}
+              </p>
+            )}
+
             <Button
               className="w-full min-h-[44px]"
               disabled={aggregate.totalRemaining <= 0.005}
@@ -95,6 +190,8 @@ export const PersonDetailDialog = ({
             >
               {t('people.payout.open', 'Isplati')}
             </Button>
+
+
 
 
 
@@ -132,60 +229,59 @@ export const PersonDetailDialog = ({
             <Separator />
 
             <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2">
-                {t('people.payoutHistory', 'Povijest isplata')}
-              </p>
-              {aggregate.payouts.length === 0 ? (
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <p className="text-xs font-medium text-muted-foreground">
+                  {t('people.payoutHistory', 'Povijest isplata')}
+                </p>
+                {hiddenCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 px-2 text-xs"
+                    onClick={() => setShowAll(!showAll)}
+                  >
+                    {showAll
+                      ? t('people.payoutHistoryShowLess', 'Prikaži manje')
+                      : t('people.payoutHistoryShowAll', 'Prikaži sve ({{count}})', {
+                          count: liveCount,
+                        })}
+                  </Button>
+                )}
+              </div>
+
+              {liveCount === 0 && voided.length === 0 ? (
                 <p className="text-xs text-muted-foreground">{t('people.noPayouts', 'Još nema isplata')}</p>
               ) : (
-                <div className="space-y-1.5">
-                  {aggregate.payouts.map((p, i) => {
-                    const voided = !isLivePayout(p);
-                    return (
-                      <div
-                        key={p.id ?? `${p.worker_id}-${p.paid_at}-${i}`}
-                        className="flex items-center justify-between gap-2 text-xs"
+                <div className="space-y-3">
+                  {monthGroups.map((g) => (
+                    <div key={g.key} className="space-y-1.5">
+                      <p className="text-[11px] font-medium text-muted-foreground">
+                        {monthLabel(g.monthDate)} · {t('people.payoutCount', '{{count}} isplata', { count: g.payouts.length })} ·{' '}
+                        {formatAmount(g.total)}
+                      </p>
+                      {g.payouts.map((p, i) => renderPayoutRow(p, i))}
+                    </div>
+                  ))}
+
+                  {voided.length > 0 && (
+                    <div className="space-y-1.5">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 px-2 text-xs text-muted-foreground"
+                        onClick={() => setShowVoided(!showVoided)}
                       >
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-muted-foreground truncate">
-                              {new Date(p.paid_at).toLocaleDateString()} ·{' '}
-                              {(p.project_id && projectNames[p.project_id]) || ''}
-                            </span>
-                            {voided && (
-                              <Badge variant="destructive" className="text-[10px]">
-                                {t('people.payoutVoided', 'stornirano')}
-                              </Badge>
-                            )}
-                          </div>
-                          {voided && p.void_reason && (
-                            <p className="text-[10px] text-muted-foreground truncate">
-                              {t('people.payoutVoidReason', 'Razlog')}: {p.void_reason}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <span className={voided ? 'font-medium line-through text-muted-foreground' : 'font-medium'}>
-                            {formatAmount(p.paid_amount)}
-                          </span>
-                          {!voided && p.id && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-9 px-2 text-destructive"
-                              onClick={() => setVoidTarget(p)}
-                            >
-                              <Ban className="w-3.5 h-3.5 mr-1" />
-                              {t('people.payoutVoidAction', 'Storniraj')}
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                        {showVoided
+                          ? t('people.payoutHideVoided', 'Sakrij stornirane')
+                          : t('people.payoutShowVoided', '+ {{count}} storniranih', { count: voided.length })}
+                      </Button>
+                      {showVoided && voided.map((p, i) => renderPayoutRow(p, i))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
+
           </div>
         )}
 

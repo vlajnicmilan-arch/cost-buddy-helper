@@ -24,7 +24,5 @@
 # učinak (unanchored i anchored slučaj).
 20260824190123_*.sql  # merge_manual_with_bank: identitet se seli, bez dvostrukog reverta
 
-# Isplata s kartice čovjeka: create_person_payout + create_worker_payout dobiva
-# dijeljeni expense/batch. Upis u expenses ide postojećim putem (isti trigger,
-# ista anchor semantika) — balance-neutralno.
-20260825213455_ca634f91-c873-4561-9306-b3e47e74a022.sql
+# (20260825213455 i 20260826035907 su premješteni u BALANCE_MIGRATIONS.txt —
+#  create_person_payout sada ima vlastite scenarije u harnessu.)

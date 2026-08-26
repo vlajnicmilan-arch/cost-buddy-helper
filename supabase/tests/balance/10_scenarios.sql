@@ -1987,4 +1987,111 @@ BEGIN
 END $$;
 RELEASE SAVEPOINT s_e6;
 
+-- ------------------------------------------------------------
+-- PM — "ostaje" se mjeri NOVCEM (create_person_payout).
+-- Djelomična isplata zaključa sve sate; ostatak duga mora ostati isplativ,
+-- a ni cent iznad duga ne smije proći.
+-- earned = 2 × 4 × 25 = 200; prva isplata 150 → dug 50.
+-- ------------------------------------------------------------
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_pm;
+SELECT pg_temp.seed_payout_fixtures();
+SELECT public.create_person_payout(
+  jsonb_build_array(jsonb_build_object(
+    'project_id',   (SELECT val FROM _bfix WHERE key='proj'),
+    'worker_id',    (SELECT val FROM _bfix WHERE key='wrk'),
+    'period_start', '2026-06-02',
+    'period_end',   '2026-06-05',
+    'paid_amount',  150
+  )),
+  'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+  '2026-06-05 12:00:00+00',
+  'PM partial',
+  true
+);
+SELECT pg_temp.assert_eq('PM1 all hours locked (money debt hidden by hours)', 2,
+  (SELECT COUNT(*) FROM public.project_work_entries
+    WHERE project_id=(SELECT val FROM _bfix WHERE key='proj') AND payout_id IS NOT NULL)::numeric);
+SELECT pg_temp.assert_eq('PM1 paid so far', 150,
+  (SELECT COALESCE(SUM(paid_amount),0) FROM public.project_worker_payouts
+    WHERE project_id=(SELECT val FROM _bfix WHERE key='proj') AND status <> 'voided'));
+
+-- PM2 — 0.01 iznad duga MORA pasti (brana prije bilo kojeg upisa)
+DO $$
+DECLARE v_ok boolean := false;
+BEGIN
+  BEGIN
+    PERFORM public.create_person_payout(
+      jsonb_build_array(jsonb_build_object(
+        'project_id',   (SELECT val FROM _bfix WHERE key='proj'),
+        'worker_id',    (SELECT val FROM _bfix WHERE key='wrk'),
+        'period_start', '2026-06-02',
+        'period_end',   '2026-06-05',
+        'paid_amount',  50.02
+      )),
+      'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+      '2026-06-06 12:00:00+00', 'PM over', true);
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM LIKE '%payout_exceeds_remaining%' THEN v_ok := true; ELSE RAISE; END IF;
+  END;
+  IF v_ok THEN
+    RAISE NOTICE 'PASS PM2 payout above remaining rejected';
+  ELSE
+    RAISE EXCEPTION 'FAIL PM2 payout above remaining accepted';
+  END IF;
+END $$;
+SELECT pg_temp.assert_eq('PM2 nothing written on rejection', 150,
+  (SELECT COALESCE(SUM(paid_amount),0) FROM public.project_worker_payouts
+    WHERE project_id=(SELECT val FROM _bfix WHERE key='proj') AND status <> 'voided'));
+
+-- PM3 — ostatak duga (50) prolazi kao redak namirenja (0 sati)
+SELECT public.create_person_payout(
+  jsonb_build_array(jsonb_build_object(
+    'project_id',   (SELECT val FROM _bfix WHERE key='proj'),
+    'worker_id',    (SELECT val FROM _bfix WHERE key='wrk'),
+    'period_start', '2026-06-02',
+    'period_end',   '2026-06-05',
+    'paid_amount',  50
+  )),
+  'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+  '2026-06-06 12:00:00+00',
+  'PM settle',
+  true
+);
+SELECT pg_temp.assert_eq('PM3 total paid = earned', 200,
+  (SELECT COALESCE(SUM(paid_amount),0) FROM public.project_worker_payouts
+    WHERE project_id=(SELECT val FROM _bfix WHERE key='proj') AND status <> 'voided'));
+SELECT pg_temp.assert_eq('PM3 settlement row carries 0 hours', 1,
+  (SELECT COUNT(*) FROM public.project_worker_payouts
+    WHERE project_id=(SELECT val FROM _bfix WHERE key='proj')
+      AND status <> 'voided' AND hours_covered = 0)::numeric);
+SELECT pg_temp.assert_eq('PM3 balance = anchor − everything paid', 800,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+
+-- PM4 — kad duga više nema, i najmanja isplata pada
+DO $$
+DECLARE v_ok boolean := false;
+BEGIN
+  BEGIN
+    PERFORM public.create_person_payout(
+      jsonb_build_array(jsonb_build_object(
+        'project_id',   (SELECT val FROM _bfix WHERE key='proj'),
+        'worker_id',    (SELECT val FROM _bfix WHERE key='wrk'),
+        'period_start', '2026-06-02',
+        'period_end',   '2026-06-05',
+        'paid_amount',  1
+      )),
+      'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+      '2026-06-07 12:00:00+00', 'PM advance', true);
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM LIKE '%payout_exceeds_remaining%' THEN v_ok := true; ELSE RAISE; END IF;
+  END;
+  IF v_ok THEN
+    RAISE NOTICE 'PASS PM4 no advance beyond settled debt';
+  ELSE
+    RAISE EXCEPTION 'FAIL PM4 advance accepted';
+  END IF;
+END $$;
+RELEASE SAVEPOINT s_pm;
+
 ROLLBACK;
+

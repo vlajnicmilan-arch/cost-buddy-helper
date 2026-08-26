@@ -37,13 +37,18 @@ export interface PayoutRow {
   /** Set when the payout was made together with others (one expense). */
   batch_id?: string | null;
   void_reason?: string | null;
+  /** What the payout was worth (hours × rate at the time). */
+  gross_amount?: number | null;
   paid_amount: number;
   paid_at: string;
+  period_start?: string | null;
+  period_end?: string | null;
   project_id: string | null;
   status?: string | null;
   voided_at?: string | null;
   deleted_at?: string | null;
 }
+
 
 /** Lowercase, diacritics-stripped, whitespace-collapsed "first last". */
 export function normalizePersonName(first: string, last: string): string {
@@ -120,6 +125,14 @@ export function findExistingIdentityByName(
   return hit ? { id: hit.id, first_name: hit.first_name, last_name: hit.last_name } : null;
 }
 
+/** Money still owed on one earlier payout (gross booked, less actually paid). */
+export interface PayoutShortfall {
+  payoutId: string | null;
+  periodStart: string | null;
+  periodEnd: string | null;
+  amount: number;
+}
+
 export interface PersonProjectBreakdown {
   engagementId: string;
   projectId: string | null;
@@ -127,7 +140,14 @@ export interface PersonProjectBreakdown {
   position: string;
   hours: number;
   earned: number;
+  /** Actually paid on this engagement (voided payouts excluded). */
+  paid: number;
+  /** earned − paid, never negative. */
   remaining: number;
+  /** paid − earned when the person was paid ahead; never negative. */
+  advance: number;
+  /** Underpaid parts of earlier payouts — offered by name in the payout dialog. */
+  shortfalls: PayoutShortfall[];
   /** Oldest / newest work date not yet covered by a payout. */
   unpaidFrom: string | null;
   unpaidTo: string | null;
@@ -139,6 +159,8 @@ export interface PersonAggregate {
   totalEarned: number;
   totalPaid: number;
   totalRemaining: number;
+  /** Sum of per-engagement advances (money paid beyond what was earned). */
+  totalAdvance: number;
   byProject: PersonProjectBreakdown[];
   payouts: PayoutRow[];
 }
@@ -149,8 +171,14 @@ export const isLivePayout = (p: PayoutRow) =>
 /** Voided payouts stay visible in history; deleted rows do not. */
 export const isVisiblePayout = (p: PayoutRow) => !p.deleted_at;
 
+const round2 = (n: number): number => Math.round((n + Number.EPSILON) * 100) / 100;
+
 /**
  * Sum a single person's hourly work across their engagements.
+ *
+ * "Remaining" is measured in MONEY (earned − actually paid), never in
+ * uncovered hours: a partially paid payout locks its hours, and an
+ * hours-based measure would hide that debt and make it unpayable.
  * Read-only: introduces no new writes and no new payout path.
  */
 export function aggregatePerson(
@@ -179,35 +207,65 @@ export function aggregatePerson(
     }
   }
 
+  const scopedPayouts = payouts.filter((p) => ids.has(p.worker_id) && isVisiblePayout(p));
+  const livePayouts = scopedPayouts.filter(isLivePayout);
+
+  const paidByEngagement = new Map<string, number>();
+  for (const p of livePayouts) {
+    paidByEngagement.set(p.worker_id, round2((paidByEngagement.get(p.worker_id) ?? 0) + (Number(p.paid_amount) || 0)));
+  }
+
+  const shortfallsByEngagement = new Map<string, PayoutShortfall[]>();
+  for (const p of [...livePayouts].sort((a, b) => (a.paid_at < b.paid_at ? -1 : 1))) {
+    const amount = round2((Number(p.gross_amount) || 0) - (Number(p.paid_amount) || 0));
+    if (amount <= 0.005) continue;
+    const list = shortfallsByEngagement.get(p.worker_id) ?? [];
+    list.push({
+      payoutId: p.id ?? null,
+      periodStart: p.period_start ?? null,
+      periodEnd: p.period_end ?? null,
+      amount,
+    });
+    shortfallsByEngagement.set(p.worker_id, list);
+  }
+
   const byProject: PersonProjectBreakdown[] = engagements.map((e) => {
     const t = totals[e.id];
     const w = unpaid.get(e.id);
+    const earned = round2(t?.totalCost ?? 0);
+    const paid = round2(paidByEngagement.get(e.id) ?? 0);
+    const balance = round2(earned - paid);
+    const shortfalls = shortfallsByEngagement.get(e.id) ?? [];
+    // Fall back to the underpaid payout's own period when every hour is locked.
+    const fallbackPeriod = shortfalls[0];
     return {
       engagementId: e.id,
       projectId: e.project_id,
       hourlyRate: Number(e.hourly_rate) || 0,
       position: e.position,
       hours: t?.totalHours ?? 0,
-      earned: t?.totalCost ?? 0,
-      remaining: t?.remainingCost ?? 0,
-      unpaidFrom: w?.from ?? null,
-      unpaidTo: w?.to ?? null,
+      earned,
+      paid,
+      remaining: Math.max(0, balance),
+      advance: Math.max(0, round2(-balance)),
+      shortfalls,
+      unpaidFrom: w?.from ?? fallbackPeriod?.periodStart ?? null,
+      unpaidTo: w?.to ?? fallbackPeriod?.periodEnd ?? null,
     };
   });
 
-  const scopedPayouts = payouts.filter((p) => ids.has(p.worker_id) && isVisiblePayout(p));
-  const livePayouts = scopedPayouts.filter(isLivePayout);
-
   return {
     engagementCount: engagements.length,
-    totalHours: byProject.reduce((s, b) => s + b.hours, 0),
-    totalEarned: byProject.reduce((s, b) => s + b.earned, 0),
-    totalPaid: livePayouts.reduce((s, p) => s + (Number(p.paid_amount) || 0), 0),
-    totalRemaining: byProject.reduce((s, b) => s + b.remaining, 0),
+    totalHours: round2(byProject.reduce((s, b) => s + b.hours, 0)),
+    totalEarned: round2(byProject.reduce((s, b) => s + b.earned, 0)),
+    totalPaid: round2(livePayouts.reduce((s, p) => s + (Number(p.paid_amount) || 0), 0)),
+    totalRemaining: round2(byProject.reduce((s, b) => s + b.remaining, 0)),
+    totalAdvance: round2(byProject.reduce((s, b) => s + b.advance, 0)),
     byProject,
     payouts: [...scopedPayouts].sort((a, b) => (a.paid_at < b.paid_at ? 1 : -1)),
   };
 }
+
 
 export interface PersonListRow {
   workerId: string;

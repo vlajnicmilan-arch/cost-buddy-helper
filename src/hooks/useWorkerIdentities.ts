@@ -113,8 +113,9 @@ export const useWorkerIdentities = () => {
               .in('worker_id', engagementIds),
             supabase
               .from('project_worker_payouts')
-              .select('id, worker_id, project_id, batch_id, paid_amount, paid_at, status, void_reason, voided_at, deleted_at')
+              .select('id, worker_id, project_id, batch_id, gross_amount, paid_amount, paid_at, period_start, period_end, status, void_reason, voided_at, deleted_at')
               .in('worker_id', engagementIds),
+
           ]);
           if (entRes.error) throw entRes.error;
           if (payRes.error) throw payRes.error;
