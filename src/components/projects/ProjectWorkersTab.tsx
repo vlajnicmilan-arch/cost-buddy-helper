@@ -658,6 +658,26 @@ export const ProjectWorkersTab = ({
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Deletion blocked — offer archiving instead */}
+      <AlertDialog open={!!blockedDelete} onOpenChange={(open) => !open && setBlockedDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('workers.archiveOfferTitle', 'Brisanje nije moguće')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {blockedDelete ? deleteFailureMessage(blockedDelete.reason) : ''}
+              {' '}
+              {t('workers.archiveOfferBody', 'Možeš ga arhivirati: nestat će s popisa projekta, a isplate i povijest ostaju netaknute.')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmArchive}>
+              {t('workers.archive', 'Arhiviraj')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Identity: person already exists among "Ljudi" */}
       <ExistingPersonPromptDialog
         open={!!pendingIdentity}
