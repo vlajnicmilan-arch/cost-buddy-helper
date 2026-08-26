@@ -184,14 +184,51 @@ export const ProjectWorkersTab = ({
     setDeleteConfirmOpen(true);
   };
 
+  const deleteFailureMessage = (reason: WorkerDeleteReason): string => {
+    switch (reason.kind) {
+      case 'has_payouts':
+        return t('workers.deleteFailedPayouts', {
+          count: reason.payoutCount ?? 0,
+          defaultValue: 'Radnik ima {{count}} isplata i zato se ne može obrisati.',
+        });
+      case 'has_locked_entries':
+        return t('workers.deleteFailedLocked', 'Radnik ima sate zaključane isplatom i zato se ne može obrisati.');
+      case 'not_owner':
+        return t('workers.deleteFailedNotOwner', 'Samo vlasnik projekta može obrisati radnika.');
+      case 'not_found':
+        return t('workers.deleteFailedNotFound', 'Radnik više ne postoji.');
+      default:
+        return t('workers.deleteFailedOther', {
+          reason: reason.message || String(reason.code ?? ''),
+          defaultValue: 'Brisanje nije moguće: {{reason}}',
+        });
+    }
+  };
+
   const confirmDelete = async () => {
     if (!guard()) return;
-    if (workerToDelete) {
-      await deleteWorker(workerToDelete);
-      setDeleteConfirmOpen(false);
-      setWorkerToDelete(null);
+    if (!workerToDelete) return;
+    const id = workerToDelete;
+    const result = await deleteWorker(id);
+    setDeleteConfirmOpen(false);
+    setWorkerToDelete(null);
+    if (result.success) {
       onRefetch?.();
+      return;
     }
+    if (result.reason.archivable) {
+      setBlockedDelete({ id, reason: result.reason });
+    } else {
+      showError(deleteFailureMessage(result.reason));
+    }
+  };
+
+  const confirmArchive = async () => {
+    if (!blockedDelete) return;
+    const id = blockedDelete.id;
+    setBlockedDelete(null);
+    const ok = await archiveWorker(id, true);
+    if (ok) onRefetch?.();
   };
 
   const handleSave = async (data: {
