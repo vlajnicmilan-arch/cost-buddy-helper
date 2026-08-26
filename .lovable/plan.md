@@ -1,65 +1,69 @@
-# Plan: mail-lijevak bez tihog nestajanja
+# Plan: Ljudi — novčani ostatak, namirenje duga i sažeta povijest
 
 ## Potvrđeno početno stanje
 
-- Poruke `1af7ee77…` (`message/rfc822`) i `2c5da275…` (`text/html`) imaju privitak u `karantena/nepodrzan_tip`, ali nemaju nijednu `document_ingest_items` stavku ni obavijest.
-- „Fwd: Račun Grad Osijek” ima siguran PDF i čitljiv financijski sadržaj, ali je završio kao `nepoznato + mozda_izvod`, a odgovor „nije izvod” postavio je jedinu stavku u `odbacio_korisnik`.
-- Gmail verifikacijske stavke danas imaju samo `na_pregledu/odbacio_korisnik`; klik na vanjski link ne mijenja stanje.
+- Kartica osobe danas računa `ostaje` iz radnih unosa kojima je `payout_id IS NULL`; zato potpuno zaključana djelomična isplata skriva novčani dug.
+- Živi redak angažmana „Duje i Dunja” ima `gross_amount = 574,00`, `paid_amount = 500,00`, `status = partial`, dok je svih 82 sata zaključano. Stvarni ostatak tog retka je 74,00 €.
+- Postojeći `create_person_payout` također provjerava samo vrijednost slobodnih sati, a `create_worker_payout` bi isplatu bez slobodnih sati označio kao `advance`. To nije prihvatljivo za namirenje starog duga.
+- Povijest na kartici osobe trenutačno prikazuje sve isplate u jednom ravnom popisu; postojeći zapamćeni obrazac „Prikaži sve” nalazi se u Novčaniku.
 
 ## Što će se izgraditi
 
-### 1. Vidljiva kartica za korisnički popravljiv nepodržani privitak
+### 1. Jedinstvena novčana mjera ostatka
 
-- Kad MIME provjera odbije format kao `nepodrzan_tip` ili `arhiva_nije_podrzana`, `mail-process` će idempotentno stvoriti posebnu stavku `na_pregledu` s deklariranim/stvarnim tipom, jasnom porukom da dokument treba poslati kao PDF i postojećom `mail_document_pending` obavijesti.
-- Kartica neće nuditi obradu sadržaja; imat će samo izričiti „Odbaci”.
-- Sigurnosni razlozi temeljeni na sadržaju, npr. zabranjeni XML DTD/entiteti i budući malware-signali, ostaju u sigurnosnoj karanteni bez kartice. Razdvajanje će biti eksplicitna allowlista korisnički popravljivih razloga, a ne opće pravilo „svaka karantena je vidljiva”.
+- Za svaki angažman izračun će biti: `zarađeno iz svih sati − stvarno isplaćeno iz živih isplata`, zaokruženo na cent.
+- Stornirane i obrisane isplate neće ulaziti u `isplaćeno`; aktivni `paid`, `partial` i postojeći `advance` retci ostaju stvarno isplaćen novac.
+- Ukupni ostatak osobe bit će zbroj ostataka angažmana i istodobno jednak `ukupno zarađeno − ukupno isplaćeno`.
+- Podatak o slobodnim satima ostat će samo za određivanje redovnog perioda i zaključavanje, nikad više kao mjera novčanog duga.
 
-### 2. Raskrižje umjesto destruktivnog „nije izvod”
+### 2. Serverski čuvano namirenje starog duga
 
-- Kartica `mozda_izvod/nepoznato` dobit će četiri odvojene odluke:
-  1. „Ovo je izvod” — postojeći prisilni izvod/reprocess put.
-  2. „Ovo je račun” — trajno pamti korisnikovu klasifikaciju, vraća poruku u obradu i prisiljava postojeći AI račun-put za dopunu polja.
-  3. „Nešto drugo — zadrži” — premješta stavku u nedestruktivno stanje `zadrzano`, vidljivo u „Primljeno”, bez aktivne obavijesti.
-  4. „Odbaci” — jedini put u `odbacio_korisnik`, vizualno odvojen od triju klasifikacijskih odluka.
-- Odluke će ići kroz vlasnički provjerene RPC-e, tako da se statusi i prisilna klasifikacija ne mogu krivotvoriti za tuđu stavku.
+- `create_person_payout` će za svaki angažman pod zaključavanjem retka serverski izračunati ukupno zarađeno po povijesti satnice i oduzeti sve žive isplate.
+- Svaki traženi iznos iznad tog stvarnog duga bit će odbijen s jasnim kodom/porukom `payout_exceeds_remaining`; 75,00 € uz dug 74,00 € mora pasti prije bilo kojeg upisa.
+- Ako stavka ima dovoljno slobodnih sati, poziva se postojeći put `create_worker_payout` bez promjene njegova ponašanja.
+- Ako dio ili cijeli iznos nema pokriće u slobodnim satima, ali ima pokriće u stvarnom dugu, `create_person_payout` stvara novi redak namirenja:
+  - `hours_covered = 0`
+  - `gross_amount = paid_amount = iznos namirenja`
+  - `status = paid`
+  - isti angažman i period izvornog aktivnog `partial` retka koji nosi nepodmireni dio
+  - vlastiti `expense_id` za pojedinačnu isplatu; kod postojeće zbirne isplate ostaje jedan zajednički trošak i zajednički `batch_id`.
+- Stari `partial` redak ostaje potpuno nepromijenjen. Novi redak čuva istinu da je doplata stvarno izvršena kasnije.
+- Za miješanu raspodjelu (slobodni sati + stari dug) redovni dio zadržava postojeći obračun i zaključavanje, a samo nepokriveni novčani dio postaje redak namirenja. Ukupan trošak i dalje odgovara stvarno isplaćenom iznosu bez dupliranja.
 
-### 3. Prednost jasnog računa bez regresije izvoda i promocija
+### 3. Dijalog isplate
 
-- Potvrđeni jaki izvodi ostaju prvi veto i ne idu u AI račun-put.
-- Ako postoji financijska supstanca i jasan signal `račun/invoice/faktura`, slabi „možda izvod” signal više neće odmah otvoriti izvod-pitanje: stavka ide u postojeću AI klasifikaciju/dopunu računa.
-- Promidžbene poruke bez financijske supstance i postojeći jaki bankovni/kartični izvodi ostaju na sadašnjim putovima.
-- Korisnički odabir „Ovo je račun” bit će mjerodavan i pri reprocessu; stroj ga neće vratiti na izvod-pitanje.
+- Obveze će se graditi iz iste novčane mjere kao kartica, pa će FIFO prijedlog uključiti i zaključani nepodmireni dio.
+- Nepodmireni dio postojećeg `partial` retka bit će jasno imenovan po mjesecu, npr. „Nedoplaćeno iz srpnja: 74,00 €”.
+- Promjenjiva raspodjela i zabrana predujma ostaju; klijentska validacija koristi novčani ostatak, a baza ostaje konačna brana.
+- Nakon isplate/refetcha kartica, projektni redak i ukupni iznos odmah koriste isti izračun.
 
-### 4. Gmail potvrda: tri stanja
+### 4. Povijest isplata
 
-- Klik „Otvori potvrdu” sinkrono otvara postojeći, već sigurnosno provjeren Google URL i bilježi klik; stavka prelazi iz `na_pregledu` u `ceka_prvi_mail`. Time postojeći DB okidač odmah gasi obavijest i broj stavki pada.
-- `ceka_prvi_mail` bit će prikazan u „Primljeno” posebnom verifikacijskom karticom, ne kao prazan račun. „Odbaci” ostaje dostupan.
-- Novi stvarni mail primljen nakon klika, čiji se točno izdvojeni pošiljatelj podudara s `forwardedAddress` iste korisnikove čekajuće potvrde, trajno zatvara potvrdu u završno stanje. Neće se zaključivati po subjectu ni djelomičnom tekstu adrese.
-- Dnevni DB cron jednom vraća stavku stariju od 7 dana u `na_pregledu`, dodaje upozorenje „S ove adrese još ništa nije stiglo…” i stvara jednu novu pending obavijest. Jednokratnost će čuvati zaseban timestamp/oznaka reaktivacije.
-- Vanjski link se nikad ne poziva automatski.
-
-### 5. „Primljeno”, i18n i odbačene posebne stavke
-
-- „Primljeno” će prikazivati `zadrzano` i `ceka_prvi_mail` kao semantičke kartice, uz postojeći popis poruka.
-- Posebne klasifikacije u odbačenom popisu dobit će vlastiti opis umjesto lažnih praznih polja računa.
-- Svi novi tekstovi i kontrole bit će u HR/EN/DE uz postojeće i18n čuvare.
+- Zadano se prikazuje zadnjih 5 živih isplata.
+- „Prikaži sve (N)” koristi isti zapamćeni `localStorage` obrazac kao popis računa u Novčaniku; stanje je zajedničko za kartice osoba i može se vratiti na „Prikaži manje”.
+- U razvijenom prikazu žive isplate grupiraju se po lokaliziranom mjesecu i godini. Zaglavlje prikazuje mjesec, broj isplata i zbroj stvarno isplaćenog tog mjeseca.
+- Stornirane isplate ostaju izvan živih mjesečnih zbrojeva i skrivene su po zadanom iza zasebnog tihog retka „+ N storniranih”. Njihovo otvaranje je zasebno od „Prikaži sve”, a prikaz ostaje precrtan s razlogom i postojećom radnjom/oznakama.
+- Sve nove oznake i množine bit će dodane u HR/EN/DE kataloge; format mjeseca prati aktivni jezik.
 
 ## Baza i tehnički zahvati
 
-- Migracija će proširiti dopuštena stanja stavke te dodati minimalna polja za klik/čekanje/jednokratni sedmodnevni povrat. RLS i postojeće vlasništvo ostaju mjerodavni.
-- Postojeće DB funkcije mijenjat će se isključivo od svojih živih `pg_get_functiondef` definicija.
-- Dodat će se vlasnički RPC za odluke raskrižja i funkcija dnevnog održavanja Gmail čekanja; cron će pozivati DB funkciju bez novog klijentskog tajmera.
-- `mail-process` ostaje jedini klasifikacijski worker i postojeći notification helper/obrazac ostaje jedini način stvaranja pending obavijesti.
-- `package.json` i sva tri lockfilea neće se dirati.
+- Nova migracija mijenja samo živu definiciju `public.create_person_payout`, preuzetu putem `pg_get_functiondef`; ne mijenja tablice ni postojeće podatke.
+- `void_worker_payout`, `void_worker_payout_batch` i postojeći `create_worker_payout` ostaju nepromijenjeni.
+- Migracija zadržava postojeće `SECURITY DEFINER`, `search_path`, revoke/grant i vlasničke provjere.
+- Budući da put upisuje u `expenses`, migracija ulazi u balance SQL gate prema postojećem pravilu projekta.
 
-## Testovi i isporuka
+## Testovi i provjera
 
-- Regresije: vidljiva popravljiva karantena + obavijest; sigurnosna karantena bez kartice; sva četiri izlaza raskrižja; samo izričiti „Odbaci” odbacuje; jaki izvodi i promocije ostaju netaknuti; invoice signal ide u AI račun-put; Gmail klik/čekanje/prvi mail/7 dana/jednokratnost/odbacivanje; notification samogašenje; HR/EN/DE paritet.
-- Pokrenuti ciljane Vitest/Deno testove i `tsgo`; zatim deployati samo zahvaćene funkcije.
-- Nakon deploya reprocessati isključivo živu stavku Grad Osijek kroz novi račun-put te dokazati u bazi: status `na_pregledu`, klasifikacija `racun`, pročitana polja, obavijest i bez duplikata.
-- Objaviti klijent, zabilježiti točan prethodni i novi produkcijski žig te verificirati novi Vite asset/sadržaj, ne `version.json`.
-- Završni izvještaj navest će izmijenjene datoteke, migraciju/funkcije, testove, deploy/objavu, žive DB dokaze bez osjetljivih sadržaja te potvrdu da lockfileovi nisu dirani.
+- Vitest regresija zaključava invariant po angažmanu i ukupno: `zarađeno − isplaćeno = ostaje` do centa, uključujući zaključani `partial` 574/500, storniranu isplatu i novi redak namirenja 74/74.
+- Testovi FIFO/validacije potvrđuju da je 74,00 € ponudivo i da 75,00 € prelazi dug.
+- UI testovi/pure helper testovi potvrđuju: početnih 5 živih redaka, zapamćeno širenje, mjesečne grupe i zbrojeve te 4 stornirane skrivene do izričitog otvaranja.
+- SQL regresija potvrđuje: 74,00 € stvara novi payout s 0 sati, `gross = paid = 74`, `status = paid` i jedan expense; stari `partial` ostaje nepromijenjen; 75,00 € se odbija bez djelomičnog upisa.
+- Postojeći SQL scenariji potvrđuju da redovna projektna isplata, batch isplata, zaključavanje i oba puta storniranja rade nepromijenjeno.
+- Pokrenuti ciljane Vitest testove, puni `npm test` i obvezni balance SQL suite; zatim primijeniti migraciju i objaviti klijent.
+- Na živim podacima prije isplate provjeriti Petra: projektni ostatak 74,00 € i ukupno 1.789,00 €. Neću izvršiti stvarnu isplatu bez zasebne izričite naredbe jer bi to stvorilo financijski zapis i trošak; funkcionalnost ću dokazati SQL testom i u sučelju.
+- Objavu potvrditi novim Vite asset žigom i sadržajem, ne `version.json`.
 
-## Jedna ranije prijavljena stavka
+## Izričito izvan zahvata
 
-Kvar od 16.8. je da „Odbačeno” sve posebne stavke (npr. Gmail potvrdu) renderira kao račun pa pokazuje prazne broj/iznos; ovaj plan ga popravlja samo za posebne klasifikacije zahvaćene ovim nalogom.
+- Ne diraju se suradnici (`project_collaborators`), postojeći payout retci, SQL funkcije storniranja, `create_worker_payout`, zaključavanje sati, povijest satnice, obračun po satnici, projektni put isplate/storniranja, executor uvoza, saldo/sidra, Novčanik ni mail lijevak.
+- Ne mijenjaju se paketi ni lockfileovi; `bun.lock` ostaje jedini lockfile.
