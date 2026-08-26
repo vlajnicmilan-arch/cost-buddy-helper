@@ -112,7 +112,9 @@ const Projects = () => {
           ))}
         </div>
 
-        {view === 'people' ? (
+        {view === 'collaborators' ? (
+          <CollaboratorsTab />
+        ) : view === 'people' ? (
           <PeopleTab />
         ) : hasMemberships === null ? (
           <div className="flex items-center justify-center py-8">
