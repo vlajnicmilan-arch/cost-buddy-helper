@@ -37,13 +37,18 @@ export interface PayoutRow {
   /** Set when the payout was made together with others (one expense). */
   batch_id?: string | null;
   void_reason?: string | null;
+  /** What the payout was worth (hours × rate at the time). */
+  gross_amount?: number | null;
   paid_amount: number;
   paid_at: string;
+  period_start?: string | null;
+  period_end?: string | null;
   project_id: string | null;
   status?: string | null;
   voided_at?: string | null;
   deleted_at?: string | null;
 }
+
 
 /** Lowercase, diacritics-stripped, whitespace-collapsed "first last". */
 export function normalizePersonName(first: string, last: string): string {
