@@ -232,6 +232,18 @@ export const ProjectWorkersTab = ({
     if (ok) onRefetch?.();
   };
 
+  /** Archive chosen from the delete dialog itself (worker has hours). */
+  const archiveInsteadOfDelete = async () => {
+    if (!guard()) return;
+    if (!workerToDelete) return;
+    const id = workerToDelete;
+    setDeleteConfirmOpen(false);
+    setWorkerToDelete(null);
+    const ok = await archiveWorker(id, true);
+    if (ok) onRefetch?.();
+  };
+
+
   const handleSave = async (data: {
     first_name: string;
     last_name: string;
