@@ -11,20 +11,31 @@
  * engagement".
  */
 
+/** Underpaid part of one earlier payout — offered by name in the dialog. */
+export interface ObligationShortfall {
+  payoutId: string | null;
+  periodStart: string | null;
+  periodEnd: string | null;
+  amount: number;
+}
+
 export interface EngagementObligation {
   /** project_workers.id */
   engagementId: string;
   projectId: string | null;
   hours: number;
   hourlyRate: number;
-  /** Unpaid (still owed) amount on this engagement. */
+  /** Unpaid (still owed) amount on this engagement: earned − actually paid. */
   remaining: number;
+  /** Underpaid parts of earlier payouts, oldest first (subset of `remaining`). */
+  shortfalls?: ObligationShortfall[];
   /** Oldest / newest unpaid work date — the payout period. */
   unpaidFrom: string | null;
   unpaidTo: string | null;
 }
 
 export type Allocation = Record<string, number>;
+
 
 export const round2 = (n: number): number => Math.round((n + Number.EPSILON) * 100) / 100;
 
