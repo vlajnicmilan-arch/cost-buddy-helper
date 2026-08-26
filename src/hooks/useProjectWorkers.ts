@@ -380,6 +380,7 @@ export const useProjectWorkers = (projectId: string | null) => {
     updateWorker,
     setWorkerRate,
     deleteWorker,
+    archiveWorker,
     linkWorkerToMember,
     refetch: fetchWorkers,
     totalCost,
