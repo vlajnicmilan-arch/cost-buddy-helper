@@ -58,6 +58,7 @@ export const useProjectWorkers = (projectId: string | null) => {
           .from('project_workers')
           .select('*')
           .eq('project_id', projectId)
+          .is('archived_at', null)
           .order('created_at', { ascending: false }),
         supabase
           .from('project_work_entries')
