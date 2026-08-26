@@ -48,6 +48,82 @@ export const PersonDetailDialog = ({
   const [payoutOpen, setPayoutOpen] = useState(false);
   const [voidTarget, setVoidTarget] = useState<PayoutRow | null>(null);
   const { voidPayout, voiding } = usePersonPayoutVoid();
+  const { i18n } = useTranslation();
+  const [showAll, setShowAllState] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(SHOW_ALL_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const setShowAll = (v: boolean) => {
+    setShowAllState(v);
+    try {
+      localStorage.setItem(SHOW_ALL_KEY, v ? '1' : '0');
+    } catch {
+      /* storage unavailable — the toggle still works for this session */
+    }
+  };
+  const [showVoided, setShowVoided] = useState(false);
+
+  const allPayouts = aggregate?.payouts ?? [];
+  const liveCount = useMemo(() => livePayouts(allPayouts).length, [allPayouts]);
+  const hiddenCount = useMemo(() => hiddenPayoutCount(allPayouts, DEFAULT_VISIBLE_PAYOUTS), [allPayouts]);
+  const voided = useMemo(() => voidedPayouts(allPayouts), [allPayouts]);
+  const monthGroups = useMemo(
+    () => groupPayoutsByMonth(visiblePayouts(allPayouts, showAll, DEFAULT_VISIBLE_PAYOUTS)),
+    [allPayouts, showAll],
+  );
+
+  const monthLabel = (d: Date) =>
+    d.toLocaleDateString(i18n.language, { month: 'long', year: 'numeric' });
+
+  const renderPayoutRow = (p: PayoutRow, i: number) => {
+    const isVoided = !isLivePayout(p);
+    return (
+      <div
+        key={p.id ?? `${p.worker_id}-${p.paid_at}-${i}`}
+        className="flex items-center justify-between gap-2 text-xs"
+      >
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-muted-foreground truncate">
+              {new Date(p.paid_at).toLocaleDateString(i18n.language)} ·{' '}
+              {(p.project_id && projectNames[p.project_id]) || ''}
+            </span>
+            {isVoided && (
+              <Badge variant="destructive" className="text-[10px]">
+                {t('people.payoutVoided', 'stornirano')}
+              </Badge>
+            )}
+          </div>
+          {isVoided && p.void_reason && (
+            <p className="text-[10px] text-muted-foreground truncate">
+              {t('people.payoutVoidReason', 'Razlog')}: {p.void_reason}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <span className={isVoided ? 'font-medium line-through text-muted-foreground' : 'font-medium'}>
+            {formatAmount(p.paid_amount)}
+          </span>
+          {!isVoided && p.id && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 px-2 text-destructive"
+              onClick={() => setVoidTarget(p)}
+            >
+              <Ban className="w-3.5 h-3.5 mr-1" />
+              {t('people.payoutVoidAction', 'Storniraj')}
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+
 
   const handleVoid = async (reason?: string) => {
     if (!voidTarget?.id) return;
