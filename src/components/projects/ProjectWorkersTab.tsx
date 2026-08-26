@@ -39,6 +39,8 @@ import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 import { useWorkerIdentityAttach } from '@/hooks/useWorkerIdentityAttach';
 import { ExistingPersonPromptDialog } from './ExistingPersonPromptDialog';
 import type { WorkerDeleteReason } from '@/lib/workerDeleteReason';
+import { summarizeWorkerDeleteImpact } from '@/lib/workerDeleteImpact';
+
 
 
 type PeriodKey = 'currentMonth' | 'previousMonth' | 'last30' | 'last90' | 'thisYear' | 'allTime' | 'custom';
