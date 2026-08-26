@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,10 +7,21 @@ import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { Clock, Banknote, Wallet, Ban } from 'lucide-react';
 import { isLivePayout, type PayoutRow, type PersonAggregate } from '@/lib/workerIdentity';
+import {
+  DEFAULT_VISIBLE_PAYOUTS,
+  groupPayoutsByMonth,
+  hiddenPayoutCount,
+  livePayouts,
+  visiblePayouts,
+  voidedPayouts,
+} from '@/lib/payoutHistory';
 import { PersonPayoutDialog } from './PersonPayoutDialog';
 import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
 import { usePersonPayoutVoid } from '@/hooks/usePersonPayoutVoid';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+
+const SHOW_ALL_KEY = 'vmbalance.people.payoutHistory.showAll';
+
 
 interface PersonDetailDialogProps {
   open: boolean;
