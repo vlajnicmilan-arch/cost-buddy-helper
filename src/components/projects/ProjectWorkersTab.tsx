@@ -103,6 +103,7 @@ export const ProjectWorkersTab = ({
   const [editingWorker, setEditingWorker] = useState<ProjectWorker | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [workerToDelete, setWorkerToDelete] = useState<string | null>(null);
+  const [blockedDelete, setBlockedDelete] = useState<{ id: string; reason: WorkerDeleteReason } | null>(null);
   const [scheduleWorker, setScheduleWorker] = useState<ProjectWorker | null>(null);
   const [payoutWorker, setPayoutWorker] = useState<ProjectWorker | null>(null);
   const [disclaimerOpen, setDisclaimerOpen] = useState(false);
