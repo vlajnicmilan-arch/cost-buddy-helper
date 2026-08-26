@@ -212,14 +212,15 @@ export const ProjectWorkersTab = ({
     const result = await deleteWorker(id);
     setDeleteConfirmOpen(false);
     setWorkerToDelete(null);
-    if (result.success) {
+    if (result.success !== false) {
       onRefetch?.();
       return;
     }
-    if (result.reason.archivable) {
-      setBlockedDelete({ id, reason: result.reason });
+    const reason = result.reason as WorkerDeleteReason;
+    if (reason.archivable) {
+      setBlockedDelete({ id, reason });
     } else {
-      showError(deleteFailureMessage(result.reason));
+      showError(deleteFailureMessage(reason));
     }
   };
 
