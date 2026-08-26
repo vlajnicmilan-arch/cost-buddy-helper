@@ -5945,6 +5945,7 @@ export type Database = {
       }
       project_workers: {
         Row: {
+          archived_at: string | null
           business_profile_id: string | null
           created_at: string
           first_name: string
@@ -5961,6 +5962,7 @@ export type Database = {
           worker_id: string | null
         }
         Insert: {
+          archived_at?: string | null
           business_profile_id?: string | null
           created_at?: string
           first_name: string
@@ -5977,6 +5979,7 @@ export type Database = {
           worker_id?: string | null
         }
         Update: {
+          archived_at?: string | null
           business_profile_id?: string | null
           created_at?: string
           first_name?: string
@@ -7119,6 +7122,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      archive_project_worker: {
+        Args: { _archived?: boolean; _worker_id: string }
+        Returns: Json
+      }
       assert_projects_write_allowed: { Args: never; Returns: undefined }
       audit_secdef_anon_regression: {
         Args: never
@@ -7235,6 +7242,7 @@ export type Database = {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
       }
+      delete_project_worker: { Args: { _worker_id: string }; Returns: Json }
       dismiss_notification: { Args: { p_id: string }; Returns: undefined }
       drain_participant_digest: {
         Args: { p_project_id: string; p_user_id: string }
