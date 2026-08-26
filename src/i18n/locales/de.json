@@ -6937,5 +6937,20 @@
     "payoutCount": "{{count}} Auszahlungen",
     "payoutShowVoided": "+ {{count}} storniert",
     "payoutHideVoided": "Stornierte ausblenden"
+  },
+  "collaboratorsOverview": {
+    "title": "Partner",
+    "empty": "Noch keine Partner",
+    "engagements_one": "{{count}} Engagement",
+    "engagements_other": "{{count}} Engagements",
+    "remaining": "Offen",
+    "agreed": "Vereinbart",
+    "paid": "Bezahlt",
+    "paidShort": "bezahlt",
+    "noAmount": "Betrag nicht erfasst",
+    "someUnpriced": "Bei einigen Engagements ist kein Betrag erfasst.",
+    "engagementsTitle": "Engagements",
+    "cancelled": "Storniert",
+    "excludedFromTotals": "Storniert — nicht in der Summe"
   }
 }
