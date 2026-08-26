@@ -89,11 +89,12 @@ const Projects = () => {
           <TrialFeatureChip feature="projects" />
         </div>
 
-        {/* Projekti | Ljudi */}
+        {/* Projekti | Ljudi | Suradnici */}
         <div className="flex gap-1 p-1 mb-3 bg-muted/40 rounded-xl border border-border/30">
           {([
             { id: 'projects' as const, label: t('nav.projects', 'Projekti'), icon: FolderKanban },
             { id: 'people' as const, label: t('people.title', 'Ljudi'), icon: Users },
+            { id: 'collaborators' as const, label: t('collaboratorsOverview.title', 'Suradnici'), icon: Handshake },
           ]).map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -101,14 +102,14 @@ const Projects = () => {
               onClick={() => setView(id)}
               aria-pressed={view === id}
               className={cn(
-                'flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-all min-h-[44px] flex-1 justify-center',
+                'flex items-center gap-1 rounded-lg px-1.5 py-2 text-xs font-medium transition-all min-h-[44px] flex-1 justify-center',
                 view === id
                   ? 'bg-background text-foreground shadow-sm border border-border'
                   : 'text-muted-foreground hover:bg-muted/60',
               )}
             >
-              <Icon className="w-3.5 h-3.5" />
-              <span>{label}</span>
+              <Icon className="w-3.5 h-3.5 shrink-0" />
+              <span className="whitespace-nowrap">{label}</span>
             </button>
           ))}
         </div>
