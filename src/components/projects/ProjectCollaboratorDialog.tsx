@@ -11,6 +11,7 @@ import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { ProjectCollaborator, ProjectCollaboratorInput } from '@/types/projectCollaborator';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
+import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 
 interface Milestone {
   id: string;
