@@ -63,6 +63,9 @@ const Auth = () => {
     if (user && !storageMode) {
       setStorageMode('cloud');
     }
+    if (user) {
+      flushPendingNewsletterConsent(user.id);
+    }
   }, [user, storageMode, setStorageMode]);
 
   // Check if user came from storage setup - allow going back
@@ -162,7 +165,20 @@ const Auth = () => {
           }
           return;
         }
-        
+
+        // Newsletter privola — samo ako je kvačica označena. Bez oznake NE upisuje se redak.
+        if (newsletterConsent) {
+          const payload = buildConsentPayload(email, t('gdpr.newsletterConsentLabel'), i18n.language);
+          const { data: sessionData } = await supabase.auth.getSession();
+          const uid = sessionData.session?.user.id;
+          if (uid) {
+            await recordNewsletterConsent(uid, payload);
+          } else {
+            // Nema sesije (potvrda maila) — namjera se upisuje pri prvoj prijavi.
+            stashPendingConsent(payload);
+          }
+        }
+
         if (needsEmailConfirmation) {
           if (!storageMode) setStorageMode('cloud');
           setAwaitingVerification(true);
@@ -599,6 +615,22 @@ const Auth = () => {
                   {t('gdpr.privacyPolicyLink', 'Politiku privatnosti')}
                 </button>
                 {t('gdpr.consentLabel', 'Prihvaćam {link} i suglasan/na sam s obradom osobnih podataka u skladu s GDPR regulativom.').split('{link}')[1]}
+              </label>
+            </div>
+          )}
+
+          {/* Newsletter consent — zasebna, PRAZNA, NEOBAVEZNA kvačica (nikad pred-označena) */}
+          {!isLogin && (
+            <div className="flex items-start gap-2 border-t border-border pt-4">
+              <input
+                type="checkbox"
+                id="newsletterConsent"
+                checked={newsletterConsent}
+                onChange={(e) => setNewsletterConsent(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary"
+              />
+              <label htmlFor="newsletterConsent" className="text-xs text-muted-foreground leading-relaxed">
+                {t('gdpr.newsletterConsentLabel')}
               </label>
             </div>
           )}
