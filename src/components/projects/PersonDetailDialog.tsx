@@ -161,6 +161,15 @@ export const PersonDetailDialog = ({
 
         {!aggregate ? null : (
           <div className="space-y-4">
+            {personId && (
+              <PersonAccountLinkSection
+                personId={personId}
+                linkedUserId={linkedUserId}
+                projectNames={projectNames}
+                onChanged={onPaid}
+              />
+            )}
+
             <div className="grid grid-cols-3 gap-2">
               <div className="rounded-lg border border-border/50 p-2 text-center">
                 <Banknote className="w-4 h-4 mx-auto mb-1 text-muted-foreground" />
