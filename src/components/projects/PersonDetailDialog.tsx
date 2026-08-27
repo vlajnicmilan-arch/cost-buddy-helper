@@ -31,6 +31,8 @@ interface PersonDetailDialogProps {
   name: string;
   aggregate: PersonAggregate | null;
   projectNames: Record<string, string>;
+  /** Centar account currently linked to this PERSON (never to one engagement). */
+  linkedUserId?: string | null;
   onPaid?: () => void;
 }
 
