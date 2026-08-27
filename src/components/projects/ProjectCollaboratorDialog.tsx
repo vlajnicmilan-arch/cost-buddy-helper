@@ -27,7 +27,8 @@ interface ProjectCollaboratorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   collaborator: ProjectCollaborator | null;
-  milestones: Milestone[];
+  /** Milestones are passed directly when the dialog is used inside a single project. */
+  milestones?: Milestone[];
   /**
    * Only passed when the dialog is opened from the cross-project overview.
    * Inside a project this stays undefined and the dialog behaves exactly as before.
@@ -40,7 +41,7 @@ export const ProjectCollaboratorDialog = ({
   open,
   onOpenChange,
   collaborator,
-  milestones,
+  milestones: milestonesProp,
   projectOptions,
   onSave,
 }: ProjectCollaboratorDialogProps) => {
@@ -58,13 +59,19 @@ export const ProjectCollaboratorDialog = ({
   const [note, setNote] = useState('');
   const [projectId, setProjectId] = useState('');
 
+  const { milestones: fetchedMilestones, loading: milestonesLoading } = useProjectMilestones(
+    needsProjectPick ? projectId : null,
+  );
+
+  const effectiveMilestones = needsProjectPick ? fetchedMilestones : (milestonesProp ?? []);
+
   useEffect(() => {
     if (collaborator) {
       setFirstName(collaborator.first_name);
       setLastName(collaborator.last_name);
       setCompanyName(collaborator.company_name || '');
       setServiceDescription(collaborator.service_description);
-      setTotalPrice(String(collaborator.total_price));
+      setTotalPrice(Number(collaborator.total_price) > 0 ? String(collaborator.total_price) : '');
       setMilestoneId(collaborator.milestone_id || 'none');
       setStatus(collaborator.status);
       setContactInfo(collaborator.contact_info || '');
@@ -82,6 +89,10 @@ export const ProjectCollaboratorDialog = ({
     }
     setProjectId(projectOptions?.length === 1 ? projectOptions[0].id : '');
   }, [collaborator, open, projectOptions]);
+
+  useEffect(() => {
+    if (needsProjectPick) setMilestoneId('none');
+  }, [projectId, needsProjectPick]);
 
   const paidDisplay = useMemo(() => {
     const paid = Number(collaborator?.paid_amount) || 0;
@@ -166,8 +177,10 @@ export const ProjectCollaboratorDialog = ({
 
           <div className="space-y-1.5">
             <Label>{t('collaborators.agreedPrice', 'Dogovoreni iznos')}</Label>
-            <MoneyInput value={totalPrice} onChange={e => setTotalPrice(e.target.value)} required />
-            <p className="text-[11px] text-muted-foreground">{t('collaborators.agreedPriceHint', 'Za projekcije i predviđene troškove')}</p>
+            <MoneyInput value={totalPrice} onChange={e => setTotalPrice(e.target.value)} />
+            <p className="text-[11px] text-muted-foreground">
+              {t('collaborators.agreedPriceOptionalHint', 'Ostavi prazno ako iznos još nije dogovoren.')}
+            </p>
           </div>
 
           {collaborator && (
@@ -194,7 +207,17 @@ export const ProjectCollaboratorDialog = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">{t('collaborators.noMilestone', 'Bez faze')}</SelectItem>
-                {milestones.map(m => (
+                {milestonesLoading && (
+                  <SelectItem value="loading" disabled>
+                    {t('collaborators.loadingMilestones', 'Učitavam faze…')}
+                  </SelectItem>
+                )}
+                {!milestonesLoading && projectId && effectiveMilestones.length === 0 && (
+                  <SelectItem value="no-milestones" disabled>
+                    {t('collaborators.noMilestones', 'Ovaj projekt nema faza')}
+                  </SelectItem>
+                )}
+                {!milestonesLoading && effectiveMilestones.map(m => (
                   <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                 ))}
               </SelectContent>
