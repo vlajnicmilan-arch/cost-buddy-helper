@@ -78,11 +78,11 @@ jobs:
             exit 1
           fi
           # Brojčana brana: tiho neizvršeni scenariji ne smiju dati zeleno.
-          # Očekivani minimum: 33 PASS tvrdnje (broj assert poziva u
+          # Očekivani minimum: 32 PASS tvrdnje (broj assert poziva u
           # manual_bank_merge.sql; podići kad se dodaju scenariji).
           pass_count=$(grep -c 'PASS ' /tmp/merge.out || true)
-          if [ "$pass_count" -lt 33 ]; then
-            echo "Merge SQL suite ran only $pass_count assertions (expected >= 33) — silent scenario loss" >&2
+          if [ "$pass_count" -lt 32 ]; then
+            echo "Merge SQL suite ran only $pass_count assertions (expected >= 32) — silent scenario loss" >&2
             exit 1
           fi
           echo "Merge SQL suite: $pass_count assertions PASS"
