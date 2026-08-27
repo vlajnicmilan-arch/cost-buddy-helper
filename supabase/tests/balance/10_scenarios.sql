@@ -2199,4 +2199,62 @@ SELECT pg_temp.assert_eq('CP5 balance after uncapped payment', 250,
   pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
 RELEASE SAVEPOINT s_cp5;
 
+-- CP6 — trošak nastao plaćanjem suradniku ne smije se obrisati izravno
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_cp6;
+SELECT pg_temp.seed_collaborator_fixtures();
+SELECT public.create_collaborator_payment(
+  (SELECT val FROM _bfix WHERE key='collab'), 300,
+  'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+  '2026-06-05 12:00:00+00', 'CP6');
+DO $$
+DECLARE v_ok boolean := false; v_eid uuid;
+BEGIN
+  SELECT expense_id INTO v_eid FROM public.project_collaborator_payments
+   WHERE collaborator_id=(SELECT val FROM _bfix WHERE key='collab') LIMIT 1;
+  BEGIN
+    DELETE FROM public.expenses WHERE id = v_eid;
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM LIKE '%collaborator payment expense%' THEN v_ok := true; ELSE RAISE; END IF;
+  END;
+  IF v_ok THEN
+    RAISE NOTICE 'PASS CP6 direct DELETE refused';
+  ELSE
+    RAISE EXCEPTION 'FAIL CP6 direct DELETE accepted';
+  END IF;
+END $$;
+SELECT pg_temp.assert_eq('CP6 balance untouched', 700,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+SELECT pg_temp.assert_eq('CP6 payment still live', 1,
+  (SELECT COUNT(*) FROM public.project_collaborator_payments
+    WHERE collaborator_id=(SELECT val FROM _bfix WHERE key='collab')
+      AND status='paid' AND voided_at IS NULL)::numeric);
+RELEASE SAVEPOINT s_cp6;
+
+-- CP7 — promjena iznosa tog troška pada, saldo netaknut
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_cp7;
+SELECT pg_temp.seed_collaborator_fixtures();
+SELECT public.create_collaborator_payment(
+  (SELECT val FROM _bfix WHERE key='collab'), 300,
+  'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+  '2026-06-05 12:00:00+00', 'CP7');
+DO $$
+DECLARE v_ok boolean := false; v_eid uuid;
+BEGIN
+  SELECT expense_id INTO v_eid FROM public.project_collaborator_payments
+   WHERE collaborator_id=(SELECT val FROM _bfix WHERE key='collab') LIMIT 1;
+  BEGIN
+    UPDATE public.expenses SET amount = 10 WHERE id = v_eid;
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM LIKE '%collaborator payment expense%' THEN v_ok := true; ELSE RAISE; END IF;
+  END;
+  IF v_ok THEN
+    RAISE NOTICE 'PASS CP7 amount mutation refused';
+  ELSE
+    RAISE EXCEPTION 'FAIL CP7 amount mutation accepted';
+  END IF;
+END $$;
+SELECT pg_temp.assert_eq('CP7 balance untouched', 700,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+RELEASE SAVEPOINT s_cp7;
+
 ROLLBACK;

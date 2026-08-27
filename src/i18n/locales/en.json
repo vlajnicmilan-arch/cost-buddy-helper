@@ -2412,7 +2412,9 @@
     "bug": {
       "loginRequired": "You must be signed in to report an issue"
     },
-    "projectsReadonly": "Projects are read-only. Activate your subscription to make changes."
+    "projectsReadonly": "Projects are read-only. Activate your subscription to make changes.",
+    "payoutExpenseLockedWorker": "This expense came from a worker payout — void the payout on the worker card.",
+    "payoutExpenseLockedCollaborator": "This expense came from a collaborator payment — void the payment on the collaborator card."
   },
   "onboarding": {
     "welcomeTitle": "Welcome!",

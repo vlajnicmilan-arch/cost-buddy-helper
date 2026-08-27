@@ -2412,7 +2412,9 @@
     "bug": {
       "loginRequired": "Sie müssen angemeldet sein, um ein Problem zu melden"
     },
-    "projectsReadonly": "Projekte sind schreibgeschützt. Aktiviere dein Abo, um Änderungen vorzunehmen."
+    "projectsReadonly": "Projekte sind schreibgeschützt. Aktiviere dein Abo, um Änderungen vorzunehmen.",
+    "payoutExpenseLockedWorker": "Diese Ausgabe stammt aus einer Arbeiterauszahlung — storniere die Auszahlung auf der Arbeiterkarte.",
+    "payoutExpenseLockedCollaborator": "Diese Ausgabe stammt aus einer Zahlung an einen Partner — storniere die Zahlung auf der Partnerkarte."
   },
   "onboarding": {
     "welcomeTitle": "Willkommen!",

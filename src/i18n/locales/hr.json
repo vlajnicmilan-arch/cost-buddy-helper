@@ -2417,7 +2417,9 @@
     "bug": {
       "loginRequired": "Morate biti prijavljeni za prijavu problema"
     },
-    "projectsReadonly": "Projekti su u načinu samo za pregled. Aktiviraj pretplatu da bi mijenjao podatke."
+    "projectsReadonly": "Projekti su u načinu samo za pregled. Aktiviraj pretplatu da bi mijenjao podatke.",
+    "payoutExpenseLockedWorker": "Ovaj trošak je nastao isplatom radniku — poništi isplatu na kartici radnika.",
+    "payoutExpenseLockedCollaborator": "Ovaj trošak je nastao plaćanjem suradniku — poništi plaćanje na kartici suradnika."
   },
   "onboarding": {
     "welcomeTitle": "Dobrodošli!",
