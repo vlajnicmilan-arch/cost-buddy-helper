@@ -19,6 +19,7 @@ import { flattenUblExtraction, mergeDeterministic } from './extractionNormalize.
 import { carriesFinancialSubstance, classifyAsStatement } from './statementSignals.ts';
 import { carriesInvoiceSignal } from './invoiceSignals.ts';
 import { invoiceOverridesStatement } from './invoiceOverride.ts';
+import { detectNotInvoiceDeclaration } from './notInvoiceSignals.ts';
 
 
 
@@ -244,6 +245,33 @@ export async function classifyDocument(
   if (statement.isStatement && invoiceOverride && !userSaysInvoice) {
     warnings.push('racun_signal_jaci_od_izvoda');
   }
+
+  // ---- 2c. IZJAVA POŠILJATELJA „ovo nije račun" ---------------------------
+  // Meta i slični šalju potvrde naplate koje u prvoj rečenici doslovno kažu
+  // „Ovo nije faktura." — bez broja dokumenta i poreza. To NIJE stvar za
+  // čovjeka: pošiljatelj sam negira dokument, pa stavka ide u `nije_za_nas`
+  // s vidljivim razlogom. IZA UBL-a (e-račun uvijek pobjeđuje) i IZA tvrdog
+  // izvod-veta (pravi izvod se ne smije odbaciti), PRIJE heuristike i AI-ja.
+  // Korisnikova odluka „ovo je račun" je jača — pravilo je ne dira.
+  if (!userSaysInvoice) {
+    const notInvoice = detectNotInvoiceDeclaration(statementText);
+    if (notInvoice.matched) {
+      return {
+        classification: 'nije_za_nas',
+        docType: 'potvrda_placanja',
+        // Fraza se čuva u extractionu da „Odbačeno" može citirati razlog.
+        extraction: { not_invoice_declaration: notInvoice.phrase },
+        confidence: 'visoka',
+        route: 'heuristika',
+        aiCalls: 0,
+        consumesQuota: false,
+        priority: false,
+        warnings: [...warnings, 'nije_racun_izjava'],
+        verification: null,
+      };
+    }
+  }
+
 
   // KLASIFIKATORSKA LEKCIJA: slaba sumnja na izvod NE smije nadjačati doslovan
   // račun-signal („Račun br.", „Dospijeće računa", naslov „Račun …") kad
