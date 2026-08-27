@@ -4565,6 +4565,72 @@ export type Database = {
           },
         ]
       }
+      project_collaborator_payments: {
+        Row: {
+          amount: number
+          collaborator_id: string
+          created_at: string
+          deleted_at: string | null
+          expense_id: string | null
+          id: string
+          note: string | null
+          paid_at: string
+          payment_source: string
+          project_id: string
+          status: string
+          user_id: string
+          void_reason: string | null
+          voided_at: string | null
+        }
+        Insert: {
+          amount: number
+          collaborator_id: string
+          created_at?: string
+          deleted_at?: string | null
+          expense_id?: string | null
+          id?: string
+          note?: string | null
+          paid_at: string
+          payment_source: string
+          project_id: string
+          status?: string
+          user_id: string
+          void_reason?: string | null
+          voided_at?: string | null
+        }
+        Update: {
+          amount?: number
+          collaborator_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          expense_id?: string | null
+          id?: string
+          note?: string | null
+          paid_at?: string
+          payment_source?: string
+          project_id?: string
+          status?: string
+          user_id?: string
+          void_reason?: string | null
+          voided_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_collaborator_payments_collaborator_id_fkey"
+            columns: ["collaborator_id"]
+            isOneToOne: false
+            referencedRelation: "project_collaborators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_collaborator_payments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_collaborators: {
         Row: {
           company_name: string | null
@@ -4573,6 +4639,7 @@ export type Database = {
           first_name: string
           id: string
           last_name: string
+          legacy_paid_amount: number
           milestone_id: string | null
           note: string | null
           paid_amount: number
@@ -4589,6 +4656,7 @@ export type Database = {
           first_name: string
           id?: string
           last_name: string
+          legacy_paid_amount?: number
           milestone_id?: string | null
           note?: string | null
           paid_amount?: number
@@ -4605,6 +4673,7 @@ export type Database = {
           first_name?: string
           id?: string
           last_name?: string
+          legacy_paid_amount?: number
           milestone_id?: string | null
           note?: string | null
           paid_amount?: number
@@ -6998,6 +7067,10 @@ export type Database = {
         Args: { p_payment_source: string }
         Returns: string
       }
+      _recalc_collaborator_paid: {
+        Args: { p_collaborator_id: string }
+        Returns: number
+      }
       _require_admin: { Args: never; Returns: undefined }
       activate_module_trial: { Args: { _module: string }; Returns: Json }
       admin_get_activation_by_cohort: {
@@ -7202,6 +7275,16 @@ export type Database = {
             }[]
           }
         | { Args: { _token: string; _user_id: string }; Returns: Json }
+      create_collaborator_payment: {
+        Args: {
+          p_amount: number
+          p_collaborator_id: string
+          p_note?: string
+          p_paid_at: string
+          p_payment_source: string
+        }
+        Returns: Json
+      }
       create_person_payout: {
         Args: {
           p_items: Json
@@ -8026,6 +8109,10 @@ export type Database = {
           p_type: string
         }
         Returns: string
+      }
+      void_collaborator_payment: {
+        Args: { p_payment_id: string; p_reason?: string }
+        Returns: Json
       }
       void_worker_payout: {
         Args: { p_payout_id: string; p_reason?: string }
