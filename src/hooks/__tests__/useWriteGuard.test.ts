@@ -10,7 +10,9 @@ import { renderHook, act } from '@testing-library/react';
 const toastError = vi.fn();
 vi.mock('@/hooks/useStatusFeedback', () => ({ showError: (...a: unknown[]) => toastError(...a) }));
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));
+import { createReactI18nextMock } from '@/test/mocks/reactI18next';
 vi.mock('react-i18next', () => ({
+  ...createReactI18nextMock(),
   useTranslation: () => ({ t: (_k: string, d?: string | Record<string, unknown>) => (typeof d === 'string' ? d : _k) }),
 }));
 

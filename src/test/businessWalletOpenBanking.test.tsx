@@ -2,7 +2,9 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { BusinessWallet } from '@/components/business/BusinessWallet';
 
+import { createReactI18nextMock } from '@/test/mocks/reactI18next';
 vi.mock('react-i18next', () => ({
+  ...createReactI18nextMock(),
   useTranslation: () => ({ t: (_k: string, d?: string) => d ?? _k }),
 }));
 

@@ -19,7 +19,9 @@ vi.mock('@/hooks/useStatusFeedback', () => ({
 vi.mock('@/lib/funnelTracking', () => ({ logFunnelEvent: () => Promise.resolve() }));
 vi.mock('@/lib/featureFlags', () => ({ MANUAL_MERGE_ENABLED: true }));
 vi.mock('@/lib/version', () => ({ APP_VERSION: '9.9.9-test' }));
+import { createReactI18nextMock } from '@/test/mocks/reactI18next';
 vi.mock('react-i18next', () => ({
+  ...createReactI18nextMock(),
   useTranslation: () => ({ t: (key: string, arg?: any) => (typeof arg === 'string' ? arg : key) }),
 }));
 vi.mock('@tanstack/react-query', () => ({
