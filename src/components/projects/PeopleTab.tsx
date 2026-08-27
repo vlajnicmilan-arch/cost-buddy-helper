@@ -264,6 +264,30 @@ export const PeopleTab = () => {
         projectNames={projectNames}
         onPaid={refetch}
       />
+
+      <AddPersonDialog
+        open={addOpen}
+        onOpenChange={(o) => !o && setAddOpen(false)}
+        projects={projectOptions}
+        saving={saving}
+        onSubmit={handleSubmit}
+      />
+
+      <ExistingPersonPromptDialog
+        open={!!pendingSubmit}
+        name={pendingSubmit?.name ?? ''}
+        onUseExisting={() => {
+          const p = pendingSubmit;
+          setPendingSubmit(null);
+          if (p) void persistPerson(p.data, p.matchId);
+        }}
+        onDifferentPerson={() => {
+          const p = pendingSubmit;
+          setPendingSubmit(null);
+          if (p) void persistPerson(p.data, null);
+        }}
+      />
     </div>
+
   );
 };
