@@ -6718,6 +6718,10 @@
           "title": "Kein zu verarbeitendes Dokument",
           "reason": "Keine Rechnung und kein Auszug in dieser Nachricht."
         },
+        "potvrda_placanja": {
+          "title": "Zahlungsbestätigung — keine Rechnung",
+          "reason": "Der Absender gibt selbst an, dass dies keine Rechnung ist."
+        },
         "nepoznato": {
           "title": "Nicht erkannte Nachricht",
           "reason": "Der Dokumenttyp konnte nicht bestimmt werden."
