@@ -51,6 +51,17 @@ export const describeDiscardedItem = (params: {
   subject?: string | null;
 }): DiscardedDescription => {
   const cls = params.classification ?? '';
+  // Potvrda plaćanja s izjavom „ovo nije račun" ima SVOJ razlog — generičko
+  // „u poruci nema računa" bi lagalo: pošiljatelj je izričito rekao što je.
+  if (cls === 'nije_za_nas' && params.extraction?.not_invoice_declaration) {
+    return {
+      kind: 'special',
+      titleKey: 'documents.discarded.kind.potvrda_placanja.title',
+      titleFallback: 'Potvrda plaćanja — nije račun',
+      reasonKey: 'documents.discarded.kind.potvrda_placanja.reason',
+      reasonFallback: 'Pošiljatelj sam navodi da ovo nije račun.',
+    };
+  }
   const special = SPECIAL[cls];
   if (special) {
     return {
