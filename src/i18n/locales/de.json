@@ -6954,6 +6954,26 @@
     "excludedFromTotals": "Storniert — nicht in der Summe",
     "add": "+ Mitarbeiter"
   },
+  "collaborators": {
+    "add": "Externen Mitarbeiter hinzufügen",
+    "edit": "Mitarbeiter bearbeiten",
+    "project": "Projekt",
+    "projectPlaceholder": "Projekt wählen",
+    "company": "Firma / Betrieb",
+    "serviceDescription": "Leistungsbeschreibung",
+    "agreedPrice": "Vereinbarter Betrag",
+    "agreedPriceOptionalHint": "Leer lassen, wenn der Betrag noch nicht vereinbart ist.",
+    "paidAmount": "Bezahlter Betrag",
+    "milestone": "Phase zuordnen",
+    "noMilestone": "Keine Phase",
+    "contact": "Kontakt",
+    "contactPlaceholder": "E-Mail, Telefon...",
+    "statusActive": "Aktiv",
+    "statusCompleted": "Abgeschlossen",
+    "statusCancelled": "Storniert",
+    "loadingMilestones": "Phasen werden geladen…",
+    "noMilestones": "Dieses Projekt hat keine Phasen"
+  },
   "collaboratorPayment": {
     "add": "+ Mitarbeiter",
     "project": "Projekt",
