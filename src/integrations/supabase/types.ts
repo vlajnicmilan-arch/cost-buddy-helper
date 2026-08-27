@@ -7067,6 +7067,16 @@ export type Database = {
         Args: { p_payment_source: string }
         Returns: string
       }
+      _log_person_link_conflict: {
+        Args: {
+          p_existing_engagement_id: string
+          p_person_id: string
+          p_project_id: string
+          p_user_id: string
+          p_worker_id: string
+        }
+        Returns: undefined
+      }
       _recalc_collaborator_paid: {
         Args: { p_collaborator_id: string }
         Returns: number
@@ -7746,6 +7756,10 @@ export type Database = {
       }
       krug_withdraw: {
         Args: { p_client_request_id: string; p_expense_id: string }
+        Returns: Json
+      }
+      link_person_to_user: {
+        Args: { p_person_id: string; p_user_id: string }
         Returns: Json
       }
       link_worker_to_member: {
