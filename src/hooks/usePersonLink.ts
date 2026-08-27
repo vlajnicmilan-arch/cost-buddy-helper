@@ -21,7 +21,7 @@ const parse = (data: unknown): { linked: boolean; engagements: number; skipped: 
   const d = (data ?? {}) as Record<string, unknown>;
   return {
     linked: d.linked === true,
-    engagements: Number(d.engagements_linked ?? 0) || 0,
+    engagements: Number(d.engagements_changed ?? 0) || 0,
     skipped: Array.isArray(d.skipped_projects) ? (d.skipped_projects as string[]) : [],
   };
 };
