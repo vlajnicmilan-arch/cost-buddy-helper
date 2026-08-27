@@ -85,6 +85,6 @@ describe("recordPaidConversion", () => {
     const { client } = makeClient({ error: { code: "42501", message: "rls denied" } });
     const res = await recordPaidConversion(client, base);
     expect(res.ok).toBe(false);
-    if (!res.ok) expect(res.error).toBe("rls denied");
+    expect(res).toEqual({ ok: false, error: "rls denied" });
   });
 });
