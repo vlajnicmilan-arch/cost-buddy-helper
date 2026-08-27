@@ -6936,7 +6936,29 @@
     "payoutHistoryShowLess": "Show less",
     "payoutCount": "{{count}} payouts",
     "payoutShowVoided": "+ {{count}} voided",
-    "payoutHideVoided": "Hide voided"
+    "payoutHideVoided": "Hide voided",
+    "add": {
+      "open": "+ Person",
+      "title": "New person",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "projects": "Projects",
+      "noProjects": "No projects available",
+      "hourlyRate": "Hourly rate",
+      "hourlyRatePlaceholder": "e.g. 7.00",
+      "position": "Position",
+      "positionNote": "Position describes the job on site. Roles and access rights are assigned under Members.",
+      "rateEmptyHint": "Hourly rate not entered — earnings cannot be calculated until it is.",
+      "saved": "Person added",
+      "failedPerson": "Person not saved: {{reason}}",
+      "failedEngagement": "Project {{project}}: {{reason}}",
+      "positions": {
+        "worker": "Worker",
+        "lead": "Foreman",
+        "craftsman": "Craftsman",
+        "helper": "Helper"
+      }
+    }
   },
   "collaboratorsOverview": {
     "title": "Collaborators",

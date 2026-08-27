@@ -6951,7 +6951,29 @@
     "payoutHistoryShowLess": "Prikaži manje",
     "payoutCount": "{{count}} isplata",
     "payoutShowVoided": "+ {{count}} storniranih",
-    "payoutHideVoided": "Sakrij stornirane"
+    "payoutHideVoided": "Sakrij stornirane",
+    "add": {
+      "open": "+ Osoba",
+      "title": "Nova osoba",
+      "firstName": "Ime",
+      "lastName": "Prezime",
+      "projects": "Projekti",
+      "noProjects": "Nema dostupnih projekata",
+      "hourlyRate": "Satnica",
+      "hourlyRatePlaceholder": "npr. 7,00",
+      "position": "Pozicija",
+      "positionNote": "Pozicija opisuje posao na gradilištu. Uloge i prava pristupa dodjeljuju se u Članovima.",
+      "rateEmptyHint": "Satnica nije upisana — zarada se ne može obračunati dok se ne upiše.",
+      "saved": "Osoba dodana",
+      "failedPerson": "Osoba nije spremljena: {{reason}}",
+      "failedEngagement": "Projekt {{project}}: {{reason}}",
+      "positions": {
+        "worker": "Radnik",
+        "lead": "Voditelj",
+        "craftsman": "Majstor",
+        "helper": "Pomoćnik"
+      }
+    }
   },
   "collaboratorsOverview": {
     "title": "Suradnici",
