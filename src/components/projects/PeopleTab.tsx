@@ -3,25 +3,45 @@ import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, User, ChevronRight, Users } from 'lucide-react';
+import { Loader2, User, ChevronRight, Users, Plus } from 'lucide-react';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { useAppState } from '@/contexts/AppStateContext';
 import { useWorkerIdentities } from '@/hooks/useWorkerIdentities';
+import { useWorkerIdentityAttach } from '@/hooks/useWorkerIdentityAttach';
 import { PersonDetailDialog } from './PersonDetailDialog';
+import { AddPersonDialog, type AddPersonSubmit } from './AddPersonDialog';
+import { ExistingPersonPromptDialog } from './ExistingPersonPromptDialog';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { buildAddPersonPlan, engagementInsertPayload } from '@/lib/addPersonPlan';
 import type { IdentityGroupSuggestion } from '@/lib/workerIdentity';
 
 /**
  * "Ljudi" — every hourly worker exactly once, across all projects.
- * Read-only: sums what already exists, introduces no new writes on money.
+ * Adding a person here creates one identity plus one engagement per project.
  * Collaborators are intentionally not part of this view.
  */
 export const PeopleTab = () => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
+  const { user } = useAuth();
+  const { activeBusinessProfileId } = useAppState();
   const { rows, aggregates, people, projectNames, pendingGroups, loading, resolveGroup, refetch } =
     useWorkerIdentities();
+  const { findMatch, refetch: refetchIdentities } = useWorkerIdentityAttach();
   const [selected, setSelected] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [pendingSubmit, setPendingSubmit] = useState<{
+    data: AddPersonSubmit;
+    matchId: string;
+    name: string;
+  } | null>(null);
+
+  const projectOptions = Object.entries(projectNames).map(([id, name]) => ({ id, name }));
 
   const handleResolve = async (group: IdentityGroupSuggestion, same: boolean) => {
     setBusyKey(group.key);
@@ -30,6 +50,111 @@ export const PeopleTab = () => {
     if (ok) showSuccess(t('people.identityConfirmed', 'Spremljeno'));
     else showError(t('common.error'));
   };
+
+  /** Writes at most one `workers` row plus one `project_workers` row per project. */
+  const persistPerson = async (data: AddPersonSubmit, existingWorkerId: string | null) => {
+    if (!user) return;
+    const plan = buildAddPersonPlan(
+      { firstName: data.firstName, lastName: data.lastName, selections: data.selections },
+      { existingWorkerId },
+    );
+    if (!plan.valid) return;
+
+    setSaving(true);
+    try {
+      let workerId = existingWorkerId;
+      if (!workerId) {
+        const { data: created, error } = await supabase
+          .from('workers')
+          .insert({
+            user_id: user.id,
+            business_profile_id: activeBusinessProfileId ?? null,
+            first_name: plan.firstName,
+            last_name: plan.lastName,
+          })
+          .select('id')
+          .single();
+        if (error) {
+          logDiagnostic({
+            event: 'person_bulk_create_failed',
+            severity: 'error',
+            details: {
+              worker_id: null,
+              project_id: null,
+              index: 0,
+              total: plan.engagements.length,
+              db_code: error.code ?? null,
+              db_message: error.message,
+            },
+          });
+          showError(t('people.add.failedPerson', 'Osoba nije spremljena: {{reason}}', { reason: error.message }));
+          return;
+        }
+        workerId = (created as any).id as string;
+      }
+
+      let createdCount = 0;
+      const failures: string[] = [];
+      for (let i = 0; i < plan.engagements.length; i++) {
+        const eng = plan.engagements[i];
+        const { error } = await (supabase.from('project_workers') as any).insert(
+          engagementInsertPayload(plan, eng, workerId),
+        );
+        if (error) {
+          failures.push(projectNames[eng.projectId] ?? eng.projectId);
+          logDiagnostic({
+            event: 'person_bulk_create_failed',
+            severity: 'error',
+            details: {
+              worker_id: workerId,
+              project_id: eng.projectId,
+              index: i,
+              total: plan.engagements.length,
+              db_code: error.code ?? null,
+              db_message: error.message,
+            },
+          });
+          showError(
+            t('people.add.failedEngagement', 'Projekt {{project}}: {{reason}}', {
+              project: projectNames[eng.projectId] ?? eng.projectId,
+              reason: error.message,
+            }),
+          );
+          continue;
+        }
+        createdCount++;
+      }
+
+      if (createdCount > 0) {
+        logDiagnostic({
+          event: 'person_bulk_create_ok',
+          severity: 'info',
+          details: { worker_id: workerId, engagements: createdCount, total: plan.engagements.length },
+        });
+      }
+      if (failures.length === 0) {
+        showSuccess(t('people.add.saved', 'Osoba dodana'));
+        setAddOpen(false);
+      }
+      await Promise.all([refetch(), refetchIdentities()]);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSubmit = async (data: AddPersonSubmit) => {
+    const match = findMatch(data.firstName.trim(), data.lastName.trim(), activeBusinessProfileId ?? null);
+    if (match) {
+      setPendingSubmit({
+        data,
+        matchId: match.id,
+        name: `${match.first_name} ${match.last_name}`.trim(),
+      });
+      return;
+    }
+    await persistPerson(data, null);
+  };
+
 
   if (loading) {
     return (
@@ -43,7 +168,13 @@ export const PeopleTab = () => {
 
   return (
     <div className="space-y-3">
+      <Button className="w-full min-h-[44px]" variant="outline" onClick={() => setAddOpen(true)}>
+        <Plus className="w-4 h-4 mr-1.5" />
+        {t('people.add.open', '+ Osoba')}
+      </Button>
+
       {pendingGroups.length > 0 && (
+
         <Card className="p-3 space-y-3 border-primary/40">
           <p className="text-sm font-medium">{t('people.migrationTitle', 'Poveži angažmane s osobama')}</p>
           {pendingGroups.map((g) => (
@@ -133,6 +264,30 @@ export const PeopleTab = () => {
         projectNames={projectNames}
         onPaid={refetch}
       />
+
+      <AddPersonDialog
+        open={addOpen}
+        onOpenChange={(o) => !o && setAddOpen(false)}
+        projects={projectOptions}
+        saving={saving}
+        onSubmit={handleSubmit}
+      />
+
+      <ExistingPersonPromptDialog
+        open={!!pendingSubmit}
+        name={pendingSubmit?.name ?? ''}
+        onUseExisting={() => {
+          const p = pendingSubmit;
+          setPendingSubmit(null);
+          if (p) void persistPerson(p.data, p.matchId);
+        }}
+        onDifferentPerson={() => {
+          const p = pendingSubmit;
+          setPendingSubmit(null);
+          if (p) void persistPerson(p.data, null);
+        }}
+      />
     </div>
+
   );
 };

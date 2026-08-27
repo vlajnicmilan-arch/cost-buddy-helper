@@ -124,6 +124,8 @@ export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, s
     "settings.categories.profile.title": "Profil is the same word in DE",
     "collaborators.project": "Projekt is the same word in DE",
     "collaboratorPayment.project": "Projekt is the same word in DE",
+    "people.add.failedEngagement": "Projekt is the same word in DE",
+
     "mailReview.field.iban": "IBAN je međunarodna kratica — identična na svim jezicima",
 
     "mailImport.status": "Same word in DE",

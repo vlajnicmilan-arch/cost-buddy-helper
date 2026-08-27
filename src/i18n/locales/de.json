@@ -6936,7 +6936,29 @@
     "payoutHistoryShowLess": "Weniger anzeigen",
     "payoutCount": "{{count}} Auszahlungen",
     "payoutShowVoided": "+ {{count}} storniert",
-    "payoutHideVoided": "Stornierte ausblenden"
+    "payoutHideVoided": "Stornierte ausblenden",
+    "add": {
+      "open": "+ Person",
+      "title": "Neue Person",
+      "firstName": "Vorname",
+      "lastName": "Nachname",
+      "projects": "Projekte",
+      "noProjects": "Keine Projekte verfügbar",
+      "hourlyRate": "Stundensatz",
+      "hourlyRatePlaceholder": "z. B. 7,00",
+      "position": "Position",
+      "positionNote": "Die Position beschreibt die Arbeit auf der Baustelle. Rollen und Zugriffsrechte werden unter Mitglieder vergeben.",
+      "rateEmptyHint": "Stundensatz nicht eingetragen — der Verdienst kann erst danach berechnet werden.",
+      "saved": "Person hinzugefügt",
+      "failedPerson": "Person nicht gespeichert: {{reason}}",
+      "failedEngagement": "Projekt {{project}}: {{reason}}",
+      "positions": {
+        "worker": "Arbeiter",
+        "lead": "Vorarbeiter",
+        "craftsman": "Handwerker",
+        "helper": "Helfer"
+      }
+    }
   },
   "collaboratorsOverview": {
     "title": "Partner",
