@@ -30,6 +30,7 @@ export const useProjectCollaborators = (projectId: string | null) => {
         ...c,
         total_price: Number(c.total_price),
         paid_amount: Number(c.paid_amount || 0),
+        legacy_paid_amount: Number(c.legacy_paid_amount || 0),
       })));
     } catch (error) {
       console.error('Error fetching collaborators:', error);
@@ -54,6 +55,7 @@ export const useProjectCollaborators = (projectId: string | null) => {
           company_name: input.company_name || null,
           service_description: input.service_description,
           total_price: input.total_price,
+          legacy_paid_amount: input.paid_amount || 0,
           paid_amount: input.paid_amount || 0,
           milestone_id: input.milestone_id || null,
           status: input.status || 'active',
@@ -86,7 +88,6 @@ export const useProjectCollaborators = (projectId: string | null) => {
           company_name: collaborator.company_name || null,
           service_description: collaborator.service_description,
           total_price: collaborator.total_price,
-          paid_amount: collaborator.paid_amount || 0,
           milestone_id: collaborator.milestone_id || null,
           status: collaborator.status,
           contact_info: collaborator.contact_info || null,
