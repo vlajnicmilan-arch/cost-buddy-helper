@@ -7,6 +7,7 @@ import { HomeHeader } from '@/components/home/HomeHeader';
 import { WalletViewModeChips } from '@/components/wallet/WalletViewModeChips';
 import { PaymentSourcesSection } from '@/components/home/PaymentSourcesSection';
 import { SummarySection } from '@/components/home/SummarySection';
+import { AddSurnameNudge } from '@/components/common/AddSurnameNudge';
 import { TransactionListSection } from '@/components/home/TransactionListSection';
 import { SharedDialogs } from '@/components/home/SharedDialogs';
 import { FinancialAssistantDialog } from '@/components/FinancialAssistantDialog';
@@ -364,6 +365,9 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
 
         {/* Trial Banner */}
         <TrialBanner />
+
+        {/* Silent, dismissible reminder to add a surname */}
+        {!props.isLocalMode && <AddSurnameNudge displayName={props.displayName} />}
 
         {/* Local Mode Banner */}
         {props.isLocalMode && (

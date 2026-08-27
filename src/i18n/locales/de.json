@@ -121,7 +121,7 @@
     "signOut": "Abmelden",
     "unknown": "Unbekannt",
     "clearSearch": "Suche löschen",
-    "dismiss": "Ausblenden",
+    "dismiss": "Verwerfen",
     "actions": "Aktionen",
     "ok": "OK",
     "scrollLeft": "Nach links scrollen",
@@ -1450,7 +1450,11 @@
     "notifInvoiceDueDesc": "3 Tage vor Fälligkeit und am Fälligkeitstag.",
     "category": {
       "myRejections": "Was ich verworfen habe"
-    }
+    },
+    "fullName": "Vor- und Nachname",
+    "fullNameDesc": "So erkennt dich der Projektinhaber, wenn er dich mit einem Mitarbeiter verknüpft.",
+    "addSurnameNudge": "Nachname ergänzen, damit dich Mitarbeitende erkennen",
+    "addSurnameNudgeCta": "Namen ergänzen"
   },
   "bankMatch": {
     "pendingBank": "Warte auf Bankbestätigung",
@@ -1828,7 +1832,9 @@
       "newPasswordLabel": "Neues Passwort",
       "confirmPasswordLabel": "Passwort bestätigen",
       "changePasswordButton": "Passwort ändern"
-    }
+    },
+    "nameFullOptional": "Vor- und Nachname (optional)",
+    "nameRecognitionHint": "So erkennt dich der Projektinhaber, wenn er dich mit einem Mitarbeiter verknüpft."
   },
   "categories": {
     "food": "Essen",
@@ -6983,7 +6989,11 @@
       "inviteSent": "Einladung gesendet",
       "inviteFailed": "Einladung wurde nicht erstellt",
       "boundary": "Die Verknüpfung gewährt keinen App-Zugriff. Zugriff kommt von den Projektmitgliedern. Ein Arbeiter sieht nur seine eigenen Stunden, Position und Verdienste.",
-      "notMember": "Dieses Konto ist in keinem Projekt dieser Person Mitglied. Fügen Sie es zuerst zu den Projektmitgliedern hinzu."
+      "notMember": "Dieses Konto ist in keinem Projekt dieser Person Mitglied. Fügen Sie es zuerst zu den Projektmitgliedern hinzu.",
+      "noName": "Ohne Namen",
+      "noNameInvited": "Ohne Namen · eingeladen {{date}}",
+      "alreadyLinkedTo": "bereits verknüpft: {{person}} — zuerst trennen",
+      "otherPerson": "eine andere Person"
     }
   },
   "collaboratorsOverview": {

@@ -35,10 +35,10 @@ export const ProfileSection = ({
           </div>
           <div className="flex-1">
             <Label className="text-sm font-medium">
-              {t('settings.displayName', 'Vaše ime')}
+              {t('settings.fullName', 'Ime i prezime')}
             </Label>
             <p className="text-xs text-muted-foreground">
-              {t('settings.displayNameDesc', 'Ime koje se koristi za personalizirane poruke')}
+              {t('settings.fullNameDesc', 'Tako te vlasnik projekta prepozna kad te povezuje s radnikom.')}
             </p>
           </div>
           {!editingName && (

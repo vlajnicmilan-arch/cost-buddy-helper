@@ -17,6 +17,14 @@ import { usePersonLink } from '@/hooks/usePersonLink';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
 import { pickInviteCarrier, skippedProjectNames, type EngagementLink } from '@/lib/personLinkPlan';
+import {
+  buildMemberChoices,
+  memberChoiceContext,
+  memberChoiceLabel,
+  ownInvitationEmails,
+  type InvitationRow,
+  type MemberChoice,
+} from '@/lib/memberChoice';
 
 interface Props {
   personId: string;
@@ -25,18 +33,13 @@ interface Props {
   onChanged?: () => void;
 }
 
-interface MemberOption {
-  userId: string;
-  name: string;
-}
-
 export const PersonAccountLinkSection = ({ personId, linkedUserId, projectNames, onChanged }: Props) => {
   const { t } = useTranslation();
   const { linkPerson, unlinkPerson, pending } = usePersonLink();
 
   const [engagements, setEngagements] = useState<EngagementLink[]>([]);
   const [linkedName, setLinkedName] = useState<string | null>(null);
-  const [members, setMembers] = useState<MemberOption[]>([]);
+  const [members, setMembers] = useState<MemberChoice[]>([]);
   const [selectedMember, setSelectedMember] = useState('');
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -89,21 +92,64 @@ export const PersonAccountLinkSection = ({ personId, linkedUserId, projectNames,
         setMembers([]);
         return;
       }
-      const results = await Promise.all(
-        projectIds.map((id) => (supabase.rpc as any)('get_project_member_profiles', { _project_id: id })),
-      );
-      const map = new Map<string, string>();
-      for (const r of results) {
-        for (const row of ((r as any)?.data ?? []) as any[]) {
-          if (row?.user_id) map.set(row.user_id, row.display_name || row.user_id);
+      const [{ data: auth }, memberResults, invitesRes, workersRes] = await Promise.all([
+        supabase.auth.getUser(),
+        Promise.all(
+          projectIds.map(async (id) => ({
+            id,
+            rows: ((await (supabase.rpc as any)('get_project_member_profiles', { _project_id: id })) as any)
+              ?.data as any[] | null,
+          })),
+        ),
+        supabase
+          .from('project_invitations')
+          .select('invited_user_id, invited_by, email, created_at')
+          .in('project_id', projectIds),
+        supabase.from('workers').select('id, first_name, last_name, linked_user_id').not('linked_user_id', 'is', null),
+      ]);
+
+      const ownerId = auth?.user?.id ?? '';
+      const byUser = new Map<string, { name: string | null; projectIds: string[] }>();
+      for (const res of memberResults) {
+        for (const row of (res.rows ?? []) as any[]) {
+          if (!row?.user_id) continue;
+          const entry = byUser.get(row.user_id) ?? { name: null, projectIds: [] };
+          entry.name = entry.name || (row.display_name ?? null);
+          entry.projectIds.push(res.id);
+          byUser.set(row.user_id, entry);
         }
       }
-      if (!cancelled) setMembers(Array.from(map, ([userId, name]) => ({ userId, name })));
+
+      const emails = ownInvitationEmails((invitesRes.data ?? []) as InvitationRow[], ownerId);
+      const linkedPersons = new Map<string, { id: string; name: string }>();
+      for (const w of ((workersRes.data ?? []) as any[])) {
+        if (w?.linked_user_id) {
+          linkedPersons.set(w.linked_user_id, {
+            id: w.id,
+            name: `${w.first_name ?? ''} ${w.last_name ?? ''}`.trim(),
+          });
+        }
+      }
+
+      const choices = buildMemberChoices(
+        Array.from(byUser, ([userId, v]) => ({
+          userId,
+          displayName: v.name,
+          projectIds: v.projectIds,
+          invitedEmail: emails.get(userId)?.email ?? null,
+          invitedAt: emails.get(userId)?.invitedAt ?? null,
+          linkedPersonId: linkedPersons.get(userId)?.id ?? null,
+          linkedPersonName: linkedPersons.get(userId)?.name ?? null,
+        })),
+        projectNames,
+        personId,
+      );
+      if (!cancelled) setMembers(choices);
     })();
     return () => {
       cancelled = true;
     };
-  }, [projectIds, linkedUserId]);
+  }, [projectIds, linkedUserId, projectNames, personId]);
 
   const carrier = useMemo(() => pickInviteCarrier(engagements), [engagements]);
   const { generateInviteLink, sendInviteEmail } = useProjectMembers(carrier?.projectId ?? null);
@@ -238,11 +284,31 @@ export const PersonAccountLinkSection = ({ personId, linkedUserId, projectNames,
                     <SelectValue placeholder={t('people.link.choose', 'Odaberi člana')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {members.map((m) => (
-                      <SelectItem key={m.userId} value={m.userId}>
-                        {m.name}
-                      </SelectItem>
-                    ))}
+                    {members.map((m) => {
+                      const context = memberChoiceContext(m);
+                      return (
+                        <SelectItem key={m.userId} value={m.userId} disabled={m.disabled}>
+                          <span className="flex flex-col text-left">
+                            <span>
+                              {memberChoiceLabel(m, {
+                                noName: t('people.link.noName', 'Bez imena'),
+                                noNameInvited: (date) =>
+                                  t('people.link.noNameInvited', 'Bez imena · pozvan {{date}}', { date }),
+                                formatDate: (iso) => new Date(iso).toLocaleDateString(),
+                              })}
+                            </span>
+                            {context && <span className="text-[11px] text-muted-foreground">{context}</span>}
+                            {m.disabled && (
+                              <span className="text-[11px] text-destructive">
+                                {t('people.link.alreadyLinkedTo', 'već povezan: {{person}} — prvo odveži', {
+                                  person: m.blockedByPersonName || t('people.link.otherPerson', 'druga osoba'),
+                                })}
+                              </span>
+                            )}
+                          </span>
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
                 <Button className="min-h-[44px]" disabled={!selectedMember || pending} onClick={handleLink}>

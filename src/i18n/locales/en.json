@@ -1450,7 +1450,11 @@
     "notifInvoiceDueDesc": "3 days before the due date and on the due date.",
     "category": {
       "myRejections": "What I dismissed"
-    }
+    },
+    "fullName": "Full name",
+    "fullNameDesc": "This is how the project owner recognises you when linking you to a worker.",
+    "addSurnameNudge": "Add your surname so collaborators recognise you",
+    "addSurnameNudgeCta": "Complete your name"
   },
   "bankMatch": {
     "pendingBank": "Awaiting bank confirmation",
@@ -1828,7 +1832,9 @@
       "newPasswordLabel": "New password",
       "confirmPasswordLabel": "Confirm password",
       "changePasswordButton": "Change password"
-    }
+    },
+    "nameFullOptional": "Full name (optional)",
+    "nameRecognitionHint": "This is how the project owner recognises you when linking you to a worker."
   },
   "categories": {
     "food": "Food",
@@ -6983,7 +6989,11 @@
       "inviteSent": "Invitation sent",
       "inviteFailed": "Invitation was not created",
       "boundary": "The link grants no app access. Access comes from project members. A worker only sees their own hours, position and earnings.",
-      "notMember": "That account is not a member of any project this person works on. Add them to project Members first."
+      "notMember": "That account is not a member of any project this person works on. Add them to project Members first.",
+      "noName": "No name",
+      "noNameInvited": "No name · invited {{date}}",
+      "alreadyLinkedTo": "already linked: {{person}} — unlink first",
+      "otherPerson": "another person"
     }
   },
   "collaboratorsOverview": {
