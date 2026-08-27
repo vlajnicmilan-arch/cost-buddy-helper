@@ -124,10 +124,16 @@ export const PersonAccountLinkSection = ({ personId, linkedUserId, projectNames,
     if (!selectedMember) return;
     const res = await linkPerson(personId, selectedMember);
     if (!res.ok) {
+      const notMember = (res.dbMessage ?? '').includes('person_link_user_not_member');
       showError(
-        t('people.link.failed', 'Povezivanje nije uspjelo: {{reason}}', {
-          reason: res.dbMessage ?? t('common.error'),
-        }),
+        notMember
+          ? t(
+              'people.link.notMember',
+              'Taj račun nije član nijednog projekta te osobe. Prvo ga dodaj u Članove projekta.',
+            )
+          : t('people.link.failed', 'Povezivanje nije uspjelo: {{reason}}', {
+              reason: res.dbMessage ?? t('common.error'),
+            }),
       );
       return;
     }

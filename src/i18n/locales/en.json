@@ -6978,7 +6978,8 @@
       "emailPlaceholder": "Worker e-mail",
       "inviteSent": "Invitation sent",
       "inviteFailed": "Invitation was not created",
-      "boundary": "The link grants no app access. Access comes from project members. A worker only sees their own hours, position and earnings."
+      "boundary": "The link grants no app access. Access comes from project members. A worker only sees their own hours, position and earnings.",
+      "notMember": "That account is not a member of any project this person works on. Add them to project Members first."
     }
   },
   "collaboratorsOverview": {

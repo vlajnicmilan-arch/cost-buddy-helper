@@ -6,6 +6,8 @@
 --   PL4  odvezivanje očisti i osobu i sve angažmane
 --   PL5  RPC bez prijave pada (42501)
 --   PL6  RPC tuđe osobe pada (42501)
+--   PL7  račun koji NIJE član nijednog projekta te osobe → odbijen, ništa upisano
+--   PL8  vlasnik smije povezati sam sebe
 
 \set ON_ERROR_STOP on
 
@@ -20,6 +22,7 @@ DO $t$
 DECLARE
   owner_id uuid := '00000000-0000-0000-0000-0000000000a1';
   acct     uuid := '00000000-0000-0000-0000-0000000000b2';
+  stranger uuid := '00000000-0000-0000-0000-0000000000c3';
   p1 uuid; p2 uuid; p3 uuid;
   person uuid; other_person uuid;
   e1 uuid; e2 uuid; e3 uuid; e_other uuid; e_new uuid;
@@ -41,6 +44,9 @@ BEGIN
   INSERT INTO public.project_workers(project_id, worker_id, first_name, last_name)
     VALUES (p3, person, 'Petar', 'P') RETURNING id INTO e3;
 
+  -- račun je član svih triju projekata (uvjet za povezivanje)
+  INSERT INTO public.project_members(project_id, user_id) VALUES (p1, acct), (p2, acct), (p3, acct);
+
   -- PL1: veza prema gore
   UPDATE public.project_workers SET user_id = acct WHERE id = e1;
 
@@ -51,6 +57,8 @@ BEGIN
 
   -- PL2: novi angažman nasljeđuje račun
   INSERT INTO public.projects(user_id, name) VALUES (owner_id, 'P4');
+  INSERT INTO public.project_members(project_id, user_id)
+    VALUES ((SELECT id FROM public.projects WHERE name = 'P4'), acct);
   INSERT INTO public.project_workers(project_id, worker_id, first_name, last_name)
     VALUES ((SELECT id FROM public.projects WHERE name = 'P4'), person, 'Petar', 'P')
     RETURNING id INTO e_new;
@@ -88,6 +96,27 @@ BEGIN
     (SELECT count(*) FROM public.project_workers WHERE worker_id = person AND user_id IS NOT NULL) = 0);
   PERFORM pg_temp.check('PL4 tuđi angažman netaknut',
     (SELECT user_id FROM public.project_workers WHERE id = e_other) = acct);
+
+  -- PL7: račun koji nije član nijednog projekta te osobe
+  PERFORM set_config('request.jwt.claim.sub', owner_id::text, true);
+  BEGIN
+    v_res := public.link_person_to_user(person, stranger);
+    PERFORM pg_temp.check('PL7 nečlan odbijen', false);
+  EXCEPTION WHEN insufficient_privilege THEN
+    PERFORM pg_temp.check('PL7 nečlan odbijen', SQLERRM LIKE '%person_link_user_not_member%');
+  END;
+  PERFORM pg_temp.check('PL7 ništa nije upisano',
+    (SELECT linked_user_id FROM public.workers WHERE id = person) IS NULL
+    AND (SELECT count(*) FROM public.project_workers
+         WHERE worker_id = person AND user_id = stranger) = 0);
+
+  -- PL8: vlasnik veže sam sebe iako nije u project_members
+  v_res := public.link_person_to_user(person, owner_id);
+  PERFORM pg_temp.check('PL8 vlasnik smije sam sebe',
+    (SELECT linked_user_id FROM public.workers WHERE id = person) = owner_id);
+  v_res := public.link_person_to_user(person, NULL);
+  PERFORM pg_temp.check('PL8 odvezano nakon vlasnika',
+    (SELECT count(*) FROM public.project_workers WHERE worker_id = person AND user_id IS NOT NULL) = 0);
 
   -- PL5: bez prijave
   PERFORM set_config('request.jwt.claim.sub', '', true);
