@@ -29,7 +29,7 @@ export const WalletViewModeChips = ({ className }: WalletViewModeChipsProps) => 
   if (!businessFeatureEnabled || items.length <= 1) return null;
 
   return (
-    <div className={cn('flex gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1', className)}>
+    <div className={cn('flex gap-1.5 overflow-x-auto scrollbar-hide -mx-1 px-1', className)}>
       {items.map(({ key, label, icon: Icon }) => {
         const active = mode === key;
         return (

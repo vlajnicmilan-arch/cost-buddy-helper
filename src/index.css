@@ -593,22 +593,47 @@
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* ── KLIZAČ: jedno rješenje za cijelu aplikaciju ──────────────────────────
+   Uspravno pomicanje: tanak, prigušen klizač u bojama teme (tokeni, radi u
+   svijetloj i tamnoj temi automatski). */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.35) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+  box-shadow: none;
+  border: none;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.35);
+  border-radius: 9999px;
+  border: none;
+}
+*::-webkit-scrollbar-thumb:hover,
+*::-webkit-scrollbar-thumb:active {
+  background-color: hsl(var(--muted-foreground) / 0.55);
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* JEDINI dopušteni način skrivanja klizača u aplikaciji.
+   Ne uvoditi nove pomoćne klase ni tvrdo upisane scrollbar varijante u
+   komponentama — brana src/test/scrollbarSingleSource.test.ts pada na njih.
+   Koristi se samo za VODORAVNE liste (čipovi, kartične trake). */
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
-}
-
-/* Vodoravne kartične liste (HorizontalCardRail) — sistemski scrollbar nestaje
-   samo ovdje, vertikalni scroll stranice je netaknut. */
-.scrollbar-none {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.scrollbar-none::-webkit-scrollbar {
-  display: none;
+  width: 0;
+  height: 0;
 }
 
 /* iOS dynamic viewport height fallback */

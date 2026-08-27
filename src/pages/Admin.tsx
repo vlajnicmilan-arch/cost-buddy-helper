@@ -306,7 +306,7 @@ const Admin = () => {
           <div className="sticky top-0 z-10 -mx-4 px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
             <TabsList
               ref={tabsListRef}
-              className="w-full h-auto flex items-stretch justify-start gap-1 overflow-x-auto overflow-y-hidden p-1 rounded-md [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+              className="w-full h-auto flex items-stretch justify-start gap-1 overflow-x-auto overflow-y-hidden p-1 rounded-md scrollbar-hide"
             >
               <TabsTrigger value="pulse" className={tabBtnClass}>
                 <Heart className="w-4 h-4 shrink-0" /><span>Pulse</span>

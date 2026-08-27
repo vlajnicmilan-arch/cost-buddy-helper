@@ -42,7 +42,7 @@ describe('HorizontalCardRail', () => {
     render(<HorizontalCardRail ariaLabel="rail"><div>a</div></HorizontalCardRail>);
     const scroller = screen.getByRole('group', { name: 'rail' });
     expect(scroller.className).toContain('snap-x');
-    expect(scroller.className).toContain('scrollbar-none');
+    expect(scroller.className).toContain('scrollbar-hide');
     expect(scroller.getAttribute('tabindex')).toBe('0');
   });
 });

@@ -292,7 +292,7 @@ export const UsersTab = ({
       )}
 
       {/* Filter chips */}
-      <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
         {filterChips.map((chip) => (
           <button
             key={chip.key}
