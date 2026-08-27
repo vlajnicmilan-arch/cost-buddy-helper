@@ -101,7 +101,7 @@ export const HorizontalCardRail = ({
         role="group"
         aria-label={ariaLabel}
         className={cn(
-          'overflow-x-auto overflow-y-hidden scrollbar-none snap-x snap-proximity scroll-smooth outline-none',
+          'overflow-x-auto overflow-y-hidden scrollbar-hide snap-x snap-proximity scroll-smooth outline-none',
           scrollClassName,
         )}
         style={{ maskImage, WebkitMaskImage: maskImage }}
