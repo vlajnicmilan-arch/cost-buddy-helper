@@ -210,3 +210,10 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_user::text, true);
 END;
 $$;
+
+
+-- Kontrolna točka za scenarije. MORA biti POSLJEDNJA naredba u ovoj datoteci:
+-- svaki scenarij radi ROLLBACK TO SAVEPOINT before_scenarios, pa bilo koja
+-- definicija (pg_temp funkcija, _bfix redak) ispod ove linije bi se poništila
+-- i scenariji bi tiho padali s "does not exist".
+SAVEPOINT before_scenarios;
