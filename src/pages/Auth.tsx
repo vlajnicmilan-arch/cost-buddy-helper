@@ -20,6 +20,7 @@ import { loadCampaign, mergeCampaign, readCampaignFromParams } from '@/lib/paywa
 import { Sparkles } from 'lucide-react';
 
 import i18n from '@/i18n';
+import { buildConsentPayload, recordNewsletterConsent, stashPendingConsent, flushPendingNewsletterConsent } from '@/lib/newsletterConsent';
 const authSchema = z.object({
   email: z.string().trim().email(i18n.t('auth.validation.invalidEmail')).max(255, i18n.t('auth.validation.emailTooLong')),
   password: z.string().min(6, i18n.t('auth.validation.passwordTooShort')).max(72, i18n.t('auth.validation.passwordTooLong'))
@@ -41,6 +42,7 @@ const Auth = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [gdprConsent, setGdprConsent] = useState(false);
+  const [newsletterConsent, setNewsletterConsent] = useState(false);
   
   const { signIn, signUp, resendVerificationEmail, resetPassword, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
