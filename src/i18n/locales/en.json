@@ -6951,6 +6951,46 @@
     "someUnpriced": "Some engagements have no amount entered.",
     "engagementsTitle": "Engagements",
     "cancelled": "Cancelled",
-    "excludedFromTotals": "Cancelled — excluded from totals"
+    "excludedFromTotals": "Cancelled — excluded from totals",
+    "add": "+ Collaborator"
+  },
+  "collaboratorPayment": {
+    "add": "+ Collaborator",
+    "project": "Project",
+    "projectPlaceholder": "Select a project",
+    "pay": "Pay",
+    "title": "Payment — {{name}}",
+    "engagement": "Engagement",
+    "engagementPlaceholder": "Select an engagement",
+    "amount": "Amount",
+    "date": "Payment date",
+    "source": "Payment source",
+    "confirm": "Pay",
+    "paid": "Payment recorded",
+    "remainingHint": "Remaining: {{amount}}",
+    "noCeiling": "No agreed amount entered — there is no upper limit.",
+    "exceeds": "The amount is higher than what remains on this engagement.",
+    "legacyHint": "{{amount}} of this was entered manually, with no trace in the wallet.",
+    "historyTitle": "Payment history",
+    "showAll": "Show all ({{count}})",
+    "showVoided_one": "+ {{count}} voided",
+    "showVoided_other": "+ {{count}} voided",
+    "hideVoided": "Hide voided",
+    "void": "Void",
+    "voided": "Payment voided",
+    "voidedReason": "Voided: {{reason}}",
+    "voidTitle": "Void this payment?",
+    "voidDescription": "The expense is reversed and the amount returns to the outstanding balance.",
+    "voidReasonLabel": "Reason for voiding",
+    "deleteTitle": "Delete collaborator?",
+    "deleteWithPayments_one": "This collaborator has {{count}} payment totalling {{amount}} and cannot be deleted.",
+    "deleteWithPayments_other": "This collaborator has {{count}} payments totalling {{amount}} and cannot be deleted.",
+    "error": {
+      "generic": "The payment failed.",
+      "exceedsRemaining": "The amount is higher than what remains on this engagement.",
+      "alreadyVoided": "This payment has already been voided.",
+      "notOwner": "You do not have access to this engagement.",
+      "invalidInput": "Amount and payment source are required."
+    }
   }
 }

@@ -6951,6 +6951,46 @@
     "someUnpriced": "Bei einigen Engagements ist kein Betrag erfasst.",
     "engagementsTitle": "Engagements",
     "cancelled": "Storniert",
-    "excludedFromTotals": "Storniert — nicht in der Summe"
+    "excludedFromTotals": "Storniert — nicht in der Summe",
+    "add": "+ Mitarbeiter"
+  },
+  "collaboratorPayment": {
+    "add": "+ Mitarbeiter",
+    "project": "Projekt",
+    "projectPlaceholder": "Projekt wählen",
+    "pay": "Bezahlen",
+    "title": "Zahlung — {{name}}",
+    "engagement": "Engagement",
+    "engagementPlaceholder": "Engagement wählen",
+    "amount": "Betrag",
+    "date": "Zahlungsdatum",
+    "source": "Zahlungsquelle",
+    "confirm": "Bezahlen",
+    "paid": "Zahlung erfasst",
+    "remainingHint": "Offen: {{amount}}",
+    "noCeiling": "Kein vereinbarter Betrag erfasst — es gibt keine Obergrenze.",
+    "exceeds": "Der Betrag ist höher als der offene Rest dieses Engagements.",
+    "legacyHint": "Davon wurden {{amount}} manuell erfasst, ohne Spur im Geldbeutel.",
+    "historyTitle": "Zahlungsverlauf",
+    "showAll": "Alle anzeigen ({{count}})",
+    "showVoided_one": "+ {{count}} storniert",
+    "showVoided_other": "+ {{count}} storniert",
+    "hideVoided": "Stornierte ausblenden",
+    "void": "Stornieren",
+    "voided": "Zahlung storniert",
+    "voidedReason": "Storniert: {{reason}}",
+    "voidTitle": "Zahlung stornieren?",
+    "voidDescription": "Die Ausgabe wird zurückgenommen und der Betrag fließt in den offenen Rest zurück.",
+    "voidReasonLabel": "Grund für die Stornierung",
+    "deleteTitle": "Mitarbeiter löschen?",
+    "deleteWithPayments_one": "Dieser Mitarbeiter hat {{count}} Zahlung über insgesamt {{amount}} und kann nicht gelöscht werden.",
+    "deleteWithPayments_other": "Dieser Mitarbeiter hat {{count}} Zahlungen über insgesamt {{amount}} und kann nicht gelöscht werden.",
+    "error": {
+      "generic": "Die Zahlung ist fehlgeschlagen.",
+      "exceedsRemaining": "Der Betrag ist höher als der offene Rest dieses Engagements.",
+      "alreadyVoided": "Diese Zahlung wurde bereits storniert.",
+      "notOwner": "Du hast keinen Zugriff auf dieses Engagement.",
+      "invalidInput": "Betrag und Zahlungsquelle sind erforderlich."
+    }
   }
 }

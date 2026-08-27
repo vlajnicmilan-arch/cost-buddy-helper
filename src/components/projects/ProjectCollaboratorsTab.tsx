@@ -16,6 +16,8 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { Plus, Pencil, Trash2, Handshake, Building2, Loader2, Target, Search } from 'lucide-react';
 import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
+import { useCollaboratorPayments } from '@/hooks/useCollaboratorPayments';
+import { summarizeCollaboratorDeleteImpact } from '@/lib/collaboratorDeleteImpact';
 
 interface Milestone {
   id: string;
@@ -56,6 +58,15 @@ export const ProjectCollaboratorsTab = ({ projectId, milestones, isManager, isRe
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [toDelete, setToDelete] = useState<string | null>(null);
   const [disclaimerOpen, setDisclaimerOpen] = useState(false);
+
+  // Deleting a collaborator with payments is refused by the FK, so the dialog
+  // must say how many payments and how much money stand in the way.
+  const collaboratorIds = useMemo(() => collaborators.map((c) => c.id), [collaborators]);
+  const { payments } = useCollaboratorPayments(collaboratorIds);
+  const deleteImpact = useMemo(
+    () => (toDelete ? summarizeCollaboratorDeleteImpact(payments, toDelete) : null),
+    [payments, toDelete],
+  );
 
   const openAddDialog = () => {
     if (!guard()) return;
@@ -365,13 +376,19 @@ export const ProjectCollaboratorsTab = ({ projectId, milestones, isManager, isRe
           <AlertDialogHeader>
             <AlertDialogTitle>{t('collaborators.deleteTitle', 'Ukloni suradnika?')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('collaborators.deleteDescription', 'Ova radnja je nepovratna.')}
+              {deleteImpact?.blocked
+                ? t('collaboratorPayment.deleteWithPayments', 'Suradnik ima {{count}} plaćanja u ukupnom iznosu {{amount}} i zato se ne može obrisati.', {
+                    count: deleteImpact.paymentCount,
+                    amount: formatAmount(deleteImpact.paidTotal),
+                  })
+                : t('collaborators.deleteDescription', 'Ova radnja je nepovratna.')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground"
+              disabled={!!deleteImpact?.blocked}
               onClick={async () => {
                 if (toDelete) {
                   await deleteCollaborator(toDelete);

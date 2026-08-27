@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,9 +9,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { ProjectCollaborator, ProjectCollaboratorInput } from '@/types/projectCollaborator';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 
 interface Milestone {
+  id: string;
+  name: string;
+}
+
+export interface CollaboratorProjectOption {
   id: string;
   name: string;
 }
@@ -21,7 +27,12 @@ interface ProjectCollaboratorDialogProps {
   onOpenChange: (open: boolean) => void;
   collaborator: ProjectCollaborator | null;
   milestones: Milestone[];
-  onSave: (data: ProjectCollaboratorInput) => void;
+  /**
+   * Only passed when the dialog is opened from the cross-project overview.
+   * Inside a project this stays undefined and the dialog behaves exactly as before.
+   */
+  projectOptions?: CollaboratorProjectOption[];
+  onSave: (data: ProjectCollaboratorInput, projectId?: string) => void;
 }
 
 export const ProjectCollaboratorDialog = ({
@@ -29,19 +40,22 @@ export const ProjectCollaboratorDialog = ({
   onOpenChange,
   collaborator,
   milestones,
+  projectOptions,
   onSave,
 }: ProjectCollaboratorDialogProps) => {
   const { t } = useTranslation();
+  const { formatAmount } = useCurrency();
+  const needsProjectPick = !!projectOptions && !collaborator;
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [serviceDescription, setServiceDescription] = useState('');
   const [totalPrice, setTotalPrice] = useState('');
-  const [paidAmount, setPaidAmount] = useState('');
   const [milestoneId, setMilestoneId] = useState('none');
   const [status, setStatus] = useState('active');
   const [contactInfo, setContactInfo] = useState('');
   const [note, setNote] = useState('');
+  const [projectId, setProjectId] = useState('');
 
   useEffect(() => {
     if (collaborator) {
@@ -50,7 +64,6 @@ export const ProjectCollaboratorDialog = ({
       setCompanyName(collaborator.company_name || '');
       setServiceDescription(collaborator.service_description);
       setTotalPrice(String(collaborator.total_price));
-      setPaidAmount(String(collaborator.paid_amount || 0));
       setMilestoneId(collaborator.milestone_id || 'none');
       setStatus(collaborator.status);
       setContactInfo(collaborator.contact_info || '');
@@ -61,30 +74,41 @@ export const ProjectCollaboratorDialog = ({
       setCompanyName('');
       setServiceDescription('');
       setTotalPrice('');
-      setPaidAmount('');
       setMilestoneId('none');
       setStatus('active');
       setContactInfo('');
       setNote('');
     }
-  }, [collaborator, open]);
+    setProjectId(projectOptions?.length === 1 ? projectOptions[0].id : '');
+  }, [collaborator, open, projectOptions]);
+
+  const paidDisplay = useMemo(() => {
+    const paid = Number(collaborator?.paid_amount) || 0;
+    const legacy = Number(collaborator?.legacy_paid_amount) || 0;
+    return { paid, legacy };
+  }, [collaborator]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!firstName.trim() || !lastName.trim() || !serviceDescription.trim()) return;
+    if (needsProjectPick && !projectId) return;
 
-    onSave({
-      first_name: firstName.trim(),
-      last_name: lastName.trim(),
-      company_name: companyName.trim() || null,
-      service_description: serviceDescription.trim(),
-      total_price: parseLocaleAmount(totalPrice).value || 0,
-      paid_amount: parseLocaleAmount(paidAmount).value || 0,
-      milestone_id: milestoneId === 'none' ? null : milestoneId,
-      status,
-      contact_info: contactInfo.trim() || null,
-      note: note.trim() || null,
-    });
+    onSave(
+      {
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        company_name: companyName.trim() || null,
+        service_description: serviceDescription.trim(),
+        total_price: parseLocaleAmount(totalPrice).value || 0,
+        // Paid amount is a ledger total now — the form never writes it.
+        paid_amount: Number(collaborator?.paid_amount) || 0,
+        milestone_id: milestoneId === 'none' ? null : milestoneId,
+        status,
+        contact_info: contactInfo.trim() || null,
+        note: note.trim() || null,
+      },
+      needsProjectPick ? projectId : undefined,
+    );
     onOpenChange(false);
   };
 
@@ -99,6 +123,22 @@ export const ProjectCollaboratorDialog = ({
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {needsProjectPick && (
+            <div className="space-y-1.5">
+              <Label>{t('collaborators.project', 'Projekt')}</Label>
+              <Select value={projectId} onValueChange={setProjectId}>
+                <SelectTrigger className="min-h-[44px]">
+                  <SelectValue placeholder={t('collaborators.projectPlaceholder', 'Odaberi projekt')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {(projectOptions ?? []).map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>{t('workers.firstName', 'Ime')}</Label>
@@ -129,11 +169,21 @@ export const ProjectCollaboratorDialog = ({
             <p className="text-[11px] text-muted-foreground">{t('collaborators.agreedPriceHint', 'Za projekcije i predviđene troškove')}</p>
           </div>
 
-          <div className="space-y-1.5">
-            <Label>{t('collaborators.paidAmount', 'Isplaćeni iznos')}</Label>
-            <MoneyInput value={paidAmount} onChange={e => setPaidAmount(e.target.value)} />
-            <p className="text-[11px] text-muted-foreground">{t('collaborators.paidAmountHint', 'Utječe na stvarne obračune projekta')}</p>
-          </div>
+          {collaborator && (
+            <div className="space-y-1 rounded-lg border border-border/50 p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">{t('collaborators.paidAmount', 'Isplaćeni iznos')}</span>
+                <span className="text-sm font-medium">{formatAmount(paidDisplay.paid)}</span>
+              </div>
+              {paidDisplay.legacy > 0 && (
+                <p className="text-[11px] text-muted-foreground">
+                  {t('collaboratorPayment.legacyHint', 'Od toga {{amount}} upisano ručno, bez traga u novčaniku.', {
+                    amount: formatAmount(paidDisplay.legacy),
+                  })}
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label>{t('collaborators.milestone', 'Pridruži fazi')}</Label>
@@ -177,7 +227,7 @@ export const ProjectCollaboratorDialog = ({
             </div>
           </div>
 
-          <Button type="submit" className="w-full">
+          <Button type="submit" className="w-full min-h-[44px]" disabled={needsProjectPick && !projectId}>
             {collaborator ? t('common.save', 'Spremi') : t('collaborators.add', 'Dodaj vanjskog suradnika')}
           </Button>
         </form>

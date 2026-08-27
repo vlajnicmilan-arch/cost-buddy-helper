@@ -20,6 +20,8 @@ export interface CollaboratorRow {
   service_description?: string | null;
   total_price: number;
   paid_amount: number;
+  /** Hand-typed pre-ledger amount; part of paid_amount, never changed. */
+  legacy_paid_amount?: number;
   status: string;
   business_profile_id?: string | null;
 }
@@ -33,6 +35,7 @@ export interface CollaboratorEngagement {
   /** null when the amount was never entered (total_price === 0). */
   agreed: number | null;
   paid: number;
+  legacyPaid: number;
   isCancelled: boolean;
 }
 
@@ -109,6 +112,7 @@ export function groupCollaborators(
       status: row.status,
       agreed,
       paid,
+      legacyPaid: Number(row.legacy_paid_amount) || 0,
       isCancelled,
     });
 

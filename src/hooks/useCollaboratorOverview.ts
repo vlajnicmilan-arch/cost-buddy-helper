@@ -19,6 +19,7 @@ export const useCollaboratorOverview = () => {
   const { user } = useAuth();
   const [rows, setRows] = useState<CollaboratorRow[]>([]);
   const [projectNames, setProjectNames] = useState<Record<string, string>>({});
+  const [projectOptions, setProjectOptions] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,6 +27,7 @@ export const useCollaboratorOverview = () => {
     if (!user) {
       setRows([]);
       setProjectNames({});
+      setProjectOptions([]);
       setLoading(false);
       return;
     }
@@ -50,7 +52,7 @@ export const useCollaboratorOverview = () => {
       let collaborators: CollaboratorRow[] = [];
       if (projectIds.length > 0) {
         const { data, error: collabErr } = await (supabase.from('project_collaborators') as any)
-          .select('id, project_id, first_name, last_name, company_name, service_description, total_price, paid_amount, status')
+          .select('id, project_id, first_name, last_name, company_name, service_description, total_price, paid_amount, legacy_paid_amount, status')
           .in('project_id', projectIds);
         if (collabErr) throw collabErr;
         collaborators = (data ?? []).map((c: any) => ({
@@ -62,12 +64,18 @@ export const useCollaboratorOverview = () => {
           service_description: c.service_description ?? null,
           total_price: Number(c.total_price) || 0,
           paid_amount: Number(c.paid_amount) || 0,
+          legacy_paid_amount: Number(c.legacy_paid_amount) || 0,
           status: c.status ?? 'active',
           business_profile_id: profileByProject[c.project_id] ?? null,
         }));
       }
 
       setProjectNames(names);
+      setProjectOptions(
+        (projects ?? [])
+          .map((p: any) => ({ id: p.id as string, name: (p.name as string) ?? '' }))
+          .sort((a, b) => a.name.localeCompare(b.name, 'hr')),
+      );
       setRows(collaborators);
     } catch (e: any) {
       setError(e?.message ?? 'unknown');
@@ -90,5 +98,5 @@ export const useCollaboratorOverview = () => {
     [rows, projectNames],
   );
 
-  return { rows, groups, projectNames, loading, error, refetch: fetchAll };
+  return { rows, groups, projectNames, projectOptions, loading, error, refetch: fetchAll };
 };

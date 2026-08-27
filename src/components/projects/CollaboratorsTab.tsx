@@ -2,20 +2,29 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Handshake, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, Handshake, ChevronRight, Plus } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { useCollaboratorOverview } from '@/hooks/useCollaboratorOverview';
 import { CollaboratorDetailDialog } from './CollaboratorDetailDialog';
+import { ProjectCollaboratorDialog } from './ProjectCollaboratorDialog';
+import type { ProjectCollaboratorInput } from '@/types/projectCollaborator';
 
 /**
  * "Suradnici" — every collaborator/subcontractor once, across all projects.
- * Read-only; hourly workers are a separate model and never mixed in here.
+ * Hourly workers are a separate model and never mixed in here.
  */
 export const CollaboratorsTab = () => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const { formatAmount } = useCurrency();
-  const { groups, loading } = useCollaboratorOverview();
+  const { groups, projectOptions, loading, refetch } = useCollaboratorOverview();
   const [selected, setSelected] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
 
   if (loading) {
     return (
@@ -27,8 +36,43 @@ export const CollaboratorsTab = () => {
 
   const selectedGroup = groups.find((g) => g.key === selected) ?? null;
 
+  const handleAdd = async (data: ProjectCollaboratorInput, projectId?: string) => {
+    if (!user || !projectId) return;
+    try {
+      const { error } = await (supabase.from('project_collaborators') as any).insert({
+        project_id: projectId,
+        first_name: data.first_name,
+        last_name: data.last_name,
+        company_name: data.company_name || null,
+        service_description: data.service_description,
+        total_price: data.total_price,
+        milestone_id: data.milestone_id || null,
+        status: data.status || 'active',
+        contact_info: data.contact_info || null,
+        note: data.note || null,
+      });
+      if (error) throw error;
+      showSuccess(t('collaborators.added', 'Suradnik dodan'));
+      await refetch();
+    } catch (e: any) {
+      logDiagnostic({
+        event: 'collaborator_create_failed',
+        severity: 'error',
+        details: { db_code: e?.code ?? null, db_message: String(e?.message ?? e), project_id: projectId },
+      });
+      showError(t('common.error'));
+    }
+  };
+
   return (
     <div className="space-y-3">
+      {projectOptions.length > 0 && (
+        <Button className="w-full min-h-[44px]" variant="outline" onClick={() => setAddOpen(true)}>
+          <Plus className="w-4 h-4 mr-1.5" />
+          {t('collaboratorsOverview.add', '+ Suradnik')}
+        </Button>
+      )}
+
       {groups.length === 0 ? (
         <Card className="p-8 text-center">
           <Handshake className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
@@ -81,10 +125,20 @@ export const CollaboratorsTab = () => {
         </div>
       )}
 
+      <ProjectCollaboratorDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        collaborator={null}
+        milestones={[]}
+        projectOptions={projectOptions}
+        onSave={handleAdd}
+      />
+
       <CollaboratorDetailDialog
         open={!!selectedGroup}
         onOpenChange={(o) => !o && setSelected(null)}
         group={selectedGroup}
+        onChanged={refetch}
       />
     </div>
   );

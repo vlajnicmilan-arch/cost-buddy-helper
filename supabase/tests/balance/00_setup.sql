@@ -174,3 +174,40 @@ $$;
 
 SAVEPOINT before_scenarios;
 
+
+-- ---- Suradnici (collaborator payment) fixtures ----------------------------
+-- Collaborators are a separate model from hourly work: an agreed price, no
+-- hours. These fixtures never touch project_workers / project_worker_payouts.
+INSERT INTO _bfix VALUES
+  ('collab', '11111111-2222-3333-4444-000000000003');
+
+CREATE OR REPLACE FUNCTION pg_temp.seed_collaborator_fixtures(
+  p_total numeric DEFAULT 1000,
+  p_legacy numeric DEFAULT 0,
+  p_anchor_bal numeric DEFAULT 1000
+) RETURNS void LANGUAGE plpgsql AS $$
+DECLARE
+  v_user   uuid := (SELECT val FROM _bfix WHERE key='user');
+  v_src    uuid := (SELECT val FROM _bfix WHERE key='src_a');
+  v_proj   uuid := (SELECT val FROM _bfix WHERE key='proj');
+  v_collab uuid := (SELECT val FROM _bfix WHERE key='collab');
+BEGIN
+  PERFORM pg_temp.reset_sources();
+  PERFORM pg_temp.set_mode('hybrid');
+  PERFORM pg_temp.set_anchor(v_src, '2026-06-01 09:00:00+00', p_anchor_bal);
+
+  DELETE FROM public.project_collaborator_payments WHERE project_id = v_proj;
+  DELETE FROM public.project_collaborators         WHERE project_id = v_proj;
+  DELETE FROM public.projects                      WHERE id         = v_proj;
+
+  INSERT INTO public.projects (id, user_id, name) VALUES (v_proj, v_user, 'P1');
+  INSERT INTO public.project_collaborators
+    (id, project_id, first_name, last_name, service_description,
+     total_price, paid_amount, legacy_paid_amount, status)
+  VALUES
+    (v_collab, v_proj, 'Test', 'Collab', 'Usluga',
+     p_total, p_legacy, p_legacy, 'active');
+
+  PERFORM set_config('request.jwt.claim.sub', v_user::text, true);
+END;
+$$;

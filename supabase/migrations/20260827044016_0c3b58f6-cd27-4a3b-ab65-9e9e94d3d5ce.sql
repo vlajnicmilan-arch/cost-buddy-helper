@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public._recalc_collaborator_paid(uuid) FROM PUBLIC, anon, authenticated;

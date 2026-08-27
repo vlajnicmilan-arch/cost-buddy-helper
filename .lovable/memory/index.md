@@ -12,3 +12,4 @@
 - [Podsjetnici za dospijeće ulaznih računa](mem://features/invoice-due-reminders) — d3+d0, dedup, agregat prekoračenih, jedan prekidač
 - [Brief-vrata V1](mem://features/brief-gate-v1) — pozdravni ekran, flag + allowlist + učestalost/tišina
 - [Ljudi — identitet satnog radnika](mem://features/worker-identity-people) — workers + project_workers.worker_id, pogled Projekti|Ljudi, bez automatskog spajanja; suradnici izvan dosega
+- [Plaćanje suradnika](mem://features/collaborator-payments) — pravi registar plaćanja, storno, legacy_paid_amount
