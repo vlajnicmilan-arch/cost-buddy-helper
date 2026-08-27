@@ -3450,7 +3450,8 @@
       "analyticsDesc": "Fehlerverfolgung (Sentry) zur Verbesserung der Stabilität. Keine personenbezogenen Daten.",
       "marketing": "Marketing",
       "marketingDesc": "Wir verwenden derzeit keine Marketing-Cookies. Für zukünftige Aktivitäten reserviert."
-    }
+    },
+    "newsletterConsentLabel": "Ich sende Tipps für Handwerker und Produktneuheiten, einmal im Monat. Die Abmeldung ist in jeder E-Mail möglich."
   },
   "lock": {
     "title": "App ist gesperrt",
