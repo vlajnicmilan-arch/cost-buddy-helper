@@ -210,6 +210,28 @@ export const useWorkerIdentities = () => {
     [data.people, aggregates],
   );
 
+  /** Archived people are hidden from the main list but never deleted. */
+  const archivedRows: PersonListRow[] = useMemo(
+    () =>
+      sortPeopleRows(
+        data.people
+          .filter((p) => !!p.archived_at)
+          .map((p) => {
+            const a = aggregates.get(p.id);
+            return {
+              workerId: p.id,
+              firstName: p.first_name,
+              lastName: p.last_name,
+              engagementCount: a?.engagementCount ?? 0,
+              remaining: a?.totalRemaining ?? 0,
+            };
+          }),
+      ),
+    [data.people, aggregates],
+  );
+
+
+
   const pendingGroups: IdentityGroupSuggestion[] = useMemo(
     () => suggestIdentityGroups(data.engagements),
     [data.engagements],
@@ -265,5 +287,5 @@ export const useWorkerIdentities = () => {
     [user, data.engagements, fetchAll],
   );
 
-  return { ...data, aggregates, rows, pendingGroups, loading, error, refetch: fetchAll, resolveGroup };
+  return { ...data, aggregates, rows, archivedRows, pendingGroups, loading, error, refetch: fetchAll, resolveGroup };
 };

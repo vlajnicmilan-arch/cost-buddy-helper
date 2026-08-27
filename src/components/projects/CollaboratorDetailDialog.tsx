@@ -14,6 +14,9 @@ import {
   type CollaboratorPaymentRow,
 } from '@/lib/collaboratorPayment';
 import { useCollaboratorPayments } from '@/hooks/useCollaboratorPayments';
+import { useCollaboratorDelete } from '@/hooks/useCollaboratorDelete';
+import { summarizeCollaboratorDeleteImpact } from '@/lib/collaboratorDeleteImpact';
+
 import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
 import {
   CollaboratorPaymentDialog,
@@ -57,6 +60,9 @@ export const CollaboratorDetailDialog = ({
   const [showAll, setShowAll] = useState(false);
   const [showVoided, setShowVoided] = useState(false);
   const [toVoid, setToVoid] = useState<CollaboratorPaymentRow | null>(null);
+  const [toDelete, setToDelete] = useState<{ id: string; projectName: string } | null>(null);
+  const { deleteCollaborator, pending: deleting } = useCollaboratorDelete();
+
 
   const paymentsByCollaborator = useMemo(() => {
     const map = new Map<string, CollaboratorPaymentRow[]>();
@@ -220,7 +226,15 @@ export const CollaboratorDetailDialog = ({
                     {t('collaboratorsOverview.excludedFromTotals', 'Otkazan — izvan zbroja')}
                   </p>
                 )}
+                <button
+                  type="button"
+                  className="text-xs text-destructive underline underline-offset-2 min-h-[44px]"
+                  onClick={() => setToDelete({ id: e.id, projectName: e.projectName })}
+                >
+                  {t('collaboratorsOverview.deleteEngagement', 'Obriši suradnika s projekta')}
+                </button>
               </div>
+
             ))}
           </div>
 
@@ -337,6 +351,61 @@ export const CollaboratorDetailDialog = ({
           }
         }}
       />
+      <ConfirmActionDialog
+        open={!!toDelete}
+        onOpenChange={(o) => !o && setToDelete(null)}
+        title={t('collaboratorsOverview.deleteTitle', 'Obrisati suradnika s projekta?')}
+        description={(() => {
+          if (!toDelete) return '';
+          const impact = summarizeCollaboratorDeleteImpact(payments, toDelete.id);
+          if (impact.blocked) {
+            return t(
+              'collaboratorsOverview.deleteBlocked',
+              'Ima {{count}} plaćanja u iznosu {{amount}} — prvo ih poništi, pa se suradnik može obrisati.',
+              { count: impact.paymentCount, amount: formatAmount(impact.paidTotal) },
+            );
+          }
+          return t(
+            'collaboratorsOverview.deleteDescription',
+            'Angažman na projektu {{project}} nestaje. Troškovi ostaju u knjigama, a stornirana plaćanja se uklanjaju — saldo se ne mijenja.',
+            { project: toDelete.projectName || t('people.unknownProject', 'Projekt') },
+          );
+        })()}
+        confirmLabel={t('collaboratorsOverview.deleteEngagementShort', 'Obriši')}
+        destructive
+        pending={deleting}
+        onConfirm={async () => {
+          if (!toDelete) return;
+          const res = await deleteCollaborator(toDelete.id);
+          setToDelete(null);
+          if (res.ok) {
+            showSuccess(t('collaboratorsOverview.deleted', 'Suradnik obrisan'));
+            await refetch();
+            onChanged?.();
+            onOpenChange(false);
+          } else if (res.reason?.kind === 'has_live_payments') {
+            showError(
+              t(
+                'collaboratorsOverview.deleteBlocked',
+                'Ima {{count}} plaćanja u iznosu {{amount}} — prvo ih poništi, pa se suradnik može obrisati.',
+                {
+                  count: res.reason.paymentCount ?? 0,
+                  amount: formatAmount(res.reason.paidTotal ?? 0),
+                },
+              ),
+            );
+          } else if (res.reason?.kind === 'not_owner') {
+            showError(t('collaboratorPayment.error.notOwner', 'Nemaš pravo na ovaj projekt'));
+          } else {
+            showError(
+              t('collaboratorsOverview.deleteFailed', 'Brisanje nije uspjelo: {{reason}}', {
+                reason: res.reason?.message ?? '',
+              }),
+            );
+          }
+        }}
+      />
     </>
+
   );
 };

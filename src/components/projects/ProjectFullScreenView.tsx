@@ -515,6 +515,7 @@ export const ProjectFullScreenView = ({
             <ProjectDeleteDialog
               open={deleteDialogOpen}
               onOpenChange={setDeleteDialogOpen}
+              projectId={project.id}
               isArchived={!!project.archived_at}
               onArchive={
                 onRequestArchive
