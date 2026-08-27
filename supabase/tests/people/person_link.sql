@@ -137,3 +137,55 @@ BEGIN
   END;
 END
 $t$;
+
+-- ============================================================
+-- PD — Izlaz iz pogreške: brisanje osobe i razdvajanje angažmana
+--   PD1  brisanje osobe ostavlja angažmane žive, samo bez worker_id
+--   PD2  brisanje povezane osobe prethodno očisti user_id na angažmanima
+--   PD3  razdvajanje jednog angažmana ne dira ostale
+-- ============================================================
+DO $t$
+DECLARE
+  owner_id uuid := '00000000-0000-0000-0000-0000000000d4';
+  acct     uuid := '00000000-0000-0000-0000-0000000000e5';
+  p1 uuid; p2 uuid; person uuid; e1 uuid; e2 uuid;
+  v_res jsonb;
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', owner_id::text, true);
+
+  INSERT INTO public.projects(user_id, name) VALUES (owner_id, 'D1') RETURNING id INTO p1;
+  INSERT INTO public.projects(user_id, name) VALUES (owner_id, 'D2') RETURNING id INTO p2;
+  INSERT INTO public.workers(user_id, first_name, last_name) VALUES (owner_id, 'Ana', 'A')
+    RETURNING id INTO person;
+  INSERT INTO public.project_workers(project_id, worker_id, first_name, last_name, hourly_rate)
+    VALUES (p1, person, 'Ana', 'A', 10) RETURNING id INTO e1;
+  INSERT INTO public.project_workers(project_id, worker_id, first_name, last_name, hourly_rate)
+    VALUES (p2, person, 'Ana', 'A', 10) RETURNING id INTO e2;
+  INSERT INTO public.project_members(project_id, user_id) VALUES (p1, acct), (p2, acct);
+
+  -- PD3: razdvajanje jednog angažmana
+  UPDATE public.project_workers SET user_id = acct WHERE id = e1;
+  PERFORM pg_temp.check('PD3 oba angažmana povezana prije razdvajanja',
+    (SELECT count(*) FROM public.project_workers WHERE worker_id = person AND user_id = acct) = 2);
+  UPDATE public.project_workers SET worker_id = NULL, user_id = NULL WHERE id = e1;
+  PERFORM pg_temp.check('PD3 odvojeni angažman ostaje živ',
+    (SELECT count(*) FROM public.project_workers WHERE id = e1) = 1);
+  PERFORM pg_temp.check('PD3 drugi angažman netaknut',
+    (SELECT user_id FROM public.project_workers WHERE id = e2) = acct);
+
+  -- PD2: odvezivanje osobe prije brisanja očisti sve angažmane
+  v_res := public.link_person_to_user(person, NULL);
+  PERFORM pg_temp.check('PD2 nakon odvezivanja nema računa na angažmanima',
+    (SELECT count(*) FROM public.project_workers
+      WHERE worker_id = person AND user_id IS NOT NULL) = 0);
+
+  -- PD1: brisanje osobe
+  DELETE FROM public.workers WHERE id = person;
+  PERFORM pg_temp.check('PD1 osoba obrisana',
+    (SELECT count(*) FROM public.workers WHERE id = person) = 0);
+  PERFORM pg_temp.check('PD1 angažman preživio bez osobe',
+    (SELECT count(*) FROM public.project_workers WHERE id = e2 AND worker_id IS NULL) = 1);
+  PERFORM pg_temp.check('PD1 satnica na angažmanu netaknuta',
+    (SELECT hourly_rate FROM public.project_workers WHERE id = e2) = 10);
+END
+$t$;
