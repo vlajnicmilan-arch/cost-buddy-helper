@@ -29,7 +29,7 @@ interface CollaboratorDetailDialogProps {
 
 const failureKey = (code: string | null, message: string): string => {
   if (message.includes('collab_payment_exceeds_remaining')) return 'exceedsRemaining';
-  if (message.includes('collab_payment_already_voided')) return 'alreadyVoided';
+  if (message.includes('collab_payment_not_found_or_voided')) return 'alreadyVoided';
   if (code === '42501') return 'notOwner';
   if (code === '22023') return 'invalidInput';
   return 'generic';
