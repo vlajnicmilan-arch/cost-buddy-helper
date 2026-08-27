@@ -416,7 +416,7 @@ export const ProjectWorkerDialog = ({
                           <SelectContent>
                             {availableMembers.map((m) => (
                               <SelectItem key={m.user_id} value={m.user_id as string}>
-                                {m.display_name || m.user_id}
+                                {(m.display_name || '').trim() || t('people.link.noName', 'Bez imena')}
                               </SelectItem>
                             ))}
                           </SelectContent>

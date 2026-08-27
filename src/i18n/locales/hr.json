@@ -121,7 +121,7 @@
     "signOut": "Odjava",
     "unknown": "Nepoznato",
     "clearSearch": "Očisti pretragu",
-    "dismiss": "Sakrij",
+    "dismiss": "Odbaci",
     "actions": "Akcije",
     "ok": "U redu",
     "scrollLeft": "Pomakni lijevo",
@@ -1454,7 +1454,11 @@
     "notifInvoiceDueDesc": "3 dana prije dospijeća i na dan dospijeća.",
     "category": {
       "myRejections": "Što sam odbacio"
-    }
+    },
+    "fullName": "Ime i prezime",
+    "fullNameDesc": "Tako te vlasnik projekta prepozna kad te povezuje s radnikom.",
+    "addSurnameNudge": "Dodaj prezime da te suradnici prepoznaju",
+    "addSurnameNudgeCta": "Dopuni ime"
   },
   "bankMatch": {
     "pendingBank": "Čeka potvrdu banke",
@@ -1832,7 +1836,9 @@
       "newPasswordLabel": "Nova lozinka",
       "confirmPasswordLabel": "Potvrdi lozinku",
       "changePasswordButton": "Promijeni lozinku"
-    }
+    },
+    "nameFullOptional": "Ime i prezime (opcionalno)",
+    "nameRecognitionHint": "Tako te vlasnik projekta prepozna kad te povezuje s radnikom."
   },
   "categories": {
     "food": "Hrana",
@@ -6998,7 +7004,11 @@
       "inviteSent": "Pozivnica poslana",
       "inviteFailed": "Pozivnica nije stvorena",
       "boundary": "Veza ne daje pristup aplikaciji. Pristup dolazi iz Članova projekta. Radnik vidi samo svoje sate, poziciju i zaradu.",
-      "notMember": "Taj račun nije član nijednog projekta te osobe. Prvo ga dodaj u Članove projekta."
+      "notMember": "Taj račun nije član nijednog projekta te osobe. Prvo ga dodaj u Članove projekta.",
+      "noName": "Bez imena",
+      "noNameInvited": "Bez imena · pozvan {{date}}",
+      "alreadyLinkedTo": "već povezan: {{person}} — prvo odveži",
+      "otherPerson": "druga osoba"
     }
   },
   "collaboratorsOverview": {
