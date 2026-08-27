@@ -3999,6 +3999,42 @@ export type Database = {
         }
         Relationships: []
       }
+      newsletter_consents: {
+        Row: {
+          consent_text: string
+          consented_at: string
+          created_at: string
+          email: string
+          id: string
+          locale: string
+          revoked_at: string | null
+          source: string
+          user_id: string
+        }
+        Insert: {
+          consent_text: string
+          consented_at?: string
+          created_at?: string
+          email: string
+          id?: string
+          locale: string
+          revoked_at?: string | null
+          source?: string
+          user_id: string
+        }
+        Update: {
+          consent_text?: string
+          consented_at?: string
+          created_at?: string
+          email?: string
+          id?: string
+          locale?: string
+          revoked_at?: string | null
+          source?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notification_preferences: {
         Row: {
           broadcast_enabled: boolean
