@@ -6958,6 +6958,27 @@
         "craftsman": "Handwerker",
         "helper": "Helfer"
       }
+    },
+    "link": {
+      "linked": "Mit Centar-Konto verknüpft",
+      "notLinked": "Nicht verknüpft",
+      "unlink": "Verknüpfung lösen",
+      "unlinkTitle": "Centar-Konto trennen",
+      "unlinkDesc": "Die Verknüpfung wird von der Person und allen ihren Einsätzen entfernt. Stunden und Auszahlungen bleiben unverändert.",
+      "unlinked": "Die Verknüpfung mit dem Centar-Konto wurde entfernt",
+      "unlinkFailed": "Trennen fehlgeschlagen: {{reason}}",
+      "existingMember": "Mit vorhandenem Mitglied verknüpfen",
+      "choose": "Mitglied wählen",
+      "linkBtn": "Verknüpfen",
+      "done": "Verknüpft — {{count}} Einsätze",
+      "failed": "Verknüpfen fehlgeschlagen: {{reason}}",
+      "skipped": "Übersprungen: {{projects}} — in diesem Projekt ist dieses Konto bereits mit einem anderen Arbeiter verknüpft.",
+      "invite": "Zu Centar einladen",
+      "generate": "Einladungslink erzeugen",
+      "emailPlaceholder": "E-Mail des Arbeiters",
+      "inviteSent": "Einladung gesendet",
+      "inviteFailed": "Einladung wurde nicht erstellt",
+      "boundary": "Die Verknüpfung gewährt keinen App-Zugriff. Zugriff kommt von den Projektmitgliedern. Ein Arbeiter sieht nur seine eigenen Stunden, Position und Verdienste."
     }
   },
   "collaboratorsOverview": {

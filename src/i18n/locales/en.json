@@ -6958,6 +6958,27 @@
         "craftsman": "Craftsman",
         "helper": "Helper"
       }
+    },
+    "link": {
+      "linked": "Linked to a Centar account",
+      "notLinked": "Not linked",
+      "unlink": "Unlink",
+      "unlinkTitle": "Unlink Centar account",
+      "unlinkDesc": "The link is removed from the person and from all of their engagements. Hours and payouts stay unchanged.",
+      "unlinked": "The Centar account link was removed",
+      "unlinkFailed": "Unlinking failed: {{reason}}",
+      "existingMember": "Link to an existing member",
+      "choose": "Choose a member",
+      "linkBtn": "Link",
+      "done": "Linked — {{count}} engagements",
+      "failed": "Linking failed: {{reason}}",
+      "skipped": "Skipped: {{projects}} — on that project this account is already linked to another worker.",
+      "invite": "Invite to Centar",
+      "generate": "Generate invite link",
+      "emailPlaceholder": "Worker e-mail",
+      "inviteSent": "Invitation sent",
+      "inviteFailed": "Invitation was not created",
+      "boundary": "The link grants no app access. Access comes from project members. A worker only sees their own hours, position and earnings."
     }
   },
   "collaboratorsOverview": {
