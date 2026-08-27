@@ -18,4 +18,7 @@ export interface ProjectCollaborator {
   updated_at?: string;
 }
 
-export type ProjectCollaboratorInput = Omit<ProjectCollaborator, 'id' | 'created_at' | 'updated_at' | 'project_id'>;
+export type ProjectCollaboratorInput = Omit<
+  ProjectCollaborator,
+  'id' | 'created_at' | 'updated_at' | 'project_id' | 'legacy_paid_amount'
+>;
