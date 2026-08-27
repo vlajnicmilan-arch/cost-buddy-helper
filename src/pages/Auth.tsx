@@ -753,6 +753,7 @@ const Auth = () => {
                 setIsLogin(!isLogin);
                 setErrors({});
                 setGdprConsent(false);
+                setNewsletterConsent(false);
               }}
               className="text-primary font-medium hover:underline"
             >
