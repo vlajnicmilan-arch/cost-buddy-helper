@@ -16,6 +16,7 @@ import {
   voidedPayouts,
 } from '@/lib/payoutHistory';
 import { PersonPayoutDialog } from './PersonPayoutDialog';
+import { PersonAccountLinkSection } from './PersonAccountLinkSection';
 import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
 import { usePersonPayoutVoid } from '@/hooks/usePersonPayoutVoid';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
@@ -30,6 +31,8 @@ interface PersonDetailDialogProps {
   name: string;
   aggregate: PersonAggregate | null;
   projectNames: Record<string, string>;
+  /** Centar account currently linked to this PERSON (never to one engagement). */
+  linkedUserId?: string | null;
   onPaid?: () => void;
 }
 
@@ -41,6 +44,7 @@ export const PersonDetailDialog = ({
   name,
   aggregate,
   projectNames,
+  linkedUserId = null,
   onPaid,
 }: PersonDetailDialogProps) => {
   const { t } = useTranslation();
@@ -157,6 +161,15 @@ export const PersonDetailDialog = ({
 
         {!aggregate ? null : (
           <div className="space-y-4">
+            {personId && (
+              <PersonAccountLinkSection
+                personId={personId}
+                linkedUserId={linkedUserId}
+                projectNames={projectNames}
+                onChanged={onPaid}
+              />
+            )}
+
             <div className="grid grid-cols-3 gap-2">
               <div className="rounded-lg border border-border/50 p-2 text-center">
                 <Banknote className="w-4 h-4 mx-auto mb-1 text-muted-foreground" />

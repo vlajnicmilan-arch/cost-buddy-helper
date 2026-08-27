@@ -6973,6 +6973,27 @@
         "craftsman": "Majstor",
         "helper": "Pomoćnik"
       }
+    },
+    "link": {
+      "linked": "Povezan s Centar računom",
+      "notLinked": "Nije povezan",
+      "unlink": "Odveži",
+      "unlinkTitle": "Odveži Centar račun",
+      "unlinkDesc": "Veza se uklanja s osobe i sa svih njezinih angažmana. Sati i isplate ostaju nepromijenjeni.",
+      "unlinked": "Veza s Centar računom je uklonjena",
+      "unlinkFailed": "Odvezivanje nije uspjelo: {{reason}}",
+      "existingMember": "Poveži s postojećim članom",
+      "choose": "Odaberi člana",
+      "linkBtn": "Poveži",
+      "done": "Povezano — {{count}} angažmana",
+      "failed": "Povezivanje nije uspjelo: {{reason}}",
+      "skipped": "Preskočeno: {{projects}} — na tom projektu je taj račun već vezan uz drugog radnika.",
+      "invite": "Pozovi u Centar",
+      "generate": "Generiraj pozivni link",
+      "emailPlaceholder": "E-mail radnika",
+      "inviteSent": "Pozivnica poslana",
+      "inviteFailed": "Pozivnica nije stvorena",
+      "boundary": "Veza ne daje pristup aplikaciji. Pristup dolazi iz Članova projekta. Radnik vidi samo svoje sate, poziciju i zaradu."
     }
   },
   "collaboratorsOverview": {
