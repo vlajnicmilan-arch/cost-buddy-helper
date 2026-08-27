@@ -101,7 +101,7 @@ export const useCollaboratorPayments = (collaboratorIds: readonly string[]) => {
           },
         });
         await fetchPayments();
-        return { ok: true, result: data };
+        return { ok: true as const, result: data };
       } catch (e: any) {
         logDiagnostic({
           event: 'collaborator_payment_failed',
@@ -145,7 +145,7 @@ export const useCollaboratorPayments = (collaboratorIds: readonly string[]) => {
           },
         });
         await fetchPayments();
-        return { ok: true };
+        return { ok: true as const };
       } catch (e: any) {
         logDiagnostic({
           event: 'collaborator_payment_void_failed',
