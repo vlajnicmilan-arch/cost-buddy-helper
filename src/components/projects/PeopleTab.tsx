@@ -168,7 +168,13 @@ export const PeopleTab = () => {
 
   return (
     <div className="space-y-3">
+      <Button className="w-full min-h-[44px]" variant="outline" onClick={() => setAddOpen(true)}>
+        <Plus className="w-4 h-4 mr-1.5" />
+        {t('people.add.open', '+ Osoba')}
+      </Button>
+
       {pendingGroups.length > 0 && (
+
         <Card className="p-3 space-y-3 border-primary/40">
           <p className="text-sm font-medium">{t('people.migrationTitle', 'Poveži angažmane s osobama')}</p>
           {pendingGroups.map((g) => (
