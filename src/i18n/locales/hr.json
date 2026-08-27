@@ -5318,6 +5318,18 @@
         "description": "Ova radnja je nepovratna.",
         "confirm": "Obriši"
       }
+    },
+    "funnel": {
+      "day7": "Vratio se 7. dana",
+      "day7Explainer": "Vratio se 7. dana mjeri zadržavanje novih korisnika — je li se čovjek vratio sedmi dan nakon registracije. Ne odnosi se na aktivnost u zadnjih 7 dana."
+    },
+    "pulse": {
+      "online5min": "Online (5 min)",
+      "onlineHint": "Različite sesije u zadnjih 5 minuta",
+      "active24h": "Aktivni 24 h",
+      "active24hHint": "Različiti korisnici s prijavom u zadnja 24 sata",
+      "active7d": "Aktivni 7 dana",
+      "active7dHint": "Različiti korisnici s prijavom u zadnjih 7 dana"
     }
   },
   "adminRetention": {

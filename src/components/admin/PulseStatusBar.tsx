@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { CheckCircle2, AlertTriangle, AlertOctagon } from 'lucide-react';
+import { useActiveUserCounts } from '@/hooks/useActiveUserCounts';
 
 interface Props {
   errors1h: number;
@@ -10,6 +11,8 @@ interface Props {
 
 export const PulseStatusBar = ({ errors1h, activeSessions, errors24h, bySeverity1h }: Props) => {
   const { t } = useTranslation();
+  const active = useActiveUserCounts();
+
 
   const crit = bySeverity1h?.critical ?? 0;
   const err = bySeverity1h?.error ?? errors1h;
@@ -52,10 +55,19 @@ export const PulseStatusBar = ({ errors1h, activeSessions, errors24h, bySeverity
           <span className="font-bold">{config.label}</span>
         </div>
         <div className="flex items-center gap-3 text-xs">
-          <div className="text-center">
+          <div className="text-center" title={t('admin.pulse.onlineHint', 'Različite sesije u zadnjih 5 minuta')}>
             <div className="font-bold text-base">{activeSessions}</div>
-            <div className="text-muted-foreground">{t('admin.pulse.online', 'Online')}</div>
+            <div className="text-muted-foreground">{t('admin.pulse.online5min', 'Online (5 min)')}</div>
           </div>
+          <div className="text-center" title={t('admin.pulse.active24hHint', 'Različiti korisnici s prijavom u zadnja 24 sata')}>
+            <div className="font-bold text-base">{active.active24h}</div>
+            <div className="text-muted-foreground">{t('admin.pulse.active24h', 'Aktivni 24 h')}</div>
+          </div>
+          <div className="text-center" title={t('admin.pulse.active7dHint', 'Različiti korisnici s prijavom u zadnjih 7 dana')}>
+            <div className="font-bold text-base">{active.active7d}</div>
+            <div className="text-muted-foreground">{t('admin.pulse.active7d', 'Aktivni 7 dana')}</div>
+          </div>
+
           {bySeverity1h ? (
             <>
               <div className="text-center" title={t('admin.pulse.critical1h', 'Kritično 1h')}>

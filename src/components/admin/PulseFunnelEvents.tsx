@@ -135,7 +135,7 @@ export const PulseFunnelEvents = () => {
     signup: t('admin.funnel.signup', 'Registracija'),
     onboarding_complete: t('admin.funnel.onboarding', 'Onboarding'),
     first_transaction: t('admin.funnel.firstTx', 'Prva transakcija'),
-    day7_active: t('admin.funnel.day7', 'Aktivni 7. dan'),
+    day7_active: t('admin.funnel.day7', 'Vratio se 7. dana'),
     paid_conversion: t('admin.funnel.paid', 'Plaćena pretplata'),
   };
 
@@ -243,6 +243,13 @@ export const PulseFunnelEvents = () => {
       )}
 
       <div className="mt-2 text-[11px] text-muted-foreground">
+        {t(
+          'admin.funnel.day7Explainer',
+          'Vratio se 7. dana mjeri zadržavanje novih korisnika — je li se čovjek vratio sedmi dan nakon registracije. Ne odnosi se na aktivnost u zadnjih 7 dana.'
+        )}
+      </div>
+
+      <div className="mt-1 text-[11px] text-muted-foreground">
         {t(
           'admin.funnel.hint',
           'Install = jedinstvene sesije; ostali koraci = jedinstveni korisnici. Razdoblje: zadnjih {{days}} dana.',

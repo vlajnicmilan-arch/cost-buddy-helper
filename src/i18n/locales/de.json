@@ -5308,6 +5308,18 @@
         "description": "Diese Aktion kann nicht rückgängig gemacht werden.",
         "confirm": "Löschen"
       }
+    },
+    "funnel": {
+      "day7": "Am 7. Tag zurückgekehrt",
+      "day7Explainer": "Am 7. Tag zurückgekehrt misst die Bindung neuer Nutzer — ob jemand am siebten Tag nach der Registrierung zurückkam. Es bedeutet nicht aktiv in den letzten 7 Tagen."
+    },
+    "pulse": {
+      "online5min": "Online (5 Min.)",
+      "onlineHint": "Verschiedene Sitzungen in den letzten 5 Minuten",
+      "active24h": "Aktiv 24 Std.",
+      "active24hHint": "Verschiedene Nutzer mit Anmeldung in den letzten 24 Stunden",
+      "active7d": "Aktiv 7 Tage",
+      "active7dHint": "Verschiedene Nutzer mit Anmeldung in den letzten 7 Tagen"
     }
   },
   "adminRetention": {
