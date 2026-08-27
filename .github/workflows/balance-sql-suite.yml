@@ -135,11 +135,11 @@ jobs:
           fi
           # Brojčana brana: scenariji koji se tiho ne izvrše (npr. fixture funkcija
           # poništena rollbackom) NE smiju dati zelenu branu. Prazan ili prekratak
-          # izlaz ruši build. Očekivani minimum: 130 PASS tvrdnji (vidi IZVJEŠTAJ
+          # izlaz ruši build. Očekivani minimum: 135 PASS tvrdnji (vidi IZVJEŠTAJ
           # u harnessu; podići kad se dodaju scenariji).
           pass_count=$(grep -c 'PASS ' /tmp/suite.out || true)
-          if [ "$pass_count" -lt 130 ]; then
-            echo "Balance SQL suite ran only $pass_count assertions (expected >= 130) — silent scenario loss" >&2
+          if [ "$pass_count" -lt 135 ]; then
+            echo "Balance SQL suite ran only $pass_count assertions (expected >= 135) — silent scenario loss" >&2
             exit 1
           fi
           echo "Balance SQL suite: $pass_count assertions PASS"

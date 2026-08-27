@@ -13,6 +13,11 @@
  *      `tr(key, fallback)` and `friendlyError(e, fallbackKey?)` helpers.
  */
 import i18nInstance from '@/i18n';
+import {
+  payoutGuardKind,
+  PAYOUT_GUARD_I18N_KEY,
+  PAYOUT_GUARD_FALLBACK,
+} from '@/lib/payoutExpenseGuard';
 
 export type TFunc = (key: string, defaultOrOpts?: any, opts?: any) => string;
 
@@ -112,6 +117,12 @@ export function formatErrorForUser(
   }
   if (msg.includes('already registered') || msg.includes('user already')) {
     return t('errors.auth.userExists', 'A user with this email already exists');
+  }
+
+  // Payout-locked expenses — say WHERE the money is undone, not "no permission".
+  const guardKind = payoutGuardKind(error);
+  if (guardKind) {
+    return t(PAYOUT_GUARD_I18N_KEY[guardKind], PAYOUT_GUARD_FALLBACK[guardKind]);
   }
 
   // Permission / RLS

@@ -4623,6 +4623,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "project_collaborator_payments_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "project_collaborator_payments_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false

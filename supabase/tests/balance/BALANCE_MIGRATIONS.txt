@@ -41,3 +41,5 @@
 20260826035907_*.sql   # "Ostaje" se mjeri novcem: brana payout_exceeds_remaining + redci namirenja (0 sati)
 20260827043932_*.sql   # Suradnici: project_collaborator_payments + legacy_paid_amount + create/void_collaborator_payment (stvaraju troskove)
 20260827044016_*.sql   # Suradnici hardening: REVOKE EXECUTE ... _recalc_collaborator_paid (interni helper)
+
+20260827171833_*.sql   # Suradnici: brana troska plaćanja suradniku + FK expense_id -> expenses
