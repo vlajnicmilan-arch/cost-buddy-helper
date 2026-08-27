@@ -6970,6 +6970,26 @@
     "excludedFromTotals": "Otkazan — izvan zbroja",
     "add": "+ Suradnik"
   },
+  "collaborators": {
+    "add": "Dodaj vanjskog suradnika",
+    "edit": "Uredi suradnika",
+    "project": "Projekt",
+    "projectPlaceholder": "Odaberi projekt",
+    "company": "Tvrtka / obrt",
+    "serviceDescription": "Opis usluge",
+    "agreedPrice": "Dogovoreni iznos",
+    "agreedPriceOptionalHint": "Ostavi prazno ako iznos još nije dogovoren.",
+    "paidAmount": "Isplaćeni iznos",
+    "milestone": "Pridruži fazi",
+    "noMilestone": "Bez faze",
+    "contact": "Kontakt",
+    "contactPlaceholder": "Email, telefon...",
+    "statusActive": "Aktivan",
+    "statusCompleted": "Završen",
+    "statusCancelled": "Otkazan",
+    "loadingMilestones": "Učitavam faze…",
+    "noMilestones": "Ovaj projekt nema faza"
+  },
   "collaboratorPayment": {
     "add": "+ Suradnik",
     "project": "Projekt",

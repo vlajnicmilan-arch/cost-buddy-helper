@@ -129,7 +129,6 @@ export const CollaboratorsTab = () => {
         open={addOpen}
         onOpenChange={setAddOpen}
         collaborator={null}
-        milestones={[]}
         projectOptions={projectOptions}
         onSave={handleAdd}
       />

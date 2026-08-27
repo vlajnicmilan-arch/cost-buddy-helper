@@ -6954,6 +6954,26 @@
     "excludedFromTotals": "Cancelled — excluded from totals",
     "add": "+ Collaborator"
   },
+  "collaborators": {
+    "add": "Add external collaborator",
+    "edit": "Edit collaborator",
+    "project": "Project",
+    "projectPlaceholder": "Select a project",
+    "company": "Company / business",
+    "serviceDescription": "Service description",
+    "agreedPrice": "Agreed amount",
+    "agreedPriceOptionalHint": "Leave blank if the amount hasn't been agreed yet.",
+    "paidAmount": "Paid amount",
+    "milestone": "Assign to phase",
+    "noMilestone": "No phase",
+    "contact": "Contact",
+    "contactPlaceholder": "Email, phone...",
+    "statusActive": "Active",
+    "statusCompleted": "Completed",
+    "statusCancelled": "Cancelled",
+    "loadingMilestones": "Loading phases…",
+    "noMilestones": "This project has no phases"
+  },
   "collaboratorPayment": {
     "add": "+ Collaborator",
     "project": "Project",
