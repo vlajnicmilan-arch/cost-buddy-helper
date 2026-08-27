@@ -172,12 +172,11 @@ END;
 $$;
 
 
-SAVEPOINT before_scenarios;
-
-
 -- ---- Suradnici (collaborator payment) fixtures ----------------------------
 -- Collaborators are a separate model from hourly work: an agreed price, no
 -- hours. These fixtures never touch project_workers / project_worker_payouts.
+-- MORA biti IZNAD `SAVEPOINT before_scenarios;` — scenariji rade
+-- ROLLBACK TO SAVEPOINT, čime bi se funkcija stvorena ispod točke poništila.
 INSERT INTO _bfix VALUES
   ('collab', '11111111-2222-3333-4444-000000000003');
 
@@ -211,3 +210,10 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_user::text, true);
 END;
 $$;
+
+
+-- Kontrolna točka za scenarije. MORA biti POSLJEDNJA naredba u ovoj datoteci:
+-- svaki scenarij radi ROLLBACK TO SAVEPOINT before_scenarios, pa bilo koja
+-- definicija (pg_temp funkcija, _bfix redak) ispod ove linije bi se poništila
+-- i scenariji bi tiho padali s "does not exist".
+SAVEPOINT before_scenarios;

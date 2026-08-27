@@ -183,3 +183,24 @@ CREATE TABLE IF NOT EXISTS public.notifications (
 
 
 
+
+-- public.project_collaborators (minimal — vjerna kopija žive sheme, potrebno za
+-- migraciju 20260827043932 koja nad njom stvara project_collaborator_payments).
+-- legacy_paid_amount se NAMJERNO NE dodaje ovdje — taj stupac uvodi migracija
+-- 20260827043932 i to mora ostati ispitano kroz samu migraciju.
+CREATE TABLE IF NOT EXISTS public.project_collaborators (
+  id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id          uuid NOT NULL,
+  first_name          text NOT NULL,
+  last_name           text NOT NULL,
+  company_name        text,
+  service_description text NOT NULL,
+  total_price         numeric NOT NULL DEFAULT 0,
+  milestone_id        uuid,
+  status              text NOT NULL DEFAULT 'active',
+  contact_info        text,
+  note                text,
+  created_at          timestamptz NOT NULL DEFAULT now(),
+  updated_at          timestamptz NOT NULL DEFAULT now(),
+  paid_amount         numeric NOT NULL DEFAULT 0
+);
