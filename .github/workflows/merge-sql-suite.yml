@@ -72,8 +72,17 @@ jobs:
         run: |
           set -euo pipefail
           bash supabase/tests/merge/run.sh 2>&1 | tee /tmp/merge.out
-          if grep -E '^(psql:.*ERROR|FAIL )' /tmp/merge.out; then
+          # Hvata i goli "ERROR:" (stdin ulaz nema psql: prefiks).
+          if grep -E '^(psql:.*ERROR|ERROR:|FAIL )' /tmp/merge.out; then
             echo "Merge SQL suite reported failures" >&2
             exit 1
           fi
-          echo "Merge SQL suite: $(grep -c 'PASS ' /tmp/merge.out) assertions PASS"
+          # Brojčana brana: tiho neizvršeni scenariji ne smiju dati zeleno.
+          # Očekivani minimum: 33 PASS tvrdnje (broj assert poziva u
+          # manual_bank_merge.sql; podići kad se dodaju scenariji).
+          pass_count=$(grep -c 'PASS ' /tmp/merge.out || true)
+          if [ "$pass_count" -lt 33 ]; then
+            echo "Merge SQL suite ran only $pass_count assertions (expected >= 33) — silent scenario loss" >&2
+            exit 1
+          fi
+          echo "Merge SQL suite: $pass_count assertions PASS"
