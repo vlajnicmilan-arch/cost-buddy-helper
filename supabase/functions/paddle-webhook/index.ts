@@ -292,6 +292,23 @@ async function handleSubscriptionEvent(evt: PaddleEventEnvelope) {
     now: new Date(),
   });
 
+  // Snapshot BEFORE applying entitlements: did this subscription already have
+  // an active entitlement? Used to distinguish a renewal (skip funnel event)
+  // from a genuine transition into "active".
+  let hadPriorActiveEntitlement = false;
+  const { data: priorRows, error: priorErr } = await admin
+    .from("user_entitlements")
+    .select("id")
+    .eq("provider", "paddle")
+    .eq("provider_sub_id", subscriptionId)
+    .eq("status", "active")
+    .limit(1);
+  if (priorErr) {
+    log("prior_active_lookup_error", { error: priorErr.message, subscription_id: subscriptionId });
+  } else {
+    hadPriorActiveEntitlement = (priorRows?.length ?? 0) > 0;
+  }
+
   await applySubscriptionEntitlements({
     userId,
     subscriptionId,
@@ -307,6 +324,35 @@ async function handleSubscriptionEvent(evt: PaddleEventEnvelope) {
       scheduled_cancel_at: decision.scheduledCancelAt,
     },
   });
+
+  // Funnel: first paid conversion. Best-effort — must NEVER break billing.
+  try {
+    const funnelDecision = decidePaidConversion({
+      eventType: evt.event_type ?? "",
+      status: data?.status ?? null,
+      hadPriorActiveEntitlement,
+    });
+    if (funnelDecision.log) {
+      const res = await recordPaidConversion(admin, {
+        userId,
+        subscriptionId,
+        priceIds,
+        eventType: evt.event_type ?? "",
+      });
+      if (!res.ok) {
+        log("funnel_paid_conversion_error", { error: res.error, subscription_id: subscriptionId });
+      } else {
+        log("funnel_paid_conversion", {
+          subscription_id: subscriptionId,
+          user_id: userId,
+          inserted: res.inserted,
+          reason: funnelDecision.reason,
+        });
+      }
+    }
+  } catch (e) {
+    log("funnel_paid_conversion_exception", { error: String(e), subscription_id: subscriptionId });
+  }
 }
 
 async function handleAdjustmentEvent(evt: PaddleEventEnvelope) {
