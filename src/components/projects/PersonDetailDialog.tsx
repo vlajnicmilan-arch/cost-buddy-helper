@@ -16,6 +16,7 @@ import {
   voidedPayouts,
 } from '@/lib/payoutHistory';
 import { PersonPayoutDialog } from './PersonPayoutDialog';
+import { PersonAccountLinkSection } from './PersonAccountLinkSection';
 import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
 import { usePersonPayoutVoid } from '@/hooks/usePersonPayoutVoid';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
