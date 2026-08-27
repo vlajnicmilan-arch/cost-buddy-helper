@@ -26,9 +26,8 @@ vi.mock('@/hooks/useStatusFeedback', () => ({
   showUndoToast: vi.fn(),
 }));
 
-import { createReactI18nextMock } from '@/test/mocks/reactI18next';
-vi.mock('react-i18next', () => ({
-  ...createReactI18nextMock(),
+vi.mock('react-i18next', async () => ({
+  ...(await import('@/test/mocks/reactI18next')).createReactI18nextMock(),
   useTranslation: () => ({ t: (key: string, fallback?: string) => fallback ?? key }),
 }));
 

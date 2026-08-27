@@ -7,9 +7,8 @@ import type { Project } from '@/types/project';
 
 // react-i18next: return the fallback string (second arg) so the test asserts
 // on real Croatian copy without bootstrapping i18next.
-import { createReactI18nextMock } from '@/test/mocks/reactI18next';
-vi.mock('react-i18next', () => ({
-  ...createReactI18nextMock(),
+vi.mock('react-i18next', async () => ({
+  ...(await import('@/test/mocks/reactI18next')).createReactI18nextMock(),
   useTranslation: () => ({
     t: (_key: string, fallback?: string) => fallback ?? _key,
     i18n: { language: 'hr' },

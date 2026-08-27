@@ -5,9 +5,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 
-import { createReactI18nextMock } from '@/test/mocks/reactI18next';
-vi.mock('react-i18next', () => ({
-  ...createReactI18nextMock(),
+vi.mock('react-i18next', async () => ({
+  ...(await import('@/test/mocks/reactI18next')).createReactI18nextMock(),
   useTranslation: () => ({ t: (_k: string, f?: string) => f ?? _k, i18n: { language: 'hr' } }),
 }));
 
