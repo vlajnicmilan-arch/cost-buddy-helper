@@ -40,3 +40,11 @@ Svaki pad upisuje trag u `app_diagnostics_logs` (`worker_identity_*`).
 - `aggregatePerson` vraća `paid`, `advance`, `shortfalls` po angažmanu; `unpaidFrom/To` padaju natrag na razdoblje nedoplaćene isplate kad nema slobodnih sati.
 - Povijest isplata: zadnjih 5 (`localStorage: vmbalance.people.payoutHistory.showAll`), grupirano po mjesecima sa zbrojem, stornirane iza "+ N storniranih". Kod: `src/lib/payoutHistory.ts`.
 - Gate: migracije `20260825213455` i `20260826035907` su PREMJEŠTENE iz ignore-a u `BALANCE_MIGRATIONS.txt`; scenariji PM1–PM4 u `supabase/tests/balance/10_scenarios.sql` dokazuju da 0,01 € iznad duga pada i da ostatak prolazi.
+
+## Veza s Centar računom pripada OSOBI (5. isporuka)
+- Migracija `20260827140400`: okidač PREMA GORE (`AFTER UPDATE OF user_id` na `project_workers`) upisuje `workers.linked_user_id` i povezuje SVE ostale angažmane te osobe; okidač PREMA DOLJE (`BEFORE INSERT`) daje novom angažmanu `linked_user_id` osobe.
+- Sukob (račun već vezan uz DRUGOG radnika na tom projektu, `project_workers_project_user_uniq`) se NE guta: taj projekt se preskoči i upiše se `person_link_conflict_skipped` u `app_diagnostics_logs`.
+- RPC `public.link_person_to_user(p_person_id, p_user_id)` (SECURITY DEFINER, samo vlasnik osobe) veže ili odvezuje (NULL) osobu i sve njezine angažmane; vraća `{linked, engagements_linked, skipped_projects}`. Bez prijave ili tuđa osoba → 42501.
+- GRANICA: sama veza NE daje pristup aplikaciji — pristup ide isključivo iz Članova (`project_members`). Napisano u kodu i u sučelju.
+- Kod: `src/lib/personLinkPlan.ts` (+ testovi), `src/hooks/usePersonLink.ts`, `src/components/projects/PersonAccountLinkSection.tsx` (stanje veze, "Pozovi u Centar" preko postojećih pozivnica s najnovijim aktivnim angažmanom kao nositeljem, "Poveži s postojećim članom", "Odveži" uz potvrdu). Dijagnostika: `person_link_ok/failed`, `person_unlink_ok/failed`.
+- SQL harness: `supabase/tests/people/run.sh` (baseline + `PEOPLE_LINK_MIGRATIONS.txt` + scenariji PL1–PL6). NIJE dio balance harnessa — migracija ne dira saldo.
