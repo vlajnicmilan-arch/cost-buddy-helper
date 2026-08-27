@@ -25,7 +25,8 @@ vi.mock('@/lib/instantCache', () => ({
   instantCache: { read: () => null, write: () => undefined },
 }));
 
-vi.mock('react-i18next', () => ({
+vi.mock('react-i18next', async () => ({
+  ...(await import('@/test/mocks/reactI18next')).createReactI18nextMock(),
   useTranslation: () => ({
     t: (key: string, opts?: unknown) =>
       typeof opts === 'string' ? opts : key,

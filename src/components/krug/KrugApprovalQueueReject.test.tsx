@@ -25,7 +25,8 @@ const hoisted = vi.hoisted(() => ({
   ],
 }));
 
-vi.mock('react-i18next', () => ({
+vi.mock('react-i18next', async () => ({
+  ...(await import('@/test/mocks/reactI18next')).createReactI18nextMock(),
   useTranslation: () => ({
     t: (_key: string, fallback?: string) => fallback ?? _key,
     i18n: { language: 'hr' },

@@ -32,7 +32,8 @@ const baseItem = (extraction: Record<string, unknown> = {}): MailReviewItem => (
   file_name: 'izvod.pdf',
 });
 
-vi.mock('react-i18next', () => ({
+vi.mock('react-i18next', async () => ({
+  ...(await import('@/test/mocks/reactI18next')).createReactI18nextMock(),
   useTranslation: () => ({
     t: (_key: string, defaultValue?: string) => defaultValue ?? _key,
   }),

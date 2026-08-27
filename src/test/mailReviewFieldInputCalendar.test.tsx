@@ -3,7 +3,8 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { MailReviewFieldInput } from '@/components/mail/MailReviewFieldInput';
 import { formatDateHr } from '@/lib/dateFormat';
 
-vi.mock('react-i18next', () => ({
+vi.mock('react-i18next', async () => ({
+  ...(await import('@/test/mocks/reactI18next')).createReactI18nextMock(),
   useTranslation: () => ({ t: (_key: string, fallback: string) => fallback }),
 }));
 

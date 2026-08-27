@@ -4,7 +4,8 @@ import { BriefGateSetting } from '@/components/settings/BriefGateSetting';
 import { BRIEF_GATE_DISABLED_KEY, BRIEF_GATE_LAST_SHOWN_KEY } from '@/lib/briefGate';
 import { BRIEF_CONTINUITY_KEY } from '@/lib/brief/continuity';
 
-vi.mock('react-i18next', () => ({
+vi.mock('react-i18next', async () => ({
+  ...(await import('@/test/mocks/reactI18next')).createReactI18nextMock(),
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 

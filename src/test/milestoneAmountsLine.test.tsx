@@ -3,7 +3,8 @@ import { render, screen } from '@testing-library/react';
 import { buildMilestoneAmountsLine, type MilestoneAmountRole } from '@/lib/milestoneAmounts';
 import { MilestoneAmountsSection } from '@/components/projects/MilestoneAmountsSection';
 
-vi.mock('react-i18next', () => ({
+vi.mock('react-i18next', async () => ({
+  ...(await import('@/test/mocks/reactI18next')).createReactI18nextMock(),
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 

@@ -15,7 +15,8 @@ const { showError, showSuccess, confirmItem } = vi.hoisted(() => ({
 
 vi.mock('@/hooks/useStatusFeedback', () => ({ showError, showSuccess }));
 
-vi.mock('react-i18next', () => ({
+vi.mock('react-i18next', async () => ({
+  ...(await import('@/test/mocks/reactI18next')).createReactI18nextMock(),
   useTranslation: () => ({
     t: (key: string, fallback?: string) =>
       key === 'mailReview.error.nedostaju_polja'

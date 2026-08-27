@@ -6,7 +6,8 @@ import { isProvableTarget } from '@/lib/brief/destinations';
 import { buildBriefMessages } from '@/lib/brief/engine';
 import Documents from '@/pages/Documents';
 
-vi.mock('react-i18next', () => ({
+vi.mock('react-i18next', async () => ({
+  ...(await import('@/test/mocks/reactI18next')).createReactI18nextMock(),
   useTranslation: () => ({ t: (key: string, opts?: unknown) => (typeof opts === 'string' ? opts : key) }),
 }));
 
