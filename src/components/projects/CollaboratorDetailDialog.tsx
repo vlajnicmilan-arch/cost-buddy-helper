@@ -289,7 +289,7 @@ export const CollaboratorDetailDialog = ({
             paidAt,
             note,
           });
-          if (res.ok) {
+          if (!('code' in res)) {
             showSuccess(t('collaboratorPayment.paid', 'Plaćanje zabilježeno'));
             setPayOpen(false);
             onChanged?.();
@@ -323,7 +323,7 @@ export const CollaboratorDetailDialog = ({
           if (!toVoid) return;
           const res = await voidPayment(toVoid, reason ?? '');
           setToVoid(null);
-          if (res.ok) {
+          if (!('code' in res)) {
             showSuccess(t('collaboratorPayment.voided', 'Plaćanje stornirano'));
             await refetch();
             onChanged?.();
