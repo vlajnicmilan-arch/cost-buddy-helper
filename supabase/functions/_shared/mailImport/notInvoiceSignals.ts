@@ -47,6 +47,7 @@ export function normalizeForDeclaration(input: string): string {
     .map((ch) => HARD_MAP[ch] ?? ch)
     .join('');
   text = text.normalize('NFD').replace(/[̀-ͯ]/g, '');
+  //        ^ combining diacritics U+0300–U+036F
   // Skupljeni razmaci; interpunkcija osim završnica rečenica postaje razmak.
   text = text.replace(/[ \t ]+/g, ' ');
   return text;
