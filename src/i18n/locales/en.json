@@ -895,7 +895,10 @@
       "description": "You can move it to the archive (safe, restore anytime) or delete it. Deleted projects go to Trash and are kept for 30 days before permanent removal.",
       "descriptionArchived": "This project is archived. Deleting moves it to Trash where it stays for 30 days before permanent removal.",
       "archiveAction": "Move to archive",
-      "deleteAction": "Move to Trash"
+      "deleteAction": "Move to Trash",
+      "debtWarning": "Deleting the project also hides the debt owed to people.",
+      "workersLine": "{{count}} workers · unpaid {{amount}}",
+      "collaboratorsLine": "{{count}} collaborators · unpaid {{amount}}"
     },
     "menu": {
       "editProject": "Edit project",
@@ -6639,14 +6642,14 @@
       "ibanChanged": "IBAN differs from previous ones — verify before paying."
     },
     "docType": {
-      "380": "Commercial invoice",
       "82": "Metered services invoice",
+      "380": "Commercial invoice",
       "381": "Credit note",
       "384": "Corrected invoice",
       "386": "Prepayment invoice",
-      "394": "Lease invoice",
       "389": "Self-billed invoice",
       "393": "Factored invoice",
+      "394": "Lease invoice",
       "875": "Interim construction statement",
       "876": "Interim final statement",
       "877": "Final construction statement"
@@ -6996,6 +6999,39 @@
       "noNameInvited": "No name · invited {{date}}",
       "alreadyLinkedTo": "already linked: {{person}} — unlink first",
       "otherPerson": "another person"
+    },
+    "admin": {
+      "rename": "Correct name",
+      "renameTitle": "Correct first and last name",
+      "renameDescription": "The name also changes on every engagement of this person.",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "renameInvalid": "First name is required",
+      "renamed": "Name corrected",
+      "renameFailed": "Renaming failed: {{reason}}",
+      "archive": "Archive",
+      "unarchive": "Restore from archive",
+      "archived": "Person archived",
+      "unarchived": "Person restored to the list",
+      "archiveFailed": "Archiving failed: {{reason}}",
+      "archivedLabel": "Archived",
+      "showArchived": "Show archived ({{count}})",
+      "hideArchived": "Hide archived",
+      "archiveInstead": "Archive instead",
+      "delete": "Delete person",
+      "deleteTitle": "Delete {{name}}?",
+      "deleteLead": "Only the person is deleted — here is what stays:",
+      "deleteEngagements_one": "{{count}} engagement stays on its project — it simply stops belonging to this person.",
+      "deleteEngagements_other": "{{count}} engagements stay on their projects — they simply stop belonging to this person.",
+      "deleteMoney": "Hours, rates and payouts are NOT touched ({{hours}} h, paid {{paid}}).",
+      "deleteLink": "The account link is cut.",
+      "deleted": "Person deleted. Engagements stayed on their projects.",
+      "deleteFailed": "Deletion failed: {{reason}}",
+      "detach": "Detach from person",
+      "detachTitle": "Detach engagement from person?",
+      "detachDesc": "The engagement stays on project {{project}}, it just no longer belongs to this person. Hours, rates and payouts are unchanged.",
+      "detached": "Engagement detached",
+      "detachFailed": "Detaching failed: {{reason}}"
     }
   },
   "collaboratorsOverview": {
@@ -7012,7 +7048,14 @@
     "engagementsTitle": "Engagements",
     "cancelled": "Cancelled",
     "excludedFromTotals": "Cancelled — excluded from totals",
-    "add": "+ Collaborator"
+    "add": "+ Collaborator",
+    "deleteEngagement": "Delete collaborator from project",
+    "deleteEngagementShort": "Delete",
+    "deleteTitle": "Delete collaborator from project?",
+    "deleteDescription": "The engagement on project {{project}} disappears. Expenses stay in the books and voided payments are removed — the balance does not change.",
+    "deleteBlocked": "There are {{count}} payments totalling {{amount}} — void them first, then the collaborator can be deleted.",
+    "deleted": "Collaborator deleted",
+    "deleteFailed": "Deletion failed: {{reason}}"
   },
   "collaborators": {
     "add": "Add external collaborator",

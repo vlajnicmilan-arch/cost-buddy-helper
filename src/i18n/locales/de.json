@@ -895,7 +895,10 @@
       "description": "Du kannst es ins Archiv verschieben (sicher, jederzeit wiederherstellbar) oder löschen. Gelöschte Projekte landen im Papierkorb und werden dort 30 Tage aufbewahrt, bevor sie endgültig entfernt werden.",
       "descriptionArchived": "Das Projekt ist archiviert. Beim Löschen landet es im Papierkorb und bleibt dort 30 Tage, bevor es endgültig entfernt wird.",
       "archiveAction": "Ins Archiv verschieben",
-      "deleteAction": "In den Papierkorb"
+      "deleteAction": "In den Papierkorb",
+      "debtWarning": "Mit dem Projekt verschwindet auch die Schuld gegenüber Personen aus der Sicht.",
+      "workersLine": "{{count}} Arbeiter · offen {{amount}}",
+      "collaboratorsLine": "{{count}} Mitarbeiter · offen {{amount}}"
     },
     "menu": {
       "editProject": "Projekt bearbeiten",
@@ -6639,14 +6642,14 @@
       "ibanChanged": "IBAN weicht von den bisherigen ab — vor der Zahlung prüfen."
     },
     "docType": {
-      "380": "Handelsrechnung",
       "82": "Rechnung für gemessene Leistungen",
+      "380": "Handelsrechnung",
       "381": "Gutschrift",
       "384": "Rechnungskorrektur",
       "386": "Anzahlungsrechnung",
-      "394": "Leasingrechnung",
       "389": "Selbstfakturierte Rechnung",
       "393": "Factoring-Rechnung",
+      "394": "Leasingrechnung",
       "875": "Abschlagsrechnung Bau",
       "876": "Vorläufige Schlussrechnung",
       "877": "Schlussrechnung Bau"
@@ -6996,6 +6999,39 @@
       "noNameInvited": "Ohne Namen · eingeladen {{date}}",
       "alreadyLinkedTo": "bereits verknüpft: {{person}} — zuerst trennen",
       "otherPerson": "eine andere Person"
+    },
+    "admin": {
+      "rename": "Namen korrigieren",
+      "renameTitle": "Vor- und Nachnamen korrigieren",
+      "renameDescription": "Der Name ändert sich auch bei allen Einsätzen dieser Person.",
+      "firstName": "Vorname",
+      "lastName": "Nachname",
+      "renameInvalid": "Vorname ist erforderlich",
+      "renamed": "Name korrigiert",
+      "renameFailed": "Umbenennen fehlgeschlagen: {{reason}}",
+      "archive": "Archivieren",
+      "unarchive": "Aus dem Archiv holen",
+      "archived": "Person archiviert",
+      "unarchived": "Person zurück in der Liste",
+      "archiveFailed": "Archivieren fehlgeschlagen: {{reason}}",
+      "archivedLabel": "Archiviert",
+      "showArchived": "Archivierte anzeigen ({{count}})",
+      "hideArchived": "Archivierte ausblenden",
+      "archiveInstead": "Lieber archivieren",
+      "delete": "Person löschen",
+      "deleteTitle": "{{name}} löschen?",
+      "deleteLead": "Nur die Person wird gelöscht — das bleibt:",
+      "deleteEngagements_one": "{{count}} Einsatz bleibt im Projekt — er gehört nur nicht mehr zu dieser Person.",
+      "deleteEngagements_other": "{{count}} Einsätze bleiben in den Projekten — sie gehören nur nicht mehr zu dieser Person.",
+      "deleteMoney": "Stunden, Sätze und Auszahlungen bleiben unberührt ({{hours}} h, bezahlt {{paid}}).",
+      "deleteLink": "Die Kontoverknüpfung wird getrennt.",
+      "deleted": "Person gelöscht. Einsätze sind in den Projekten geblieben.",
+      "deleteFailed": "Löschen fehlgeschlagen: {{reason}}",
+      "detach": "Von Person trennen",
+      "detachTitle": "Einsatz von der Person trennen?",
+      "detachDesc": "Der Einsatz bleibt im Projekt {{project}}, gehört aber nicht mehr zu dieser Person. Stunden, Sätze und Auszahlungen bleiben gleich.",
+      "detached": "Einsatz getrennt",
+      "detachFailed": "Trennen fehlgeschlagen: {{reason}}"
     }
   },
   "collaboratorsOverview": {
@@ -7012,7 +7048,14 @@
     "engagementsTitle": "Engagements",
     "cancelled": "Storniert",
     "excludedFromTotals": "Storniert — nicht in der Summe",
-    "add": "+ Mitarbeiter"
+    "add": "+ Mitarbeiter",
+    "deleteEngagement": "Mitarbeiter aus Projekt löschen",
+    "deleteEngagementShort": "Löschen",
+    "deleteTitle": "Mitarbeiter aus Projekt löschen?",
+    "deleteDescription": "Der Einsatz im Projekt {{project}} verschwindet. Ausgaben bleiben in den Büchern, stornierte Zahlungen werden entfernt — der Saldo ändert sich nicht.",
+    "deleteBlocked": "Es gibt {{count}} Zahlungen über {{amount}} — storniere sie zuerst, dann kann der Mitarbeiter gelöscht werden.",
+    "deleted": "Mitarbeiter gelöscht",
+    "deleteFailed": "Löschen fehlgeschlagen: {{reason}}"
   },
   "collaborators": {
     "add": "Externen Mitarbeiter hinzufügen",
