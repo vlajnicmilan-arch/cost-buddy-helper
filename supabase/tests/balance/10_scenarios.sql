@@ -2093,5 +2093,110 @@ BEGIN
 END $$;
 RELEASE SAVEPOINT s_pm;
 
-ROLLBACK;
 
+-- ============================================================
+-- CP — Suradnici: plaćanje ostavlja trag u knjigama točno jednom
+-- ============================================================
+
+-- CP1 — jedno plaćanje smanji saldo izvora točno jednom
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_cp1;
+SELECT pg_temp.seed_collaborator_fixtures();
+SELECT public.create_collaborator_payment(
+  (SELECT val FROM _bfix WHERE key='collab'),
+  300,
+  'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+  '2026-06-05 12:00:00+00',
+  'CP1');
+SELECT pg_temp.assert_eq('CP1 balance after payment', 700,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+SELECT pg_temp.assert_eq('CP1 one expense written', 1,
+  (SELECT COUNT(*) FROM public.expenses
+    WHERE project_id=(SELECT val FROM _bfix WHERE key='proj')
+      AND deleted_at IS NULL)::numeric);
+SELECT pg_temp.assert_eq('CP1 paid_amount recomputed', 300,
+  (SELECT paid_amount FROM public.project_collaborators
+    WHERE id=(SELECT val FROM _bfix WHERE key='collab')));
+RELEASE SAVEPOINT s_cp1;
+
+-- CP2 — dva plaćanja istom suradniku daju dva odvojena učinka
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_cp2;
+SELECT pg_temp.seed_collaborator_fixtures();
+SELECT public.create_collaborator_payment(
+  (SELECT val FROM _bfix WHERE key='collab'), 300,
+  'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+  '2026-06-05 12:00:00+00', 'CP2 a');
+SELECT public.create_collaborator_payment(
+  (SELECT val FROM _bfix WHERE key='collab'), 200,
+  'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+  '2026-06-06 12:00:00+00', 'CP2 b');
+SELECT pg_temp.assert_eq('CP2 balance after two payments', 500,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+SELECT pg_temp.assert_eq('CP2 two ledger rows', 2,
+  (SELECT COUNT(*) FROM public.project_collaborator_payments
+    WHERE collaborator_id=(SELECT val FROM _bfix WHERE key='collab'))::numeric);
+SELECT pg_temp.assert_eq('CP2 paid_amount recomputed', 500,
+  (SELECT paid_amount FROM public.project_collaborators
+    WHERE id=(SELECT val FROM _bfix WHERE key='collab')));
+RELEASE SAVEPOINT s_cp2;
+
+-- CP3 — storno vrati saldo točno jednom
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_cp3;
+SELECT pg_temp.seed_collaborator_fixtures();
+SELECT public.create_collaborator_payment(
+  (SELECT val FROM _bfix WHERE key='collab'), 300,
+  'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+  '2026-06-05 12:00:00+00', 'CP3');
+DO $$
+DECLARE v_pid uuid;
+BEGIN
+  SELECT id INTO v_pid FROM public.project_collaborator_payments
+   WHERE collaborator_id=(SELECT val FROM _bfix WHERE key='collab') LIMIT 1;
+  PERFORM public.void_collaborator_payment(v_pid, 'greska');
+END $$;
+SELECT pg_temp.assert_eq('CP3 balance restored', 1000,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+SELECT pg_temp.assert_eq('CP3 paid_amount back to zero', 0,
+  (SELECT paid_amount FROM public.project_collaborators
+    WHERE id=(SELECT val FROM _bfix WHERE key='collab')));
+SELECT pg_temp.assert_eq('CP3 payment marked voided', 1,
+  (SELECT COUNT(*) FROM public.project_collaborator_payments
+    WHERE collaborator_id=(SELECT val FROM _bfix WHERE key='collab')
+      AND status='voided')::numeric);
+RELEASE SAVEPOINT s_cp3;
+
+-- CP4 — strop: cent iznad ostatka pada, saldo netaknut
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_cp4;
+SELECT pg_temp.seed_collaborator_fixtures(1000, 900);
+DO $$
+DECLARE v_ok boolean := false;
+BEGIN
+  BEGIN
+    PERFORM public.create_collaborator_payment(
+      (SELECT val FROM _bfix WHERE key='collab'), 200,
+      'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+      '2026-06-05 12:00:00+00', 'CP4');
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM LIKE '%collab_payment_exceeds_remaining%' THEN v_ok := true; ELSE RAISE; END IF;
+  END;
+  IF v_ok THEN
+    RAISE NOTICE 'PASS CP4 payment above remaining refused';
+  ELSE
+    RAISE EXCEPTION 'FAIL CP4 payment above remaining accepted';
+  END IF;
+END $$;
+SELECT pg_temp.assert_eq('CP4 balance untouched', 1000,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+RELEASE SAVEPOINT s_cp4;
+
+-- CP5 — dogovoreni iznos nije upisan (total_price = 0) → nema stropa
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_cp5;
+SELECT pg_temp.seed_collaborator_fixtures(0, 0);
+SELECT public.create_collaborator_payment(
+  (SELECT val FROM _bfix WHERE key='collab'), 750,
+  'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+  '2026-06-05 12:00:00+00', 'CP5');
+SELECT pg_temp.assert_eq('CP5 balance after uncapped payment', 250,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+RELEASE SAVEPOINT s_cp5;
+
+ROLLBACK;
