@@ -6,7 +6,10 @@ export interface ProjectCollaborator {
   company_name?: string | null;
   service_description: string;
   total_price: number;
+  /** legacy_paid_amount + sum of live ledger payments; recomputed server-side. */
   paid_amount: number;
+  /** Hand-typed amount from before the payment ledger existed. Never changed. */
+  legacy_paid_amount?: number;
   milestone_id?: string | null;
   status: string;
   contact_info?: string | null;
