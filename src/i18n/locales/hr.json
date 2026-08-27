@@ -3456,7 +3456,8 @@
       "analyticsDesc": "Praćenje grešaka (Sentry) za poboljšanje stabilnosti. Bez osobnih podataka.",
       "marketing": "Marketing",
       "marketingDesc": "Trenutno ne koristimo marketinške kolačiće. Rezervirano za buduće promotivne aktivnosti."
-    }
+    },
+    "newsletterConsentLabel": "Šaljem savjete za obrtnike i najave novosti, jednom mjesečno. Odjava je moguća u svakom mailu."
   },
   "lock": {
     "title": "Aplikacija je zaključana",

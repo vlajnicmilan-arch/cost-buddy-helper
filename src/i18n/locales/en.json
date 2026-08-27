@@ -3589,7 +3589,8 @@
       "analyticsDesc": "Error tracking (Sentry) to improve stability. No personal data collected.",
       "marketing": "Marketing",
       "marketingDesc": "We currently do not use marketing cookies. Reserved for future promotional activities."
-    }
+    },
+    "newsletterConsentLabel": "I send tips for tradespeople and product news, once a month. You can unsubscribe in any email."
   },
   "lock": {
     "title": "App is locked",

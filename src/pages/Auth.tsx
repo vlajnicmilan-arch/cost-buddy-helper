@@ -20,6 +20,7 @@ import { loadCampaign, mergeCampaign, readCampaignFromParams } from '@/lib/paywa
 import { Sparkles } from 'lucide-react';
 
 import i18n from '@/i18n';
+import { buildConsentPayload, recordNewsletterConsent, stashPendingConsent, flushPendingNewsletterConsent } from '@/lib/newsletterConsent';
 const authSchema = z.object({
   email: z.string().trim().email(i18n.t('auth.validation.invalidEmail')).max(255, i18n.t('auth.validation.emailTooLong')),
   password: z.string().min(6, i18n.t('auth.validation.passwordTooShort')).max(72, i18n.t('auth.validation.passwordTooLong'))
@@ -41,6 +42,7 @@ const Auth = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [gdprConsent, setGdprConsent] = useState(false);
+  const [newsletterConsent, setNewsletterConsent] = useState(false);
   
   const { signIn, signUp, resendVerificationEmail, resetPassword, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -60,6 +62,9 @@ const Auth = () => {
   useEffect(() => {
     if (user && !storageMode) {
       setStorageMode('cloud');
+    }
+    if (user) {
+      flushPendingNewsletterConsent(user.id);
     }
   }, [user, storageMode, setStorageMode]);
 
@@ -160,7 +165,20 @@ const Auth = () => {
           }
           return;
         }
-        
+
+        // Newsletter privola — samo ako je kvačica označena. Bez oznake NE upisuje se redak.
+        if (newsletterConsent) {
+          const payload = buildConsentPayload(email, t('gdpr.newsletterConsentLabel'), i18n.language);
+          const { data: sessionData } = await supabase.auth.getSession();
+          const uid = sessionData.session?.user.id;
+          if (uid) {
+            await recordNewsletterConsent(uid, payload);
+          } else {
+            // Nema sesije (potvrda maila) — namjera se upisuje pri prvoj prijavi.
+            stashPendingConsent(payload);
+          }
+        }
+
         if (needsEmailConfirmation) {
           if (!storageMode) setStorageMode('cloud');
           setAwaitingVerification(true);
@@ -601,6 +619,22 @@ const Auth = () => {
             </div>
           )}
 
+          {/* Newsletter consent — zasebna, PRAZNA, NEOBAVEZNA kvačica (nikad pred-označena) */}
+          {!isLogin && (
+            <div className="flex items-start gap-2 border-t border-border pt-4">
+              <input
+                type="checkbox"
+                id="newsletterConsent"
+                checked={newsletterConsent}
+                onChange={(e) => setNewsletterConsent(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary"
+              />
+              <label htmlFor="newsletterConsent" className="text-xs text-muted-foreground leading-relaxed">
+                {t('gdpr.newsletterConsentLabel')}
+              </label>
+            </div>
+          )}
+
           <Button 
             type="submit" 
             className="w-full h-12 rounded-xl font-medium"
@@ -719,6 +753,7 @@ const Auth = () => {
                 setIsLogin(!isLogin);
                 setErrors({});
                 setGdprConsent(false);
+                setNewsletterConsent(false);
               }}
               className="text-primary font-medium hover:underline"
             >
