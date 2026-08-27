@@ -6993,7 +6993,8 @@
       "emailPlaceholder": "E-mail radnika",
       "inviteSent": "Pozivnica poslana",
       "inviteFailed": "Pozivnica nije stvorena",
-      "boundary": "Veza ne daje pristup aplikaciji. Pristup dolazi iz Članova projekta. Radnik vidi samo svoje sate, poziciju i zaradu."
+      "boundary": "Veza ne daje pristup aplikaciji. Pristup dolazi iz Članova projekta. Radnik vidi samo svoje sate, poziciju i zaradu.",
+      "notMember": "Taj račun nije član nijednog projekta te osobe. Prvo ga dodaj u Članove projekta."
     }
   },
   "collaboratorsOverview": {

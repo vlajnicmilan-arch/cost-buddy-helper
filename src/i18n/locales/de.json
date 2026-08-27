@@ -6978,7 +6978,8 @@
       "emailPlaceholder": "E-Mail des Arbeiters",
       "inviteSent": "Einladung gesendet",
       "inviteFailed": "Einladung wurde nicht erstellt",
-      "boundary": "Die Verknüpfung gewährt keinen App-Zugriff. Zugriff kommt von den Projektmitgliedern. Ein Arbeiter sieht nur seine eigenen Stunden, Position und Verdienste."
+      "boundary": "Die Verknüpfung gewährt keinen App-Zugriff. Zugriff kommt von den Projektmitgliedern. Ein Arbeiter sieht nur seine eigenen Stunden, Position und Verdienste.",
+      "notMember": "Dieses Konto ist in keinem Projekt dieser Person Mitglied. Fügen Sie es zuerst zu den Projektmitgliedern hinzu."
     }
   },
   "collaboratorsOverview": {
