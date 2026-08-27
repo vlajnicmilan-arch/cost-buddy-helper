@@ -44,6 +44,7 @@ export const PersonDetailDialog = ({
   name,
   aggregate,
   projectNames,
+  linkedUserId = null,
   onPaid,
 }: PersonDetailDialogProps) => {
   const { t } = useTranslation();
