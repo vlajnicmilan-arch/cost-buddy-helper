@@ -8,7 +8,7 @@ Vrata = lazy ekran `/brief`, ulazi se preko `getAppEntryRoute` (samo umjesto `/h
 
 Tri brave (ne pregovara se):
 1. Build flag `BRIEF_GATE_ENABLED` u `src/lib/featureFlags.ts` — **default `false`**.
-2. Po-korisnički popis: `app_settings.key='brief_gate_user_ids'` (jsonb array). RPC vraća `{enabled:false}` svima izvan popisa.
+2. Po-korisnički popis: `app_settings.key='brief_gate_user_ids'` (jsonb array). `'["*"]'` = svi prijavljeni; prazan popis ili nema retka = nitko; pojedinačni identifikatori = samo oni. Popis je operativna postavka, migracije ga NE diraju. RPC vraća `{enabled:false}` svima izvan popisa.
 3. Korisnikov prekidač u Postavke → Napredno (`localStorage vmb-brief-gate:disabled:v1`).
 
 Izvor činjenica: JEDAN read-only RPC `brief_gate_snapshot_v2()` (SECURITY DEFINER, EXECUTE samo `authenticated`).
