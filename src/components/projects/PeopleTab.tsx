@@ -262,6 +262,7 @@ export const PeopleTab = () => {
         name={selectedPerson ? `${selectedPerson.first_name} ${selectedPerson.last_name}` : ''}
         aggregate={selected ? aggregates.get(selected) ?? null : null}
         projectNames={projectNames}
+        linkedUserId={selectedPerson?.linked_user_id ?? null}
         onPaid={refetch}
       />
 
