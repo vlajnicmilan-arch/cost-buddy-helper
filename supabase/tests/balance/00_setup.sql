@@ -172,12 +172,11 @@ END;
 $$;
 
 
-SAVEPOINT before_scenarios;
-
-
 -- ---- Suradnici (collaborator payment) fixtures ----------------------------
 -- Collaborators are a separate model from hourly work: an agreed price, no
 -- hours. These fixtures never touch project_workers / project_worker_payouts.
+-- MORA biti IZNAD `SAVEPOINT before_scenarios;` — scenariji rade
+-- ROLLBACK TO SAVEPOINT, čime bi se funkcija stvorena ispod točke poništila.
 INSERT INTO _bfix VALUES
   ('collab', '11111111-2222-3333-4444-000000000003');
 
