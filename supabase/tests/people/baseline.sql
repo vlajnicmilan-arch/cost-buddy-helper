@@ -71,3 +71,12 @@ CREATE TABLE public.project_workers (
 
 CREATE UNIQUE INDEX project_workers_project_user_uniq
   ON public.project_workers (project_id, user_id) WHERE user_id IS NOT NULL;
+
+-- Members grant app access; the person link now requires membership.
+CREATE TABLE public.project_members (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id uuid NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
+  user_id uuid NOT NULL,
+  role text NOT NULL DEFAULT 'member',
+  created_at timestamptz NOT NULL DEFAULT now()
+);
