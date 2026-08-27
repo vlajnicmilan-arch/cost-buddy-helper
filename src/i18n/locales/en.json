@@ -6718,6 +6718,10 @@
           "title": "Not a document to process",
           "reason": "No invoice or statement in this message."
         },
+        "potvrda_placanja": {
+          "title": "Payment confirmation — not an invoice",
+          "reason": "The sender states this is not an invoice."
+        },
         "nepoznato": {
           "title": "Unrecognised message",
           "reason": "The document type could not be determined."

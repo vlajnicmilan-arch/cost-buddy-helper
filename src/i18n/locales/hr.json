@@ -6729,6 +6729,10 @@
           "title": "Nije dokument za obradu",
           "reason": "U poruci nema računa ni izvoda."
         },
+        "potvrda_placanja": {
+          "title": "Potvrda plaćanja — nije račun",
+          "reason": "Pošiljatelj sam navodi da ovo nije račun."
+        },
         "nepoznato": {
           "title": "Neprepoznata poruka",
           "reason": "Vrstu dokumenta nije bilo moguće odrediti."
