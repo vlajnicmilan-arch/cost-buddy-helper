@@ -7423,6 +7423,7 @@ export type Database = {
         Returns: string[]
       }
       find_user_by_email: { Args: { p_email: string }; Returns: string }
+      get_admin_active_user_counts: { Args: never; Returns: Json }
       get_admin_user_stats: { Args: never; Returns: Json }
       get_ai_monthly_spend: {
         Args: never

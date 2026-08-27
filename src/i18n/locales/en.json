@@ -5308,6 +5308,18 @@
         "description": "This action cannot be undone.",
         "confirm": "Delete"
       }
+    },
+    "funnel": {
+      "day7": "Returned on day 7",
+      "day7Explainer": "Returned on day 7 measures new-user retention — whether a person came back on the seventh day after signing up. It does not mean active in the last 7 days."
+    },
+    "pulse": {
+      "online5min": "Online (last 5 min)",
+      "onlineHint": "Distinct sessions in the last 5 minutes",
+      "active24h": "Active 24 h",
+      "active24hHint": "Distinct users with a login in the last 24 hours",
+      "active7d": "Active 7 days",
+      "active7dHint": "Distinct users with a login in the last 7 days"
     }
   },
   "adminRetention": {
