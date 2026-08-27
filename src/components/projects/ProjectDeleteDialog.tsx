@@ -7,19 +7,24 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { Archive, Trash2 } from 'lucide-react';
+import { Archive, Trash2, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useCurrency } from '@/contexts/CurrencyContext';
+import { useProjectDeleteImpact } from '@/hooks/useProjectDeleteImpact';
 
 interface ProjectDeleteDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Already archived projects skip the archive option. */
   isArchived?: boolean;
+  /** Project being deleted — used only to show what disappears from sight. */
+  projectId?: string | null;
   /** Called when user picks safe path. */
   onArchive?: () => void;
   /** Called when user confirms permanent delete (soft-delete → Trash 30d). */
   onDelete: () => void;
 }
+
 
 /**
  * Hibrid delete affordance: jedan dialog s dvije akcije —
@@ -33,10 +38,13 @@ export const ProjectDeleteDialog = ({
   open,
   onOpenChange,
   isArchived = false,
+  projectId = null,
   onArchive,
   onDelete,
 }: ProjectDeleteDialogProps) => {
   const { t } = useTranslation();
+  const { formatAmount } = useCurrency();
+  const { impact } = useProjectDeleteImpact(projectId, open);
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -58,6 +66,45 @@ export const ProjectDeleteDialog = ({
           </AlertDialogDescription>
         </AlertDialogHeader>
 
+        {impact && (impact.workerCount > 0 || impact.collaboratorCount > 0) && (
+          <div
+            className={`rounded-lg border p-3 space-y-1 text-sm ${
+              impact.hasDebt ? 'border-destructive/50 bg-destructive/5' : 'border-border/50'
+            }`}
+          >
+            {impact.hasDebt && (
+              <p className="flex items-center gap-1.5 font-medium text-destructive">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                {t(
+                  'projects.deleteDialog.debtWarning',
+                  'S projektom s vidika nestaje i dug prema ljudima.'
+                )}
+              </p>
+            )}
+            {impact.workerCount > 0 && (
+              <p>
+                {t(
+                  'projects.deleteDialog.workersLine',
+                  '{{count}} radnika · neisplaćeno {{amount}}',
+                  { count: impact.workerCount, amount: formatAmount(impact.workerUnpaid) }
+                )}
+              </p>
+            )}
+            {impact.collaboratorCount > 0 && (
+              <p>
+                {t(
+                  'projects.deleteDialog.collaboratorsLine',
+                  '{{count}} suradnika · neplaćeno {{amount}}',
+                  {
+                    count: impact.collaboratorCount,
+                    amount: formatAmount(impact.collaboratorUnpaid),
+                  }
+                )}
+              </p>
+            )}
+          </div>
+        )}
+
         <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2 sm:gap-2">
           <Button
             variant="ghost"
@@ -66,6 +113,7 @@ export const ProjectDeleteDialog = ({
           >
             {t('common.cancel', 'Odustani')}
           </Button>
+
 
           {!isArchived && onArchive && (
             <Button

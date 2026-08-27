@@ -17,8 +17,10 @@ import {
 } from '@/lib/payoutHistory';
 import { PersonPayoutDialog } from './PersonPayoutDialog';
 import { PersonAccountLinkSection } from './PersonAccountLinkSection';
+import { PersonAdminSection } from './PersonAdminSection';
 import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
 import { usePersonPayoutVoid } from '@/hooks/usePersonPayoutVoid';
+import { usePersonAdmin } from '@/hooks/usePersonAdmin';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 
 const SHOW_ALL_KEY = 'vmbalance.people.payoutHistory.showAll';
@@ -29,6 +31,9 @@ interface PersonDetailDialogProps {
   onOpenChange: (open: boolean) => void;
   personId?: string | null;
   name: string;
+  firstName?: string;
+  lastName?: string;
+  archived?: boolean;
   aggregate: PersonAggregate | null;
   projectNames: Record<string, string>;
   /** Centar account currently linked to this PERSON (never to one engagement). */
@@ -36,12 +41,16 @@ interface PersonDetailDialogProps {
   onPaid?: () => void;
 }
 
+
 /** Unified view of ONE person's hourly work across projects (+ payout action). */
 export const PersonDetailDialog = ({
   open,
   onOpenChange,
   personId,
   name,
+  firstName = '',
+  lastName = '',
+  archived = false,
   aggregate,
   projectNames,
   linkedUserId = null,
@@ -51,7 +60,10 @@ export const PersonDetailDialog = ({
   const { formatAmount } = useCurrency();
   const [payoutOpen, setPayoutOpen] = useState(false);
   const [voidTarget, setVoidTarget] = useState<PayoutRow | null>(null);
+  const [detachTarget, setDetachTarget] = useState<{ engagementId: string; projectName: string } | null>(null);
   const { voidPayout, voiding } = usePersonPayoutVoid();
+  const { detachEngagement, pending: adminPending } = usePersonAdmin();
+
   const { i18n } = useTranslation();
   const [showAll, setShowAllState] = useState<boolean>(() => {
     try {
@@ -231,7 +243,24 @@ export const PersonDetailDialog = ({
                         {t('people.remainingShort', 'ostaje')} {formatAmount(b.remaining)}
                       </span>
                     </div>
+                    {personId && (
+                      <button
+                        type="button"
+                        className="mt-2 text-xs text-muted-foreground underline underline-offset-2 min-h-[44px]"
+                        onClick={() =>
+                          setDetachTarget({
+                            engagementId: b.engagementId,
+                            projectName:
+                              (b.projectId && projectNames[b.projectId]) ||
+                              t('people.unknownProject', 'Projekt'),
+                          })
+                        }
+                      >
+                        {t('people.admin.detach', 'Odvoji od osobe')}
+                      </button>
+                    )}
                   </div>
+
                 ))}
                 {aggregate.byProject.length === 0 && (
                   <p className="text-xs text-muted-foreground">{t('people.noEngagements', 'Nema angažmana')}</p>
@@ -295,8 +324,50 @@ export const PersonDetailDialog = ({
               )}
             </div>
 
+            {personId && (
+              <PersonAdminSection
+                personId={personId}
+                firstName={firstName}
+                lastName={lastName}
+                archived={archived}
+                linkedUserId={linkedUserId}
+                aggregate={aggregate}
+                onChanged={onPaid}
+                onDeleted={() => onOpenChange(false)}
+              />
+            )}
+
           </div>
         )}
+
+        <ConfirmActionDialog
+          open={!!detachTarget}
+          onOpenChange={(v) => { if (!v) setDetachTarget(null); }}
+          title={t('people.admin.detachTitle', 'Odvojiti angažman od osobe?')}
+          description={t(
+            'people.admin.detachDesc',
+            'Angažman ostaje na projektu {{project}}, samo više nije dio ove osobe. Sati, satnice i isplate se ne mijenjaju.',
+            { project: detachTarget?.projectName ?? '' },
+          )}
+          confirmLabel={t('people.admin.detach', 'Odvoji od osobe')}
+          destructive
+          pending={adminPending}
+          onConfirm={async () => {
+            if (!detachTarget || !personId) return;
+            const res = await detachEngagement(detachTarget.engagementId, personId);
+            setDetachTarget(null);
+            if (res.ok) {
+              showSuccess(t('people.admin.detached', 'Angažman odvojen'));
+              onPaid?.();
+            } else {
+              showError(
+                t('people.admin.detachFailed', 'Odvajanje nije uspjelo: {{reason}}', {
+                  reason: res.dbMessage ?? '',
+                }),
+              );
+            }
+          }}
+        />
 
         <ConfirmActionDialog
           open={!!voidTarget}

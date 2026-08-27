@@ -7338,6 +7338,10 @@ export type Database = {
         }
         Returns: Json
       }
+      delete_collaborator: {
+        Args: { p_collaborator_id: string }
+        Returns: Json
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean

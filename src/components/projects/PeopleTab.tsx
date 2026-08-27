@@ -28,10 +28,11 @@ export const PeopleTab = () => {
   const { formatAmount } = useCurrency();
   const { user } = useAuth();
   const { activeBusinessProfileId } = useAppState();
-  const { rows, aggregates, people, projectNames, pendingGroups, loading, resolveGroup, refetch } =
+  const { rows, archivedRows, aggregates, people, projectNames, pendingGroups, loading, resolveGroup, refetch } =
     useWorkerIdentities();
   const { findMatch, refetch: refetchIdentities } = useWorkerIdentityAttach();
   const [selected, setSelected] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -42,6 +43,8 @@ export const PeopleTab = () => {
   } | null>(null);
 
   const projectOptions = Object.entries(projectNames).map(([id, name]) => ({ id, name }));
+  const archivedIds = new Set(archivedRows.map((r) => r.workerId));
+
 
   const handleResolve = async (group: IdentityGroupSuggestion, same: boolean) => {
     setBusyKey(group.key);
@@ -218,14 +221,14 @@ export const PeopleTab = () => {
         </Card>
       )}
 
-      {rows.length === 0 ? (
+      {rows.length === 0 && !showArchived ? (
         <Card className="p-8 text-center">
           <Users className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">{t('people.empty', 'Još nema ljudi')}</p>
         </Card>
       ) : (
         <div className="space-y-2">
-          {rows.map((r) => (
+          {(showArchived ? [...rows, ...archivedRows] : rows).map((r) => (
             <button
               key={r.workerId}
               type="button"
@@ -240,7 +243,9 @@ export const PeopleTab = () => {
                   {r.firstName} {r.lastName}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {t('people.engagements', '{{count}} angažmana', { count: r.engagementCount })}
+                  {archivedIds.has(r.workerId)
+                    ? t('people.admin.archivedLabel', 'Arhivirano')
+                    : t('people.engagements', '{{count}} angažmana', { count: r.engagementCount })}
                 </p>
               </div>
               <div className="text-right shrink-0">
@@ -255,16 +260,35 @@ export const PeopleTab = () => {
         </div>
       )}
 
+      {(archivedRows.length > 0 || showArchived) && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full min-h-[44px] text-xs text-muted-foreground"
+          onClick={() => setShowArchived((v) => !v)}
+        >
+          {showArchived
+            ? t('people.admin.hideArchived', 'Sakrij arhivirane')
+            : t('people.admin.showArchived', 'Prikaži arhivirane ({{count}})', {
+                count: archivedRows.length,
+              })}
+        </Button>
+      )}
+
       <PersonDetailDialog
         open={!!selected}
         onOpenChange={(o) => !o && setSelected(null)}
         personId={selected}
         name={selectedPerson ? `${selectedPerson.first_name} ${selectedPerson.last_name}` : ''}
+        firstName={selectedPerson?.first_name ?? ''}
+        lastName={selectedPerson?.last_name ?? ''}
+        archived={!!selectedPerson?.archived_at}
         aggregate={selected ? aggregates.get(selected) ?? null : null}
         projectNames={projectNames}
         linkedUserId={selectedPerson?.linked_user_id ?? null}
         onPaid={refetch}
       />
+
 
       <AddPersonDialog
         open={addOpen}

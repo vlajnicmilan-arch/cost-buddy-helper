@@ -15,3 +15,9 @@ Suradnici (`project_collaborators`) od 27.8.2026. imaju STVARNA plaćanja, ne sa
 - "+ Suradnik" iz krovnog pregleda otvara POSTOJEĆI `ProjectCollaboratorDialog` s neobaveznim biračem projekta (samo kad `projectOptions` postoji). Unutar projekta ponašanje je nepromijenjeno.
 - Radnički put (`create_worker_payout`, `create_person_payout`, `void_worker_payout*`, `project_workers`, `workers`, sati, satnice) se NE dira.
 - Migracije `20260827043932` + `20260827044016` upisane u `supabase/tests/balance/BALANCE_MIGRATIONS.txt`; scenariji CP1–CP5 u `10_scenarios.sql`.
+
+Brisanje (od 27.8.2026., migracija `20260827182332`):
+- RPC `delete_collaborator(p_collaborator_id)` — živa plaćanja brane brisanje porukom `collaborator_has_live_payments|<broj>|<zbroj>`; ako su SVA stornirana, briše i retke registra i suradnika. Saldo se time NE mijenja (storno ga je već vratio).
+- `project_collaborator_payments.project_id` je `ON DELETE CASCADE` → trajno brisanje projekta odnosi i registar plaćanja.
+- SQL harness: CD1–CD3 u `supabase/tests/balance/10_scenarios.sql`, prag PASS u CI podignut na 144.
+- Ljudi: PD1–PD3 u `supabase/tests/people/person_link.sql` (brisanje osobe ostavlja angažmane žive s `worker_id = NULL`, razdvajanje ne dira ostale).

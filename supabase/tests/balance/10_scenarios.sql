@@ -2257,4 +2257,77 @@ SELECT pg_temp.assert_eq('CP7 balance untouched', 700,
   pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
 RELEASE SAVEPOINT s_cp7;
 
+-- ============================================================
+-- CD — Izlaz iz pogreske: brisanje suradnika i trajno brisanje projekta
+-- ============================================================
+
+-- CD1 — suradnik sa ZIVIM placanjem se NE brise; poruka nosi broj i zbroj
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_cd1;
+SELECT pg_temp.seed_collaborator_fixtures();
+SELECT public.create_collaborator_payment(
+  (SELECT val FROM _bfix WHERE key='collab'), 300,
+  'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+  '2026-06-05 12:00:00+00', 'CD1');
+DO $$
+DECLARE v_ok boolean := false;
+BEGIN
+  BEGIN
+    PERFORM public.delete_collaborator((SELECT val FROM _bfix WHERE key='collab'));
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM LIKE 'collaborator_has_live_payments|1|300%' THEN v_ok := true; ELSE RAISE; END IF;
+  END;
+  IF v_ok THEN
+    RAISE NOTICE 'PASS CD1 live payment blocks delete with count and sum';
+  ELSE
+    RAISE EXCEPTION 'FAIL CD1 collaborator with live payment deleted';
+  END IF;
+END $$;
+SELECT pg_temp.assert_eq('CD1 collaborator still there', 1,
+  (SELECT COUNT(*) FROM public.project_collaborators
+    WHERE id=(SELECT val FROM _bfix WHERE key='collab'))::numeric);
+SELECT pg_temp.assert_eq('CD1 balance untouched', 700,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+RELEASE SAVEPOINT s_cd1;
+
+-- CD2 — samo stornirana placanja: suradnik se brise, SALDO OSTAJE ISTI
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_cd2;
+SELECT pg_temp.seed_collaborator_fixtures();
+SELECT public.create_collaborator_payment(
+  (SELECT val FROM _bfix WHERE key='collab'), 300,
+  'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+  '2026-06-05 12:00:00+00', 'CD2');
+SELECT public.void_collaborator_payment(
+  (SELECT id FROM public.project_collaborator_payments
+    WHERE collaborator_id=(SELECT val FROM _bfix WHERE key='collab') LIMIT 1),
+  'CD2 storno');
+SELECT pg_temp.assert_eq('CD2 balance back to anchor', 1000,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+SELECT public.delete_collaborator((SELECT val FROM _bfix WHERE key='collab'));
+SELECT pg_temp.assert_eq('CD2 collaborator gone', 0,
+  (SELECT COUNT(*) FROM public.project_collaborators
+    WHERE id=(SELECT val FROM _bfix WHERE key='collab'))::numeric);
+SELECT pg_temp.assert_eq('CD2 voided ledger rows removed', 0,
+  (SELECT COUNT(*) FROM public.project_collaborator_payments
+    WHERE collaborator_id=(SELECT val FROM _bfix WHERE key='collab'))::numeric);
+SELECT pg_temp.assert_eq('CD2 balance unchanged by delete', 1000,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+RELEASE SAVEPOINT s_cd2;
+
+-- CD3 — trajno brisanje projekta odnosi i placanja suradnicima (CASCADE)
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_cd3;
+SELECT pg_temp.seed_collaborator_fixtures();
+SELECT public.create_collaborator_payment(
+  (SELECT val FROM _bfix WHERE key='collab'), 300,
+  'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+  '2026-06-05 12:00:00+00', 'CD3');
+UPDATE public.expenses SET project_id = NULL
+ WHERE project_id = (SELECT val FROM _bfix WHERE key='proj');
+DELETE FROM public.projects WHERE id = (SELECT val FROM _bfix WHERE key='proj');
+SELECT pg_temp.assert_eq('CD3 collaborator payments cascaded away', 0,
+  (SELECT COUNT(*) FROM public.project_collaborator_payments
+    WHERE collaborator_id=(SELECT val FROM _bfix WHERE key='collab'))::numeric);
+SELECT pg_temp.assert_eq('CD3 balance still reflects the paid money', 700,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+RELEASE SAVEPOINT s_cd3;
+
 ROLLBACK;

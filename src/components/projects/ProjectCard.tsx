@@ -420,6 +420,7 @@ export const ProjectCard = ({
       <ProjectDeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
+        projectId={project.id}
         isArchived={!!isArchived}
         onArchive={onArchive ? () => onArchive(project.id) : undefined}
         onDelete={() => onDelete(project.id)}

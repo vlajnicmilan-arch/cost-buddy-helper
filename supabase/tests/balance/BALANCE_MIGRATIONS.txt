@@ -43,3 +43,5 @@
 20260827044016_*.sql   # Suradnici hardening: REVOKE EXECUTE ... _recalc_collaborator_paid (interni helper)
 
 20260827171833_*.sql   # Suradnici: brana troska plaćanja suradniku + FK expense_id -> expenses
+
+20260827182332_*.sql   # Izlaz iz pogreske: delete_collaborator RPC (zivi vs stornirani) + project_collaborator_payments.project_id -> CASCADE

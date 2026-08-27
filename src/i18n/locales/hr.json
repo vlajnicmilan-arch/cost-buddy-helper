@@ -899,7 +899,10 @@
       "description": "Možeš ga premjestiti u arhivu (sigurno, vraćaš ga kad želiš) ili obrisati. Obrisani projekt ide u Otpad i čuva se 30 dana prije trajnog uklanjanja.",
       "descriptionArchived": "Projekt je u arhivi. Brisanjem ide u Otpad gdje ostaje 30 dana prije trajnog uklanjanja.",
       "archiveAction": "Premjesti u arhivu",
-      "deleteAction": "Premjesti u Otpad"
+      "deleteAction": "Premjesti u Otpad",
+      "debtWarning": "S projektom s vidika nestaje i dug prema ljudima.",
+      "workersLine": "{{count}} radnika · neisplaćeno {{amount}}",
+      "collaboratorsLine": "{{count}} suradnika · neplaćeno {{amount}}"
     },
     "menu": {
       "editProject": "Uredi projekt",
@@ -6650,14 +6653,14 @@
       "ibanChanged": "IBAN se razlikuje od dosadašnjih — provjeri prije plaćanja."
     },
     "docType": {
-      "380": "Račun",
       "82": "Račun za mjerene usluge",
+      "380": "Račun",
       "381": "Odobrenje",
       "384": "Ispravak računa",
       "386": "Račun za predujam",
-      "394": "Račun po najmu/leasingu",
       "389": "Samoizdani račun",
       "393": "Faktoring račun",
+      "394": "Račun po najmu/leasingu",
       "875": "Privremena situacija",
       "876": "Privremena okončana situacija",
       "877": "Okončana situacija"
@@ -7011,6 +7014,40 @@
       "noNameInvited": "Bez imena · pozvan {{date}}",
       "alreadyLinkedTo": "već povezan: {{person}} — prvo odveži",
       "otherPerson": "druga osoba"
+    },
+    "admin": {
+      "rename": "Ispravi ime",
+      "renameTitle": "Ispravi ime i prezime",
+      "renameDescription": "Ime se mijenja i na svim angažmanima ove osobe u projektima.",
+      "firstName": "Ime",
+      "lastName": "Prezime",
+      "renameInvalid": "Ime je obavezno",
+      "renamed": "Ime ispravljeno",
+      "renameFailed": "Ispravak imena nije uspio: {{reason}}",
+      "archive": "Arhiviraj",
+      "unarchive": "Vrati iz arhive",
+      "archived": "Osoba arhivirana",
+      "unarchived": "Osoba vraćena na popis",
+      "archiveFailed": "Arhiviranje nije uspjelo: {{reason}}",
+      "archivedLabel": "Arhivirano",
+      "showArchived": "Prikaži arhivirane ({{count}})",
+      "hideArchived": "Sakrij arhivirane",
+      "archiveInstead": "Radije arhiviraj",
+      "delete": "Obriši osobu",
+      "deleteTitle": "Obrisati {{name}}?",
+      "deleteLead": "Briše se samo osoba — evo što ostaje:",
+      "deleteEngagements_one": "{{count}} angažman ostaje na projektima — samo prestaje biti povezan s ovom osobom.",
+      "deleteEngagements_few": "{{count}} angažmana ostaju na projektima — samo prestaju biti povezani s ovom osobom.",
+      "deleteEngagements_other": "{{count}} angažmana ostaje na projektima — samo prestaju biti povezani s ovom osobom.",
+      "deleteMoney": "Sati, satnice i isplate se NE diraju ({{hours}} h, isplaćeno {{paid}}).",
+      "deleteLink": "Veza s računom se prekida.",
+      "deleted": "Osoba obrisana. Angažmani su ostali na projektima.",
+      "deleteFailed": "Brisanje nije uspjelo: {{reason}}",
+      "detach": "Odvoji od osobe",
+      "detachTitle": "Odvojiti angažman od osobe?",
+      "detachDesc": "Angažman ostaje na projektu {{project}}, samo više nije dio ove osobe. Sati, satnice i isplate se ne mijenjaju.",
+      "detached": "Angažman odvojen",
+      "detachFailed": "Odvajanje nije uspjelo: {{reason}}"
     }
   },
   "collaboratorsOverview": {
@@ -7028,7 +7065,14 @@
     "engagementsTitle": "Angažmani",
     "cancelled": "Otkazan",
     "excludedFromTotals": "Otkazan — izvan zbroja",
-    "add": "+ Suradnik"
+    "add": "+ Suradnik",
+    "deleteEngagement": "Obriši suradnika s projekta",
+    "deleteEngagementShort": "Obriši",
+    "deleteTitle": "Obrisati suradnika s projekta?",
+    "deleteDescription": "Angažman na projektu {{project}} nestaje. Troškovi ostaju u knjigama, a stornirana plaćanja se uklanjaju — saldo se ne mijenja.",
+    "deleteBlocked": "Ima {{count}} plaćanja u iznosu {{amount}} — prvo ih poništi, pa se suradnik može obrisati.",
+    "deleted": "Suradnik obrisan",
+    "deleteFailed": "Brisanje nije uspjelo: {{reason}}"
   },
   "collaborators": {
     "add": "Dodaj vanjskog suradnika",
