@@ -14,6 +14,7 @@ import { PulseTopIssuesSection } from './PulseTopIssuesSection';
 import { PulseActivationFunnel } from './PulseActivationFunnel';
 import { PulseFunnelEvents } from './PulseFunnelEvents';
 import { PulseDashboardSections } from './PulseDashboardSections';
+import { PulseLandingAnalytics } from './PulseLandingAnalytics';
 import { SentryControlsCard } from './SentryControlsCard';
 
 export const PulseTab = () => {
