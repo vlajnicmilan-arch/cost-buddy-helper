@@ -352,7 +352,10 @@ export default function CentarLanding() {
               {i > 0 && <span className="sep" aria-hidden="true">·</span>}
               <button
                 type="button"
-                onClick={() => setLang(code)}
+                onClick={() => {
+                  if (code !== lang) logLandingLangChange(code);
+                  setLang(code);
+                }}
                 aria-pressed={lang === code}
                 aria-label={langLabel[code]}
               >
