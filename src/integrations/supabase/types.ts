@@ -3560,6 +3560,48 @@ export type Database = {
           },
         ]
       }
+      landing_events: {
+        Row: {
+          event_type: string
+          id: string
+          lang: string | null
+          metadata: Json
+          occurred_at: string
+          path: string | null
+          platform: string | null
+          session_id: string
+          target: string | null
+          theme: string | null
+          value: number | null
+        }
+        Insert: {
+          event_type: string
+          id?: string
+          lang?: string | null
+          metadata?: Json
+          occurred_at?: string
+          path?: string | null
+          platform?: string | null
+          session_id: string
+          target?: string | null
+          theme?: string | null
+          value?: number | null
+        }
+        Update: {
+          event_type?: string
+          id?: string
+          lang?: string | null
+          metadata?: Json
+          occurred_at?: string
+          path?: string | null
+          platform?: string | null
+          session_id?: string
+          target?: string | null
+          theme?: string | null
+          value?: number | null
+        }
+        Relationships: []
+      }
       mail_aliases: {
         Row: {
           alias_local: string
@@ -7480,6 +7522,26 @@ export type Database = {
           currency: string
           name: string
           payment_source_id: string
+        }[]
+      }
+      get_landing_event_stats: {
+        Args: { p_days?: number }
+        Returns: {
+          event_type: string
+          hits: number
+          target: string
+          unique_sessions: number
+        }[]
+      }
+      get_landing_overview: {
+        Args: { p_days?: number }
+        Returns: {
+          cta_sessions: number
+          median_seconds: number
+          page_views: number
+          scroll100_sessions: number
+          scroll50_sessions: number
+          sessions: number
         }[]
       }
       get_my_incoming_payouts: {
