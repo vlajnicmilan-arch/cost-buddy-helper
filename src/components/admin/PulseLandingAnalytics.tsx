@@ -20,12 +20,12 @@ interface Overview {
   median_seconds: number;
 }
 
-const GROUPS: Array<{ key: string; label: string }> = [
-  { key: 'cta_click', label: 'Klikovi na CTA' },
-  { key: 'section_view', label: 'Viđene sekcije' },
-  { key: 'link_click', label: 'Ostale poveznice' },
-  { key: 'lang_change', label: 'Promjena jezika' },
-  { key: 'theme_change', label: 'Promjena teme' },
+const GROUPS: Array<{ key: string; i18nKey: string; fallback: string }> = [
+  { key: 'cta_click', i18nKey: 'admin.landingAnalytics.ctaClicks', fallback: 'Klikovi na CTA' },
+  { key: 'section_view', i18nKey: 'admin.landingAnalytics.sectionViews', fallback: 'Viđene sekcije' },
+  { key: 'link_click', i18nKey: 'admin.landingAnalytics.otherLinks', fallback: 'Ostale poveznice' },
+  { key: 'lang_change', i18nKey: 'admin.landingAnalytics.langChange', fallback: 'Promjena jezika' },
+  { key: 'theme_change', i18nKey: 'admin.landingAnalytics.themeChange', fallback: 'Promjena teme' },
 ];
 
 export const PulseLandingAnalytics = () => {
@@ -99,21 +99,21 @@ export const PulseLandingAnalytics = () => {
         <>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mb-3">
             <div className="rounded-lg border border-border/40 p-2">
-              <p className="text-[10px] text-muted-foreground">Sesije</p>
+              <p className="text-[10px] text-muted-foreground">{t('admin.landingAnalytics.sessions', 'Sesije')}</p>
               <p className="text-base font-bold tabular-nums">{sessions}</p>
             </div>
             <div className="rounded-lg border border-border/40 p-2">
-              <p className="text-[10px] text-muted-foreground">Klik na CTA</p>
+              <p className="text-[10px] text-muted-foreground">{t('admin.landingAnalytics.ctaSessions', 'Klik na CTA')}</p>
               <p className="text-base font-bold tabular-nums">{overview?.cta_sessions ?? 0}</p>
-              <p className="text-[9px] text-muted-foreground">{pct(overview?.cta_sessions ?? 0)}% sesija</p>
+              <p className="text-[9px] text-muted-foreground">{t('admin.landingAnalytics.ofSessions', '{{pct}}% sesija', { pct: pct(overview?.cta_sessions ?? 0) })}</p>
             </div>
             <div className="rounded-lg border border-border/40 p-2">
-              <p className="text-[10px] text-muted-foreground">Skrol ≥50%</p>
+              <p className="text-[10px] text-muted-foreground">{t('admin.landingAnalytics.scroll50', 'Skrol ≥50%')}</p>
               <p className="text-base font-bold tabular-nums">{overview?.scroll50_sessions ?? 0}</p>
-              <p className="text-[9px] text-muted-foreground">do kraja: {overview?.scroll100_sessions ?? 0}</p>
+              <p className="text-[9px] text-muted-foreground">{t('admin.landingAnalytics.toEnd', 'do kraja: {{n}}', { n: overview?.scroll100_sessions ?? 0 })}</p>
             </div>
             <div className="rounded-lg border border-border/40 p-2">
-              <p className="text-[10px] text-muted-foreground">Medijan vremena</p>
+              <p className="text-[10px] text-muted-foreground">{t('admin.landingAnalytics.medianTime', 'Medijan vremena')}</p>
               <p className="text-base font-bold tabular-nums">{overview?.median_seconds ?? 0}s</p>
             </div>
           </div>
@@ -130,7 +130,7 @@ export const PulseLandingAnalytics = () => {
                 const max = Math.max(1, ...group.map((r) => r.unique_sessions));
                 return (
                   <div key={g.key}>
-                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">{g.label}</p>
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">{t(g.i18nKey, g.fallback)}</p>
                     <div className="space-y-1">
                       {group.map((r) => (
                         <div
