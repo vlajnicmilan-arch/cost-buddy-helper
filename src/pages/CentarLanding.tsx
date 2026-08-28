@@ -85,8 +85,15 @@ export default function CentarLanding() {
   }, [lang]);
 
   const toggleTheme = useCallback(() => {
-    setTheme((t) => (t === "dark" ? "light" : "dark"));
+    setTheme((t) => {
+      const next = t === "dark" ? "light" : "dark";
+      logLandingThemeChange(next);
+      return next;
+    });
   }, []);
+
+  // Analitika landinga (pregled, sekcije, klikovi, skrol, vrijeme).
+  useLandingTelemetry(containerRef, lang, theme);
 
   useEffect(() => {
     document.body.classList.add("centar-landing-body");
