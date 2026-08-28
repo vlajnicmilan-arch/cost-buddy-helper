@@ -3,6 +3,8 @@ import bodyHtmlHr from "./CentarLanding.body.html?raw";
 import bodyHtmlEn from "./CentarLanding.body.en.html?raw";
 import bodyHtmlDe from "./CentarLanding.body.de.html?raw";
 import { reduce as reduceLightbox, type LightboxPhase, type LightboxEffect } from "./lib/centarLightboxState";
+import { useLandingTelemetry } from "@/hooks/useLandingTelemetry";
+import { logLandingLangChange, logLandingThemeChange } from "@/lib/landingTelemetry";
 import "./CentarLanding.css";
 
 
@@ -83,8 +85,15 @@ export default function CentarLanding() {
   }, [lang]);
 
   const toggleTheme = useCallback(() => {
-    setTheme((t) => (t === "dark" ? "light" : "dark"));
+    setTheme((t) => {
+      const next = t === "dark" ? "light" : "dark";
+      logLandingThemeChange(next);
+      return next;
+    });
   }, []);
+
+  // Analitika landinga (pregled, sekcije, klikovi, skrol, vrijeme).
+  useLandingTelemetry(containerRef, lang, theme);
 
   useEffect(() => {
     document.body.classList.add("centar-landing-body");
@@ -343,7 +352,10 @@ export default function CentarLanding() {
               {i > 0 && <span className="sep" aria-hidden="true">·</span>}
               <button
                 type="button"
-                onClick={() => setLang(code)}
+                onClick={() => {
+                  if (code !== lang) logLandingLangChange(code);
+                  setLang(code);
+                }}
                 aria-pressed={lang === code}
                 aria-label={langLabel[code]}
               >
