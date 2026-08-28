@@ -3,6 +3,8 @@ import bodyHtmlHr from "./CentarLanding.body.html?raw";
 import bodyHtmlEn from "./CentarLanding.body.en.html?raw";
 import bodyHtmlDe from "./CentarLanding.body.de.html?raw";
 import { reduce as reduceLightbox, type LightboxPhase, type LightboxEffect } from "./lib/centarLightboxState";
+import { useLandingTelemetry } from "@/hooks/useLandingTelemetry";
+import { logLandingLangChange, logLandingThemeChange } from "@/lib/landingTelemetry";
 import "./CentarLanding.css";
 
 
