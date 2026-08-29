@@ -91,7 +91,13 @@ export const scrollThreshold = (pct: number): 25 | 50 | 75 | 100 | null => {
 
 const buffer: LandingRow[] = [];
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
+let firstBatchScheduled = false;
+let exitFlushed = false;
 let context: { lang: string; theme: string } = { lang: 'hr', theme: 'dark' };
+
+/** First batch leaves almost immediately so bouncing visitors are counted. */
+export const FIRST_FLUSH_DELAY_MS = 300;
+export const FLUSH_DELAY_MS = 2500;
 
 export const setLandingContext = (lang: string, theme: string) => {
   context = { lang, theme };
@@ -110,10 +116,10 @@ const detectPlatform = (): string => {
 
 const getSessionId = (): string => {
   try {
-    let sid = localStorage.getItem(SESSION_KEY);
+    let sid = sessionStorage.getItem(SESSION_KEY);
     if (!sid) {
       sid = crypto.randomUUID();
-      localStorage.setItem(SESSION_KEY, sid);
+      sessionStorage.setItem(SESSION_KEY, sid);
     }
     return sid;
   } catch {
@@ -131,13 +137,45 @@ const flush = async () => {
   }
 };
 
+/**
+ * Flush during page teardown. Uses fetch(keepalive) so the request survives the
+ * tab closing. Rows are never re-queued and never retried.
+ */
+const flushOnExit = () => {
+  if (buffer.length === 0) return;
+  const batch = buffer.splice(0, buffer.length);
+  try {
+    const url = import.meta.env.VITE_SUPABASE_URL;
+    const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    if (!url || !key || typeof fetch !== 'function') return;
+    void fetch(`${url}/rest/v1/landing_events`, {
+      method: 'POST',
+      keepalive: true,
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify(batch),
+    }).catch(() => {
+      /* dropped on purpose */
+    });
+  } catch {
+    /* dropped on purpose */
+  }
+};
+
 const scheduleFlush = () => {
   if (flushTimer) return;
+  const delay = firstBatchScheduled ? FLUSH_DELAY_MS : FIRST_FLUSH_DELAY_MS;
+  firstBatchScheduled = true;
   flushTimer = setTimeout(() => {
     flushTimer = null;
     void flush();
-  }, 2500);
+  }, delay);
 };
+
 
 const readSeen = (): Set<string> => {
   try {
@@ -224,3 +262,29 @@ export const logLandingTimeOnPage = (seconds: number) => {
 export const flushLandingTelemetry = () => {
   void flush();
 };
+
+/** Flush once during teardown (pagehide / visibilitychange → hidden). */
+export const flushLandingTelemetryOnExit = () => {
+  if (exitFlushed) return;
+  exitFlushed = true;
+  if (flushTimer) {
+    clearTimeout(flushTimer);
+    flushTimer = null;
+  }
+  flushOnExit();
+};
+
+/** Re-arm the exit flush after the page becomes visible again. */
+export const armLandingExitFlush = () => {
+  exitFlushed = false;
+};
+
+/** Test-only reset of module state. */
+export const __resetLandingTelemetry = () => {
+  buffer.length = 0;
+  if (flushTimer) clearTimeout(flushTimer);
+  flushTimer = null;
+  firstBatchScheduled = false;
+  exitFlushed = false;
+};
+
