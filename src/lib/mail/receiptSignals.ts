@@ -3,7 +3,10 @@
  * „račun + potvrda" unutar iste poruke. Implementacija je dijeljena s Edge
  * funkcijama — kod i worker se ne smiju razići (obrazac kao `docType.ts`).
  */
-export { detectPaymentReceipt } from '../../../supabase/functions/_shared/mailImport/receiptSignals.ts';
+export {
+  detectPaymentReceipt,
+  parsePaidDateIso,
+} from '../../../supabase/functions/_shared/mailImport/receiptSignals.ts';
 export type { PaymentReceiptDetection } from '../../../supabase/functions/_shared/mailImport/receiptSignals.ts';
 export { pairReceiptsWithInvoices } from '../../../supabase/functions/_shared/mailImport/receiptPairing.ts';
 export type {
