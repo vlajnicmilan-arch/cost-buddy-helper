@@ -355,7 +355,7 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
         </p>
       )}
 
-      {items.map((item) => {
+      {visible.map((item) => {
         // GMAILOVA POTVRDA PROSLJEĐIVANJA — nije dokument, ima svoju karticu.
         if (item.classification === 'verifikacija_prosljedjivanja') {
           return (
