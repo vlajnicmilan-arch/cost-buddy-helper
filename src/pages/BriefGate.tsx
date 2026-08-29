@@ -147,7 +147,37 @@ const BriefGate = () => {
     return () => timers.forEach((id) => window.clearTimeout(id));
   }, [plan, messages.length]);
 
+  // MJERENJE: svaki izlaz iz vrata ostavlja trag. Best-effort, bez utjecaja
+  // na ponasanje ekrana (logDiagnostic nikad ne baca).
+  useEffect(() => {
+    if (exitLogged.current) return;
+    let reason: BriefExitReason | null = null;
+    if (!shown) reason = timedOut ? 'timed_out' : null;
+    else if (!shown.enabled) reason = 'not_enabled';
+    else if (messages.length === 0) reason = 'no_messages';
+    else reason = 'shown';
+    if (!reason) return;
+    exitLogged.current = true;
+    try {
+      logDiagnostic(
+        BRIEF_GATE_EXIT_EVENT,
+        buildBriefExitDetails({
+          reason,
+          elapsedMs: Date.now() - enteredAtRef.current,
+          rpcMs,
+          rpcTimedOut,
+          snapshot: shown,
+          messagesCount: messages.length,
+          build: COMMIT_SHA,
+        }),
+      );
+    } catch {
+      /* mjerenje ne smije rusiti ekran */
+    }
+  }, [shown, timedOut, messages.length, rpcMs, rpcTimedOut]);
+
   if (!shown && timedOut) return <Navigate to="/home" replace />;
+
   if (!shown) return null;
   if (!shown.enabled || messages.length === 0) return <Navigate to="/home" replace />;
 
