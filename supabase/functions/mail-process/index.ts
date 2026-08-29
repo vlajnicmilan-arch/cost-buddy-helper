@@ -40,6 +40,12 @@ import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 import { extractPdfText } from "../_shared/mailImport/pdfText.ts";
 import { buildAiRequest } from "../_shared/mailImport/aiRequest.ts";
 import { emptyToNull } from "../_shared/mailImport/extractionNormalize.ts";
+import { pairReceiptsWithInvoices } from "../_shared/mailImport/receiptPairing.ts";
+
+/** Vrsta dokumenta i upozorenje za potvrdu plaćanja vezanu uz račun. */
+const PAYMENT_RECEIPT_DOC_TYPE = "potvrda_placanja";
+const PAYMENT_RECEIPT_WARNING = "potvrda_uz_racun";
+
 import { resolveScope, type OwnOibEntry } from "../_shared/mailImport/scopeRouting.ts";
 import { extractCustomer, mergeCustomer } from "../_shared/mailImport/customerExtract.ts";
 import { resolveDestination } from "../_shared/mailImport/mailDestination.ts";
