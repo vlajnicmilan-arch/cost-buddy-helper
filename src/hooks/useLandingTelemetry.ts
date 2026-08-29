@@ -119,9 +119,11 @@ export const useLandingTelemetry = (
         href: anchor.getAttribute('href') || '',
         className: anchor.getAttribute('class') || '',
         text: anchor.textContent || '',
+        telemetryTarget: anchor.getAttribute('data-telemetry-target'),
       });
       if (d) logLandingClick(d);
     };
+
     root.addEventListener('click', onClick, true);
 
     return () => {

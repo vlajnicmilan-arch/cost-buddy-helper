@@ -66,21 +66,26 @@ export interface ClickDescriptor {
 /**
  * Decide what a click on an anchor inside the landing means.
  * Returns null when the click is not on an anchor we care about.
+ *
+ * `telemetryTarget` (from `data-telemetry-target`) wins over the anchor text so
+ * a copy change never silently renames the measured target of an experiment.
  */
 export const describeAnchorClick = (
-  anchor: { href: string; className: string; text: string } | null,
+  anchor: { href: string; className: string; text: string; telemetryTarget?: string | null } | null,
 ): ClickDescriptor | null => {
   if (!anchor) return null;
   const href = (anchor.href || '').slice(0, 300);
   const classes = anchor.className || '';
   const isCta = /\bbtn\b/.test(classes);
-  const label = slugifyTarget(anchor.text || '') || slugifyTarget(href) || 'unknown';
+  const explicit = (anchor.telemetryTarget || '').trim().slice(0, 60);
+  const label = explicit || slugifyTarget(anchor.text || '') || slugifyTarget(href) || 'unknown';
   return {
     eventType: isCta ? 'cta_click' : 'link_click',
     target: label,
     href,
   };
 };
+
 
 /** Highest crossed threshold for a scroll percentage, or null. */
 export const scrollThreshold = (pct: number): 25 | 50 | 75 | 100 | null => {
