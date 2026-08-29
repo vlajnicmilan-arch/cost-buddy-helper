@@ -56,19 +56,27 @@ export const useLandingTelemetry = (
 
     const onHide = () => {
       logLandingTimeOnPage(Math.round((Date.now() - startedAt) / 1000));
-      flushLandingTelemetry();
+      flushLandingTelemetryOnExit();
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') onHide();
+      else armLandingExitFlush();
     };
 
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('pagehide', onHide);
+    document.addEventListener('visibilitychange', onVisibility);
     onScroll();
 
     return () => {
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('pagehide', onHide);
+      document.removeEventListener('visibilitychange', onVisibility);
       onHide();
     };
   }, []);
+
 
   // section_view + click delegation (re-attach when body markup changes)
   useEffect(() => {
