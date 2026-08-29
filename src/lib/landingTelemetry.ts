@@ -30,7 +30,8 @@ export type LandingEventType =
   | 'scroll_depth'
   | 'lang_change'
   | 'theme_change'
-  | 'time_on_page';
+  | 'time_on_page'
+  | 'page_ready';
 
 export interface LandingRow {
   session_id: string;
@@ -265,9 +266,40 @@ export const logLandingThemeChange = (theme: string) => {
   enqueue('theme_change', theme);
 };
 
-export const logLandingTimeOnPage = (seconds: number) => {
+export const logLandingTimeOnPage = (
+  seconds: number,
+  metadata: Record<string, unknown> = {},
+) => {
   if (seconds <= 0) return;
-  enqueue('time_on_page', 'landing', Math.min(seconds, 3600));
+  enqueue('time_on_page', 'landing', Math.min(seconds, 3600), metadata);
+};
+
+/** Coarse device bucket from viewport width. Pure — unit tested. */
+export const deviceTypeFromWidth = (width: number): 'mobile' | 'tablet' | 'desktop' => {
+  if (!Number.isFinite(width) || width <= 0) return 'desktop';
+  if (width < 768) return 'mobile';
+  if (width < 1024) return 'tablet';
+  return 'desktop';
+};
+
+/**
+ * Time (ms) until the first screen was visible: LCP when available, otherwise
+ * the navigation's DOM-content-loaded time. Pure — unit tested.
+ */
+export const pickPageReadyMs = (lcpMs: number | null, fallbackMs: number | null): number | null => {
+  const pick = lcpMs && lcpMs > 0 ? lcpMs : fallbackMs;
+  if (!pick || pick <= 0) return null;
+  return Math.min(Math.round(pick), 120000);
+};
+
+/** One `page_ready` row per session per path. */
+export const logLandingPageReady = (
+  ms: number,
+  metadata: Record<string, unknown> = {},
+) => {
+  const path = typeof window !== 'undefined' ? window.location.pathname : '/';
+  if (!firstTime(`pr:${path}`)) return;
+  enqueue('page_ready', 'landing', ms, metadata);
 };
 
 export const flushLandingTelemetry = () => {
