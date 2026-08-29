@@ -31,7 +31,31 @@ export type FunnelEventName =
   | 'checklist_completed'
   | 'guided_home_entered'
   | 'guided_home_exited'
-  | 'worker_payout_attributed';
+  | 'worker_payout_attributed'
+  // Pre-auth acquisition path (anonymous — no user_id, session_id only)
+  | 'auth_page_viewed'
+  | 'signup_form_started'
+  | 'signup_submitted'
+  | 'signup_failed'
+  | 'login_attempted'
+  | 'login_failed'
+  | 'apk_download_started'
+  | 'apk_download_failed';
+
+/**
+ * Events emitted before a user exists. They are inserted with user_id = NULL
+ * and are matched by the RLS insert policy on `funnel_events`.
+ */
+export const ANONYMOUS_FUNNEL_EVENTS: ReadonlySet<string> = new Set([
+  'auth_page_viewed',
+  'signup_form_started',
+  'signup_submitted',
+  'signup_failed',
+  'login_attempted',
+  'login_failed',
+  'apk_download_started',
+  'apk_download_failed',
+]);
 
 const SESSION_KEY = 'funnel_session_id';
 const INSTALL_FLAG = 'funnel_install_logged';
@@ -148,6 +172,18 @@ export const logFunnelEvent = async (
       if (!error || error.code === '23505') {
         try { localStorage.setItem(INSTALL_FLAG, '1'); } catch {}
       }
+      return;
+    }
+
+    if (ANONYMOUS_FUNNEL_EVENTS.has(eventName)) {
+      // Pre-auth: anonymous row keyed by session only. Never carries PII.
+      await supabase.from('funnel_events').insert({
+        user_id: null,
+        session_id: sessionId,
+        event_name: eventName,
+        platform,
+        metadata: enrichedMetadata as any,
+      });
       return;
     }
 
