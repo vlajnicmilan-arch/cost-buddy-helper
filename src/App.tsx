@@ -39,6 +39,8 @@ import { ScrollToTop } from "@/components/ScrollToTop";
 import { isPublicRoute } from "@/lib/publicRoutes";
 import { BRIEF_GATE_ENABLED } from "@/lib/featureFlags";
 import { isGateCandidate, isUserDisabled, readLastShown } from "@/lib/briefGate";
+import { logGateSkip } from "@/lib/brief/gateSkipLog";
+
 import { BriefGateBoundary } from "@/components/BriefGateBoundary";
 import { Loader2 } from "lucide-react";
 import { lazy, Suspense, useEffect } from "react";
