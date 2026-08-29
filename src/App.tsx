@@ -221,16 +221,23 @@ const AppRoutes = () => {
   const rawAppEntryRoute = getAppEntryRoute();
   // BRIEF-VRATA: sinkroni 0 ms filter (build flag + korisnikov prekidač +
   // pravilo ucestalosti). Sve ostalo (tisina, RPC) odlucuje sam ekran.
-  const appEntryRoute =
-    rawAppEntryRoute === "/home" &&
-    isGateCandidate({
-      buildEnabled: BRIEF_GATE_ENABLED,
-      userDisabled: isUserDisabled(),
-      lastShownIso: readLastShown(),
-      now: new Date(),
-    })
-      ? "/brief"
-      : rawAppEntryRoute;
+  const briefUserDisabled = isUserDisabled();
+  const briefLastShown = readLastShown();
+  const isBriefCandidate = isGateCandidate({
+    buildEnabled: BRIEF_GATE_ENABLED,
+    userDisabled: briefUserDisabled,
+    lastShownIso: briefLastShown,
+    now: new Date(),
+  });
+  const appEntryRoute = rawAppEntryRoute === "/home" && isBriefCandidate ? "/brief" : rawAppEntryRoute;
+
+  // MJERENJE: izlazi koji se dogode prije ekrana (best-effort, jednom po pokretanju).
+  useEffect(() => {
+    if (rawAppEntryRoute !== "/home" || isBriefCandidate || !BRIEF_GATE_ENABLED) return;
+    logGateSkip(briefUserDisabled ? 'user_disabled' : 'frequency_blocked');
+  }, [rawAppEntryRoute, isBriefCandidate, briefUserDisabled]);
+
+
 
   // Phase 1: Wait for initialization
   if (!isInitialized) {
