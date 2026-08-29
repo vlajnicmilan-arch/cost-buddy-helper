@@ -40,6 +40,12 @@ import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 import { extractPdfText } from "../_shared/mailImport/pdfText.ts";
 import { buildAiRequest } from "../_shared/mailImport/aiRequest.ts";
 import { emptyToNull } from "../_shared/mailImport/extractionNormalize.ts";
+import { pairReceiptsWithInvoices } from "../_shared/mailImport/receiptPairing.ts";
+
+/** Vrsta dokumenta i upozorenje za potvrdu plaćanja vezanu uz račun. */
+const PAYMENT_RECEIPT_DOC_TYPE = "potvrda_placanja";
+const PAYMENT_RECEIPT_WARNING = "potvrda_uz_racun";
+
 import { resolveScope, type OwnOibEntry } from "../_shared/mailImport/scopeRouting.ts";
 import { extractCustomer, mergeCustomer } from "../_shared/mailImport/customerExtract.ts";
 import { resolveDestination } from "../_shared/mailImport/mailDestination.ts";
@@ -433,7 +439,18 @@ async function processMessage(
   }
   if (units.length === 0) units.push({ attachmentId: null, bytes: null, att: null });
 
+  // PAR „RAČUN + POTVRDA" — stavke iste poruke uspoređuju se TEK NAKON što je
+  // svaka klasificirana. Ovdje se skuplja materijal za tu završnu provjeru.
+  const reviewed: Array<{
+    id: string;
+    text: string;
+    invoiceNumber: string | null;
+    extraction: Record<string, unknown>;
+    warnings: string[];
+  }> = [];
+
   for (const unit of units) {
+
     let sniffed: ClassifyInput["sniffed"] = "unknown";
     let xml: string | null = null;
     let pdfText = "";
@@ -817,16 +834,57 @@ async function processMessage(
     if (upserted.id && enteredReview && notifyAllowed) {
       await notifyPending(supabase, ownerId, upserted.id as string, result.priority);
     }
+    if (upserted.id && finalStatus === "na_pregledu") {
+      reviewed.push({
+        id: upserted.id as string,
+        text: [pdfText, bodyText ?? ""].filter(Boolean).join("\n"),
+        invoiceNumber: (extraction.invoice_number as string | null) ?? null,
+        extraction,
+        warnings: [...new Set([...warnings, ...result.warnings])],
+      });
+    }
+  }
 
+  // POTVRDA O PLAĆANJU NIJE DRUGI RAČUN — potvrda se veže uz račun iz iste
+  // poruke i ne nudi se kao zaseban unos. Ništa se ne knjiži automatski.
+  const byId = new Map(reviewed.map((r) => [r.id, r]));
+  for (const pair of pairReceiptsWithInvoices(reviewed)) {
+    const receipt = byId.get(pair.receiptItemId);
+    const invoice = byId.get(pair.invoiceItemId);
+    if (!receipt || !invoice) continue;
 
+    await supabase
+      .from("document_ingest_items")
+      .update({
+        doc_type: PAYMENT_RECEIPT_DOC_TYPE,
+        extraction: {
+          ...receipt.extraction,
+          is_payment_receipt: true,
+          related_item_id: invoice.id,
+          receipt_number: pair.receiptNumber,
+          paid_date: pair.paidDate,
+        },
+        warnings: [...new Set([...receipt.warnings, PAYMENT_RECEIPT_WARNING])],
+      })
+      .eq("id", receipt.id);
 
-
+    await supabase
+      .from("document_ingest_items")
+      .update({
+        extraction: {
+          ...invoice.extraction,
+          receipt_item_id: receipt.id,
+          paid_date_from_receipt: pair.paidDate,
+        },
+      })
+      .eq("id", invoice.id);
   }
 
   await supabase
     .from("inbound_messages")
     .update({ status: "zavrsena", processed_at: new Date().toISOString(), last_error: null })
     .eq("id", messageId);
+
 }
 
 Deno.serve(async (req) => {

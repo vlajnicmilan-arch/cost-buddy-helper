@@ -6626,7 +6626,8 @@
       "dopunjeno_iz_zapamcenog": "Aus gemerktem Aussteller ergänzt — bitte prüfen",
       "vise_kandidata_sifra_mjesta": "Mehrere mögliche Abrechnungsstellen-Codes — keiner übernommen",
       "odrediste_ponuda": "Kunde nur über den Namen erkannt — Ziel prüfen.",
-      "nauceno_odbijanje": "Solche Nachrichten dieses Absenders hast du bereits verworfen — sie erscheinen nicht mehr zur Prüfung."
+      "nauceno_odbijanje": "Solche Nachrichten dieses Absenders hast du bereits verworfen — sie erscheinen nicht mehr zur Prüfung.",
+      "potvrda_uz_racun": "Zu dieser Rechnung kam in derselben Nachricht ein Zahlungsbeleg — der Beleg wird nicht als eigene Rechnung erfasst."
     },
     "field": {
       "supplierName": "Lieferant",

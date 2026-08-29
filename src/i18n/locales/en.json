@@ -6626,7 +6626,8 @@
       "dopunjeno_iz_zapamcenog": "Filled in from a remembered issuer — please check",
       "vise_kandidata_sifra_mjesta": "Several possible billing point codes — none was used",
       "odrediste_ponuda": "Customer matched by name only — check the destination.",
-      "nauceno_odbijanje": "You already dismissed messages like this from this sender — they no longer reach the review queue."
+      "nauceno_odbijanje": "You already dismissed messages like this from this sender — they no longer reach the review queue.",
+      "potvrda_uz_racun": "A payment receipt for this invoice arrived in the same message — the receipt is not entered as a separate invoice."
     },
     "field": {
       "supplierName": "Supplier",

@@ -33,6 +33,8 @@ import { VerificationReviewCard } from '@/components/mail/VerificationReviewCard
 import { useMailDuplicateCandidates } from '@/hooks/useMailDuplicateCandidates';
 import { PROBABLE_DUPLICATE_WARNING } from '@/lib/mail/invoiceNumberMatch';
 import { findSiblingDocuments } from '@/lib/mail/siblingDocuments';
+import { splitPairedReceipts, parsePaidDateIso } from '@/lib/mail/receiptSignals';
+import { supabase } from '@/integrations/supabase/client';
 
 
 
@@ -145,7 +147,11 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
     [items],
   );
 
-
+  // POTVRDA O PLAĆANJU NIJE DRUGI RAČUN — vezana potvrda nema vlastitu karticu,
+  // nego se prikazuje uz svoj račun kao dokaz plaćanja.
+  const { visible, receiptsByInvoiceId } = useMemo(() => splitPairedReceipts(items), [items]);
+  // Označavanje plaćenim je KORISNIKOVA odluka — nikad automatski.
+  const [markPaid, setMarkPaid] = useState<Record<string, boolean>>({});
   const startEdit = (item: MailReviewItem) => {
     const source = (item.extraction ?? {}) as Record<string, unknown>;
     const next: Record<string, string> = {};
@@ -204,6 +210,19 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
       if (result.ok) {
         setCollision(null);
         setEditingId(null);
+        // Potvrda iz iste poruke nosi datum plaćanja — upisuje se SAMO ako je
+        // korisnik to izričito zatražio kvačicom.
+        const paired = receiptsByInvoiceId.get(item.id);
+        const paidIso = parsePaidDateIso(paired?.paidDate);
+        if (markPaid[item.id] === true && result.invoiceId && paidIso) {
+          const { error } = await supabase
+            .from('incoming_invoices')
+            .update({ paid_at: paidIso })
+            .eq('id', result.invoiceId);
+          if (error) {
+            showError(t('mailReview.receipt.markPaidFailed', 'Oznaka plaćanja nije spremljena'));
+          }
+        }
         onCountChange?.();
         showSuccess(
           result.already
@@ -212,6 +231,7 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
         );
         return;
       }
+
 
       const failure = result as { reason: string; existing?: Record<string, unknown>; detail?: string };
 
@@ -335,7 +355,7 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
         </p>
       )}
 
-      {items.map((item) => {
+      {visible.map((item) => {
         // GMAILOVA POTVRDA PROSLJEĐIVANJA — nije dokument, ima svoju karticu.
         if (item.classification === 'verifikacija_prosljedjivanja') {
           return (
@@ -650,6 +670,49 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
                 </span>
               </div>
             )}
+
+            {receiptsByInvoiceId.has(item.id) && (
+              <div
+                data-testid="payment-receipt-proof"
+                className="space-y-2 rounded-md border border-primary/40 bg-primary/5 p-2 text-xs"
+              >
+                <div className="flex items-start gap-2">
+                  <FileText className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
+                  <span>
+                    {t(
+                      'mailReview.receipt.proof',
+                      'Uz ovaj račun stigla je i potvrda plaćanja iz iste poruke (broj {{receipt}}, plaćeno {{date}}). Potvrda se ne unosi kao zaseban račun.',
+                      {
+                        receipt: receiptsByInvoiceId.get(item.id)?.receiptNumber ?? '—',
+                        date: receiptsByInvoiceId.get(item.id)?.paidDate ?? '—',
+                      },
+                    )}
+                  </span>
+                </div>
+                {parsePaidDateIso(receiptsByInvoiceId.get(item.id)?.paidDate) && (
+                  <label
+                    data-testid="receipt-mark-paid"
+                    className="flex items-start gap-2 cursor-pointer"
+                  >
+                    <Checkbox
+                      className="mt-0.5"
+                      checked={markPaid[item.id] === true}
+                      onCheckedChange={(v) =>
+                        setMarkPaid((s) => ({ ...s, [item.id]: v === true }))
+                      }
+                    />
+                    <span>
+                      {t(
+                        'mailReview.receipt.markPaid',
+                        'Odmah označi plaćenim s datumom iz potvrde',
+                      )}
+                    </span>
+                  </label>
+                )}
+              </div>
+            )}
+
+
 
             {missingOib && (
               <label
