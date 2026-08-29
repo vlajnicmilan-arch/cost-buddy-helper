@@ -39,6 +39,8 @@ import { ScrollToTop } from "@/components/ScrollToTop";
 import { isPublicRoute } from "@/lib/publicRoutes";
 import { BRIEF_GATE_ENABLED } from "@/lib/featureFlags";
 import { isGateCandidate, isUserDisabled, readLastShown } from "@/lib/briefGate";
+import { logGateSkip } from "@/lib/brief/gateSkipLog";
+
 import { BriefGateBoundary } from "@/components/BriefGateBoundary";
 import { Loader2 } from "lucide-react";
 import { lazy, Suspense, useEffect } from "react";
@@ -221,16 +223,23 @@ const AppRoutes = () => {
   const rawAppEntryRoute = getAppEntryRoute();
   // BRIEF-VRATA: sinkroni 0 ms filter (build flag + korisnikov prekidač +
   // pravilo ucestalosti). Sve ostalo (tisina, RPC) odlucuje sam ekran.
-  const appEntryRoute =
-    rawAppEntryRoute === "/home" &&
-    isGateCandidate({
-      buildEnabled: BRIEF_GATE_ENABLED,
-      userDisabled: isUserDisabled(),
-      lastShownIso: readLastShown(),
-      now: new Date(),
-    })
-      ? "/brief"
-      : rawAppEntryRoute;
+  const briefUserDisabled = isUserDisabled();
+  const briefLastShown = readLastShown();
+  const isBriefCandidate = isGateCandidate({
+    buildEnabled: BRIEF_GATE_ENABLED,
+    userDisabled: briefUserDisabled,
+    lastShownIso: briefLastShown,
+    now: new Date(),
+  });
+  const appEntryRoute = rawAppEntryRoute === "/home" && isBriefCandidate ? "/brief" : rawAppEntryRoute;
+
+  // MJERENJE: izlazi koji se dogode prije ekrana (best-effort, jednom po pokretanju).
+  useEffect(() => {
+    if (rawAppEntryRoute !== "/home" || isBriefCandidate || !BRIEF_GATE_ENABLED) return;
+    logGateSkip(briefUserDisabled ? 'user_disabled' : 'frequency_blocked');
+  }, [rawAppEntryRoute, isBriefCandidate, briefUserDisabled]);
+
+
 
   // Phase 1: Wait for initialization
   if (!isInitialized) {

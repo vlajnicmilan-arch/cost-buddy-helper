@@ -21,7 +21,12 @@ export interface UseBriefSnapshotResult {
   snapshot: BriefSnapshot | null;
   /** Tvrdi rok istekao bez ijedne snimke. */
   timedOut: boolean;
+  /** MJERENJE: trajanje RPC poziva u ms (null dok ne završi). */
+  rpcMs: number | null;
+  /** MJERENJE: je li rok istekao prije nego je RPC odgovorio. */
+  rpcTimedOut: boolean;
 }
+
 
 /** Omotnica sa zigom vremena — instantCache nema vlastiti zig. */
 interface CachedBriefSnapshot {
@@ -44,14 +49,25 @@ export function useBriefSnapshot(active: boolean): UseBriefSnapshotResult {
   const seeded = useRef<BriefSnapshot | null>(active ? readFreshSeed(Date.now()) : null);
   const [snapshot, setSnapshot] = useState<BriefSnapshot | null>(seeded.current);
   const [timedOut, setTimedOut] = useState(false);
+  // MJERENJE: ne utjece na odluke ekrana, samo se zapisuje.
+  const [rpcMs, setRpcMs] = useState<number | null>(null);
+  const deadlinePassed = useRef(false);
+  const [rpcTimedOut, setRpcTimedOut] = useState(false);
 
   useEffect(() => {
     if (!active) return;
     let cancelled = false;
+    const startedAt = Date.now();
 
     const timer = window.setTimeout(() => {
+      deadlinePassed.current = true;
       if (!cancelled && !seeded.current) setTimedOut(true);
     }, BRIEF_GATE_RPC_TIMEOUT_MS);
+
+    const measure = () => {
+      setRpcMs(Date.now() - startedAt);
+      if (deadlinePassed.current) setRpcTimedOut(true);
+    };
 
     (async () => {
       try {
@@ -59,6 +75,7 @@ export function useBriefSnapshot(active: boolean): UseBriefSnapshotResult {
           rpc: (fn: string) => Promise<{ data: unknown; error: unknown }>;
         }).rpc('brief_gate_snapshot_v2');
         if (cancelled) return;
+        measure();
         if (error || !data || typeof data !== 'object') {
           if (!seeded.current) setTimedOut(true);
           return;
@@ -72,7 +89,9 @@ export function useBriefSnapshot(active: boolean): UseBriefSnapshotResult {
         });
         setSnapshot(next);
       } catch {
-        if (!cancelled && !seeded.current) setTimedOut(true);
+        if (cancelled) return;
+        measure();
+        if (!seeded.current) setTimedOut(true);
       }
     })();
 
@@ -82,5 +101,6 @@ export function useBriefSnapshot(active: boolean): UseBriefSnapshotResult {
     };
   }, [active]);
 
-  return { snapshot, timedOut };
+  return { snapshot, timedOut, rpcMs, rpcTimedOut };
+
 }
