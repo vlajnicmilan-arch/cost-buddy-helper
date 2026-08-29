@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import {
+  armLandingExitFlush,
   describeAnchorClick,
-  flushLandingTelemetry,
+  flushLandingTelemetryOnExit,
   logLandingClick,
   logLandingPageView,
   logLandingScroll,
@@ -11,6 +12,7 @@ import {
   setLandingContext,
   slugifyTarget,
 } from '@/lib/landingTelemetry';
+
 
 /**
  * Landing analytics. Attaches:
