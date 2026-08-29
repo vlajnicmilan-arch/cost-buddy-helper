@@ -274,6 +274,11 @@ export const flushLandingTelemetryOnExit = () => {
   flushOnExit();
 };
 
+/** Re-arm the exit flush after the page becomes visible again. */
+export const armLandingExitFlush = () => {
+  exitFlushed = false;
+};
+
 /** Test-only reset of module state. */
 export const __resetLandingTelemetry = () => {
   buffer.length = 0;
