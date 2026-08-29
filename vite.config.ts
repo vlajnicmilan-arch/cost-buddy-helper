@@ -93,7 +93,14 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks: (id) => {
+          // Vite's dynamic-import preload helper is imported by the entry.
+          // Left unassigned, Rollup parks it inside whichever shared chunk it
+          // likes (it landed in `jspdf`), which dragged 422 KB of PDF code onto
+          // the landing page's critical path. Pin it to react-vendor, which the
+          // entry loads anyway.
+          if (id.includes("vite/preload-helper")) return "react-vendor";
           if (!id.includes("node_modules")) return;
+
           // Heavy, route-specific deps — split into own chunks so they
           // load only when a page that imports them is visited.
           if (id.includes("jspdf") || id.includes("jspdf-autotable")) return "jspdf";

@@ -100,6 +100,23 @@ const loadFastLandingCrisp = () => {
   document.head.appendChild(script);
 };
 
+// Crisp is a third-party widget (~200 KB of JS + its own network chatter) and
+// it is never needed for the first paint. Load it on the first real visitor
+// interaction, or 5 s after load — whichever comes first.
+const scheduleFastLandingCrisp = () => {
+  let done = false;
+  const fire = () => {
+    if (done) return;
+    done = true;
+    events.forEach((e) => window.removeEventListener(e, fire));
+    loadFastLandingCrisp();
+  };
+  const events = ["pointerdown", "keydown", "touchstart", "scroll"] as const;
+  events.forEach((e) => window.addEventListener(e, fire, { once: true, passive: true }));
+  window.setTimeout(fire, 5000);
+};
+
+
 // Funnel: capture UTM params synchronously (URL may change after redirects),
 // then log install once per device (best-effort, deferred to idle).
 import('./lib/funnelTracking')
@@ -277,7 +294,13 @@ const markBootCompleted = () => {
 const root = createRoot(document.getElementById("root")!);
 
 if (isFastLanding) {
-  idle(loadFastLandingCrisp);
+  scheduleFastLandingCrisp();
+  idle(() => {
+    import("./lib/landingPerf")
+      .then(({ startLandingPerf }) => startLandingPerf(true))
+      .catch(() => {});
+  });
+
   root.render(
     <React.StrictMode>
       <Landing />
