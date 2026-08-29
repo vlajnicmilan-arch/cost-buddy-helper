@@ -48,7 +48,10 @@ const BriefGate = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { displayName } = useAppState();
-  const { snapshot, timedOut } = useBriefSnapshot(true);
+  const { snapshot, timedOut, rpcMs, rpcTimedOut } = useBriefSnapshot(true);
+  const enteredAtRef = useRef(Date.now());
+  const exitLogged = useRef(false);
+
 
   const continuityRef = useRef(readContinuity());
   const firstDailyRef = useRef(isFirstDailyEntry(readLastShown(), new Date()));
