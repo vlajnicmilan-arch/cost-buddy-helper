@@ -210,6 +210,19 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
       if (result.ok) {
         setCollision(null);
         setEditingId(null);
+        // Potvrda iz iste poruke nosi datum plaćanja — upisuje se SAMO ako je
+        // korisnik to izričito zatražio kvačicom.
+        const paired = receiptsByInvoiceId.get(item.id);
+        const paidIso = parsePaidDateIso(paired?.paidDate);
+        if (markPaid[item.id] === true && result.invoiceId && paidIso) {
+          const { error } = await supabase
+            .from('incoming_invoices')
+            .update({ paid_at: paidIso })
+            .eq('id', result.invoiceId);
+          if (error) {
+            showError(t('mailReview.receipt.markPaidFailed', 'Oznaka plaćanja nije spremljena'));
+          }
+        }
         onCountChange?.();
         showSuccess(
           result.already
@@ -218,6 +231,7 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
         );
         return;
       }
+
 
       const failure = result as { reason: string; existing?: Record<string, unknown>; detail?: string };
 
