@@ -433,7 +433,18 @@ async function processMessage(
   }
   if (units.length === 0) units.push({ attachmentId: null, bytes: null, att: null });
 
+  // PAR „RAČUN + POTVRDA" — stavke iste poruke uspoređuju se TEK NAKON što je
+  // svaka klasificirana. Ovdje se skuplja materijal za tu završnu provjeru.
+  const reviewed: Array<{
+    id: string;
+    text: string;
+    invoiceNumber: string | null;
+    extraction: Record<string, unknown>;
+    warnings: string[];
+  }> = [];
+
   for (const unit of units) {
+
     let sniffed: ClassifyInput["sniffed"] = "unknown";
     let xml: string | null = null;
     let pdfText = "";
