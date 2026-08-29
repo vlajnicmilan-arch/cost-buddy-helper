@@ -6637,7 +6637,8 @@
       "dopunjeno_iz_zapamcenog": "Dopunjeno iz zapamćenog izdavatelja — provjeri",
       "vise_kandidata_sifra_mjesta": "Više mogućih šifri obračunskog mjesta — nije upisana",
       "odrediste_ponuda": "Kupac je prepoznat samo po nazivu — provjeri odredište.",
-      "nauceno_odbijanje": "Ovakve poruke od ovog pošiljatelja si već odbacio — ubuduće ne dolaze na pregled."
+      "nauceno_odbijanje": "Ovakve poruke od ovog pošiljatelja si već odbacio — ubuduće ne dolaze na pregled.",
+      "potvrda_uz_racun": "Uz ovaj račun stigla je i potvrda plaćanja iz iste poruke — potvrda se ne unosi kao zaseban račun."
     },
     "field": {
       "supplierName": "Dobavljač",
