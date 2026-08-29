@@ -12,6 +12,7 @@ const ENTRY_KEY = 'auth_entry_attr_v1';
 const ENTRY_TTL_MS = 60 * 60 * 1000; // 1 h
 
 export interface AuthEntryAttribution {
+  [key: string]: unknown;
   entry_cta?: string;
   entry_path?: string;
   entry_at?: number;
