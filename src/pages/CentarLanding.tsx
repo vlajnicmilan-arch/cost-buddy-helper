@@ -171,15 +171,30 @@ export default function CentarLanding() {
       el: HTMLAnchorElement;
       fn: (e: MouseEvent) => void;
     }> = [];
+    // Telemetrija preuzimanja — nikad ne smije prekinuti preuzimanje.
+    const trackApk = (name: string, metadata: Record<string, unknown> = {}) => {
+      import("@/lib/funnelTracking")
+        .then(({ logFunnelEvent }) => logFunnelEvent(name as never, metadata))
+        .catch(() => { /* noop */ });
+    };
+
     root.querySelectorAll<HTMLAnchorElement>("a.js-apk").forEach((a) => {
       const fn = (e: MouseEvent) => {
         e.preventDefault();
         if (apkUrl) {
+          trackApk("apk_download_started", { resolved: "prefetch" });
           window.open(apkUrl, "_blank", "noopener,noreferrer");
         } else {
-          resolveApkUrl().then((url) => {
-            if (url) window.open(url, "_blank", "noopener,noreferrer");
-          });
+          resolveApkUrl()
+            .then((url) => {
+              if (url) {
+                trackApk("apk_download_started", { resolved: "on_click" });
+                window.open(url, "_blank", "noopener,noreferrer");
+              } else {
+                trackApk("apk_download_failed", { reason: "no_apk_url" });
+              }
+            })
+            .catch(() => trackApk("apk_download_failed", { reason: "version_json_unreachable" }));
         }
       };
       a.addEventListener("click", fn);
