@@ -262,3 +262,24 @@ export const logLandingTimeOnPage = (seconds: number) => {
 export const flushLandingTelemetry = () => {
   void flush();
 };
+
+/** Flush once during teardown (pagehide / visibilitychange → hidden). */
+export const flushLandingTelemetryOnExit = () => {
+  if (exitFlushed) return;
+  exitFlushed = true;
+  if (flushTimer) {
+    clearTimeout(flushTimer);
+    flushTimer = null;
+  }
+  flushOnExit();
+};
+
+/** Test-only reset of module state. */
+export const __resetLandingTelemetry = () => {
+  buffer.length = 0;
+  if (flushTimer) clearTimeout(flushTimer);
+  flushTimer = null;
+  firstBatchScheduled = false;
+  exitFlushed = false;
+};
+
