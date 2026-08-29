@@ -21,7 +21,12 @@ export interface UseBriefSnapshotResult {
   snapshot: BriefSnapshot | null;
   /** Tvrdi rok istekao bez ijedne snimke. */
   timedOut: boolean;
+  /** MJERENJE: trajanje RPC poziva u ms (null dok ne završi). */
+  rpcMs: number | null;
+  /** MJERENJE: je li rok istekao prije nego je RPC odgovorio. */
+  rpcTimedOut: boolean;
 }
+
 
 /** Omotnica sa zigom vremena — instantCache nema vlastiti zig. */
 interface CachedBriefSnapshot {
