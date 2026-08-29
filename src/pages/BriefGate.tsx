@@ -20,6 +20,14 @@ import { describeDueWhen } from '@/lib/brief/dueWhen';
 import { planChoreography } from '@/lib/brief/choreography';
 import type { BriefFilterTarget, BriefMessage, BriefSnapshot } from '@/lib/brief/types';
 import { requestOpenOverdueInvoices } from '@/lib/eracun/openOverdueRequest';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { COMMIT_SHA } from '@/lib/version';
+import {
+  BRIEF_GATE_EXIT_EVENT,
+  buildBriefExitDetails,
+  type BriefExitReason,
+} from '@/lib/brief/exitTelemetry';
+
 
 const isFirstDailyEntry = (lastShownIso: string | null, now: Date): boolean => {
   if (!lastShownIso) return true;
