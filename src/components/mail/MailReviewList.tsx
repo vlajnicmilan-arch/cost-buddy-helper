@@ -671,6 +671,49 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
               </div>
             )}
 
+            {receiptsByInvoiceId.has(item.id) && (
+              <div
+                data-testid="payment-receipt-proof"
+                className="space-y-2 rounded-md border border-primary/40 bg-primary/5 p-2 text-xs"
+              >
+                <div className="flex items-start gap-2">
+                  <FileText className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
+                  <span>
+                    {t(
+                      'mailReview.receipt.proof',
+                      'Uz ovaj račun stigla je i potvrda plaćanja iz iste poruke (broj {{receipt}}, plaćeno {{date}}). Potvrda se ne unosi kao zaseban račun.',
+                      {
+                        receipt: receiptsByInvoiceId.get(item.id)?.receiptNumber ?? '—',
+                        date: receiptsByInvoiceId.get(item.id)?.paidDate ?? '—',
+                      },
+                    )}
+                  </span>
+                </div>
+                {parsePaidDateIso(receiptsByInvoiceId.get(item.id)?.paidDate) && (
+                  <label
+                    data-testid="receipt-mark-paid"
+                    className="flex items-start gap-2 cursor-pointer"
+                  >
+                    <Checkbox
+                      className="mt-0.5"
+                      checked={markPaid[item.id] === true}
+                      onCheckedChange={(v) =>
+                        setMarkPaid((s) => ({ ...s, [item.id]: v === true }))
+                      }
+                    />
+                    <span>
+                      {t(
+                        'mailReview.receipt.markPaid',
+                        'Odmah označi plaćenim s datumom iz potvrde',
+                      )}
+                    </span>
+                  </label>
+                )}
+              </div>
+            )}
+
+
+
             {missingOib && (
               <label
                 data-testid="missing-oib-ack"
