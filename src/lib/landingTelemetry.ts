@@ -13,7 +13,11 @@
  *
  * Never throws, never blocks the page.
  */
-import { supabase } from '@/integrations/supabase/client';
+// NOTE: the Supabase client is imported lazily (inside `flush`) on purpose.
+// A static import pulls the whole @supabase chunk into the landing entry
+// bundle and blocks first paint on ~44 KB of JS that is only needed after
+// the first batch of telemetry is due.
+
 
 const SESSION_KEY = 'funnel_session_id';
 const SEEN_KEY = 'landing_tel_seen_v1';
@@ -131,11 +135,13 @@ const flush = async () => {
   if (buffer.length === 0) return;
   const batch = buffer.splice(0, buffer.length);
   try {
+    const { supabase } = await import('@/integrations/supabase/client');
     await supabase.from('landing_events').insert(batch as any);
   } catch {
     /* swallow */
   }
 };
+
 
 /**
  * Flush during page teardown. Uses fetch(keepalive) so the request survives the

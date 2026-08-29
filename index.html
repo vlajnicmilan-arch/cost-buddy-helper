@@ -11,17 +11,10 @@
     <meta name="apple-mobile-web-app-title" content="Centar" />
     <meta name="theme-color" content="#2db8a0" />
 
-    <!-- Preload LCP hero image with responsive sources so the browser starts
-         downloading it BEFORE the JS bundle parses. This is the single biggest
-         LCP win on /. Mobile gets a 16KB variant, desktop the full 41KB. -->
-    <link
-      rel="preload"
-      as="image"
-      href="/hero-receipt-scan-mobile.webp"
-      imagesrcset="/hero-receipt-scan-mobile.webp 640w, /hero-receipt-scan.webp 1024w"
-      imagesizes="(max-width: 1023px) 100vw, 50vw"
-      fetchpriority="high"
-    />
+    <!-- NOTE: no hero image preload here. /hero-receipt-scan*.webp is not used
+         by the current landing markup, so preloading it only stole bandwidth
+         and connection priority from the real LCP element. -->
+
 
     <meta name="mobile-web-app-capable" content="yes" />
     <title>Centar — vođenje projekata: dogovori, izmjene i troškovi na jednom mjestu</title>
