@@ -1,6 +1,9 @@
 import { useEffect } from 'react';
 import {
   armLandingExitFlush,
+  deviceTypeFromWidth,
+  logLandingPageReady,
+  pickPageReadyMs,
   describeAnchorClick,
   flushLandingTelemetryOnExit,
   logLandingClick,
@@ -12,6 +15,10 @@ import {
   setLandingContext,
   slugifyTarget,
 } from '@/lib/landingTelemetry';
+import { rememberAuthEntry } from '@/lib/authFunnel';
+
+/** Last section seen + deepest scroll — reported once on exit. */
+const exitState = { lastSection: null as string | null, maxScrollPct: 0 };
 
 
 /**
@@ -39,6 +46,40 @@ export const useLandingTelemetry = (
     logLandingPageView({ referrer: (document.referrer || '').slice(0, 300) });
     const startedAt = Date.now();
 
+    // page_ready — how long the visitor waited for the first screen.
+    let lcpMs: number | null = null;
+    let lcpObserver: PerformanceObserver | null = null;
+    try {
+      if (typeof PerformanceObserver !== 'undefined') {
+        lcpObserver = new PerformanceObserver((list) => {
+          const entries = list.getEntries();
+          const last = entries[entries.length - 1] as PerformanceEntry | undefined;
+          if (last) lcpMs = last.startTime;
+        });
+        lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true } as any);
+      }
+    } catch {
+      /* noop */
+    }
+    const reportPageReady = () => {
+      try {
+        const nav = performance.getEntriesByType('navigation')[0] as
+          | PerformanceNavigationTiming
+          | undefined;
+        const ms = pickPageReadyMs(lcpMs, nav?.domContentLoadedEventEnd ?? null);
+        if (ms == null) return;
+        const width = window.innerWidth || 0;
+        logLandingPageReady(ms, {
+          source: lcpMs && lcpMs > 0 ? 'lcp' : 'dcl',
+          viewport_width: width,
+          device_type: deviceTypeFromWidth(width),
+        });
+      } catch {
+        /* noop */
+      }
+    };
+    const readyTimer = setTimeout(reportPageReady, 4000);
+
     let ticking = false;
     const onScroll = () => {
       if (ticking) return;
@@ -49,13 +90,17 @@ export const useLandingTelemetry = (
         const total = doc.scrollHeight - window.innerHeight;
         if (total <= 0) return;
         const pct = Math.min(100, Math.round(((window.scrollY || doc.scrollTop) / total) * 100));
+        if (pct > exitState.maxScrollPct) exitState.maxScrollPct = pct;
         const th = scrollThreshold(pct);
         if (th) logLandingScroll(th);
       });
     };
 
     const onHide = () => {
-      logLandingTimeOnPage(Math.round((Date.now() - startedAt) / 1000));
+      logLandingTimeOnPage(Math.round((Date.now() - startedAt) / 1000), {
+        last_section: exitState.lastSection,
+        max_scroll_pct: exitState.maxScrollPct,
+      });
       flushLandingTelemetryOnExit();
     };
 
@@ -70,6 +115,8 @@ export const useLandingTelemetry = (
     onScroll();
 
     return () => {
+      clearTimeout(readyTimer);
+      try { lcpObserver?.disconnect(); } catch { /* noop */ }
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('pagehide', onHide);
       document.removeEventListener('visibilitychange', onVisibility);
@@ -100,7 +147,10 @@ export const useLandingTelemetry = (
         entries.forEach((e) => {
           if (!e.isIntersecting) return;
           const label = e.target.getAttribute('data-tel-section');
-          if (label) logLandingSectionView(label);
+          if (label) {
+            exitState.lastSection = label;
+            logLandingSectionView(label);
+          }
           io.unobserve(e.target);
         });
       },
@@ -121,7 +171,12 @@ export const useLandingTelemetry = (
         text: anchor.textContent || '',
         telemetryTarget: anchor.getAttribute('data-telemetry-target'),
       });
-      if (d) logLandingClick(d);
+      if (d) {
+        logLandingClick(d);
+        if (/\/auth(\?|$|#)/.test(d.href)) {
+          rememberAuthEntry(d.target, window.location.pathname);
+        }
+      }
     };
 
     root.addEventListener('click', onClick, true);
