@@ -147,8 +147,13 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
     [items],
   );
 
+  // POTVRDA O PLAĆANJU NIJE DRUGI RAČUN — vezana potvrda nema vlastitu karticu,
+  // nego se prikazuje uz svoj račun kao dokaz plaćanja.
+  const { visible, receiptsByInvoiceId } = useMemo(() => splitPairedReceipts(items), [items]);
+  // Označavanje plaćenim je KORISNIKOVA odluka — nikad automatski.
+  const [markPaid, setMarkPaid] = useState<Record<string, boolean>>({});
 
-  const startEdit = (item: MailReviewItem) => {
+
     const source = (item.extraction ?? {}) as Record<string, unknown>;
     const next: Record<string, string> = {};
     for (const f of FIELDS) {
