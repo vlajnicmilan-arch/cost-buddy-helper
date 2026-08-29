@@ -81,3 +81,26 @@ export function detectPaymentReceipt(
   if (!matched) return { ...empty, invoiceNumber };
   return { matched: true, invoiceNumber, receiptNumber, paidDate };
 }
+
+/**
+ * Datum plaćanja s potvrde u ISO obliku. Potvrde stižu na više jezika pa se
+ * podržava i „29.08.2026." i „August 29, 2026". Neprepoznat oblik vraća null —
+ * radije bez datuma nego s pogrešnim.
+ */
+export function parsePaidDateIso(raw: string | null | undefined): string | null {
+  const value = (raw ?? '').trim();
+  if (value === '') return null;
+
+  const dotted = /(\d{1,2})\s*\.\s*(\d{1,2})\s*\.\s*(\d{4})/.exec(value);
+  if (dotted) {
+    const [, d, m, y] = dotted;
+    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+  }
+
+  const iso = /(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  if (iso) return iso[0];
+
+  const parsed = Date.parse(value);
+  if (Number.isNaN(parsed)) return null;
+  return new Date(parsed).toISOString().slice(0, 10);
+}
