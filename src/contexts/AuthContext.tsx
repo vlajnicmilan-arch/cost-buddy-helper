@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
+import { readAuthEntry } from '@/lib/authFunnel';
 import { supabase } from '@/integrations/supabase/client';
 import { APP_VERSION } from '@/lib/version';
 
@@ -68,6 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           import('@/lib/funnelTracking')
             .then(({ logFunnelEvent }) => logFunnelEvent('signup', {
               method: 'sign_in_first_time',
+              ...readAuthEntry(),
             }))
             .catch(() => {});
 
@@ -160,6 +162,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .then(({ logFunnelEvent }) => logFunnelEvent('signup', {
           method: 'email',
           needs_confirmation: false,
+          ...readAuthEntry(),
         }))
         .catch(() => {});
     }
