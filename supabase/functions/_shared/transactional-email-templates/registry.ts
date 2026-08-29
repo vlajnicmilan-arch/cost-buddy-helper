@@ -20,6 +20,7 @@ import { template as projectWorkerInvitation } from './project-worker-invitation
 import { template as crashAlert } from './crash-alert.tsx'
 import { template as invoicePaymentReminder } from './invoice-payment-reminder.tsx'
 import { template as decisionSummary } from './decision-summary.tsx'
+import { template as adminNewSignup } from './admin-new-signup.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'budget-alert': budgetAlert,
@@ -33,4 +34,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'crash-alert': crashAlert,
   'invoice-payment-reminder': invoicePaymentReminder,
   'decision-summary': decisionSummary,
+  'admin-new-signup': adminNewSignup,
 }
