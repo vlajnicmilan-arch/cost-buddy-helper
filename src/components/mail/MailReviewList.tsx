@@ -33,6 +33,8 @@ import { VerificationReviewCard } from '@/components/mail/VerificationReviewCard
 import { useMailDuplicateCandidates } from '@/hooks/useMailDuplicateCandidates';
 import { PROBABLE_DUPLICATE_WARNING } from '@/lib/mail/invoiceNumberMatch';
 import { findSiblingDocuments } from '@/lib/mail/siblingDocuments';
+import { splitPairedReceipts, parsePaidDateIso } from '@/lib/mail/receiptSignals';
+import { supabase } from '@/integrations/supabase/client';
 
 
 
