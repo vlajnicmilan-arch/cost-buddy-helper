@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { friendlyError } from '@/lib/errorMessages';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,14 +20,24 @@ import { loadCampaign, mergeCampaign, readCampaignFromParams } from '@/lib/paywa
 import { Sparkles } from 'lucide-react';
 
 import i18n from '@/i18n';
+import { readAuthEntry, sanitizeAuthError, resolveInitialAuthTab } from '@/lib/authFunnel';
 import { buildConsentPayload, recordNewsletterConsent, stashPendingConsent, flushPendingNewsletterConsent } from '@/lib/newsletterConsent';
 const authSchema = z.object({
   email: z.string().trim().email(i18n.t('auth.validation.invalidEmail')).max(255, i18n.t('auth.validation.emailTooLong')),
   password: z.string().min(6, i18n.t('auth.validation.passwordTooShort')).max(72, i18n.t('auth.validation.passwordTooLong'))
 });
 
+/** Fire-and-forget funnel event — telemetry must never block or break auth. */
+const track = (name: string, metadata: Record<string, unknown> = {}) => {
+  import('@/lib/funnelTracking')
+    .then(({ logFunnelEvent }) => logFunnelEvent(name as never, metadata))
+    .catch(() => { /* noop */ });
+};
+
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState(
+    () => resolveInitialAuthTab(window.location.search, null) === 'login',
+  );
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -55,6 +65,27 @@ const Auth = () => {
   useEffect(() => {
     if ((location.state as any)?.mode === 'signup') setIsLogin(false);
   }, [location.state]);
+
+  // auth_page_viewed — once per mount, with the CTA that brought the visitor here.
+  const viewLoggedRef = useRef(false);
+  const formStartedRef = useRef(false);
+  useEffect(() => {
+    if (viewLoggedRef.current) return;
+    viewLoggedRef.current = true;
+    const tab = resolveInitialAuthTab(
+      window.location.search,
+      (location.state as any)?.mode ?? null,
+    );
+    track('auth_page_viewed', { tab, ...readAuthEntry() });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /** signup_form_started — first keystroke in the registration form. */
+  const markFormStarted = useCallback(() => {
+    if (isLogin || formStartedRef.current) return;
+    formStartedRef.current = true;
+    track('signup_form_started', readAuthEntry());
+  }, [isLogin]);
 
   // Redirect is now handled centrally by App.tsx routing.
   // Auth page only handles authentication actions.
@@ -114,14 +145,23 @@ const Auth = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
-    
+    if (!validateForm()) {
+      if (!isLogin) {
+        track('signup_failed', { stage: 'client_validation', error_code: 'invalid_form' });
+      }
+      return;
+    }
+
+    const attribution = readAuthEntry();
+    track(isLogin ? 'login_attempted' : 'signup_submitted', attribution);
+
     setLoading(true);
 
     try {
       if (isLogin) {
         const { error } = await signIn(email.trim(), password);
         if (error) {
+          track('login_failed', { stage: 'server', ...sanitizeAuthError(error as any) });
           if (error.message.includes('Invalid login')) {
             // Track failed attempts per email (sessionStorage)
             const key = `failed_login_${email.trim().toLowerCase()}`;
@@ -158,6 +198,7 @@ const Auth = () => {
       } else {
         const { error, needsEmailConfirmation } = await signUp(email.trim(), password, displayName.trim() || undefined);
         if (error) {
+          track('signup_failed', { stage: 'server', ...sanitizeAuthError(error as any), ...attribution });
           if (error.message.includes('already registered')) {
             showError(t('toasts.userAlreadyExists'));
           } else {
@@ -529,7 +570,7 @@ const Auth = () => {
                   type="text"
                   placeholder={t('placeholders.yourName')}
                   value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
+                  onChange={(e) => { markFormStarted(); setDisplayName(e.target.value); }}
                   className="pl-10 h-12 rounded-xl"
                   maxLength={50}
                 />
@@ -549,7 +590,7 @@ const Auth = () => {
                 type="email"
                 placeholder={t('placeholders.yourEmail')}
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { markFormStarted(); setEmail(e.target.value); }}
                 className={`pl-10 h-12 rounded-xl ${errors.email ? 'border-destructive' : ''}`}
                 required
                 maxLength={255}
@@ -581,7 +622,7 @@ const Auth = () => {
                 type="password"
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { markFormStarted(); setPassword(e.target.value); }}
                 className={`pl-10 h-12 rounded-xl ${errors.password ? 'border-destructive' : ''}`}
                 required
                 maxLength={72}
