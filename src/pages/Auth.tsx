@@ -747,27 +747,37 @@ const Auth = () => {
             )}
           </div>
 
-          {/* GDPR Consent checkbox - only on registration */}
+          {/* GDPR Consent checkbox - only on registration (required) */}
           {!isLogin && (
-            <div className="flex items-start gap-2">
-              <input
-                type="checkbox"
-                id="gdprConsent"
-                checked={gdprConsent}
-                onChange={(e) => setGdprConsent(e.target.checked)}
-                className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary"
-              />
-              <label htmlFor="gdprConsent" className="text-xs text-muted-foreground leading-relaxed">
-                {t('gdpr.consentLabel', 'Prihvaćam {link} i suglasan/na sam s obradom osobnih podataka u skladu s GDPR regulativom.').split('{link}')[0]}
-                <button
-                  type="button"
-                  onClick={() => navigate('/privacy-policy')}
-                  className="text-primary hover:underline"
-                >
-                  {t('gdpr.privacyPolicyLink', 'Politiku privatnosti')}
-                </button>
-                {t('gdpr.consentLabel', 'Prihvaćam {link} i suglasan/na sam s obradom osobnih podataka u skladu s GDPR regulativom.').split('{link}')[1]}
-              </label>
+            <div className="space-y-1">
+              <div className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  id="gdprConsent"
+                  ref={gdprConsentRef}
+                  checked={gdprConsent}
+                  onChange={(e) => {
+                    setGdprConsent(e.target.checked);
+                    if (e.target.checked) setErrors((prev) => ({ ...prev, consent: undefined }));
+                  }}
+                  aria-required="true"
+                  aria-invalid={!!errors.consent}
+                  className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                />
+                <label htmlFor="gdprConsent" className="text-xs text-muted-foreground leading-relaxed">
+                  {t('gdpr.consentLabel', 'Prihvaćam {link} i suglasan/na sam s obradom osobnih podataka u skladu s GDPR regulativom.').split('{link}')[0]}
+                  <button
+                    type="button"
+                    onClick={() => navigate('/privacy-policy')}
+                    className="text-primary hover:underline"
+                  >
+                    {t('gdpr.privacyPolicyLink', 'Politiku privatnosti')}
+                  </button>
+                  {t('gdpr.consentLabel', 'Prihvaćam {link} i suglasan/na sam s obradom osobnih podataka u skladu s GDPR regulativom.').split('{link}')[1]}
+                  {' '}<span className="text-destructive" aria-hidden="true">*</span>
+                </label>
+              </div>
+              {errors.consent && <p className="text-sm text-destructive">{errors.consent}</p>}
             </div>
           )}
 
