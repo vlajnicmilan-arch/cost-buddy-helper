@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Pause, Play, Trash2 } from 'lucide-react';
+import { Calendar, Pause, Play, Trash2, Plus } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -9,6 +9,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { showSuccess } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
+import { RecurringTransactionDialog } from '@/components/recurring/RecurringTransactionDialog';
+import { useRecurringTransactions } from '@/hooks/useRecurringTransactions';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { useWriteGuard } from '@/hooks/useWriteGuard';
+
 
 interface RecurringTx {
   id: string;
