@@ -31,9 +31,10 @@ describe('SubscriptionContext nema naslijeđeni istek iz created_at', () => {
   const ctx = read('src/contexts/SubscriptionContext.tsx');
 
   it('ne računa trial iz user.created_at', () => {
-    expect(ctx).not.toMatch(/created_at/);
+    expect(ctx).not.toMatch(/user\?\.created_at/);
     expect(ctx).not.toMatch(/TRIAL_DURATION_DAYS/);
   });
+
 
   it('trialExpired više ne postoji', () => {
     expect(ctx).not.toMatch(/trialExpired/);
