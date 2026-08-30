@@ -30,6 +30,8 @@ import { WalletHeroCard } from '@/components/wallet/WalletHeroCard';
 import { SyncAllBankAccountsButton } from '@/components/wallet/SyncAllBankAccountsButton';
 
 import { WalletTransfersCard } from '@/components/wallet/WalletTransfersCard';
+import { WalletRecurringCard } from '@/components/wallet/WalletRecurringCard';
+import { RecurringTransactionsPanel } from '@/components/recurring/RecurringTransactionsPanel';
 import { TransferListDialog } from '@/components/TransferListDialog';
 import { useMemo } from 'react';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
@@ -61,6 +63,7 @@ const Wallet = () => {
   const [paymentSourceDialogOpen, setPaymentSourceDialogOpen] = useState(false);
   const [paymentSourcePdfProcessing, setPaymentSourcePdfProcessing] = useState(false);
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+  const [recurringPanelOpen, setRecurringPanelOpen] = useState(false);
   // WS2 / Faza 2.1 + 2.2 — deep link parametri: `openSourceCreate` otvara Add dialog
   // za novi izvor (empty-state CTA iz AttributionSheet); `voidedAttribution` prikazuje
   // AlertDialog s CTA "Ukloni pripis" nad prethodno highlightaom transakcijom.
@@ -73,6 +76,8 @@ const Wallet = () => {
     () => allExpenses.filter(e => e.type === 'transfer').sort((a, b) => b.date.getTime() - a.date.getTime()),
     [allExpenses]
   );
+
+  useBackButton(recurringPanelOpen, () => setRecurringPanelOpen(false), BACK_PRIORITY.DIALOG);
 
   useBackButton(transferDialogOpen, () => setTransferDialogOpen(false), BACK_PRIORITY.DIALOG);
 
@@ -241,6 +246,7 @@ const Wallet = () => {
           }}
         />
         <InstallmentsPanel />
+        <WalletRecurringCard onClick={() => setRecurringPanelOpen(true)} />
         <WalletTransfersCard
           monthlyTransfers={monthlyTransfers}
           monthlyTransferCount={monthlyTransferCount}
@@ -299,6 +305,10 @@ const Wallet = () => {
         findDuplicates={findDuplicates}
         onPdfProcessingChange={setPaymentSourcePdfProcessing}
       />
+
+      {recurringPanelOpen && (
+        <RecurringTransactionsPanel onClose={() => { setRecurringPanelOpen(false); refetch(); }} />
+      )}
 
       <TransferListDialog
         open={transferDialogOpen}
