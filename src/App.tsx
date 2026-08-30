@@ -298,27 +298,9 @@ const AppRoutes = () => {
     return <PageLoader />;
   }
 
-  // Phase 3: Trial expired paywall
-  if (storageMode === "cloud" && !subLoading && trialExpired && !subscribed && !hasAnyEntitlement) {
-    return (
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
-          <Route path="/paywall" element={<Paywall />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/avatar-demo" element={<AvatarDemo />} />
-          <Route path="/unsubscribe" element={<Unsubscribe />} />
-           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/terms-of-service" element={<TermsOfService />} />
-          <Route path="/refund-policy" element={<RefundPolicy />} />
-          <Route path="/impressum" element={<Impressum />} />
-          <Route path="/help" element={<Help />} />
-          <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
-          <Route path="*" element={<Navigate to="/paywall" replace />} />
-        </Routes>
-      </Suspense>
-    );
-  }
+  // Besplatan račun je besplatan zauvijek — nema globalnog zaključavanja.
+  // Naplata ostaje isključivo po modulima (entitlements + write guardovi).
+
 
   // Phase 4: Cloud mode — redirect unauthenticated users to /auth
   if (storageMode === 'cloud' && !user) {
