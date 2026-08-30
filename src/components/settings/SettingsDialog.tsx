@@ -764,6 +764,12 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               ) : (
                 <SettingsCategoryMenu onSelect={(id) => setActiveCategoryId(id)} />
               )}
+
+              <div className="pt-2 text-center">
+                <p className="text-[10px] text-muted-foreground/60">
+                  Centar v{APP_VERSION}
+                </p>
+              </div>
             </div>
           </ScrollArea>
         </DialogContent>
