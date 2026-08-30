@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useTranslation } from 'react-i18next';
 import { Loader2, CheckCircle, XCircle, FolderKanban, LogIn, User, Briefcase } from 'lucide-react';
 import { useAppState } from '@/contexts/AppStateContext';
+import { rememberAuthReturn } from '@/lib/authReturn';
+import { logFunnelEvent } from '@/lib/funnelTracking';
+
 
 interface ProjectData {
   id: string;
