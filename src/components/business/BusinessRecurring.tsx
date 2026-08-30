@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Pause, Play, Trash2 } from 'lucide-react';
+import { Calendar, Pause, Play, Trash2, Plus } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -9,6 +9,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { showSuccess } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
+import { RecurringTransactionDialog } from '@/components/recurring/RecurringTransactionDialog';
+import { useRecurringTransactions } from '@/hooks/useRecurringTransactions';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { useWriteGuard } from '@/hooks/useWriteGuard';
+
 
 interface RecurringTx {
   id: string;
@@ -28,6 +33,12 @@ export const BusinessRecurring = () => {
   const { activeBusinessProfileId } = useAppState();
   const [items, setItems] = useState<RecurringTx[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const { addRecurring } = useRecurringTransactions();
+  const { hasAccess } = useFeatureAccess();
+  const isReadOnly = !hasAccess('recurring_transactions');
+  const { guard } = useWriteGuard({ kind: 'module', feature: 'recurring_transactions' });
+
 
   const fetchItems = async () => {
     if (!user || !activeBusinessProfileId) { setItems([]); setLoading(false); return; }
@@ -74,14 +85,25 @@ export const BusinessRecurring = () => {
     <div className="space-y-4">
       <Card className="border-none shadow-sm">
         <CardContent className="p-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <div>
               <p className="text-[10px] text-muted-foreground">{t('business.recurring.monthlyObligations', 'Mjesečne obveze (procjena)')}</p>
               <p className="text-lg font-bold text-expense">{formatAmount(monthlyTotal)}</p>
             </div>
+            {activeBusinessProfileId && (
+              <Button
+                size="sm"
+                className="rounded-xl gap-1.5 min-h-[44px]"
+                disabled={isReadOnly}
+                onClick={() => guard(() => setDialogOpen(true))}
+              >
+                <Plus className="w-4 h-4" /> {t('recurring.new')}
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
+
 
       {active.length > 0 && (
         <div className="space-y-1.5">
@@ -141,6 +163,17 @@ export const BusinessRecurring = () => {
           <p className="text-sm text-muted-foreground">{t('business.recurring.noRecurring', 'Nema ponavljajućih obveza')}</p>
         </div>
       )}
+
+      <RecurringTransactionDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSave={async (data: any) => {
+          await addRecurring(data);
+          await fetchItems();
+        }}
+        editData={null}
+      />
     </div>
+
   );
 };
