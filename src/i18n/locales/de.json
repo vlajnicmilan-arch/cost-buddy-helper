@@ -380,8 +380,8 @@
       "budgetHigh": "Mehr als das geplante Budget ausgegeben."
     },
     "forecast": {
-      "title": "🔮 Prognose — beim aktuellen Tempo",
-      "eac": "Voraussichtliche Endkosten",
+      "title": "🔮 Prognose — nach Phasenfortschritt",
+      "eac": "Voraussichtliche Endkosten (nach Phasenfortschritt)",
       "tooEarly": "Prognose verfügbar ab 10% Projektabschluss",
       "noMilestones": "Füge Projektphasen hinzu, um die Prognose zu sehen",
       "predictedRemainder": "Prognostiziert verbleibend"
@@ -658,8 +658,8 @@
       "title": "Earned Value",
       "contracted": "Vertragswert",
       "spent": "Kosten",
-      "eac": "Voraussichtliche Endkosten",
-      "eacHint": "Hochrechnung anhand der aktuellen Ausgabenrate",
+      "eac": "Voraussichtliche Endkosten (nach verstrichener Zeit)",
+      "eacHint": "Hochrechnung anhand der Ausgaben im Verhältnis zur verstrichenen Projektzeit",
       "scoreLabel": "Zustand",
       "status": {
         "healthy": "Gesund",
@@ -5835,11 +5835,10 @@
       "fxNotice": "FX-Stand",
       "mixedCurrenciesNotice": "Mehrere Währungen — FX umgerechnet",
       "manualFallbackNotice": "Manueller Modus: teilt vorerst gleichmäßig. Overrides pro Transaktion folgen in der nächsten Phase.",
-      "missingIncomeNotice": "Einkommensanteile fehlen für einige Mitglieder — verwende gleiche Anteile.",
+      "missingIncomeNotice": "Einkommensanteile sind nicht für alle Mitglieder erfasst — bis dahin wird gleich geteilt.",
       "splitMode": {
         "equal": "Gleich",
-        "proportional_income": "Nach Einkommen",
-        "manual": "Manuell"
+        "proportional_income": "Nach Einkommen"
       },
       "pdf": {
         "title": "Wer schuldet wem — Bericht",
@@ -6288,6 +6287,10 @@
     }
   },
   "moduleUpgrade": {
+    "smjer": {
+      "title": "Smjer",
+      "value": "Persönliche Finanzen ohne manuelles Rechnen — unbegrenzte Transaktionen, Budgets, Kontoauszug-Import und KI-Hilfe."
+    },
     "krug": {
       "title": "Krug",
       "value": "Teile Ausgaben, Budgets und Projekte mit Familie oder Team — ohne manuellen Abgleich."

@@ -41,7 +41,7 @@ export const ProjectForecastCard = ({ baseline, spent, milestones }: Props) => {
       <div className="flex items-center gap-2">
         <Sparkles className="w-4 h-4 text-module-muted" />
         <span className="font-medium text-sm text-module-muted">
-          {t('projects.forecast.title', '🔮 Prognoza — po trenutnom tempu')}
+          {t('projects.forecast.title', '🔮 Prognoza — po dovršenosti faza')}
         </span>
       </div>
       {body}
@@ -76,7 +76,7 @@ export const ProjectForecastCard = ({ baseline, spent, milestones }: Props) => {
     <div className="space-y-2 text-sm">
       <div className="flex items-center justify-between gap-2">
         <span className="text-muted-foreground">
-          {t('projects.forecast.eac', 'Predviđeni finalni trošak')}
+          {t('projects.forecast.eac', 'Predviđeni finalni trošak (po dovršenosti faza)')}
         </span>
         <span className="font-semibold tabular-nums">{formatAmount(eac)}</span>
       </div>
