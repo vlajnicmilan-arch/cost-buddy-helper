@@ -26,6 +26,8 @@ import { WalletViewModeProvider } from "@/contexts/WalletViewModeContext";
 import { AppLockProvider } from "@/contexts/AppLockContext";
 import { SubscriptionProvider, useSubscription } from "@/contexts/SubscriptionContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { resolveAuthReturnPath, readAuthReturn, consumeAuthReturn } from "@/lib/authReturn";
+
 import { LockScreen } from "@/components/LockScreen";
 import { TutorialOverlay } from "@/components/tutorial";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
@@ -195,6 +197,15 @@ const RouteAwareGlobalOverlays = () => {
   );
 };
 
+/** Redirect after successful auth and clear the stored return path. */
+const AuthReturnRedirect = ({ to }: { to: string }) => {
+  useEffect(() => {
+    consumeAuthReturn();
+  }, []);
+  return <Navigate to={to} replace />;
+};
+
+
 const AppRoutes = () => {
   const location = useLocation();
   const { storageMode, isInitialized } = useStorage();
@@ -203,9 +214,10 @@ const AppRoutes = () => {
   const hasAnyEntitlement = !!(entitlements.smjer?.active || entitlements.krug?.active || entitlements.projekti?.active || entitlements.biznis?.active);
   const { user, authReady } = useAuth();
   const stateReturn = (location.state as { from?: string } | null)?.from;
-  const queryNext = new URLSearchParams(location.search).get("next");
-  const safeNext = queryNext && queryNext.startsWith("/") && !queryNext.startsWith("//") ? queryNext : null;
-  const authReturnPath = safeNext || stateReturn;
+  // One mechanism for the post-auth destination: ?next= → router state →
+  // sessionStorage (public screens such as invitations store it there).
+  const authReturnPath = resolveAuthReturnPath(location.search, stateReturn, readAuthReturn());
+
 
   // Wait for all readiness signals before making routing decisions
   const allReady = isInitialized && authReady && appStateReady;
@@ -269,6 +281,8 @@ const AppRoutes = () => {
           <Route path="/avatar-demo" element={<AvatarDemo />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
           <Route path="/p/:token" element={<PublicProject />} />
+          <Route path="/join-project/:token" element={<JoinProject />} />
+          <Route path="/join-budget/:token" element={<JoinBudget />} />
           <Route path="/landing" element={<Navigate to="/" replace />} />
           <Route path="/landing-legacy" element={<Navigate to="/" replace />} />
           <Route path="/centar" element={<Navigate to="/" replace />} />
@@ -329,6 +343,8 @@ const AppRoutes = () => {
           <Route path="/avatar-demo" element={<AvatarDemo />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
           <Route path="/p/:token" element={<PublicProject />} />
+          <Route path="/join-project/:token" element={<JoinProject />} />
+          <Route path="/join-budget/:token" element={<JoinBudget />} />
           <Route path="/landing" element={<Navigate to="/" replace />} />
           <Route path="/landing-legacy" element={<Navigate to="/" replace />} />
           <Route path="/centar" element={<Navigate to="/" replace />} />
@@ -357,7 +373,7 @@ const AppRoutes = () => {
       <Route path="/budgets" element={<Suspense fallback={<GenericPageSkeleton />}>{requireOnboarding(<Budgets />)}</Suspense>} />
       <Route path="/wallet" element={<Suspense fallback={<WalletSkeleton />}>{requireOnboarding(<Wallet />)}</Suspense>} />
       <Route path="/krug" element={<Suspense fallback={<GenericPageSkeleton />}>{requireOnboarding(<Krug />)}</Suspense>} />
-      <Route path="/auth" element={<Suspense fallback={<PageLoader />}>{user ? <Navigate to={authReturnPath || "/home"} replace /> : <Auth />}</Suspense>} />
+      <Route path="/auth" element={<Suspense fallback={<PageLoader />}>{user ? <AuthReturnRedirect to={authReturnPath || "/home"} /> : <Auth />}</Suspense>} />
       <Route path="/native-oauth/callback" element={<Suspense fallback={<PageLoader />}><NativeOAuthCallback /></Suspense>} />
       <Route path="/reset-password" element={<Suspense fallback={<PageLoader />}><ResetPassword /></Suspense>} />
       <Route path="/setup" element={<Suspense fallback={<PageLoader />}><StorageSetup /></Suspense>} />

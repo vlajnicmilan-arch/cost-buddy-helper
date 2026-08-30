@@ -47,7 +47,11 @@ export type FunnelEventName =
   | 'login_attempted'
   | 'login_failed'
   | 'apk_download_started'
-  | 'apk_download_failed';
+  | 'apk_download_failed'
+  // Invitation path (invite_opened / invite_failed may be anonymous)
+  | 'invite_opened'
+  | 'invite_accepted'
+  | 'invite_failed';
 
 /**
  * Events emitted before a user exists. They are inserted with user_id = NULL
@@ -62,7 +66,10 @@ export const ANONYMOUS_FUNNEL_EVENTS: ReadonlySet<string> = new Set([
   'login_failed',
   'apk_download_started',
   'apk_download_failed',
+  'invite_opened',
+  'invite_failed',
 ]);
+
 
 const SESSION_KEY = 'funnel_session_id';
 const INSTALL_FLAG = 'funnel_install_logged';

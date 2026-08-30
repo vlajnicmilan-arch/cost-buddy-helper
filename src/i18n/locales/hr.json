@@ -1110,7 +1110,9 @@
       "empty": "Sve transakcije imaju fazu.",
       "summary": "{{count}} stavki • {{amount}}",
       "cta": "{{count}} transakcija bez faze — razvrstaj"
-    }
+    },
+    "joinNeedsAccount": "Za pridruživanje projektu otvorite račun — traje manje od minute.",
+    "budgetJoinNeedsAccount": "Za pridruživanje budžetu otvorite račun — traje manje od minute."
   },
   "estimates": {
     "title": "Ponude i predračuni",
@@ -1841,7 +1843,8 @@
       "changePasswordButton": "Promijeni lozinku"
     },
     "nameFullOptional": "Ime i prezime (opcionalno)",
-    "nameRecognitionHint": "Tako te vlasnik projekta prepozna kad te povezuje s radnikom."
+    "nameRecognitionHint": "Tako te vlasnik projekta prepozna kad te povezuje s radnikom.",
+    "alreadyHaveAccount": "Već imam račun"
   },
   "categories": {
     "food": "Hrana",

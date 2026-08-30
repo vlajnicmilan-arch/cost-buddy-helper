@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, CheckCircle, XCircle, Target, LogIn } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { rememberAuthReturn } from '@/lib/authReturn';
+import { logFunnelEvent } from '@/lib/funnelTracking';
+
 
 interface TargetData {
   id: string;
@@ -26,15 +29,25 @@ export default function JoinBudget() {
   const [success, setSuccess] = useState(false);
   const [targetData, setTargetData] = useState<TargetData | null>(null);
 
+  const openLoggedRef = useRef(false);
+
   useEffect(() => {
     if (!token) {
       setError(t('join.invalidLink', 'Link nije valjan'));
       setLoading(false);
+      if (!openLoggedRef.current) {
+        openLoggedRef.current = true;
+        logFunnelEvent('invite_failed', { invite_type: 'budget', reason: 'missing_token' });
+      }
       return;
     }
 
     // Token will be validated server-side on accept
     setLoading(false);
+    if (!openLoggedRef.current) {
+      openLoggedRef.current = true;
+      logFunnelEvent('invite_opened', { invite_type: 'budget', authenticated: !!user });
+    }
   }, [token]);
 
   const handleAccept = async () => {
@@ -55,10 +68,12 @@ export default function JoinBudget() {
 
       if (data?.error) {
         setError(data.error);
+        logFunnelEvent('invite_failed', { invite_type: 'budget', reason: 'rejected' });
       } else if (data?.success) {
         setSuccess(true);
         setTargetData(data.target);
-        
+        logFunnelEvent('invite_accepted', { invite_type: 'budget' });
+
         // Redirect after short delay
         setTimeout(() => {
           navigate('/home');
@@ -67,15 +82,18 @@ export default function JoinBudget() {
     } catch (err: any) {
       console.error('Error accepting invitation:', err);
       setError(err.message || t('join.errorJoiningBudget', 'Greška pri pridruživanju budžetu'));
+      logFunnelEvent('invite_failed', { invite_type: 'budget', reason: 'exception' });
     } finally {
       setAccepting(false);
     }
   };
 
+  // Invited people almost never have an account yet → go straight to signup.
   const handleLoginRedirect = () => {
-    sessionStorage.setItem('returnUrl', `/join-budget/${token}`);
-    navigate('/auth');
+    rememberAuthReturn(`/join-budget/${token}`);
+    navigate('/auth?mode=signup');
   };
+
 
   if (authLoading || loading) {
     return (
@@ -123,7 +141,7 @@ export default function JoinBudget() {
             </p>
           ) : error ? (
             <Button 
-              onClick={() => navigate('/home')} 
+              onClick={() => navigate(user ? '/home' : '/')} 
               variant="outline" 
               className="w-full"
             >
@@ -132,13 +150,24 @@ export default function JoinBudget() {
           ) : !user ? (
             <>
               <p className="text-center text-sm text-muted-foreground">
-                {t('budget.loginRequired', 'Morate biti prijavljeni da biste se pridružili budžetu.')}
+                {t('projects.budgetJoinNeedsAccount', 'Za pridruživanje budžetu otvorite račun — traje manje od minute.')}
               </p>
               <Button onClick={handleLoginRedirect} className="w-full">
                 <LogIn className="w-4 h-4 mr-2" />
-                {t('auth.signIn')}
+                {t('auth.createAccount', 'Otvori račun')}
+              </Button>
+              <Button
+                onClick={() => {
+                  rememberAuthReturn(`/join-budget/${token}`);
+                  navigate('/auth');
+                }}
+                variant="ghost"
+                className="w-full"
+              >
+                {t('auth.alreadyHaveAccount', 'Već imam račun')}
               </Button>
             </>
+
           ) : (
             <div className="space-y-3">
               <Button 

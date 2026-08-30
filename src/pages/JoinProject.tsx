@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useTranslation } from 'react-i18next';
 import { Loader2, CheckCircle, XCircle, FolderKanban, LogIn, User, Briefcase } from 'lucide-react';
 import { useAppState } from '@/contexts/AppStateContext';
+import { rememberAuthReturn } from '@/lib/authReturn';
+import { logFunnelEvent } from '@/lib/funnelTracking';
+
 
 interface ProjectData {
   id: string;
@@ -41,14 +44,25 @@ const JoinProject = () => {
   const [businessProfiles, setBusinessProfiles] = useState<BusinessProfileLite[]>([]);
   const [chosenBusinessProfileId, setChosenBusinessProfileId] = useState<string>('');
 
+  const openLoggedRef = useRef(false);
+
   useEffect(() => {
     if (!token) {
       setError(t('join.invalidLink', 'Link nije valjan'));
       setLoading(false);
+      if (!openLoggedRef.current) {
+        openLoggedRef.current = true;
+        logFunnelEvent('invite_failed', { invite_type: 'project', reason: 'missing_token' });
+      }
       return;
     }
     setLoading(false);
+    if (!openLoggedRef.current) {
+      openLoggedRef.current = true;
+      logFunnelEvent('invite_opened', { invite_type: 'project', authenticated: !!user });
+    }
   }, [token]);
+
 
   // Load invitation suggested context + user's business profiles
   useEffect(() => {
@@ -104,8 +118,11 @@ const JoinProject = () => {
 
       if (data?.error) {
         setError(data.error);
+        logFunnelEvent('invite_failed', { invite_type: 'project', reason: 'rejected' });
       } else if (data?.success) {
         setSuccess(true);
+        logFunnelEvent('invite_accepted', { invite_type: 'project', context: chosenContext });
+
         const target = data.target || data.project;
         setProjectData(target);
 
@@ -152,15 +169,18 @@ const JoinProject = () => {
     } catch (err: any) {
       console.error('Error accepting invitation:', err);
       setError(err.message || t('join.errorJoiningProject', 'Greška pri pridruživanju projektu'));
+      logFunnelEvent('invite_failed', { invite_type: 'project', reason: 'exception' });
     } finally {
       setAccepting(false);
     }
   };
 
+  // Invited people almost never have an account yet → go straight to signup.
   const handleLoginRedirect = () => {
-    sessionStorage.setItem('returnUrl', `/join-project/${token}`);
-    navigate('/auth');
+    rememberAuthReturn(`/join-project/${token}`);
+    navigate('/auth?mode=signup');
   };
+
 
   if (loading) {
     return (
@@ -205,19 +225,30 @@ const JoinProject = () => {
               {t('projects.redirecting', 'Preusmjeravanje...')}
             </p>
           ) : error ? (
-            <Button onClick={() => navigate('/home')} variant="outline" className="w-full">
+            <Button onClick={() => navigate(user ? '/home' : '/')} variant="outline" className="w-full">
               {t('common.back')}
             </Button>
           ) : !user ? (
             <>
               <p className="text-center text-sm text-muted-foreground">
-                {t('projects.loginRequired', 'Morate se prijaviti da biste se pridružili projektu')}
+                {t('projects.joinNeedsAccount', 'Za pridruživanje projektu otvorite račun — traje manje od minute.')}
               </p>
               <Button onClick={handleLoginRedirect} className="w-full">
                 <LogIn className="w-4 h-4 mr-2" />
-                {t('auth.signIn')}
+                {t('auth.createAccount', 'Otvori račun')}
+              </Button>
+              <Button
+                onClick={() => {
+                  rememberAuthReturn(`/join-project/${token}`);
+                  navigate('/auth');
+                }}
+                variant="ghost"
+                className="w-full"
+              >
+                {t('auth.alreadyHaveAccount', 'Već imam račun')}
               </Button>
             </>
+
           ) : (
             <div className="space-y-4">
               {/* Context picker for the invitee */}
@@ -286,7 +317,7 @@ const JoinProject = () => {
                         type="button"
                         size="sm"
                         onClick={() => {
-                          sessionStorage.setItem('returnUrl', `/join-project/${token}`);
+                          rememberAuthReturn(`/join-project/${token}`);
                           navigate('/business?createProfile=1');
                         }}
                       >
