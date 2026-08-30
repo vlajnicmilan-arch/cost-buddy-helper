@@ -1839,8 +1839,9 @@
       "changePasswordButton": "Passwort ändern"
     },
     "nameFullOptional": "Vor- und Nachname (optional)",
-    "nameRecognitionHint": "So erkennt dich der Projektinhaber, wenn er dich mit einem Mitarbeiter verknüpft.",
-    "alreadyHaveAccount": "Ich habe bereits ein Konto"
+    "alreadyHaveAccount": "Ich habe bereits ein Konto",
+    "consentRequired": "Um ein Konto zu erstellen, musst du die Datenschutzerklärung akzeptieren.",
+    "freeAccountNote": "Das Konto ist kostenlos. Ohne Frist und ohne Karte."
   },
   "categories": {
     "food": "Essen",

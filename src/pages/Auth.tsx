@@ -44,7 +44,8 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string; consent?: string }>({});
+  const gdprConsentRef = useRef<HTMLInputElement>(null);
   const [awaitingVerification, setAwaitingVerification] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
   const [showWelcome, setShowWelcome] = useState(false);
@@ -144,7 +145,17 @@ const Auth = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    // Consent is validated on submit (not by disabling the button) so the user
+    // always gets visible feedback instead of a silent dead button.
+    if (!isLogin && !gdprConsent) {
+      setErrors((prev) => ({ ...prev, consent: t('auth.consentRequired') }));
+      track('signup_failed', { stage: 'client_validation', error_code: 'consent_required', ...readAuthEntry() });
+      gdprConsentRef.current?.focus();
+      gdprConsentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
     if (!validateForm()) {
       if (!isLogin) {
         track('signup_failed', { stage: 'client_validation', error_code: 'invalid_form' });
@@ -555,146 +566,15 @@ const Auth = () => {
           <p className="text-muted-foreground mt-2">
             {isLogin ? t('auth.loginSubtitle') : t('auth.registerSubtitle')}
           </p>
+          {!isLogin && (
+            <p className="text-xs text-muted-foreground/70 mt-1">
+              {t('auth.freeAccountNote', 'Račun je besplatan. Bez roka i bez kartice.')}
+            </p>
+          )}
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="glass-card rounded-2xl p-6 space-y-6">
-          {/* Name field - only for registration */}
-          {!isLogin && (
-            <div className="space-y-2">
-              <Label htmlFor="displayName">{t('auth.nameFullOptional', 'Ime i prezime (opcionalno)')}</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  id="displayName"
-                  type="text"
-                  placeholder={t('placeholders.yourName')}
-                  value={displayName}
-                  onChange={(e) => { markFormStarted(); setDisplayName(e.target.value); }}
-                  className="pl-10 h-12 rounded-xl"
-                  maxLength={50}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {t('auth.nameRecognitionHint', 'Tako te vlasnik projekta prepozna kad te povezuje s radnikom.')}
-              </p>
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="email">{t('auth.emailLabel')}</Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                id="email"
-                type="email"
-                placeholder={t('placeholders.yourEmail')}
-                value={email}
-                onChange={(e) => { markFormStarted(); setEmail(e.target.value); }}
-                className={`pl-10 h-12 rounded-xl ${errors.email ? 'border-destructive' : ''}`}
-                required
-                maxLength={255}
-              />
-            </div>
-            {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">{t('auth.password')}</Label>
-              {isLogin && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForgotPassword(true);
-                    setErrors({});
-                  }}
-                  className="text-xs text-primary hover:underline"
-                >
-                  {t('auth.forgotPassword')}
-                </button>
-              )}
-            </div>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => { markFormStarted(); setPassword(e.target.value); }}
-                className={`pl-10 h-12 rounded-xl ${errors.password ? 'border-destructive' : ''}`}
-                required
-                maxLength={72}
-              />
-            </div>
-            {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
-           {!isLogin && (
-              <p className="text-xs text-muted-foreground">
-                {t('auth.minPassword')}
-              </p>
-            )}
-          </div>
-
-          {/* GDPR Consent checkbox - only on registration */}
-          {!isLogin && (
-            <div className="flex items-start gap-2">
-              <input
-                type="checkbox"
-                id="gdprConsent"
-                checked={gdprConsent}
-                onChange={(e) => setGdprConsent(e.target.checked)}
-                className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary"
-              />
-              <label htmlFor="gdprConsent" className="text-xs text-muted-foreground leading-relaxed">
-                {t('gdpr.consentLabel', 'Prihvaćam {link} i suglasan/na sam s obradom osobnih podataka u skladu s GDPR regulativom.').split('{link}')[0]}
-                <button
-                  type="button"
-                  onClick={() => navigate('/privacy-policy')}
-                  className="text-primary hover:underline"
-                >
-                  {t('gdpr.privacyPolicyLink', 'Politiku privatnosti')}
-                </button>
-                {t('gdpr.consentLabel', 'Prihvaćam {link} i suglasan/na sam s obradom osobnih podataka u skladu s GDPR regulativom.').split('{link}')[1]}
-              </label>
-            </div>
-          )}
-
-          {/* Newsletter consent — zasebna, PRAZNA, NEOBAVEZNA kvačica (nikad pred-označena) */}
-          {!isLogin && (
-            <div className="flex items-start gap-2 border-t border-border pt-4">
-              <input
-                type="checkbox"
-                id="newsletterConsent"
-                checked={newsletterConsent}
-                onChange={(e) => setNewsletterConsent(e.target.checked)}
-                className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary"
-              />
-              <label htmlFor="newsletterConsent" className="text-xs text-muted-foreground leading-relaxed">
-                {t('gdpr.newsletterConsentLabel')}
-              </label>
-            </div>
-          )}
-
-          <Button 
-            type="submit" 
-            className="w-full h-12 rounded-xl font-medium"
-            disabled={loading || (!isLogin && !gdprConsent)}
-          >
-            {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            {isLogin ? t('auth.login') : t('auth.register')}
-          </Button>
-
-          {/* Divider */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">{t('auth.orDivider')}</span>
-            </div>
-          </div>
-
           {/* Google Sign-In */}
           <Button
             type="button"
@@ -782,6 +662,150 @@ const Auth = () => {
             </svg>
             {t('auth.continueWithApple')}
           </Button>
+
+          {/* Divider */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">{t('auth.orDivider')}</span>
+            </div>
+          </div>
+
+          {/* Name field - only for registration */}
+          {!isLogin && (
+            <div className="space-y-2">
+              <Label htmlFor="displayName">{t('auth.nameFullOptional', 'Ime i prezime (opcionalno)')}</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  id="displayName"
+                  type="text"
+                  placeholder={t('placeholders.yourName')}
+                  value={displayName}
+                  onChange={(e) => { markFormStarted(); setDisplayName(e.target.value); }}
+                  className="pl-10 h-12 rounded-xl"
+                  maxLength={50}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="email">{t('auth.emailLabel')}</Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                id="email"
+                type="email"
+                placeholder={t('placeholders.yourEmail')}
+                value={email}
+                onChange={(e) => { markFormStarted(); setEmail(e.target.value); }}
+                className={`pl-10 h-12 rounded-xl ${errors.email ? 'border-destructive' : ''}`}
+                required
+                maxLength={255}
+              />
+            </div>
+            {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">{t('auth.password')}</Label>
+              {isLogin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForgotPassword(true);
+                    setErrors({});
+                  }}
+                  className="text-xs text-primary hover:underline"
+                >
+                  {t('auth.forgotPassword')}
+                </button>
+              )}
+            </div>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => { markFormStarted(); setPassword(e.target.value); }}
+                className={`pl-10 h-12 rounded-xl ${errors.password ? 'border-destructive' : ''}`}
+                required
+                maxLength={72}
+              />
+            </div>
+            {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
+           {!isLogin && (
+              <p className="text-xs text-muted-foreground">
+                {t('auth.minPassword')}
+              </p>
+            )}
+          </div>
+
+          {/* GDPR Consent checkbox - only on registration (required) */}
+          {!isLogin && (
+            <div className="space-y-1">
+              <div className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  id="gdprConsent"
+                  ref={gdprConsentRef}
+                  checked={gdprConsent}
+                  onChange={(e) => {
+                    setGdprConsent(e.target.checked);
+                    if (e.target.checked) setErrors((prev) => ({ ...prev, consent: undefined }));
+                  }}
+                  aria-required="true"
+                  aria-invalid={!!errors.consent}
+                  className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                />
+                <label htmlFor="gdprConsent" className="text-xs text-muted-foreground leading-relaxed">
+                  {t('gdpr.consentLabel', 'Prihvaćam {link} i suglasan/na sam s obradom osobnih podataka u skladu s GDPR regulativom.').split('{link}')[0]}
+                  <button
+                    type="button"
+                    onClick={() => navigate('/privacy-policy')}
+                    className="text-primary hover:underline"
+                  >
+                    {t('gdpr.privacyPolicyLink', 'Politiku privatnosti')}
+                  </button>
+                  {t('gdpr.consentLabel', 'Prihvaćam {link} i suglasan/na sam s obradom osobnih podataka u skladu s GDPR regulativom.').split('{link}')[1]}
+                  {' '}<span className="text-destructive" aria-hidden="true">*</span>
+                </label>
+              </div>
+              {errors.consent && <p className="text-sm text-destructive">{errors.consent}</p>}
+            </div>
+          )}
+
+          {/* Newsletter consent — zasebna, PRAZNA, NEOBAVEZNA kvačica (nikad pred-označena) */}
+          {!isLogin && (
+            <div className="flex items-start gap-2 border-t border-border pt-4">
+              <input
+                type="checkbox"
+                id="newsletterConsent"
+                checked={newsletterConsent}
+                onChange={(e) => setNewsletterConsent(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary"
+              />
+              <label htmlFor="newsletterConsent" className="text-xs text-muted-foreground leading-relaxed">
+                {t('gdpr.newsletterConsentLabel')}
+              </label>
+            </div>
+          )}
+
+          <Button
+            type="submit"
+            className="w-full h-12 rounded-xl font-medium"
+            disabled={loading}
+          >
+            {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            {isLogin ? t('auth.login') : t('auth.register')}
+          </Button>
+
 
           <div className="text-center text-sm">
             <span className="text-muted-foreground">

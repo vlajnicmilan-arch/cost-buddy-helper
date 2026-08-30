@@ -1839,8 +1839,9 @@
       "changePasswordButton": "Change password"
     },
     "nameFullOptional": "Full name (optional)",
-    "nameRecognitionHint": "This is how the project owner recognises you when linking you to a worker.",
-    "alreadyHaveAccount": "I already have an account"
+    "alreadyHaveAccount": "I already have an account",
+    "consentRequired": "To create an account, you need to accept the Privacy Policy.",
+    "freeAccountNote": "The account is free. No time limit, no card required."
   },
   "categories": {
     "food": "Food",
