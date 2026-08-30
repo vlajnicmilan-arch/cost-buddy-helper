@@ -19,6 +19,12 @@
 // the first batch of telemetry is due.
 
 
+import {
+  extractAttributionTags,
+  hasAttributionMarkers,
+  readFirstTouchAttribution,
+} from '@/lib/attributionTags';
+
 const SESSION_KEY = 'funnel_session_id';
 const SEEN_KEY = 'landing_tel_seen_v1';
 
