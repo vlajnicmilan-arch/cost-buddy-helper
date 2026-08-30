@@ -3,7 +3,10 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { readFileSync } from 'fs';
 import path from 'path';
 
-vi.mock('react-i18next', async () => (await import('./mocks/reactI18next')).reactI18nextMock);
+vi.mock('react-i18next', async () => {
+  const { createReactI18nextMock } = await import('./mocks/reactI18next');
+  return createReactI18nextMock();
+});
 
 const mockRows = [
   { id: '1', is_active: true },
