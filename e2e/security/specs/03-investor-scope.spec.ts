@@ -37,9 +37,18 @@ test.describe('03 — investor scope', () => {
       })
       .select('id').single();
     expenseId = e!.id;
+    await admin().from('project_collaborators').insert({
+      project_id: projectId, first_name: 'Podiz', last_name: 'Vođač',
+      service_description: 'interno', total_price: 9999, legacy_paid_amount: 100, paid_amount: 100,
+    });
+    await admin().from('project_contract_amendments').insert({
+      project_id: projectId, user_id: aId, amendment_amount: 4321, note: 'interno',
+    });
   });
 
   test.afterAll(async () => {
+    await admin().from('project_collaborators').delete().eq('project_id', projectId);
+    await admin().from('project_contract_amendments').delete().eq('project_id', projectId);
     await admin().from('expenses').delete().eq('project_id', projectId);
     await admin().from('project_milestones').delete().eq('project_id', projectId);
     await admin().from('project_members').delete().eq('project_id', projectId);
@@ -104,6 +113,20 @@ test.describe('03 — investor scope', () => {
       const budget = data![0].budget;
       expect(budget, 'investor je pročitao budget milestonea').toBeNull();
     }
+  });
+
+  test('investor NE SMIJE čitati suradnike (nabavne cijene podizvođača)', async () => {
+    const { data, error } = await bClient
+      .from('project_collaborators').select('id, total_price, paid_amount').eq('project_id', projectId);
+    expect(error).toBeNull();
+    expect(data ?? [], 'investor je dobio nabavne cijene suradnika').toEqual([]);
+  });
+
+  test('investor NE SMIJE čitati anekse ugovora', async () => {
+    const { data, error } = await bClient
+      .from('project_contract_amendments').select('id, amendment_amount').eq('project_id', projectId);
+    expect(error).toBeNull();
+    expect(data ?? [], 'investor je dobio iznose aneksa').toEqual([]);
   });
 
   test('investor SMIJE vidjeti projekt (dozvoljeno po dizajnu)', async () => {
