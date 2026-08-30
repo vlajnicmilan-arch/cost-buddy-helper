@@ -1106,7 +1106,9 @@
       "empty": "Alle Buchungen haben eine Phase.",
       "summary": "{{count}} Positionen • {{amount}}",
       "cta": "{{count}} Buchungen ohne Phase — zuordnen"
-    }
+    },
+    "joinNeedsAccount": "Erstelle ein Konto, um dem Projekt beizutreten — das dauert weniger als eine Minute.",
+    "budgetJoinNeedsAccount": "Erstelle ein Konto, um dem Budget beizutreten — das dauert weniger als eine Minute."
   },
   "estimates": {
     "title": "Angebote & Kostenvoranschläge",
@@ -1837,7 +1839,8 @@
       "changePasswordButton": "Passwort ändern"
     },
     "nameFullOptional": "Vor- und Nachname (optional)",
-    "nameRecognitionHint": "So erkennt dich der Projektinhaber, wenn er dich mit einem Mitarbeiter verknüpft."
+    "nameRecognitionHint": "So erkennt dich der Projektinhaber, wenn er dich mit einem Mitarbeiter verknüpft.",
+    "alreadyHaveAccount": "Ich habe bereits ein Konto"
   },
   "categories": {
     "food": "Essen",
