@@ -44,14 +44,25 @@ const JoinProject = () => {
   const [businessProfiles, setBusinessProfiles] = useState<BusinessProfileLite[]>([]);
   const [chosenBusinessProfileId, setChosenBusinessProfileId] = useState<string>('');
 
+  const openLoggedRef = useRef(false);
+
   useEffect(() => {
     if (!token) {
       setError(t('join.invalidLink', 'Link nije valjan'));
       setLoading(false);
+      if (!openLoggedRef.current) {
+        openLoggedRef.current = true;
+        logFunnelEvent('invite_failed', { invite_type: 'project', reason: 'missing_token' });
+      }
       return;
     }
     setLoading(false);
+    if (!openLoggedRef.current) {
+      openLoggedRef.current = true;
+      logFunnelEvent('invite_opened', { invite_type: 'project', authenticated: !!user });
+    }
   }, [token]);
+
 
   // Load invitation suggested context + user's business profiles
   useEffect(() => {
