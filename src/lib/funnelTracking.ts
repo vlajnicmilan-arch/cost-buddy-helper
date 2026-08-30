@@ -14,7 +14,9 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   extractAttributionTags,
   hasAttributionMarkers,
-  type AttributionTags,
+  readFirstTouchAttribution,
+  FIRST_TOUCH_KEY,
+  type FirstTouchAttribution,
 } from '@/lib/attributionTags';
 
 export type FunnelEventName =
