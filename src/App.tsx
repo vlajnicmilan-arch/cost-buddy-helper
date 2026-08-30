@@ -24,7 +24,7 @@ import { BundleFreshnessHost } from "@/components/BundleFreshnessHost";
 
 import { WalletViewModeProvider } from "@/contexts/WalletViewModeContext";
 import { AppLockProvider } from "@/contexts/AppLockContext";
-import { SubscriptionProvider, useSubscription } from "@/contexts/SubscriptionContext";
+import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { resolveAuthReturnPath, readAuthReturn, consumeAuthReturn } from "@/lib/authReturn";
 
@@ -210,8 +210,8 @@ const AppRoutes = () => {
   const location = useLocation();
   const { storageMode, isInitialized } = useStorage();
   const { onboardingCompleted, appStateReady } = useAppState();
-  const { trialExpired, subscribed, loading: subLoading, entitlements } = useSubscription();
-  const hasAnyEntitlement = !!(entitlements.smjer?.active || entitlements.krug?.active || entitlements.projekti?.active || entitlements.biznis?.active);
+
+
   const { user, authReady } = useAuth();
   const stateReturn = (location.state as { from?: string } | null)?.from;
   // One mechanism for the post-auth destination: ?next= → router state →
@@ -298,27 +298,9 @@ const AppRoutes = () => {
     return <PageLoader />;
   }
 
-  // Phase 3: Trial expired paywall
-  if (storageMode === "cloud" && !subLoading && trialExpired && !subscribed && !hasAnyEntitlement) {
-    return (
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
-          <Route path="/paywall" element={<Paywall />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/avatar-demo" element={<AvatarDemo />} />
-          <Route path="/unsubscribe" element={<Unsubscribe />} />
-           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/terms-of-service" element={<TermsOfService />} />
-          <Route path="/refund-policy" element={<RefundPolicy />} />
-          <Route path="/impressum" element={<Impressum />} />
-          <Route path="/help" element={<Help />} />
-          <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
-          <Route path="*" element={<Navigate to="/paywall" replace />} />
-        </Routes>
-      </Suspense>
-    );
-  }
+  // Besplatan račun je besplatan zauvijek — nema globalnog zaključavanja.
+  // Naplata ostaje isključivo po modulima (entitlements + write guardovi).
+
 
   // Phase 4: Cloud mode — redirect unauthenticated users to /auth
   if (storageMode === 'cloud' && !user) {
