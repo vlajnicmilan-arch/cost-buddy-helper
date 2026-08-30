@@ -16,6 +16,7 @@ test.describe('09 — downgraded owner: vidi, ne piše', () => {
   let aId: string; let bId: string;
   let aClient: any; let bClient: any;
   let projectId: string;
+  let milestoneId: string;
 
   test.beforeAll(async () => {
     const A = await authedClientFor('a'); aId = A.userId; aClient = A.client;
@@ -26,6 +27,12 @@ test.describe('09 — downgraded owner: vidi, ne piše', () => {
     await admin()
       .from('project_documents')
       .insert({ project_id: projectId, name: 'a.pdf', storage_path: 'sec/a.pdf', uploaded_by: aId });
+    const { data: ms } = await admin()
+      .from('project_milestones')
+      .insert({ project_id: projectId, name: 'Faza 1' })
+      .select('id')
+      .single();
+    milestoneId = ms.id;
 
     // Downgrade: uklanjamo pravo na modul.
     await admin().from('user_entitlements').delete().eq('user_id', aId).eq('module', 'projekti');
@@ -33,6 +40,7 @@ test.describe('09 — downgraded owner: vidi, ne piše', () => {
 
   test.afterAll(async () => {
     await admin().from('project_documents').delete().eq('project_id', projectId);
+    await admin().from('project_milestones').delete().eq('project_id', projectId);
     await admin().from('projects').delete().eq('id', projectId);
     await ensureModuleEntitlement(aId, 'projekti');
   });
