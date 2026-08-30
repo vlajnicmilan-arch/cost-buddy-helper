@@ -126,8 +126,7 @@ export const ModuleUpgradeDialog = ({ open, onOpenChange, module }: Props) => {
   }, [open, user?.id, meta.trialModule]);
 
   const monthlyPrice = meta.paywallPlan ? prices[meta.paywallPlan]?.monthly : undefined;
-  const STICKER: Record<PaywallPlan, number> = { smjer: 5.99, krug: 9.99, projekti: 21.99, komplet: 25.99 };
-  const displayPrice = meta.paywallPlan ? STICKER[meta.paywallPlan] : null;
+  const displayPrice = meta.paywallPlan ? STICKER_PRICES[meta.paywallPlan].monthly : null;
 
   const goPaywall = () => {
     onOpenChange(false);
