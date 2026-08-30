@@ -7923,6 +7923,7 @@ export type Database = {
         Args: { p_count?: number; p_user_id: string }
         Returns: Json
       }
+      mail_import_monthly_limit: { Args: { _user_id: string }; Returns: number }
       mail_import_quota_status: { Args: { p_user_id: string }; Returns: Json }
       mail_ingest_claim_jobs: {
         Args: { p_limit?: number }
