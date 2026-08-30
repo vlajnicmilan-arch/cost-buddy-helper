@@ -384,8 +384,8 @@
       "budgetHigh": "Potrošeno više od planiranog budžeta."
     },
     "forecast": {
-      "title": "🔮 Prognoza — po trenutnom tempu",
-      "eac": "Predviđeni finalni trošak",
+      "title": "🔮 Prognoza — po dovršenosti faza",
+      "eac": "Predviđeni finalni trošak (po dovršenosti faza)",
       "tooEarly": "Prognoza dostupna nakon 10% dovršenosti projekta",
       "noMilestones": "Dodaj faze projekta da vidiš prognozu",
       "predictedRemainder": "Predviđeno preostalo"
@@ -666,8 +666,8 @@
       "title": "Earned Value",
       "contracted": "Ugovoreno",
       "spent": "Trošak",
-      "eac": "Predviđeni finalni trošak",
-      "eacHint": "Procjena na temelju trenutnog tempa potrošnje",
+      "eac": "Predviđeni finalni trošak (po proteklom vremenu)",
+      "eacHint": "Procjena na temelju potrošnje u odnosu na proteklo vrijeme projekta",
       "scoreLabel": "Zdravlje",
       "status": {
         "healthy": "Zdravo",
@@ -5845,11 +5845,10 @@
       "fxNotice": "FX snapshot",
       "mixedCurrenciesNotice": "Više valuta — FX konverzija",
       "manualFallbackNotice": "Manual mod: u ovoj fazi dijeli jednako. Per-transakciju override dolazi u sljedećoj fazi.",
-      "missingIncomeNotice": "Nedostaju omjeri prihoda za dio članova — koristim jednake udjele.",
+      "missingIncomeNotice": "Omjeri prihoda nisu upisani za sve članove — do tada se dijeli jednako.",
       "splitMode": {
         "equal": "Jednako",
-        "proportional_income": "Prema prihodima",
-        "manual": "Ručno"
+        "proportional_income": "Prema prihodima"
       },
       "pdf": {
         "title": "Tko kome — izvještaj",
@@ -6299,6 +6298,10 @@
     }
   },
   "moduleUpgrade": {
+    "smjer": {
+      "title": "Smjer",
+      "value": "Osobne financije bez ručnog zbrajanja — neograničene transakcije, budžeti, uvoz izvoda i AI pomoć."
+    },
     "krug": {
       "title": "Krug",
       "value": "Dijeli troškove, budžete i projekte s obitelji ili timom — bez ručnog usklađivanja."

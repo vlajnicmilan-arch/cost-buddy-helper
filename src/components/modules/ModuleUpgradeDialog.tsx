@@ -12,14 +12,14 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Users, FolderKanban, Building2, Sparkles, Loader2, Check, ArrowLeft } from 'lucide-react';
+import { Users, FolderKanban, Building2, Compass, Sparkles, Loader2, Check, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { usePaddlePrices, type PaywallPlan } from '@/hooks/usePaddlePrices';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 
-export type UpgradeModule = 'krug' | 'projects' | 'business';
+export type UpgradeModule = 'smjer' | 'krug' | 'projects' | 'business';
 
 interface Props {
   open: boolean;
@@ -30,12 +30,22 @@ interface Props {
 const MODULE_META: Record<UpgradeModule, {
   icon: typeof Users;
   paywallPlan: PaywallPlan | null;
-  entitlementKey: 'krug' | 'projekti' | 'biznis';
+  entitlementKey: 'smjer' | 'krug' | 'projekti' | 'biznis';
   trialModule: 'smjer' | 'krug' | 'projekti' | null;
   titleKey: string; titleFallback: string;
   valueKey: string; valueFallback: string;
   iconClass: string; iconBg: string;
 }> = {
+  smjer: {
+    icon: Compass,
+    paywallPlan: 'smjer',
+    entitlementKey: 'smjer',
+    trialModule: 'smjer',
+    titleKey: 'moduleUpgrade.smjer.title', titleFallback: 'Smjer',
+    valueKey: 'moduleUpgrade.smjer.value',
+    valueFallback: 'Osobne financije bez ručnog zbrajanja — neograničene transakcije, budžeti, uvoz izvoda i AI pomoć.',
+    iconClass: 'text-sky-600', iconBg: 'bg-sky-500/10',
+  },
   krug: {
     icon: Users,
     paywallPlan: 'krug',

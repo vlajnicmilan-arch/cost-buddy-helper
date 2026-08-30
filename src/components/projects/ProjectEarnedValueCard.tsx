@@ -143,9 +143,9 @@ export const ProjectEarnedValueCard = ({ project, spent, milestones, onEnterCont
           tone={remainderLevel === 'critical' ? 'destructive' : remainderLevel === 'attention' ? 'warning' : 'income'}
         />
         <Metric
-          label={t('projects.earnedValue.eac', 'Predviđeni finalni trošak')}
+          label={t('projects.earnedValue.eac', 'Predviđeni finalni trošak (po proteklom vremenu)')}
           value={formatAmount(eac)}
-          hint={t('projects.earnedValue.eacHint', 'Procjena na temelju trenutnog tempa potrošnje')}
+          hint={t('projects.earnedValue.eacHint', 'Procjena na temelju potrošnje u odnosu na proteklo vrijeme projekta')}
           tone={eac > contractValue ? 'destructive' : 'muted'}
         />
         <Metric

@@ -384,8 +384,8 @@
       "budgetHigh": "Spent more than the planned budget."
     },
     "forecast": {
-      "title": "🔮 Forecast — at the current pace",
-      "eac": "Estimated final cost",
+      "title": "🔮 Forecast — by phase completion",
+      "eac": "Estimated final cost (by phase completion)",
       "tooEarly": "Forecast available after 10% project completion",
       "noMilestones": "Add project phases to see the forecast",
       "predictedRemainder": "Forecast remaining"
@@ -662,8 +662,8 @@
       "title": "Earned Value",
       "contracted": "Contracted",
       "spent": "Spent",
-      "eac": "Estimate at completion",
-      "eacHint": "Projection based on current spend rate",
+      "eac": "Estimated final cost (by time elapsed)",
+      "eacHint": "Projection based on spend relative to elapsed project time",
       "scoreLabel": "Health",
       "status": {
         "healthy": "Healthy",
@@ -5835,11 +5835,10 @@
       "fxNotice": "FX snapshot",
       "mixedCurrenciesNotice": "Mixed currencies — FX converted",
       "manualFallbackNotice": "Manual mode: splits equally for now. Per-transaction override comes in the next phase.",
-      "missingIncomeNotice": "Income ratios missing for some members — using equal shares.",
+      "missingIncomeNotice": "Income ratios are not set for all members — until then the split is equal.",
       "splitMode": {
         "equal": "Equal",
-        "proportional_income": "By income",
-        "manual": "Manual"
+        "proportional_income": "By income"
       },
       "pdf": {
         "title": "Who owes whom — report",
@@ -6288,6 +6287,10 @@
     }
   },
   "moduleUpgrade": {
+    "smjer": {
+      "title": "Smjer",
+      "value": "Personal finances without manual adding up — unlimited transactions, budgets, statement import and AI help."
+    },
     "krug": {
       "title": "Krug",
       "value": "Share expenses, budgets and projects with your family or team — no manual reconciliation."

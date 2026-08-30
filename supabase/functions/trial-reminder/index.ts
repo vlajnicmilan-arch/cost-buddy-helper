@@ -29,73 +29,86 @@ serve(async (req) => {
       auth: { persistSession: false },
     });
 
-    // Trial is 30 days. Find users created exactly 28 days ago (2 days remaining)
+    // Stvarno probno razdoblje živi po modulu u `user_entitlements`
+    // (source='trial'). Podsjetnik ide 2 dana prije `period_end`.
     const now = new Date();
-    const targetDate = new Date(now);
-    targetDate.setDate(targetDate.getDate() - 28);
-    
-    // Window: users created between 28 days ago 00:00 and 28 days ago 23:59
-    const startOfDay = new Date(targetDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(targetDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    const windowStart = new Date(now.getTime() + 2 * 86400000);
+    windowStart.setHours(0, 0, 0, 0);
+    const windowEnd = new Date(windowStart);
+    windowEnd.setHours(23, 59, 59, 999);
 
-    logStep("Checking users created between", { start: startOfDay.toISOString(), end: endOfDay.toISOString() });
-
-    // Get users created 28 days ago via auth.admin
-    const { data: usersData, error: usersError } = await supabase.auth.admin.listUsers({
-      page: 1,
-      perPage: 1000,
+    logStep("Looking for trials ending between", {
+      start: windowStart.toISOString(),
+      end: windowEnd.toISOString(),
     });
 
-    if (usersError) throw new Error(`Failed to list users: ${usersError.message}`);
+    const { data: trials, error: trialsError } = await supabase
+      .from("user_entitlements")
+      .select("user_id, module, period_end")
+      .eq("source", "trial")
+      .eq("status", "active")
+      .gte("period_end", windowStart.toISOString())
+      .lte("period_end", windowEnd.toISOString());
 
-    const eligibleUsers = usersData.users.filter(u => {
-      const createdAt = new Date(u.created_at);
-      return createdAt >= startOfDay && createdAt <= endOfDay;
-    });
+    if (trialsError) throw new Error(`Failed to read entitlements: ${trialsError.message}`);
 
-    logStep(`Found ${eligibleUsers.length} users in trial day 28`);
+    logStep(`Found ${trials?.length ?? 0} trials expiring in 2 days`);
 
-    if (eligibleUsers.length === 0) {
-      return new Response(JSON.stringify({ sent: 0, message: "No users need reminders today" }), {
+    if (!trials || trials.length === 0) {
+      return new Response(JSON.stringify({ sent: 0, message: "No trials expiring in 2 days" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Check which of these users already have an active subscription
+    const MODULE_LABEL: Record<string, string> = {
+      smjer: "Smjer",
+      krug: "Krug",
+      projekti: "Projekti",
+      biznis: "Biznis",
+    };
+
     let remindersSent = 0;
 
-    for (const user of eligibleUsers) {
-      // Check if user has active subscription
-      const { data: sub } = await supabase
-        .from("user_subscriptions")
-        .select("tier")
-        .eq("user_id", user.id)
-        .maybeSingle();
+    for (const trial of trials) {
+      // Ako korisnik za taj isti modul već ima plaćeno pravo — preskoči.
+      const { data: paid } = await supabase
+        .from("user_entitlements")
+        .select("id")
+        .eq("user_id", trial.user_id)
+        .eq("module", trial.module)
+        .eq("status", "active")
+        .neq("source", "trial")
+        .limit(1);
 
-      if (sub && sub.tier !== "free") {
-        logStep(`Skipping user ${user.id} - already subscribed (${sub.tier})`);
+      if (paid && paid.length > 0) {
+        logStep(`Skipping ${trial.user_id} / ${trial.module} — already entitled`);
         continue;
       }
 
-      // Enqueue reminder email
-      const emailHtml = generateTrialReminderEmail(user.email || "");
-      
+      const { data: userRes } = await supabase.auth.admin.getUserById(trial.user_id);
+      const email = userRes?.user?.email;
+      if (!email) {
+        logStep(`Skipping ${trial.user_id} — no email`);
+        continue;
+      }
+
+      const moduleLabel = MODULE_LABEL[trial.module] ?? trial.module;
+      const emailHtml = generateTrialReminderEmail(moduleLabel);
+
       try {
         await supabase.rpc("enqueue_email", {
-          p_message_id: `trial-reminder-${user.id}-${now.toISOString().split('T')[0]}`,
+          p_message_id: `trial-reminder-${trial.user_id}-${trial.module}-${now.toISOString().split("T")[0]}`,
           p_queue_name: "transactional_emails",
-          p_to: user.email,
-          p_subject: "⏰ Vaš trial ističe za 2 dana — odaberite plan",
+          p_to: email,
+          p_subject: `⏰ Probno razdoblje za ${moduleLabel} ističe za 2 dana`,
           p_html: emailHtml,
           p_from_name: "VMBalance",
           p_from_email: `noreply@notify.vmbalance.com`,
         });
         remindersSent++;
-        logStep(`Enqueued reminder for user ${user.id}`);
+        logStep(`Enqueued reminder for ${trial.user_id} / ${trial.module}`);
       } catch (emailErr) {
-        logStep(`Failed to enqueue email for ${user.id}`, { error: String(emailErr) });
+        logStep(`Failed to enqueue email for ${trial.user_id}`, { error: String(emailErr) });
       }
     }
 
@@ -114,7 +127,7 @@ serve(async (req) => {
   }
 });
 
-function generateTrialReminderEmail(email: string): string {
+function generateTrialReminderEmail(moduleLabel: string): string {
   return `
 <!DOCTYPE html>
 <html>
@@ -131,7 +144,7 @@ function generateTrialReminderEmail(email: string): string {
           <tr>
             <td style="background-color:hsl(199,89%,48%);padding:32px 32px 24px;text-align:center;">
               <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;line-height:1.3;">
-                ⏰ Vaš trial ističe za 2 dana
+                ⏰ Probno razdoblje ističe za 2 dana
               </h1>
             </td>
           </tr>
@@ -142,11 +155,11 @@ function generateTrialReminderEmail(email: string): string {
                 Pozdrav,
               </p>
               <p style="margin:0 0 16px;color:#3f3f46;font-size:15px;line-height:1.6;">
-                Vaš besplatni probni period na <strong>VMBalance</strong> završava za <strong>2 dana</strong>. 
-                Nakon isteka, pristup naprednim značajkama bit će ograničen.
+                Probno razdoblje za modul <strong>${moduleLabel}</strong> završava za <strong>2 dana</strong>.
+                Nakon isteka aplikacija ostaje dostupna na besplatnoj razini, a značajke tog modula se zaključavaju.
               </p>
               <p style="margin:0 0 24px;color:#3f3f46;font-size:15px;line-height:1.6;">
-                Odaberite plan koji vam odgovara i nastavite koristiti sve značajke bez prekida:
+                Ako želite nastaviti bez prekida, otključajte modul:
               </p>
               <!-- CTA Button -->
               <table width="100%" cellpadding="0" cellspacing="0">
@@ -154,14 +167,13 @@ function generateTrialReminderEmail(email: string): string {
                   <td align="center">
                     <a href="https://cost-buddy-helper.lovable.app/paywall" 
                        style="display:inline-block;background-color:hsl(199,89%,48%);color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 32px;border-radius:8px;">
-                      Odaberi plan →
+                      Otključaj modul →
                     </a>
                   </td>
                 </tr>
               </table>
               <p style="margin:24px 0 0;color:#71717a;font-size:13px;line-height:1.5;text-align:center;">
-                Pro plan već od <strong>4,99 €/mj</strong> — uključuje AI kategorizaciju, 
-                neograničene transakcije, budžete i još mnogo toga.
+                Bez obveze — ako ne otključate modul, račun ostaje besplatan.
               </p>
             </td>
           </tr>

@@ -15,9 +15,10 @@ import { ModuleUpgradeDialog, type UpgradeModule } from '@/components/modules/Mo
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import type { EntitlementModule } from '@/lib/featureModuleMap';
 
-type GateModule = UpgradeModule; // 'krug' | 'projects' | 'business'
+type GateModule = UpgradeModule; // 'smjer' | 'krug' | 'projects' | 'business'
 
 const MODULE_ENTITLEMENT: Record<GateModule, EntitlementModule> = {
+  smjer: 'smjer',
   krug: 'krug',
   projects: 'projekti',
   business: 'biznis',
