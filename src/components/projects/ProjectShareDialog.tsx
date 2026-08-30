@@ -27,7 +27,6 @@ export const ProjectShareDialog = ({ open, onOpenChange, projectId, projectName,
   const { links, loading, create, revoke, remove, update } = useProjectShareLinks(projectId);
   const { guard, blockProps } = useProjectWriteGuard({ isReadOnly });
   const [creating, setCreating] = useState(false);
-  const [showFinancials, setShowFinancials] = useState(false);
   const [showPhotos, setShowPhotos] = useState(true);
   const [showMilestones, setShowMilestones] = useState(true);
   const [expiresInDays, setExpiresInDays] = useState('30');
@@ -38,7 +37,7 @@ export const ProjectShareDialog = ({ open, onOpenChange, projectId, projectName,
     const expires_at = expiresInDays
       ? new Date(Date.now() + parseInt(expiresInDays) * 86400000).toISOString()
       : null;
-    await create({ show_financials: showFinancials, show_photos: showPhotos, show_milestones: showMilestones, expires_at });
+    await create({ show_financials: false, show_photos: showPhotos, show_milestones: showMilestones, expires_at });
     setCreating(false);
   };
 
@@ -84,10 +83,6 @@ export const ProjectShareDialog = ({ open, onOpenChange, projectId, projectName,
             <div className="flex items-center justify-between">
               <Label htmlFor="ph" className="text-sm cursor-pointer">{t('projects.share.showPhotos', 'Prikaži foto dnevnik')}</Label>
               <Switch id="ph" checked={showPhotos} onCheckedChange={setShowPhotos} />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="fin" className="text-sm cursor-pointer">{t('projects.share.showFinancials', 'Prikaži financije')}</Label>
-              <Switch id="fin" checked={showFinancials} onCheckedChange={setShowFinancials} />
             </div>
 
             <div className="space-y-1">
@@ -154,7 +149,6 @@ export const ProjectShareDialog = ({ open, onOpenChange, projectId, projectName,
                     <div className="flex items-center gap-1.5 flex-wrap">
                       {link.revoked_at && <Badge variant="destructive" className="text-[10px] h-4 px-1">{t('projects.share.revoked', 'Opozvan')}</Badge>}
                       {expired && !link.revoked_at && <Badge variant="destructive" className="text-[10px] h-4 px-1">{t('projects.share.expired', 'Istekao')}</Badge>}
-                      {!!link.show_financials && <Badge variant="outline" className="text-[10px] h-4 px-1">{t('projects.share.fin', 'Fin.')}</Badge>}
                       {!!link.show_photos && <Badge variant="outline" className="text-[10px] h-4 px-1">{t('projects.share.ph', 'Foto')}</Badge>}
                       {!!link.show_milestones && <Badge variant="outline" className="text-[10px] h-4 px-1">{t('projects.share.ms', 'Faze')}</Badge>}
                       <span className="text-[10px] text-muted-foreground ml-auto flex items-center gap-1">
