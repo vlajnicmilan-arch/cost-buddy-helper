@@ -62,37 +62,23 @@ const INSTALL_FLAG = 'funnel_install_logged';
 const UTM_KEY = 'funnel_utm';
 const UTM_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
-type UtmData = {
-  utm_source?: string;
-  utm_medium?: string;
-  utm_campaign?: string;
-  utm_term?: string;
-  utm_content?: string;
+type UtmData = AttributionTags & {
   referrer?: string;
   landing_path?: string;
   captured_at?: number;
 };
 
 /**
- * Capture UTM params + referrer from the current URL into localStorage.
- * Call once on app boot. First-touch attribution: existing values are kept
- * unless new UTM params are present in the URL.
+ * Capture UTM params, ad click ids (fbclid/gclid) and the referrer from the
+ * current URL into localStorage. Call once on app boot. First-touch
+ * attribution: existing values are kept unless the URL carries new markers.
  */
 export const captureUtmParams = (): void => {
   try {
     if (typeof window === 'undefined') return;
-    const params = new URLSearchParams(window.location.search);
-    const keys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'] as const;
-    const incoming: UtmData = {};
-    let hasUtm = false;
-    keys.forEach((k) => {
-      const v = params.get(k);
-      if (v) {
-        (incoming as any)[k] = v.slice(0, 200);
-        hasUtm = true;
-      }
-    });
-    if (!hasUtm) return;
+    const tags = extractAttributionTags(window.location.search);
+    if (!hasAttributionMarkers(tags)) return;
+    const incoming: UtmData = { ...tags };
     incoming.referrer = (document.referrer || '').slice(0, 300) || undefined;
     incoming.landing_path = window.location.pathname.slice(0, 200);
     incoming.captured_at = Date.now();
@@ -116,6 +102,9 @@ const getStoredUtm = (): UtmData => {
     return {};
   }
 };
+
+/** First-touch acquisition tags stored on this device (empty when none/stale). */
+export const readFirstTouchAttribution = (): UtmData => getStoredUtm();
 
 const detectPlatform = (): string => {
   try {
