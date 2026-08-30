@@ -225,19 +225,30 @@ const JoinProject = () => {
               {t('projects.redirecting', 'Preusmjeravanje...')}
             </p>
           ) : error ? (
-            <Button onClick={() => navigate('/home')} variant="outline" className="w-full">
+            <Button onClick={() => navigate(user ? '/home' : '/')} variant="outline" className="w-full">
               {t('common.back')}
             </Button>
           ) : !user ? (
             <>
               <p className="text-center text-sm text-muted-foreground">
-                {t('projects.loginRequired', 'Morate se prijaviti da biste se pridružili projektu')}
+                {t('projects.joinNeedsAccount', 'Za pridruživanje projektu otvorite račun — traje manje od minute.')}
               </p>
               <Button onClick={handleLoginRedirect} className="w-full">
                 <LogIn className="w-4 h-4 mr-2" />
-                {t('auth.signIn')}
+                {t('auth.createAccount', 'Otvori račun')}
+              </Button>
+              <Button
+                onClick={() => {
+                  rememberAuthReturn(`/join-project/${token}`);
+                  navigate('/auth');
+                }}
+                variant="ghost"
+                className="w-full"
+              >
+                {t('auth.alreadyHaveAccount', 'Već imam račun')}
               </Button>
             </>
+
           ) : (
             <div className="space-y-4">
               {/* Context picker for the invitee */}
