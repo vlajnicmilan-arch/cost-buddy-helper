@@ -64,14 +64,8 @@ export const ANONYMOUS_FUNNEL_EVENTS: ReadonlySet<string> = new Set([
 
 const SESSION_KEY = 'funnel_session_id';
 const INSTALL_FLAG = 'funnel_install_logged';
-const UTM_KEY = 'funnel_utm';
-const UTM_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
-type UtmData = AttributionTags & {
-  referrer?: string;
-  landing_path?: string;
-  captured_at?: number;
-};
+type UtmData = FirstTouchAttribution;
 
 /**
  * Capture UTM params, ad click ids (fbclid/gclid) and the referrer from the
@@ -87,29 +81,13 @@ export const captureUtmParams = (): void => {
     incoming.referrer = (document.referrer || '').slice(0, 300) || undefined;
     incoming.landing_path = window.location.pathname.slice(0, 200);
     incoming.captured_at = Date.now();
-    localStorage.setItem(UTM_KEY, JSON.stringify(incoming));
+    localStorage.setItem(FIRST_TOUCH_KEY, JSON.stringify(incoming));
   } catch {
     /* noop */
   }
 };
 
-const getStoredUtm = (): UtmData => {
-  try {
-    const raw = localStorage.getItem(UTM_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw) as UtmData;
-    if (parsed.captured_at && Date.now() - parsed.captured_at > UTM_TTL_MS) {
-      localStorage.removeItem(UTM_KEY);
-      return {};
-    }
-    return parsed;
-  } catch {
-    return {};
-  }
-};
-
-/** First-touch acquisition tags stored on this device (empty when none/stale). */
-export const readFirstTouchAttribution = (): UtmData => getStoredUtm();
+const getStoredUtm = (): UtmData => readFirstTouchAttribution();
 
 const detectPlatform = (): string => {
   try {
