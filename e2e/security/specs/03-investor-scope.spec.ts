@@ -37,9 +37,18 @@ test.describe('03 — investor scope', () => {
       })
       .select('id').single();
     expenseId = e!.id;
+    await admin().from('project_collaborators').insert({
+      project_id: projectId, first_name: 'Podiz', last_name: 'Vođač',
+      service_description: 'interno', total_price: 9999, legacy_paid_amount: 100, paid_amount: 100,
+    });
+    await admin().from('project_contract_amendments').insert({
+      project_id: projectId, user_id: aId, amendment_amount: 4321, note: 'interno',
+    });
   });
 
   test.afterAll(async () => {
+    await admin().from('project_collaborators').delete().eq('project_id', projectId);
+    await admin().from('project_contract_amendments').delete().eq('project_id', projectId);
     await admin().from('expenses').delete().eq('project_id', projectId);
     await admin().from('project_milestones').delete().eq('project_id', projectId);
     await admin().from('project_members').delete().eq('project_id', projectId);
