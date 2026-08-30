@@ -11,6 +11,11 @@
  * are silently ignored.
  */
 import { supabase } from '@/integrations/supabase/client';
+import {
+  extractAttributionTags,
+  hasAttributionMarkers,
+  type AttributionTags,
+} from '@/lib/attributionTags';
 
 export type FunnelEventName =
   | 'install'
