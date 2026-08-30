@@ -19,6 +19,12 @@
 // the first batch of telemetry is due.
 
 
+import {
+  extractAttributionTags,
+  hasAttributionMarkers,
+  readFirstTouchAttribution,
+} from '@/lib/attributionTags';
+
 const SESSION_KEY = 'funnel_session_id';
 const SEEN_KEY = 'landing_tel_seen_v1';
 
@@ -238,10 +244,33 @@ const enqueue = (
   }
 };
 
+/**
+ * Acquisition tags for the current visit: from the address when present,
+ * otherwise from the first-touch attribution `funnelTracking` already stores
+ * (30-day TTL). Never throws.
+ */
+const visitAttribution = (): Record<string, unknown> => {
+  try {
+    if (typeof window === 'undefined') return {};
+    const fromUrl = extractAttributionTags(window.location.search);
+    if (hasAttributionMarkers(fromUrl)) {
+      return { ...fromUrl, attribution: 'url' };
+    }
+    const stored = readFirstTouchAttribution();
+    const { captured_at: _ignored, ...rest } = stored;
+    if (hasAttributionMarkers(stored)) {
+      return { ...rest, ...fromUrl, attribution: 'first_touch' };
+    }
+    return { ...fromUrl, attribution: 'url' };
+  } catch {
+    return {};
+  }
+};
+
 export const logLandingPageView = (metadata: Record<string, unknown> = {}) => {
   const path = typeof window !== 'undefined' ? window.location.pathname : '/';
   if (!firstTime(`pv:${path}`)) return;
-  enqueue('page_view', path, null, metadata);
+  enqueue('page_view', path, null, { ...visitAttribution(), ...metadata });
 };
 
 export const logLandingSectionView = (section: string) => {
