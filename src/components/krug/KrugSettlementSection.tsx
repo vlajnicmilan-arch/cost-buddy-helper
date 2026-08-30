@@ -292,12 +292,14 @@ export function KrugSettlementSection({
             </Card>
           )}
           {data.flags.missing_income_data && (
-            <Card className="p-3 text-[11px] text-muted-foreground flex items-start gap-2">
-              <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-              {t(
-                'krug.settlement.missingIncomeNotice',
-                'Nedostaju omjeri prihoda za dio članova — koristim jednake udjele.',
-              )}
+            <Card className="p-3 text-[11px] border-amber-500/50 text-amber-700 dark:text-amber-400 flex items-start gap-2">
+              <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+              <span>
+                {t(
+                  'krug.settlement.missingIncomeNotice',
+                  'Omjeri prihoda nisu upisani za sve članove — do tada se dijeli jednako.',
+                )}
+              </span>
             </Card>
           )}
 

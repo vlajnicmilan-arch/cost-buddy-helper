@@ -130,12 +130,11 @@ export function KrugSettlementSettings({ krugId, open, onOpenChange }: Props) {
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label>{t('krug.settlement.settings.mode', 'Način podjele')}</Label>
-              <Select value={mode} onValueChange={(v) => setMode(v as Mode)}>
+              <Select value={mode === 'manual' ? 'equal' : mode} onValueChange={(v) => setMode(v as Mode)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="equal">{t('krug.settlement.splitMode.equal', 'Jednako')}</SelectItem>
                   <SelectItem value="proportional_income">{t('krug.settlement.splitMode.proportional_income', 'Prema prihodima')}</SelectItem>
-                  <SelectItem value="manual">{t('krug.settlement.splitMode.manual', 'Ručno')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
