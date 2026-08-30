@@ -159,30 +159,18 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     };
   }, [entitlements]);
 
-  const { trialActive, trialDaysRemaining, trialExpired } = useMemo(() => {
-    if (subscribed) return { trialActive: false, trialDaysRemaining: 0, trialExpired: false };
-
-    if (entitlementsMode !== 'legacy' && trialFromEntitlements) {
-      return {
-        trialActive: trialFromEntitlements.daysRemaining > 0,
-        trialDaysRemaining: trialFromEntitlements.daysRemaining,
-        trialExpired: trialFromEntitlements.daysRemaining <= 0,
-      };
+  // Trial se čita ISKLJUČIVO iz user_entitlements (source='trial') i djeluje
+  // samo po modulu. Nema naslijeđenog izračuna iz auth.users.created_at i
+  // nema globalnog isteka — besplatan račun je besplatan zauvijek.
+  const { trialActive, trialDaysRemaining } = useMemo(() => {
+    if (subscribed || !trialFromEntitlements) {
+      return { trialActive: false, trialDaysRemaining: 0 };
     }
-
-    // Legacy izračun (rollback branch)
-    if (user?.created_at) {
-      const created = new Date(user.created_at).getTime();
-      const diffDays = (Date.now() - created) / (1000 * 60 * 60 * 24);
-      const remaining = Math.max(0, Math.ceil(TRIAL_DURATION_DAYS - diffDays));
-      return {
-        trialActive: remaining > 0,
-        trialDaysRemaining: remaining,
-        trialExpired: remaining <= 0,
-      };
-    }
-    return { trialActive: false, trialDaysRemaining: 0, trialExpired: false };
-  }, [subscribed, entitlementsMode, trialFromEntitlements, user?.created_at]);
+    return {
+      trialActive: trialFromEntitlements.daysRemaining > 0,
+      trialDaysRemaining: trialFromEntitlements.daysRemaining,
+    };
+  }, [subscribed, trialFromEntitlements]);
 
   const contextValue = useMemo(() => ({
     tier,
@@ -190,13 +178,13 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     loading,
     trialActive,
     trialDaysRemaining,
-    trialExpired,
     subscriptionEnd,
     source,
     entitlements,
     entitlementsMode,
     checkSubscription,
-  }), [tier, subscribed, loading, trialActive, trialDaysRemaining, trialExpired, subscriptionEnd, source, entitlements, entitlementsMode, checkSubscription]);
+  }), [tier, subscribed, loading, trialActive, trialDaysRemaining, subscriptionEnd, source, entitlements, entitlementsMode, checkSubscription]);
+
 
   return (
     <SubscriptionContext.Provider value={contextValue}>
