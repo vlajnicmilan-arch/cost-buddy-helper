@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, FileClock } from 'lucide-react';
@@ -21,7 +21,6 @@ import { useGoBackOrHome } from '@/hooks/useGoBackOrHome';
  */
 export default function Documents() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   // Ekran zna biti PRVA stavka povijesti (ulaz kroz brief-vrata s `replace`).
   const goBack = useGoBackOrHome();
   const [searchParams] = useSearchParams();
