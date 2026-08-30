@@ -33,28 +33,6 @@ export default defineConfig(({ mode }) => ({
     },
   },
   plugins: [
-    // Serve static landing at /centar (and /centar/) before Vite's SPA fallback
-    // rewrites the HTML. Only affects dev/preview — production hosting is
-    // file-first and doesn't need this.
-    {
-      name: "serve-static-centar",
-      configureServer(server: any) {
-        server.middlewares.use((req: any, _res: any, next: any) => {
-          if (req.url === "/centar" || req.url === "/centar/") {
-            req.url = "/centar/index.html";
-          }
-          next();
-        });
-      },
-      configurePreviewServer(server: any) {
-        server.middlewares.use((req: any, _res: any, next: any) => {
-          if (req.url === "/centar" || req.url === "/centar/") {
-            req.url = "/centar/index.html";
-          }
-          next();
-        });
-      },
-    },
     // Inject the build's commit SHA into index.html so a published build can be
     // verified with a single curl, without grepping hashed chunks.
     {
