@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { hr as hrLocale } from 'date-fns/locale';
 import { showError } from '@/hooks/useStatusFeedback';
+import { graceEndsAt, isInGrace } from '@/lib/entitlementGrace';
 
 type Module = 'smjer' | 'krug' | 'projekti' | 'biznis';
 
@@ -123,6 +124,9 @@ export const SubscriptionSection = () => {
     }
   };
 
+  const graceEnd = (r: EntitlementRow): Date | null =>
+    isInGrace(r.status, r.metadata) ? graceEndsAt(r.status, r.metadata) : null;
+
   const scheduledCancelAt = (r: EntitlementRow): string | null => {
     const m = r.metadata as { scheduled_cancel_at?: string } | null;
     return m?.scheduled_cancel_at ?? null;
@@ -170,6 +174,7 @@ export const SubscriptionSection = () => {
               const isTrial = r.source === 'trial';
               const isAdmin = r.source === 'admin_grant';
               const cancelAt = scheduledCancelAt(r);
+              const grace = graceEnd(r);
               return (
                 <div
                   key={m}
@@ -197,6 +202,11 @@ export const SubscriptionSection = () => {
                           {t('subscription.badge.scheduledCancel', 'Otkazano')}
                         </Badge>
                       )}
+                      {grace && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-500/50 text-amber-600 dark:text-amber-400">
+                          {t('subscription.badge.pastDue', 'Naplata nije prošla')}
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {sourceLabel(r)}
@@ -207,6 +217,12 @@ export const SubscriptionSection = () => {
                         ? ` · ${t('subscription.validUntil', 'vrijedi do')} ${format(new Date(r.period_end), 'dd.MM.yyyy.', { locale: hrLocale })}`
                         : ''}
                     </p>
+                    {grace && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400">
+                        {t('subscription.pastDueNotice', 'Naplata nije prošla. Pristup ti vrijedi do {{date}} — ažuriraj karticu da se ne prekine.')
+                          .replace('{{date}}', format(grace, 'd.M.', { locale: hrLocale }))}
+                      </p>
+                    )}
                   </div>
                 </div>
               );
