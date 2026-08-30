@@ -29,15 +29,25 @@ export default function JoinBudget() {
   const [success, setSuccess] = useState(false);
   const [targetData, setTargetData] = useState<TargetData | null>(null);
 
+  const openLoggedRef = useRef(false);
+
   useEffect(() => {
     if (!token) {
       setError(t('join.invalidLink', 'Link nije valjan'));
       setLoading(false);
+      if (!openLoggedRef.current) {
+        openLoggedRef.current = true;
+        logFunnelEvent('invite_failed', { invite_type: 'budget', reason: 'missing_token' });
+      }
       return;
     }
 
     // Token will be validated server-side on accept
     setLoading(false);
+    if (!openLoggedRef.current) {
+      openLoggedRef.current = true;
+      logFunnelEvent('invite_opened', { invite_type: 'budget', authenticated: !!user });
+    }
   }, [token]);
 
   const handleAccept = async () => {
@@ -58,10 +68,12 @@ export default function JoinBudget() {
 
       if (data?.error) {
         setError(data.error);
+        logFunnelEvent('invite_failed', { invite_type: 'budget', reason: 'rejected' });
       } else if (data?.success) {
         setSuccess(true);
         setTargetData(data.target);
-        
+        logFunnelEvent('invite_accepted', { invite_type: 'budget' });
+
         // Redirect after short delay
         setTimeout(() => {
           navigate('/home');
@@ -70,15 +82,18 @@ export default function JoinBudget() {
     } catch (err: any) {
       console.error('Error accepting invitation:', err);
       setError(err.message || t('join.errorJoiningBudget', 'Greška pri pridruživanju budžetu'));
+      logFunnelEvent('invite_failed', { invite_type: 'budget', reason: 'exception' });
     } finally {
       setAccepting(false);
     }
   };
 
+  // Invited people almost never have an account yet → go straight to signup.
   const handleLoginRedirect = () => {
-    sessionStorage.setItem('returnUrl', `/join-budget/${token}`);
-    navigate('/auth');
+    rememberAuthReturn(`/join-budget/${token}`);
+    navigate('/auth?mode=signup');
   };
+
 
   if (authLoading || loading) {
     return (
