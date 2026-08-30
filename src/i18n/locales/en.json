@@ -6353,14 +6353,16 @@
     "badge": {
       "trial": "Trial",
       "admin": "Admin",
-      "scheduledCancel": "Canceled"
+      "scheduledCancel": "Canceled",
+      "pastDue": "Payment failed"
     },
     "module": {
       "smjer": "Smjer",
       "krug": "Krug",
       "projekti": "Projekti",
       "biznis": "Biznis"
-    }
+    },
+    "pastDueNotice": "The payment didn’t go through. Your access is valid until {{date}} — update your card so it doesn’t stop."
   },
   "categoryOrigin": {
     "aiSuggested": "AI suggestion",
@@ -6771,7 +6773,11 @@
       "changed": "Destination changed",
       "changeFailed": "Changing the destination failed"
     },
-    "liveNotice": "A document arrived for review"
+    "liveNotice": "A document arrived for review",
+    "quota": {
+      "status": "Imports this month: {{used}}/{{limit}} · {{left}} left",
+      "exhausted": "Your monthly import quota is used up ({{used}}/{{limit}}). It renews on {{date}}."
+    }
   },
   "issuers": {
     "title": "My issuers",

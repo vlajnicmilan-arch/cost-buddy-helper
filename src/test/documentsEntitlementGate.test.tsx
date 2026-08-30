@@ -1,26 +1,21 @@
 /**
- * ČUVAR PRAVA `mail_uvoz` (nalog #5).
+ * UVOZ IZ MAILA JE OTVOREN SVIMA (odluka vlasnika proizvoda, 30.8.2026).
  *
- * Sve novo iz naloga #5 (kartica na početnom ekranu, ekran /dokumenti) postoji
- * ISKLJUČIVO za korisnike s pravom `mail_uvoz`. Bez prava UI ne smije ponuditi
- * nijedan trag te značajke.
+ * Ekran `/dokumenti` više nije iza prava `mail_uvoz` — dostupan je svakom
+ * prijavljenom korisniku. Pravo utječe isključivo na mjesečnu kvotu
+ * (`mail_import_consume_quota()`), koja se NE dira.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const { hasAccessRef, navigate } = vi.hoisted(() => ({
-  hasAccessRef: { current: false },
-  navigate: vi.fn(),
-}));
-
-vi.mock('@/hooks/useMailImportAccess', () => ({
-  useMailImportAccess: () => ({ hasAccess: hasAccessRef.current, loading: false, refetch: vi.fn() }),
-}));
-
 vi.mock('@/hooks/useMailPendingCount', () => ({
   useMailPendingCount: () => ({ count: 3, loading: false, refetch: vi.fn() }),
+}));
+
+vi.mock('@/components/mail/MailQuotaStrip', () => ({
+  MailQuotaStrip: () => <div data-testid="mail-quota-strip" />,
 }));
 
 vi.mock('@/components/mail/MailReviewList', () => ({
@@ -30,11 +25,6 @@ vi.mock('@/components/mail/MailReviewList', () => ({
 vi.mock('@/components/mail/DocumentsReceivedTab', () => ({
   DocumentsReceivedTab: () => <div data-testid="documents-received" />,
 }));
-
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
-  return { ...actual, useNavigate: () => navigate };
-});
 
 vi.mock('react-i18next', async () => ({
   ...(await import('@/test/mocks/reactI18next')).createReactI18nextMock(),
@@ -51,37 +41,26 @@ const renderPage = () =>
     </MemoryRouter>,
   );
 
-describe('pravo mail_uvoz čuva ekran Dokumenti', () => {
-  beforeEach(() => {
-    navigate.mockClear();
-  });
-
-  it('bez prava: ništa se ne prikazuje i korisnik se vraća na /app', () => {
-    hasAccessRef.current = false;
-    renderPage();
-    expect(screen.queryByTestId('mail-review-list')).toBeNull();
-    expect(navigate).toHaveBeenCalledWith('/app', { replace: true });
-  });
-
-  it('s pravom: red „Na pregled" je vidljiv', () => {
-    hasAccessRef.current = true;
+describe('ekran Dokumenti je otvoren svima', () => {
+  it('red „Na pregled" i prikaz kvote su vidljivi bez ikakvog prava', () => {
     renderPage();
     expect(screen.getByTestId('mail-review-list')).toBeTruthy();
-    expect(navigate).not.toHaveBeenCalled();
+    expect(screen.getByTestId('mail-quota-strip')).toBeTruthy();
+  });
+
+  it('ekran ne uvjetuje prikaz pravom mail_uvoz', () => {
+    const src = fs.readFileSync(path.resolve(__dirname, '../pages/Documents.tsx'), 'utf8');
+    expect(src).not.toContain('useMailImportAccess');
   });
 });
 
-describe('početni ekran ne pokazuje ništa bez prava', () => {
-  const src = fs.readFileSync(
-    path.resolve(__dirname, '../components/home/PersonalModeView.tsx'),
+describe('ulaz do Dokumenata postoji izvan Postavki', () => {
+  const header = fs.readFileSync(
+    path.resolve(__dirname, '../components/home/HomeHeader.tsx'),
     'utf8',
   );
 
-  it('kartica dokumenata je iza hasMailAccess', () => {
-    expect(src).toMatch(/hasMailAccess && mailPendingCount > 0 && \(\s*<DocumentsPendingCard/);
-  });
-
-  it('osobni prikaz ulaznih računa je iza hasMailAccess', () => {
-    expect(src).toContain('{(isBusinessChip || hasMailAccess) && <IncomingInvoicesWidget />}');
+  it('zaglavlje početnog ekrana vodi na /dokumenti', () => {
+    expect(header).toContain("navigate('/dokumenti')");
   });
 });

@@ -6364,14 +6364,16 @@
     "badge": {
       "trial": "Trial",
       "admin": "Admin",
-      "scheduledCancel": "Otkazano"
+      "scheduledCancel": "Otkazano",
+      "pastDue": "Naplata nije prošla"
     },
     "module": {
       "smjer": "Smjer",
       "krug": "Krug",
       "projekti": "Projekti",
       "biznis": "Biznis"
-    }
+    },
+    "pastDueNotice": "Naplata nije prošla. Pristup ti vrijedi do {{date}} — ažuriraj karticu da se ne prekine."
   },
   "categoryOrigin": {
     "aiSuggested": "AI prijedlog",
@@ -6783,7 +6785,11 @@
       "changed": "Odredište je promijenjeno",
       "changeFailed": "Promjena odredišta nije uspjela"
     },
-    "liveNotice": "Stigao dokument na pregled"
+    "liveNotice": "Stigao dokument na pregled",
+    "quota": {
+      "status": "Uvozi ovaj mjesec: {{used}}/{{limit}} · preostalo {{left}}",
+      "exhausted": "Mjesečna kvota uvoza je iskorištena ({{used}}/{{limit}}). Obnavlja se {{date}}."
+    }
   },
   "issuers": {
     "title": "Moji izdavatelji",

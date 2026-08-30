@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { FindPdfDuplicatesHandler } from '@/contexts/PdfImportContext';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Smartphone, Cloud, LayoutDashboard, FileSpreadsheet, LogOut } from 'lucide-react';
+import { Smartphone, Cloud, LayoutDashboard, FileSpreadsheet, FileClock, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -160,6 +160,26 @@ export const HomeHeader = ({
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+          {!isLocalMode && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => navigate('/dokumenti')}
+                    className="rounded-xl h-8 w-8 sm:h-9 sm:w-9"
+                    aria-label={t('documents.title', 'Dokumenti')}
+                  >
+                    <FileClock className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{t('documents.title', 'Dokumenti')}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
           <SettingsDialog onDataImported={onRefetch} />
           {!isLocalMode && (
             <TooltipProvider>

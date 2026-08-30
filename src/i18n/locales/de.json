@@ -6353,14 +6353,16 @@
     "badge": {
       "trial": "Testphase",
       "admin": "Admin",
-      "scheduledCancel": "Gekündigt"
+      "scheduledCancel": "Gekündigt",
+      "pastDue": "Zahlung fehlgeschlagen"
     },
     "module": {
       "smjer": "Smjer",
       "krug": "Krug",
       "projekti": "Projekti",
       "biznis": "Biznis"
-    }
+    },
+    "pastDueNotice": "Die Zahlung ist nicht durchgegangen. Dein Zugang gilt bis {{date}} — aktualisiere deine Karte, damit er nicht endet."
   },
   "categoryOrigin": {
     "aiSuggested": "KI-Vorschlag",
@@ -6771,7 +6773,11 @@
       "changed": "Ziel geändert",
       "changeFailed": "Ändern des Ziels fehlgeschlagen"
     },
-    "liveNotice": "Ein Dokument ist zur Prüfung eingetroffen"
+    "liveNotice": "Ein Dokument ist zur Prüfung eingetroffen",
+    "quota": {
+      "status": "Importe diesen Monat: {{used}}/{{limit}} · {{left}} übrig",
+      "exhausted": "Das monatliche Importkontingent ist aufgebraucht ({{used}}/{{limit}}). Es wird am {{date}} erneuert."
+    }
   },
   "issuers": {
     "title": "Meine Aussteller",
