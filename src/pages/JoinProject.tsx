@@ -317,7 +317,7 @@ const JoinProject = () => {
                         type="button"
                         size="sm"
                         onClick={() => {
-                          sessionStorage.setItem('returnUrl', `/join-project/${token}`);
+                          rememberAuthReturn(`/join-project/${token}`);
                           navigate('/business?createProfile=1');
                         }}
                       >
