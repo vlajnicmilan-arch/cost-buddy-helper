@@ -797,10 +797,10 @@ const Auth = () => {
             </div>
           )}
 
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             className="w-full h-12 rounded-xl font-medium"
-            disabled={loading || (!isLogin && !gdprConsent)}
+            disabled={loading}
           >
             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             {isLogin ? t('auth.login') : t('auth.register')}
