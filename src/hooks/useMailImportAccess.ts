@@ -1,44 +1,17 @@
-import { useCallback, useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 
 /**
- * MAIL UVOZ — pravo `mail_uvoz` iz postojećeg sustava prava (user_entitlements).
- * Nije dio 4 osnovna modula pa se čita izravno (RLS: korisnik vidi svoje redove).
+ * MAIL UVOZ — značajka je OTVORENA svakom prijavljenom korisniku
+ * (odluka vlasnika proizvoda, 30.8.2026). Pravo `mail_uvoz` više NE skriva
+ * sučelje; ono i dalje postoji, ali utječe isključivo na mjesečnu kvotu
+ * (5 uvoza bez prava, 100 s pravom — `mail_import_consume_quota()`).
+ *
+ * Hook je zadržan kao jedno mjesto istine za „smije li se mail UI prikazati",
+ * pa pozivatelji ostaju nepromijenjeni.
  */
 export function useMailImportAccess() {
   const { user } = useAuth();
-  const [hasAccess, setHasAccess] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  const check = useCallback(async () => {
-    if (!user?.id) {
-      setHasAccess(false);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    const nowIso = new Date().toISOString();
-    const { data, error } = await supabase
-      .from('user_entitlements')
-      .select('id, period_end')
-      .eq('user_id', user.id)
-      .eq('module', 'mail_uvoz')
-      .eq('status', 'active');
-    if (error) {
-      console.warn('[useMailImportAccess] fetch error:', error.message);
-      setHasAccess(false);
-    } else {
-      setHasAccess(
-        (data ?? []).some((r) => !r.period_end || r.period_end > nowIso)
-      );
-    }
-    setLoading(false);
-  }, [user?.id]);
-
-  useEffect(() => {
-    check();
-  }, [check]);
-
-  return { hasAccess, loading, refetch: check };
+  const refetch = useCallback(async () => {}, []);
+  return { hasAccess: !!user?.id, loading: false, refetch };
 }
