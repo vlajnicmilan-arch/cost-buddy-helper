@@ -89,11 +89,55 @@ test.describe('09 — downgraded owner: vidi, ne piše', () => {
     expect(error).not.toBeNull();
   });
 
+  test('vlasnik bez prava VIDI svoje faze', async () => {
+    const { data, error } = await aClient
+      .from('project_milestones')
+      .select('id,name')
+      .eq('project_id', projectId);
+    expect(error).toBeNull();
+    expect(data?.length).toBe(1);
+  });
+
+  test('vlasnik bez prava NE MOŽE mijenjati fazu', async () => {
+    const { data } = await aClient
+      .from('project_milestones')
+      .update({ name: 'hack' })
+      .eq('id', milestoneId)
+      .select('id');
+    expect(data ?? []).toHaveLength(0);
+    const { data: after } = await admin()
+      .from('project_milestones')
+      .select('name')
+      .eq('id', milestoneId)
+      .single();
+    expect(after?.name).not.toBe('hack');
+  });
+
+  test('vlasnik bez prava NE MOŽE brisati fazu', async () => {
+    const { data } = await aClient.from('project_milestones').delete().eq('id', milestoneId).select('id');
+    expect(data ?? []).toHaveLength(0);
+    const { count } = await admin()
+      .from('project_milestones')
+      .select('id', { count: 'exact', head: true })
+      .eq('id', milestoneId);
+    expect(count).toBe(1);
+  });
+
+  test('vlasnik bez prava NE MOŽE dodati fazu', async () => {
+    const { error } = await aClient
+      .from('project_milestones')
+      .insert({ project_id: projectId, name: 'blocked' })
+      .select('id');
+    expect(error).not.toBeNull();
+  });
+
   test('tuđi korisnik ne vidi ništa', async () => {
     const { data: p } = await bClient.from('projects').select('id').eq('id', projectId);
     expect(p ?? []).toHaveLength(0);
     const { data: d } = await bClient.from('project_documents').select('id').eq('project_id', projectId);
     expect(d ?? []).toHaveLength(0);
+    const { data: m } = await bClient.from('project_milestones').select('id').eq('project_id', projectId);
+    expect(m ?? []).toHaveLength(0);
     expect(bId).not.toBe(aId);
   });
 });
