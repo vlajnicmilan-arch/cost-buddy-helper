@@ -6785,7 +6785,11 @@
       "changed": "Odredište je promijenjeno",
       "changeFailed": "Promjena odredišta nije uspjela"
     },
-    "liveNotice": "Stigao dokument na pregled"
+    "liveNotice": "Stigao dokument na pregled",
+    "quota": {
+      "status": "Uvozi ovaj mjesec: {{used}}/{{limit}} · preostalo {{left}}",
+      "exhausted": "Mjesečna kvota uvoza je iskorištena ({{used}}/{{limit}}). Obnavlja se {{date}}."
+    }
   },
   "issuers": {
     "title": "Moji izdavatelji",

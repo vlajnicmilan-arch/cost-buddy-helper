@@ -6773,7 +6773,11 @@
       "changed": "Ziel geändert",
       "changeFailed": "Ändern des Ziels fehlgeschlagen"
     },
-    "liveNotice": "Ein Dokument ist zur Prüfung eingetroffen"
+    "liveNotice": "Ein Dokument ist zur Prüfung eingetroffen",
+    "quota": {
+      "status": "Importe diesen Monat: {{used}}/{{limit}} · {{left}} übrig",
+      "exhausted": "Das monatliche Importkontingent ist aufgebraucht ({{used}}/{{limit}}). Es wird am {{date}} erneuert."
+    }
   },
   "issuers": {
     "title": "Meine Aussteller",

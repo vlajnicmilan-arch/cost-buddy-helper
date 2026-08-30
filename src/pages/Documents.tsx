@@ -5,8 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft, FileClock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useMailImportAccess } from '@/hooks/useMailImportAccess';
 import { useMailPendingCount } from '@/hooks/useMailPendingCount';
+import { MailQuotaStrip } from '@/components/mail/MailQuotaStrip';
 import { MailReviewList } from '@/components/mail/MailReviewList';
 import { DocumentsReceivedTab } from '@/components/mail/DocumentsReceivedTab';
 import { PageContainer } from '@/components/layout/PageContainer';
@@ -15,31 +15,20 @@ import { useGoBackOrHome } from '@/hooks/useGoBackOrHome';
 /**
  * DOM ZA DOKUMENTE (`/dokumenti`).
  *
- * Cijeli ekran postoji ISKLJUČIVO uz pravo `mail_uvoz`. Bez prava korisnik se
- * tiho vraća na početni ekran — nema kartice, nema taba, nema traga.
+ * Ekran je OTVOREN svakom prijavljenom korisniku (odluka vlasnika proizvoda,
+ * 30.8.2026). Pravo `mail_uvoz` više ne skriva sučelje — utječe samo na
+ * mjesečnu kvotu uvoza, koja se prikazuje u `MailQuotaStrip`.
  */
 export default function Documents() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   // Ekran zna biti PRVA stavka povijesti (ulaz kroz brief-vrata s `replace`).
   const goBack = useGoBackOrHome();
-  const { hasAccess, loading: accessLoading } = useMailImportAccess();
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') === 'received' ? 'received' : 'pending';
   const [tab, setTab] = useState<'pending' | 'received'>(initialTab);
 
-  const { count, refetch } = useMailPendingCount(hasAccess);
-
-  if (accessLoading) {
-    return (
-      <div className="p-4 text-sm text-muted-foreground">{t('common.loading', 'Učitavanje...')}</div>
-    );
-  }
-
-  if (!hasAccess) {
-    navigate('/app', { replace: true });
-    return null;
-  }
+  const { count, refetch } = useMailPendingCount(true);
 
   return (
     <div className="min-h-dvh bg-background pb-24">
@@ -60,6 +49,7 @@ export default function Documents() {
       </header>
 
       <PageContainer as="main">
+        <MailQuotaStrip />
         <Tabs value={tab} onValueChange={(v) => setTab(v as 'pending' | 'received')}>
           <TabsList className="w-full">
             <TabsTrigger value="pending" className="flex-1 min-h-[44px]">

@@ -6773,7 +6773,11 @@
       "changed": "Destination changed",
       "changeFailed": "Changing the destination failed"
     },
-    "liveNotice": "A document arrived for review"
+    "liveNotice": "A document arrived for review",
+    "quota": {
+      "status": "Imports this month: {{used}}/{{limit}} · {{left}} left",
+      "exhausted": "Your monthly import quota is used up ({{used}}/{{limit}}). It renews on {{date}}."
+    }
   },
   "issuers": {
     "title": "My issuers",
