@@ -50,16 +50,19 @@ export const SubscriptionSection = () => {
         .from('user_entitlements')
         .select('module, source, status, period_end, billing_cycle, metadata')
         .eq('user_id', user.id)
-        .eq('status', 'active')
-        .or(`period_end.is.null,period_end.gt.${nowIso}`);
+        .in('status', ['active', 'past_due']);
 
       if (cancelled) return;
       if (error) {
         setRows([]);
       } else {
         const filtered = (data || []).filter((r: any) =>
-          ['smjer', 'krug', 'projekti', 'biznis'].includes(r.module)
+          ['smjer', 'krug', 'projekti', 'biznis'].includes(r.module) &&
+          (r.status === 'active'
+            ? !r.period_end || r.period_end > nowIso
+            : isInGrace(r.status, r.metadata))
         );
+
         const rank = (s: string) =>
           s === 'paddle' ? 4 : s === 'admin_grant' ? 3 : s === 'migration' ? 2 : 1;
         const byModule = new Map<Module, EntitlementRow>();
