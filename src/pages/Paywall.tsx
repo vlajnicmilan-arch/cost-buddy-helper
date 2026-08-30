@@ -38,6 +38,7 @@ import {
   resolveInitialCycle,
 } from '@/lib/paywallCampaign';
 import logo from '@/assets/logo.webp';
+import { STICKER_PRICES } from '@/lib/pricing';
 
 type PlanCardConfig = {
   plan: PaywallPlan;
