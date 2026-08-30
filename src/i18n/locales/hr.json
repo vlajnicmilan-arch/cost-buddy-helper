@@ -6364,14 +6364,16 @@
     "badge": {
       "trial": "Trial",
       "admin": "Admin",
-      "scheduledCancel": "Otkazano"
+      "scheduledCancel": "Otkazano",
+      "pastDue": "Naplata nije prošla"
     },
     "module": {
       "smjer": "Smjer",
       "krug": "Krug",
       "projekti": "Projekti",
       "biznis": "Biznis"
-    }
+    },
+    "pastDueNotice": "Naplata nije prošla. Pristup ti vrijedi do {{date}} — ažuriraj karticu da se ne prekine."
   },
   "categoryOrigin": {
     "aiSuggested": "AI prijedlog",

@@ -6353,14 +6353,16 @@
     "badge": {
       "trial": "Testphase",
       "admin": "Admin",
-      "scheduledCancel": "Gekündigt"
+      "scheduledCancel": "Gekündigt",
+      "pastDue": "Zahlung fehlgeschlagen"
     },
     "module": {
       "smjer": "Smjer",
       "krug": "Krug",
       "projekti": "Projekti",
       "biznis": "Biznis"
-    }
+    },
+    "pastDueNotice": "Die Zahlung ist nicht durchgegangen. Dein Zugang gilt bis {{date}} — aktualisiere deine Karte, damit er nicht endet."
   },
   "categoryOrigin": {
     "aiSuggested": "KI-Vorschlag",
