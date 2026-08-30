@@ -7452,6 +7452,10 @@ export type Database = {
         }
         Returns: number
       }
+      entitlement_in_grace: {
+        Args: { _metadata: Json; _status: string }
+        Returns: boolean
+      }
       eracun_link_existing_expense: {
         Args: { p_amount: number; p_expense_id: string; p_invoice_id: string }
         Returns: Json
