@@ -85,14 +85,25 @@ export const BusinessRecurring = () => {
     <div className="space-y-4">
       <Card className="border-none shadow-sm">
         <CardContent className="p-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <div>
               <p className="text-[10px] text-muted-foreground">{t('business.recurring.monthlyObligations', 'Mjesečne obveze (procjena)')}</p>
               <p className="text-lg font-bold text-expense">{formatAmount(monthlyTotal)}</p>
             </div>
+            {activeBusinessProfileId && (
+              <Button
+                size="sm"
+                className="rounded-xl gap-1.5 min-h-[44px]"
+                disabled={isReadOnly}
+                onClick={() => guard(() => setDialogOpen(true))}
+              >
+                <Plus className="w-4 h-4" /> {t('recurring.new')}
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
+
 
       {active.length > 0 && (
         <div className="space-y-1.5">
