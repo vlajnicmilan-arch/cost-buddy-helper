@@ -203,9 +203,10 @@ const AppRoutes = () => {
   const hasAnyEntitlement = !!(entitlements.smjer?.active || entitlements.krug?.active || entitlements.projekti?.active || entitlements.biznis?.active);
   const { user, authReady } = useAuth();
   const stateReturn = (location.state as { from?: string } | null)?.from;
-  const queryNext = new URLSearchParams(location.search).get("next");
-  const safeNext = queryNext && queryNext.startsWith("/") && !queryNext.startsWith("//") ? queryNext : null;
-  const authReturnPath = safeNext || stateReturn;
+  // One mechanism for the post-auth destination: ?next= → router state →
+  // sessionStorage (public screens such as invitations store it there).
+  const authReturnPath = resolveAuthReturnPath(location.search, stateReturn, readAuthReturn());
+
 
   // Wait for all readiness signals before making routing decisions
   const allReady = isInitialized && authReady && appStateReady;
