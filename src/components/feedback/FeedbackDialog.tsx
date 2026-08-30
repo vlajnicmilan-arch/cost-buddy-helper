@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { sanitizeDiagnostics } from '@/lib/diagnosticsSanitizer';
+import { APP_VERSION, SHORT_COMMIT_SHA } from '@/lib/version';
 
 type FeedbackType = 'bug' | 'idea' | 'question';
 
@@ -73,7 +74,8 @@ export const FeedbackDialog = ({ open, onOpenChange, defaultType = 'idea' }: Fee
     if (typeof window === 'undefined') return null;
     const raw = {
       route: location.pathname + (location.search || ''),
-      app_version: (import.meta as any).env?.VITE_APP_VERSION || 'web',
+      app_version: APP_VERSION,
+      commit_sha: SHORT_COMMIT_SHA,
       language: i18n.language || 'hr',
       viewport: `${window.innerWidth}x${window.innerHeight}@${window.devicePixelRatio || 1}`,
       platform: (navigator as any).userAgentData?.platform || navigator.platform || 'unknown',
