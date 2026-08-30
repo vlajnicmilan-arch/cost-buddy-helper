@@ -197,6 +197,15 @@ const RouteAwareGlobalOverlays = () => {
   );
 };
 
+/** Redirect after successful auth and clear the stored return path. */
+const AuthReturnRedirect = ({ to }: { to: string }) => {
+  useEffect(() => {
+    consumeAuthReturn();
+  }, []);
+  return <Navigate to={to} replace />;
+};
+
+
 const AppRoutes = () => {
   const location = useLocation();
   const { storageMode, isInitialized } = useStorage();
