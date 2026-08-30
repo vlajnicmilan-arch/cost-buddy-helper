@@ -373,7 +373,7 @@ const AppRoutes = () => {
       <Route path="/budgets" element={<Suspense fallback={<GenericPageSkeleton />}>{requireOnboarding(<Budgets />)}</Suspense>} />
       <Route path="/wallet" element={<Suspense fallback={<WalletSkeleton />}>{requireOnboarding(<Wallet />)}</Suspense>} />
       <Route path="/krug" element={<Suspense fallback={<GenericPageSkeleton />}>{requireOnboarding(<Krug />)}</Suspense>} />
-      <Route path="/auth" element={<Suspense fallback={<PageLoader />}>{user ? <Navigate to={authReturnPath || "/home"} replace /> : <Auth />}</Suspense>} />
+      <Route path="/auth" element={<Suspense fallback={<PageLoader />}>{user ? <AuthReturnRedirect to={authReturnPath || "/home"} /> : <Auth />}</Suspense>} />
       <Route path="/native-oauth/callback" element={<Suspense fallback={<PageLoader />}><NativeOAuthCallback /></Suspense>} />
       <Route path="/reset-password" element={<Suspense fallback={<PageLoader />}><ResetPassword /></Suspense>} />
       <Route path="/setup" element={<Suspense fallback={<PageLoader />}><StorageSetup /></Suspense>} />
