@@ -118,8 +118,11 @@ const JoinProject = () => {
 
       if (data?.error) {
         setError(data.error);
+        logFunnelEvent('invite_failed', { invite_type: 'project', reason: 'rejected' });
       } else if (data?.success) {
         setSuccess(true);
+        logFunnelEvent('invite_accepted', { invite_type: 'project', context: chosenContext });
+
         const target = data.target || data.project;
         setProjectData(target);
 
