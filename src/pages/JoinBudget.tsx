@@ -141,7 +141,7 @@ export default function JoinBudget() {
             </p>
           ) : error ? (
             <Button 
-              onClick={() => navigate('/home')} 
+              onClick={() => navigate(user ? '/home' : '/')} 
               variant="outline" 
               className="w-full"
             >
@@ -150,13 +150,24 @@ export default function JoinBudget() {
           ) : !user ? (
             <>
               <p className="text-center text-sm text-muted-foreground">
-                {t('budget.loginRequired', 'Morate biti prijavljeni da biste se pridružili budžetu.')}
+                {t('projects.budgetJoinNeedsAccount', 'Za pridruživanje budžetu otvorite račun — traje manje od minute.')}
               </p>
               <Button onClick={handleLoginRedirect} className="w-full">
                 <LogIn className="w-4 h-4 mr-2" />
-                {t('auth.signIn')}
+                {t('auth.createAccount', 'Otvori račun')}
+              </Button>
+              <Button
+                onClick={() => {
+                  rememberAuthReturn(`/join-budget/${token}`);
+                  navigate('/auth');
+                }}
+                variant="ghost"
+                className="w-full"
+              >
+                {t('auth.alreadyHaveAccount', 'Već imam račun')}
               </Button>
             </>
+
           ) : (
             <div className="space-y-3">
               <Button 
