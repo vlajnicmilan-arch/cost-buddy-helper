@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { SubscriptionTier, TRIAL_DURATION_DAYS } from '@/lib/subscriptionTiers';
+import { SubscriptionTier } from '@/lib/subscriptionTiers';
 import { getFreshAccessToken } from '@/lib/supabaseRetry';
 
 export type EntitlementModule = 'smjer' | 'krug' | 'projekti' | 'biznis';
@@ -26,7 +26,6 @@ interface SubscriptionState {
   loading: boolean;
   trialActive: boolean;
   trialDaysRemaining: number;
-  trialExpired: boolean;
   subscriptionEnd: string | null;
   source: 'admin' | 'paddle' | null;
   entitlements: Record<EntitlementModule, ModuleEntitlement>;
@@ -40,7 +39,6 @@ const SubscriptionContext = createContext<SubscriptionState>({
   loading: true,
   trialActive: false,
   trialDaysRemaining: 0,
-  trialExpired: false,
   subscriptionEnd: null,
   source: null,
   entitlements: EMPTY_ENTITLEMENTS,
