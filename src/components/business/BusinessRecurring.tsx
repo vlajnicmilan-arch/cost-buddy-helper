@@ -163,6 +163,17 @@ export const BusinessRecurring = () => {
           <p className="text-sm text-muted-foreground">{t('business.recurring.noRecurring', 'Nema ponavljajućih obveza')}</p>
         </div>
       )}
+
+      <RecurringTransactionDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSave={async (data: any) => {
+          await addRecurring(data);
+          await fetchItems();
+        }}
+        editData={null}
+      />
     </div>
+
   );
 };
