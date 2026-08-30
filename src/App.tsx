@@ -26,7 +26,7 @@ import { WalletViewModeProvider } from "@/contexts/WalletViewModeContext";
 import { AppLockProvider } from "@/contexts/AppLockContext";
 import { SubscriptionProvider, useSubscription } from "@/contexts/SubscriptionContext";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { resolveAuthReturnPath, readAuthReturn } from "@/lib/authReturn";
+import { resolveAuthReturnPath, readAuthReturn, consumeAuthReturn } from "@/lib/authReturn";
 
 import { LockScreen } from "@/components/LockScreen";
 import { TutorialOverlay } from "@/components/tutorial";
