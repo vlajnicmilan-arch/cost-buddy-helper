@@ -17,6 +17,7 @@ vi.mock('@/hooks/useMailImportAccess', () => ({
 vi.mock('@/hooks/useMailPendingCount', () => ({
   useMailPendingCount: () => ({ count: 0, refetch: () => undefined }),
 }));
+vi.mock('@/components/mail/MailQuotaStrip', () => ({ MailQuotaStrip: () => <div /> }));
 vi.mock('@/components/mail/MailReviewList', () => ({ MailReviewList: () => <div>PENDING</div> }));
 vi.mock('@/components/mail/DocumentsReceivedTab', () => ({
   DocumentsReceivedTab: () => <div>RECEIVED</div>,
