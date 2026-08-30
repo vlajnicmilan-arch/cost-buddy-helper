@@ -169,15 +169,18 @@ const JoinProject = () => {
     } catch (err: any) {
       console.error('Error accepting invitation:', err);
       setError(err.message || t('join.errorJoiningProject', 'Greška pri pridruživanju projektu'));
+      logFunnelEvent('invite_failed', { invite_type: 'project', reason: 'exception' });
     } finally {
       setAccepting(false);
     }
   };
 
+  // Invited people almost never have an account yet → go straight to signup.
   const handleLoginRedirect = () => {
-    sessionStorage.setItem('returnUrl', `/join-project/${token}`);
-    navigate('/auth');
+    rememberAuthReturn(`/join-project/${token}`);
+    navigate('/auth?mode=signup');
   };
+
 
   if (loading) {
     return (
