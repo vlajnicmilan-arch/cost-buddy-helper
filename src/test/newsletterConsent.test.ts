@@ -104,14 +104,33 @@ describe('Auth forma — newsletter kvačica', () => {
     expect(src).not.toMatch(/newsletterConsent[^)]*useState\(true\)/);
   });
 
-  it('kvačica je neobavezna — gumb ovisi samo o gdprConsent', async () => {
+  it('nijedna kvačica ne onemogućuje gumb — gumb je onemogućen samo dok traje slanje', async () => {
     const fs = await import('node:fs/promises');
     const src = await fs.readFile('src/pages/Auth.tsx', 'utf-8');
-    const disabledLine = src.split('\n').find((l) => l.includes('disabled={loading || (!isLogin'));
-    expect(disabledLine).toBeDefined();
-    expect(disabledLine).toContain('gdprConsent');
-    expect(disabledLine).not.toContain('newsletterConsent');
+    // Nijedan disabled izraz ne smije ovisiti o kvačicama.
+    const disabledExprs = src.match(/disabled=\{[^}]*\}/g) ?? [];
+    expect(disabledExprs.length).toBeGreaterThan(0);
+    for (const expr of disabledExprs) {
+      expect(expr).not.toContain('newsletterConsent');
+      expect(expr).not.toContain('gdprConsent');
+    }
+    // Submit gumb je onemogućen isključivo dok traje slanje.
+    const submit = src.match(/<Button\s+type="submit"[\s\S]*?auth\.register[\s\S]*?<\/Button>/)?.[0] ?? '';
+    expect(submit).toContain('disabled={loading}');
   });
+
+  it('slanje bez GDPR privole ne prolazi i daje vidljivu poruku uz kvačicu', async () => {
+    const fs = await import('node:fs/promises');
+    const src = await fs.readFile('src/pages/Auth.tsx', 'utf-8');
+    expect(src).toContain("error_code: 'consent_required'");
+    expect(src).toContain("t('auth.consentRequired')");
+    expect(src).toContain('errors.consent && <p className="text-sm text-destructive"');
+    expect(src).toContain('gdprConsentRef.current?.focus()');
+    // Newsletter kvačica nije dio te validacije.
+    const validation = src.slice(src.indexOf('consent_required') - 600, src.indexOf('consent_required') + 600);
+    expect(validation).not.toContain('newsletterConsent');
+  });
+
 
   it('upis se događa samo unutar if (newsletterConsent) grane', async () => {
     const fs = await import('node:fs/promises');
