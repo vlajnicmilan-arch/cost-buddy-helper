@@ -33,6 +33,12 @@ export const BusinessRecurring = () => {
   const { activeBusinessProfileId } = useAppState();
   const [items, setItems] = useState<RecurringTx[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const { addRecurring } = useRecurringTransactions();
+  const { hasAccess } = useFeatureAccess();
+  const isReadOnly = !hasAccess('recurring_transactions');
+  const { guard } = useWriteGuard({ kind: 'module', feature: 'recurring_transactions' });
+
 
   const fetchItems = async () => {
     if (!user || !activeBusinessProfileId) { setItems([]); setLoading(false); return; }
