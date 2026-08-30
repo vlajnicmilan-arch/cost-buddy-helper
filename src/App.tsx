@@ -272,6 +272,8 @@ const AppRoutes = () => {
           <Route path="/avatar-demo" element={<AvatarDemo />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
           <Route path="/p/:token" element={<PublicProject />} />
+          <Route path="/join-project/:token" element={<JoinProject />} />
+          <Route path="/join-budget/:token" element={<JoinBudget />} />
           <Route path="/landing" element={<Navigate to="/" replace />} />
           <Route path="/landing-legacy" element={<Navigate to="/" replace />} />
           <Route path="/centar" element={<Navigate to="/" replace />} />
