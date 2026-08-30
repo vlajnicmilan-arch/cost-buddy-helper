@@ -48,3 +48,34 @@ export const extractAttributionTags = (search: string | null | undefined): Attri
 /** True when the tags carry at least one source marker (query itself doesn't count). */
 export const hasAttributionMarkers = (tags: AttributionTags): boolean =>
   [...UTM_KEYS, ...CLICK_ID_KEYS].some((k) => Boolean(tags[k]));
+
+/* ---------- first-touch storage (shared with funnelTracking) ---------- */
+
+export const FIRST_TOUCH_KEY = 'funnel_utm';
+export const FIRST_TOUCH_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+export type FirstTouchAttribution = AttributionTags & {
+  referrer?: string;
+  landing_path?: string;
+  captured_at?: number;
+};
+
+/**
+ * Read the first-touch attribution stored on this device by `funnelTracking`.
+ * Single source of truth — no parallel mechanism. Expired entries are dropped.
+ * Never throws.
+ */
+export const readFirstTouchAttribution = (): FirstTouchAttribution => {
+  try {
+    const raw = localStorage.getItem(FIRST_TOUCH_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as FirstTouchAttribution;
+    if (parsed.captured_at && Date.now() - parsed.captured_at > FIRST_TOUCH_TTL_MS) {
+      localStorage.removeItem(FIRST_TOUCH_KEY);
+      return {};
+    }
+    return parsed;
+  } catch {
+    return {};
+  }
+};
