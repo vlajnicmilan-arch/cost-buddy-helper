@@ -38,6 +38,7 @@ import {
   resolveInitialCycle,
 } from '@/lib/paywallCampaign';
 import logo from '@/assets/logo.webp';
+import { STICKER_PRICES } from '@/lib/pricing';
 
 type PlanCardConfig = {
   plan: PaywallPlan;
@@ -49,10 +50,10 @@ type PlanCardConfig = {
 
 // Sticker prices (display only). Real price_id is looked up from paddle_price_map.
 const PLAN_PRICES: PlanCardConfig[] = [
-  { plan: 'smjer', icon: Compass, monthly: 5.99, yearly: 59.9 },
-  { plan: 'krug', icon: Users, monthly: 9.99, yearly: 99.9 },
-  { plan: 'projekti', icon: Briefcase, monthly: 21.99, yearly: 219.9 },
-  { plan: 'komplet', icon: Sparkles, monthly: 25.99, yearly: 259.9, featured: true },
+  { plan: 'smjer', icon: Compass, ...STICKER_PRICES.smjer },
+  { plan: 'krug', icon: Users, ...STICKER_PRICES.krug },
+  { plan: 'projekti', icon: Briefcase, ...STICKER_PRICES.projekti },
+  { plan: 'komplet', icon: Sparkles, ...STICKER_PRICES.komplet, featured: true },
 ];
 
 const Paywall: React.FC = () => {

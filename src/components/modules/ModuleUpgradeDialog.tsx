@@ -17,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { usePaddlePrices, type PaywallPlan } from '@/hooks/usePaddlePrices';
+import { STICKER_PRICES } from '@/lib/pricing';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 
 export type UpgradeModule = 'smjer' | 'krug' | 'projects' | 'business';
@@ -126,8 +127,7 @@ export const ModuleUpgradeDialog = ({ open, onOpenChange, module }: Props) => {
   }, [open, user?.id, meta.trialModule]);
 
   const monthlyPrice = meta.paywallPlan ? prices[meta.paywallPlan]?.monthly : undefined;
-  const STICKER: Record<PaywallPlan, number> = { smjer: 5.99, krug: 9.99, projekti: 21.99, komplet: 25.99 };
-  const displayPrice = meta.paywallPlan ? STICKER[meta.paywallPlan] : null;
+  const displayPrice = meta.paywallPlan ? STICKER_PRICES[meta.paywallPlan].monthly : null;
 
   const goPaywall = () => {
     onOpenChange(false);
