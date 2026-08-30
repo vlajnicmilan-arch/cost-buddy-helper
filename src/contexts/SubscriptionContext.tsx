@@ -72,7 +72,7 @@ async function fetchEntitlementsMode(): Promise<EntitlementsMode> {
 
 
 export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, session } = useAuth();
+  const { session } = useAuth();
   const [tier, setTier] = useState<SubscriptionTier>('free');
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -140,7 +140,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, [session, checkSubscription]);
 
   // FAZA 5: trial se čita iz user_entitlements (source='trial'), NE iz profiles.created_at.
-  // Fallback (samo za legacy mode ili prije prvog uspješnog checka): computed iz user.created_at.
   const trialFromEntitlements = useMemo(() => {
     const trialRows = (['smjer', 'krug', 'projekti', 'biznis'] as EntitlementModule[])
       .map((m) => entitlements[m])
