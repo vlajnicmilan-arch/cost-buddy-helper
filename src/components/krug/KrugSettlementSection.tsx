@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { ChevronLeft, ChevronRight, Scale, ArrowRight, Info, Loader2, Settings2, Download } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Scale, ArrowRight, Info, Loader2, Settings2, Download, AlertTriangle } from 'lucide-react';
 import { useKrugSettlement, currentMonthRange, shiftMonth } from '@/hooks/useKrugSettlement';
 import { useKrug } from '@/hooks/useKrug';
 import { useAuth } from '@/hooks/useAuth';
