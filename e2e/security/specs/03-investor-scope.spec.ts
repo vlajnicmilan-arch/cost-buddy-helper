@@ -106,6 +106,20 @@ test.describe('03 — investor scope', () => {
     }
   });
 
+  test('investor NE SMIJE čitati suradnike (nabavne cijene podizvođača)', async () => {
+    const { data, error } = await bClient
+      .from('project_collaborators').select('id, total_price, paid_amount').eq('project_id', projectId);
+    expect(error).toBeNull();
+    expect(data ?? [], 'investor je dobio nabavne cijene suradnika').toEqual([]);
+  });
+
+  test('investor NE SMIJE čitati anekse ugovora', async () => {
+    const { data, error } = await bClient
+      .from('project_contract_amendments').select('id, amendment_amount').eq('project_id', projectId);
+    expect(error).toBeNull();
+    expect(data ?? [], 'investor je dobio iznose aneksa').toEqual([]);
+  });
+
   test('investor SMIJE vidjeti projekt (dozvoljeno po dizajnu)', async () => {
     const { data, error } = await bClient
       .from('projects').select('id, name').eq('id', projectId);
