@@ -1779,10 +1779,10 @@
     "email": "Email",
     "password": "Lozinka",
     "forgotPassword": "Zaboravljena lozinka?",
-    "noAccount": "Nemate račun?",
-    "hasAccount": "Već imate račun?",
-    "signUp": "Registrirajte se",
-    "signIn": "Prijavite se",
+    "noAccount": "Nemaš račun?",
+    "hasAccount": "Već imaš račun?",
+    "signUp": "Registriraj se",
+    "signIn": "Prijavi se",
     "welcomeBack": "Dobrodošli natrag!",
     "createAccount": "Kreirajte novi račun",
     "loginToAccount": "Prijavite se na svoj račun",
@@ -1811,8 +1811,8 @@
     "resetSentTo": "Poslali smo link za resetiranje lozinke na:",
     "clickResetLink": "Kliknite na link u emailu za resetiranje lozinke",
     "resetLinkValid": "Link vrijedi 1 sat",
-    "loginSubtitle": "Prijavite se na svoj račun",
-    "registerSubtitle": "Kreirajte novi račun",
+    "loginSubtitle": "Prijavi se na svoj račun",
+    "registerSubtitle": "Kreiraj novi račun",
     "nameOptional": "Ime (opcionalno)",
     "nameHint": "Ako ne unesete ime, koristit će se ime iz email adrese",
     "resetEmailHint": "Unesite svoju email adresu i poslat ćemo vam link za resetiranje lozinke.",
@@ -1843,8 +1843,9 @@
       "changePasswordButton": "Promijeni lozinku"
     },
     "nameFullOptional": "Ime i prezime (opcionalno)",
-    "nameRecognitionHint": "Tako te vlasnik projekta prepozna kad te povezuje s radnikom.",
-    "alreadyHaveAccount": "Već imam račun"
+    "alreadyHaveAccount": "Već imam račun",
+    "consentRequired": "Za registraciju je potrebno prihvatiti Politiku privatnosti.",
+    "freeAccountNote": "Račun je besplatan. Bez roka i bez kartice."
   },
   "categories": {
     "food": "Hrana",
