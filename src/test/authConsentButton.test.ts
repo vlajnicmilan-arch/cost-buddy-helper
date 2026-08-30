@@ -6,7 +6,9 @@ const src = readFileSync(resolve(process.cwd(), 'src/pages/Auth.tsx'), 'utf8');
 
 describe('auth register button — consent is validated on submit, not by disabling', () => {
   it('submit button is disabled only while loading (never by missing consent)', () => {
-    const submit = src.match(/<Button\s+type="submit"[\s\S]*?\/>|<Button\s+type="submit"[\s\S]*?<\/Button>/)?.[0] ?? '';
+    // The register/login submit is the one rendering auth.login / auth.register.
+    const submit = src.match(/<Button\s+type="submit"[\s\S]*?auth\.register[\s\S]*?<\/Button>/)?.[0] ?? '';
+    expect(submit).not.toBe('');
     expect(submit).toContain('disabled={loading}');
     expect(submit).not.toContain('gdprConsent');
     // Nowhere in the file may consent disable any button again.
