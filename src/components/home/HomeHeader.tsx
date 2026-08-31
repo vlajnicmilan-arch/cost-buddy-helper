@@ -71,7 +71,7 @@ export const HomeHeader = ({
             <img src={logo} alt="Centar" className="w-full h-full object-contain" width={72} height={72} fetchPriority="high" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-lg sm:text-3xl font-bold text-foreground tracking-tight truncate">
+            <h1 className="text-lg sm:text-3xl font-bold leading-tight text-foreground tracking-tight break-words">
               {displayName ? t('common.greeting', 'Bok, {{name}}!').replace('{{name}}', displayName) : 'Centar'}
             </h1>
             <div className="flex items-center gap-2 mt-0.5">
