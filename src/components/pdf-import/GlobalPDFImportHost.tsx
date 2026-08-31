@@ -109,7 +109,7 @@ export const GlobalPDFImportHost = () => {
   const pdfImport = usePdfImport();
   const { user } = useAuth();
   const { startPDFParseJob, waitForPDFParseJob, fetchPDFParseJob, normalizeJobResult, parseHTML } = usePDFParser();
-  const { customPaymentSources, updateCustomPaymentSource } = useCustomPaymentSources({ includePersonal: true });
+  const { customPaymentSources, updateCustomPaymentSource, loading: sourcesLoading } = useCustomPaymentSources({ includePersonal: true });
   const { suggestSourceId } = useStatementSourceMemory(pdfImport.phase === 'preview');
   const [resumeVisible, setResumeVisible] = useState(false);
   // BRANA IDENTITETA: izvod na drugi račun od novčanika → uvoz staje i pita.
