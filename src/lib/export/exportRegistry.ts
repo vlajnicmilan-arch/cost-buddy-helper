@@ -55,7 +55,13 @@ export interface TableRule {
    * NE izvozi zasebno (izbjegavamo dvostruki zapis istih redaka).
    */
   mirrorOf?: string;
+  /**
+   * Stupci sa slobodnim tekstom koji ostaju samo u retcima koje je korisnik sam
+   * stvorio (`ownerColumn` = njegov id). U ostalim retcima se prazne.
+   */
+  blankUnlessOwn?: { columns: readonly string[]; ownerColumn: string };
 }
+
 
 /** Definicija skupa id-eva roditelja. Sam skup se dohvaća istim pravilima. */
 export interface ScopeDef {
