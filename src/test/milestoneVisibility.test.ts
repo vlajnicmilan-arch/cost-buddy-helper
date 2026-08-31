@@ -57,7 +57,7 @@ describe('Korak A — sva mjesta čitanja faza idu preko role-scoped pogleda', (
     'src/components/projects/ProjectReportsDialog.tsx',
     'src/lib/mcp/tools/list-project-milestones.ts',
     'src/lib/mcp/tools/get-project-details.ts',
-    'src/lib/dataExportZip.ts',
+    'src/lib/export/exportRegistry.ts',
   ];
 
   it.each(readSites)('%s koristi project_milestones_scoped', (file) => {

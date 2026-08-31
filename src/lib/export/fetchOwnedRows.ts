@@ -126,7 +126,7 @@ export class OwnedDataReader {
   async fetchTable(table: string): Promise<FetchOutcome> {
     const entry: TableRule | undefined = EXPORT_REGISTRY[table];
     if (!entry) return { ok: false, reason: 'Tablica nije u registru izvoza' };
-    const outcome = await this.fetchByRule(table, '*', entry.rule);
+    const outcome = await this.fetchByRule(entry.readFrom ?? table, '*', entry.rule);
     if (!outcome.ok) return outcome;
     const rows = entry.redact?.length
       ? outcome.rows.map((row) => {

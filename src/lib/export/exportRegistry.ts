@@ -40,6 +40,12 @@ export type OwnerRule =
 
 export interface TableRule {
   rule: OwnerRule;
+  /**
+   * Odakle se čita, ako to nije sama tablica. Faze se OBAVEZNO čitaju kroz
+   * role-scoped pogled `project_milestones_scoped` (Korak A) — skriveni iznosi
+   * ostaju prazni umjesto da se izvezu.
+   */
+  readFrom?: string;
   /** Stupci koji se brišu iz izvoza (ključevi, tokeni) — ne podaci. */
   redact?: readonly string[];
 }
@@ -57,7 +63,7 @@ export const SCOPES: Record<ScopeName, ScopeDef> = {
   budgets: { table: 'budget_plans', idColumn: 'id', rule: { via: 'column', column: 'user_id' } },
   expenses: { table: 'expenses', idColumn: 'id', rule: { via: 'column', column: 'user_id' } },
   krugs: { table: 'krug_membership', idColumn: 'krug_id', rule: { via: 'column', column: 'user_id' } },
-  milestones: { table: 'project_milestones', idColumn: 'id', rule: { via: 'scope', column: 'project_id', scope: 'projects' } },
+  milestones: { table: 'project_milestones_scoped', idColumn: 'id', rule: { via: 'scope', column: 'project_id', scope: 'projects' } },
   decisions: { table: 'project_decisions', idColumn: 'id', rule: { via: 'scope', column: 'project_id', scope: 'projects' } },
   workers: { table: 'workers', idColumn: 'id', rule: { via: 'column', column: 'user_id' } },
   paymentSources: { table: 'custom_payment_sources', idColumn: 'id', rule: { via: 'column', column: 'user_id' } },
@@ -163,7 +169,7 @@ export const EXPORT_REGISTRY: Record<string, TableRule> = {
 
   // — Projekti —
   projects: direct(),
-  project_milestones: scope('project_id', 'projects'),
+  project_milestones: { ...scope('project_id', 'projects'), readFrom: 'project_milestones_scoped' },
   milestone_checklist_items: scope('milestone_id', 'milestones'),
   milestone_budget_alerts: scope('project_id', 'projects'),
   milestone_budget_revisions: scope('project_id', 'projects'),
