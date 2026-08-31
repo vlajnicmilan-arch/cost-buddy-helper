@@ -89,6 +89,14 @@ const CRITICAL_EVENT_NAMES = new Set([
   'app_crash',
 ]);
 
+/** Events that prove a real failure happened in this tab (boot watchdog input). */
+const CRASH_SIGNAL_EVENTS = new Set([
+  'window_error',
+  'unhandled_rejection',
+  'react_error_boundary',
+]);
+
+
 const classifySeverity = (event: string, details?: Record<string, unknown>): DiagnosticSeverity => {
   if (CRITICAL_EVENT_NAMES.has(event)) return 'critical';
   if (ERROR_EVENT_NAMES.has(event)) return 'error';
