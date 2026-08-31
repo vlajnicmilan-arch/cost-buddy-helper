@@ -179,6 +179,14 @@ export const logDiagnostic = (input: DiagnosticEventInput | string, details?: Re
 
     const severity = payload.severity ?? classifySeverity(payload.event, payload.details);
 
+    // Boot watchdog input: remember that a genuine error signal occurred, so a
+    // stuck boot flag on the next load can be told apart from a quiet reload.
+    if (CRASH_SIGNAL_EVENTS.has(payload.event)) {
+      markErrorSignal();
+    }
+
+
+
     const row: DiagnosticEventRow = {
       session_id: SESSION_ID,
       user_id: cachedUserId,
