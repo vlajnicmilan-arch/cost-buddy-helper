@@ -8,6 +8,7 @@
  */
 import { useCallback, useEffect, useRef } from 'react';
 import { COMMIT_SHA } from '@/lib/version';
+import { markIntentionalReload } from '@/lib/bootWatchdog';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { useReceiptScan } from '@/contexts/ReceiptScanContext';
 import { usePdfImport } from '@/contexts/PdfImportContext';
