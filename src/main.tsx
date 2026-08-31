@@ -361,7 +361,8 @@ if (isFastLanding) {
     );
     // App tree is now rendering. Mark boot completed on the next frame so we
     // know React actually executed the first commit (vs. only the dynamic
-    // imports succeeding).
-    requestAnimationFrame(() => markBootCompleted());
+    // imports succeeding) — with a timer fallback for hidden tabs.
+    scheduleBootCompleted();
+
   });
 }
