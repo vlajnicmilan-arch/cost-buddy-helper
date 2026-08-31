@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthedFetchGate } from '@/hooks/useAuthedFetchGate';
 
 export interface IncomingPayoutRow {
   payout_id: string;
@@ -47,6 +48,7 @@ export function useIncomingPayoutAttribution(
   isOpen: boolean,
 ) {
   const { user } = useAuth();
+  const { authReady, canFetch } = useAuthedFetchGate();
   const [state, setState] = useState<State>({
     loading: false,
     error: null,
@@ -55,7 +57,7 @@ export function useIncomingPayoutAttribution(
   });
 
   const load = useCallback(async () => {
-    if (!user || payoutIds.length === 0) return;
+    if (!authReady || !canFetch || !user || payoutIds.length === 0) return;
     setState(s => ({ ...s, loading: true, error: null }));
     try {
       // 1) Dohvati whitelistane payout info-e (RLS bi inače blokirala radnika).
@@ -100,7 +102,7 @@ export function useIncomingPayoutAttribution(
       const msg = e instanceof Error ? e.message : String(e);
       setState({ loading: false, error: msg, payouts: [], existing: null });
     }
-  }, [user, payoutIds, batchId]);
+  }, [user, authReady, canFetch, payoutIds, batchId]);
 
   useEffect(() => {
     if (!isOpen) return;

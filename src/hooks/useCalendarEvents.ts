@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useAuthedFetchGate } from '@/hooks/useAuthedFetchGate';
 import { useStorage } from '@/contexts/StorageContext';
 import { useAppState } from '@/contexts/AppStateContext';
 import { format, startOfMonth, endOfMonth, addMonths, addYears, parseISO } from 'date-fns';
@@ -21,6 +22,7 @@ export interface CalendarEvent {
 
 export const useCalendarEvents = (currentMonth: Date) => {
   const { user } = useAuth();
+  const { authReady, canFetch } = useAuthedFetchGate();
   const { storageMode } = useStorage();
   const { activeBusinessProfileId } = useAppState();
   const [expenses, setExpenses] = useState<any[]>([]);
@@ -34,7 +36,9 @@ export const useCalendarEvents = (currentMonth: Date) => {
   const monthEnd = format(endOfMonth(currentMonth), 'yyyy-MM-dd');
 
   const fetchAll = useCallback(async () => {
-    if (isLocalMode || !user) {
+    // Brana: ne kreći dok prijava nije razriješena (upit bi išao kao `anon`).
+    if (!authReady) return;
+    if (isLocalMode || !canFetch || !user) {
       setLoading(false);
       return;
     }
@@ -107,7 +111,7 @@ export const useCalendarEvents = (currentMonth: Date) => {
     } finally {
       setLoading(false);
     }
-  }, [user, isLocalMode, activeBusinessProfileId, monthStart, monthEnd]);
+  }, [user, authReady, canFetch, isLocalMode, activeBusinessProfileId, monthStart, monthEnd]);
 
   useEffect(() => {
     fetchAll();

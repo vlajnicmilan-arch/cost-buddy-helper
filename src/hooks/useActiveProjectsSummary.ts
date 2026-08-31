@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthedFetchGate } from '@/hooks/useAuthedFetchGate';
 import {
   calculateProjectSpent,
   calculateProjectIncomeFromTransactions,
@@ -24,6 +25,7 @@ export interface ProjectSummaryEntry {
  */
 export const useActiveProjectsSummary = (projectIds: string[]) => {
   const { user } = useAuth();
+  const { authReady, canFetch, isIdentityAlive } = useAuthedFetchGate();
   const [summary, setSummary] = useState<Map<string, ProjectSummaryEntry>>(new Map());
   const [loading, setLoading] = useState(false);
 
@@ -34,7 +36,8 @@ export const useActiveProjectsSummary = (projectIds: string[]) => {
   );
 
   const fetchSummary = useCallback(async () => {
-    if (!user || projectIds.length === 0) {
+    if (!authReady) return;
+    if (!canFetch || !user || projectIds.length === 0) {
       setSummary(new Map());
       setLoading(false);
       return;
@@ -49,6 +52,8 @@ export const useActiveProjectsSummary = (projectIds: string[]) => {
 
       // Page through all approved expenses for this set of projects
       while (true) {
+        // Sesija je mogla nestati usred straničenja — stani bez upita.
+        if (!isIdentityAlive(user.id)) return;
         const { data, error } = await (supabase
           .from('expenses')
           .select('project_id, amount, type, status, expense_nature') as any)
@@ -94,7 +99,7 @@ export const useActiveProjectsSummary = (projectIds: string[]) => {
       setLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, idsKey]);
+  }, [user?.id, authReady, canFetch, isIdentityAlive, idsKey]);
 
   useEffect(() => {
     fetchSummary();

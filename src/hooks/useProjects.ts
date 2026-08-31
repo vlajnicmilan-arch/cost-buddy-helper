@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthedFetchGate } from '@/hooks/useAuthedFetchGate';
 import { Project, ProjectWithOwnership, ProjectRole, ProjectStatus } from '@/types/project';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +16,7 @@ const projectsCacheKey = (userId: string | undefined, businessProfileId: string 
 
 export const useProjects = () => {
   const { user } = useAuth();
+  const { authReady, canFetch } = useAuthedFetchGate();
   const { t } = useTranslation();
   const { emitAvatarEvent, activeBusinessProfileId } = useAppState();
   const initialKey = projectsCacheKey(user?.id, activeBusinessProfileId);
@@ -26,6 +28,8 @@ export const useProjects = () => {
   const isLocalMode = !user;
 
   const fetchProjects = useCallback(async () => {
+    // Brana: u oblačnom načinu ne kreći dok prijava nije razriješena.
+    if (!isLocalMode && !canFetch) return;
     // Silent revalidate when we already have cached data for this context
     const cacheKey = projectsCacheKey(user?.id, activeBusinessProfileId);
     const hasHydrated = hydratedKeyRef.current === cacheKey;
@@ -149,7 +153,7 @@ export const useProjects = () => {
       hydratedKeyRef.current = cacheKey;
       setLoading(false);
     }
-  }, [user, isLocalMode, t, activeBusinessProfileId]);
+  }, [user, authReady, canFetch, isLocalMode, t, activeBusinessProfileId]);
 
   // Hydrate from cache instantly on mount / context change
   useEffect(() => {

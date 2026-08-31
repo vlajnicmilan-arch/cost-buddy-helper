@@ -10,6 +10,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuthedFetchGate } from '@/hooks/useAuthedFetchGate';
 
 export interface ActivationFunnel {
   registeredUsers: number;
@@ -22,6 +23,7 @@ export interface ActivationFunnel {
 }
 
 export const useActivationFunnel = () => {
+  const { canFetch } = useAuthedFetchGate();
   const [data, setData] = useState<ActivationFunnel>({
     registeredUsers: 0,
     usersWithProjects: 0,
@@ -33,6 +35,8 @@ export const useActivationFunnel = () => {
   });
 
   const refresh = useCallback(async () => {
+    // Brana: admin metrika je i dalje RLS-ovani dohvat — čeka prijavu.
+    if (!canFetch) return;
     setData((d) => ({ ...d, loading: true, error: null }));
     try {
       // 1. Total registered profiles
@@ -82,7 +86,7 @@ export const useActivationFunnel = () => {
     } catch (e: any) {
       setData((d) => ({ ...d, loading: false, error: e?.message ?? String(e) }));
     }
-  }, []);
+  }, [canFetch]);
 
   useEffect(() => {
     refresh();

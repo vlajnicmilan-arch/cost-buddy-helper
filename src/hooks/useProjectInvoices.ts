@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthedFetchGate } from '@/hooks/useAuthedFetchGate';
 import { useAppState } from '@/contexts/AppStateContext';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { friendlyError } from '@/lib/errorMessages';
@@ -51,13 +52,15 @@ export interface InvoicePaymentSummary {
 export const useProjectInvoices = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { authReady, canFetch } = useAuthedFetchGate();
   const { activeBusinessProfileId } = useAppState();
   const [invoices, setInvoices] = useState<ProjectInvoice[]>([]);
   const [payments, setPayments] = useState<Record<string, InvoicePaymentSummary>>({});
   const [loading, setLoading] = useState(true);
 
   const fetchInvoices = useCallback(async () => {
-    if (!user || !activeBusinessProfileId) {
+    if (!authReady) return;
+    if (!canFetch || !user || !activeBusinessProfileId) {
       setInvoices([]);
       setPayments({});
       setLoading(false);
@@ -108,7 +111,7 @@ export const useProjectInvoices = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, activeBusinessProfileId]);
+  }, [user, authReady, canFetch, activeBusinessProfileId]);
 
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
 

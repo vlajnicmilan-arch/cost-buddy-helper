@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthedFetchGate } from '@/hooks/useAuthedFetchGate';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 
@@ -20,12 +21,14 @@ export interface BudgetPendingTransaction {
 
 export const useBudgetPendingTransactions = (budgetId: string | null) => {
   const { user } = useAuth();
+  const { authReady, canFetch } = useAuthedFetchGate();
   const { t } = useTranslation();
   const [pendingTransactions, setPendingTransactions] = useState<BudgetPendingTransaction[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchPending = useCallback(async () => {
-    if (!budgetId || !user) {
+    if (!authReady) return;
+    if (!canFetch || !budgetId || !user) {
       setPendingTransactions([]);
       setLoading(false);
       return;
@@ -92,7 +95,7 @@ export const useBudgetPendingTransactions = (budgetId: string | null) => {
     } finally {
       setLoading(false);
     }
-  }, [budgetId, user, t]);
+  }, [budgetId, user, authReady, canFetch, t]);
 
   useEffect(() => {
     fetchPending();
