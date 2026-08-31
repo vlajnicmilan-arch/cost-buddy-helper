@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { APP_VERSION } from '@/lib/version';
 import { captureSentryException, setSentryUser } from '@/lib/sentry';
 import { isChunkLoadError, tryRecoverFromChunkError } from '@/lib/chunkLoadError';
+import { markErrorSignal } from '@/lib/bootWatchdog';
 
 export type DiagnosticSeverity = 'critical' | 'error' | 'warning' | 'info';
 
