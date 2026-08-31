@@ -1459,7 +1459,8 @@
     "fullName": "Vor- und Nachname",
     "fullNameDesc": "So erkennt dich der Projektinhaber, wenn er dich mit einem Mitarbeiter verknüpft.",
     "addSurnameNudge": "Nachname ergänzen, damit dich Mitarbeitende erkennen",
-    "addSurnameNudgeCta": "Namen ergänzen"
+    "addSurnameNudgeCta": "Namen ergänzen",
+    "exportZipIncomplete": "Export ist unvollständig — {{count}} Tabelle(n) fehlen. Liste und Gründe stehen in manifest.json."
   },
   "bankMatch": {
     "pendingBank": "Warte auf Bankbestätigung",
