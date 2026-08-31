@@ -73,14 +73,16 @@ export class OwnedDataReader {
 
   private async loadScope(name: ScopeName): Promise<string[] | { error: string }> {
     const def = SCOPES[name];
-    const outcome = await this.fetchByRule(def.table, def.idColumn, def.rule);
-    if (!outcome.ok) return { error: `${def.table}: ${outcome.reason}` };
-    const ids = new Set<string>();
-    for (const row of outcome.rows) {
-      const value = row[def.idColumn];
-      if (typeof value === 'string' && value) ids.add(value);
+    const outcome: FetchOutcome = await this.fetchByRule(def.table, def.idColumn, def.rule);
+    if (outcome.ok) {
+      const ids = new Set<string>();
+      for (const row of outcome.rows) {
+        const value = row[def.idColumn];
+        if (typeof value === 'string' && value) ids.add(value);
+      }
+      return Array.from(ids);
     }
-    return Array.from(ids);
+    return { error: `${def.table}: ${outcome.reason}` };
   }
 
   private async fetchByRule(table: string, select: string, rule: OwnerRule): Promise<FetchOutcome> {
