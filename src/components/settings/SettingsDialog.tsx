@@ -57,7 +57,7 @@ import { SettingsCategoryMenu } from './SettingsCategoryMenu';
 import { SETTINGS_CATEGORIES, type SettingsCategoryId, type SettingsSectionKey } from './settingsCategories';
 import { useBackButton } from '@/hooks/useBackButton';
 import { BACK_PRIORITY } from '@/contexts/BackButtonContext';
-import { TutorialButton } from '@/components/tutorial';
+import { useTutorial } from '@/contexts/TutorialContext';
 
 interface SettingsDialogProps {
   onDataImported?: () => void;
@@ -125,6 +125,13 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   } = useAppState();
   const isLocalMode = storageMode === 'local';
   const appLock = useAppLock();
+  const { startTutorial, hasCompletedTutorial, resetTutorial } = useTutorial();
+
+  const handleStartTutorial = () => {
+    setOpen(false);
+    if (hasCompletedTutorial) resetTutorial();
+    startTutorial();
+  };
 
   const handleSignOut = async () => {
     try {
@@ -624,7 +631,21 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
       case 'help':
         return (
           <div className="space-y-4" key="help">
-            <TutorialButton variant="full" className="min-h-[44px] w-full justify-start rounded-xl" />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleStartTutorial}
+              className="min-h-[44px] w-full justify-start rounded-xl"
+            >
+              {hasCompletedTutorial ? (
+                <RotateCcw className="mr-2 h-4 w-4" />
+              ) : (
+                <HelpCircle className="mr-2 h-4 w-4" />
+              )}
+              {hasCompletedTutorial
+                ? t('tutorial.restart', 'Ponovi vodič')
+                : t('tutorial.start', 'Pokreni vodič')}
+            </Button>
 
             <button
               onClick={() => { setOpen(false); setShowHelpDialog(true); }}
