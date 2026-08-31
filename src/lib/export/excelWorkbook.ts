@@ -103,7 +103,7 @@ function buildSheet(name: string, rows: Record<string, unknown>[]) {
   const types = ordered.map((k) => detectType(rows.map((r) => r[k])));
   const header = ordered.map((k) => ({ ...HEADER, type: String, value: k }));
   const body = rows.map((r) => ordered.map((k, i) => toCell(r[k], types[i])));
-  const columns = ordered.map((k, i) => ({ width: columnWidth(k, rows.map((r) => r[k])) }));
+  const columns = ordered.map((k) => ({ width: columnWidth(k, rows.map((r) => r[k])) }));
   return { sheet: name, data: [header, ...body], columns, stickyRowsCount: 1 };
 }
 
@@ -135,7 +135,7 @@ export async function buildExcelBlob(
   data: Record<string, Record<string, unknown>[]>,
   summary: SummaryRow[],
 ): Promise<Blob> {
-  const { default: writeXlsxFile } = await import('write-excel-file');
+  const { default: writeXlsxFile } = await import('write-excel-file/browser');
   const sheets: any[] = [buildSummarySheet(summary)];
   for (const spec of SHEET_SPECS) {
     sheets.push(buildSheet(spec.name, data[spec.table] ?? []));
