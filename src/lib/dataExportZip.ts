@@ -1,122 +1,20 @@
 import JSZip from 'jszip';
 import { supabase } from '@/integrations/supabase/client';
 import { exportFile, type ExportMode } from './fileExport';
-import { sanitizeCsvField } from './csvSecurity';
+import { EXPORT_REGISTRY, EXPORTED_TABLES, EXCLUDED_TABLES } from './export/exportRegistry';
+import { OwnedDataReader, isFetchFail } from './export/fetchOwnedRows';
+import { buildExcelBlob, SHEET_SPECS, type SummaryRow } from './export/excelWorkbook';
 
 /**
- * Full data export: ZIP archive containing
- *  - expenses.csv (all transactions, spreadsheet-friendly)
- *  - data.json   (all other user-owned tables)
- *  - README.txt  (short description)
+ * Potpun izvoz korisnikovih podataka: ZIP s
+ *  - podaci.xlsx    glavni sadržaj, više listova (Excel)
+ *  - data.json      potpuna kopija sa svim id-evima i vezama
+ *  - manifest.json  što je izvezeno (s brojem redaka), što preskočeno i zašto
+ *  - README.txt     objašnjenje paketa
  *
- * Designed to give the user a one-click "download everything I have" experience
- * (GDPR-style data portability).
+ * Popis onoga što pripada korisniku živi ISKLJUČIVO u `export/exportRegistry.ts`.
+ * Nijedna greška se ne guta — svaki pad završi u manifestu i u poruci korisniku.
  */
-
-// Tables that belong directly to a user via `user_id`. Best-effort — if a table
-// is missing or the column is renamed, the fetch is skipped silently.
-const USER_OWNED_TABLES = [
-  'profiles',
-  'app_settings',
-  'notification_preferences',
-  'custom_categories',
-  'custom_payment_sources',
-  'payment_source_cards',
-  'income_sources',
-  'business_profiles',
-  'business_premises',
-  'business_debts',
-  'cash_registers',
-  'clients',
-  'projects',
-  // Korak A: izvoz ide preko role-scoped pogleda (skriveni iznosi ostaju prazni).
-  'project_milestones_scoped',
-  'project_work_logs',
-  'project_work_entries',
-  'project_workers',
-  'project_documents',
-  'project_estimates',
-  'project_funding',
-  'project_templates',
-  'budget_plans',
-  'budget_categories',
-  'savings_goals',
-  'recurring_transactions',
-  'installment_plans',
-  'installments',
-  'reminders',
-  'notifications',
-  'inventory_items',
-  'inventory_movements',
-  'invoices',
-  'invoice_items',
-  'travel_order_expenses',
-  'transaction_notes',
-  'receipt_items',
-  'bank_connections',
-  'referrals',
-] as const;
-
-function escapeCsvCell(value: unknown): string {
-  if (value === null || value === undefined) return '';
-  let str: string;
-  if (typeof value === 'object') {
-    try { str = JSON.stringify(value); } catch { str = String(value); }
-  } else {
-    str = String(value);
-  }
-  // CSV injection zaštita: ako vrijednost počinje s =, +, -, @ — prefixaj razmakom.
-  // Vidi src/lib/csvSecurity.ts za detaljno objašnjenje napada.
-  str = sanitizeCsvField(str);
-  // Quote if contains delimiter, quote, or newline
-  if (/[",\n\r;]/.test(str)) {
-    return `"${str.replace(/"/g, '""')}"`;
-  }
-  return str;
-}
-
-function rowsToCsv(rows: Record<string, any>[]): string {
-  if (!rows.length) return '';
-  // Stable column order: union of all keys, with common ones first
-  const preferred = ['id', 'date', 'type', 'amount', 'currency', 'description', 'category', 'merchant_name', 'payment_source', 'project_id', 'budget_id', 'business_profile_id', 'created_at'];
-  const allKeys = new Set<string>();
-  rows.forEach(r => Object.keys(r).forEach(k => allKeys.add(k)));
-  const ordered = [
-    ...preferred.filter(k => allKeys.has(k)),
-    ...Array.from(allKeys).filter(k => !preferred.includes(k)).sort(),
-  ];
-  const header = ordered.join(',');
-  const lines = rows.map(r => ordered.map(k => escapeCsvCell(r[k])).join(','));
-  return [header, ...lines].join('\n');
-}
-
-async function fetchAllRows(table: string, userId: string): Promise<any[] | null> {
-  try {
-    // Paginate to bypass 1000-row limit
-    const all: any[] = [];
-    const pageSize = 1000;
-    let from = 0;
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      const { data, error } = await (supabase as any)
-        .from(table)
-        .select('*')
-        .eq('user_id', userId)
-        .range(from, from + pageSize - 1);
-      if (error) {
-        // Table may not have user_id column or may not exist — skip silently
-        return null;
-      }
-      if (!data || data.length === 0) break;
-      all.push(...data);
-      if (data.length < pageSize) break;
-      from += pageSize;
-    }
-    return all;
-  } catch {
-    return null;
-  }
-}
 
 export interface DataExportProgress {
   current: number;
@@ -124,70 +22,143 @@ export interface DataExportProgress {
   table: string;
 }
 
+export interface ExportedTableInfo {
+  table: string;
+  rows: number;
+  via: string;
+}
+
+export interface SkippedTableInfo {
+  table: string;
+  reason: string;
+  code?: string;
+}
+
+export interface DataExportResult {
+  delivered: boolean;
+  exported: ExportedTableInfo[];
+  skipped: SkippedTableInfo[];
+  /** Izvoz je nepotpun ako je bar jedna tablica pala. */
+  complete: boolean;
+}
+
 export async function exportAllUserDataAsZip(
   mode: ExportMode = 'save',
   onProgress?: (p: DataExportProgress) => void,
-): Promise<boolean> {
+): Promise<DataExportResult> {
   const { data: userResult, error: userErr } = await supabase.auth.getUser();
   if (userErr || !userResult?.user) {
     throw new Error('Not authenticated');
   }
   const user = userResult.user;
 
-  const zip = new JSZip();
-  const summary: Record<string, number> = {};
-  const dataPayload: Record<string, any[]> = {};
+  const reader = new OwnedDataReader(user.id);
+  const dataPayload: Record<string, Record<string, unknown>[]> = {};
+  const exported: ExportedTableInfo[] = [];
+  const skipped: SkippedTableInfo[] = [];
 
-  // 1. Expenses → CSV (separately, since it's the primary data)
-  onProgress?.({ current: 1, total: USER_OWNED_TABLES.length + 1, table: 'expenses' });
-  const expenses = (await fetchAllRows('expenses', user.id)) ?? [];
-  summary.expenses = expenses.length;
-  zip.file('expenses.csv', rowsToCsv(expenses));
-  // Also include in JSON for completeness
-  dataPayload.expenses = expenses;
-
-  // 2. Other tables → JSON
-  let idx = 1;
-  for (const table of USER_OWNED_TABLES) {
+  const total = EXPORTED_TABLES.length;
+  let idx = 0;
+  for (const table of EXPORTED_TABLES) {
     idx++;
-    onProgress?.({ current: idx, total: USER_OWNED_TABLES.length + 1, table });
-    const rows = await fetchAllRows(table, user.id);
-    if (rows === null) continue; // skipped
-    summary[table] = rows.length;
-    dataPayload[table] = rows;
+    onProgress?.({ current: idx, total, table });
+    const outcome = await reader.fetchTable(table);
+    if (isFetchFail(outcome)) {
+      skipped.push({ table, reason: outcome.reason, code: outcome.code });
+    } else {
+      dataPayload[table] = outcome.rows;
+      exported.push({ table, rows: outcome.rows.length, via: outcome.via });
+    }
   }
 
+  const excluded = EXCLUDED_TABLES.map((table) => {
+    const rule = EXPORT_REGISTRY[table].rule;
+    return { table, reason: rule.via === 'excluded' ? rule.reason : '' };
+  });
+
+  const complete = skipped.length === 0;
+  const exportedAt = new Date().toISOString();
+
   const manifest = {
-    version: 1,
-    exportedAt: new Date().toISOString(),
+    version: 2,
+    exportedAt,
     userId: user.id,
     userEmail: user.email,
     source: 'cloud',
-    summary,
+    complete,
+    exported,
+    skipped,
+    excluded,
   };
 
+  const summary: SummaryRow[] = [
+    ...exported.map((e) => ({ table: e.table, rows: e.rows, note: `vlasništvo: ${e.via}` })),
+    ...skipped.map((s) => ({ table: s.table, rows: null, note: `NIJE IZVEZENO — ${s.reason}` })),
+  ];
+
+  const zip = new JSZip();
+  zip.file('podaci.xlsx', await buildExcelBlob(dataPayload, summary));
   zip.file('manifest.json', JSON.stringify(manifest, null, 2));
   zip.file('data.json', JSON.stringify(dataPayload, null, 2));
-  zip.file(
-    'README.txt',
-    [
-      'Centar — Data Export',
-      '==========================',
-      '',
-      `Exported at: ${manifest.exportedAt}`,
-      `User: ${user.email}`,
-      '',
-      'Files:',
-      '  - expenses.csv   All transactions (spreadsheet-friendly)',
-      '  - data.json      Full data dump of all your tables',
-      '  - manifest.json  Export metadata + row counts per table',
-      '',
-      'This export contains only data that belongs to you.',
-      'Keep this archive secure — it contains personal financial information.',
-    ].join('\n'),
-  );
+  zip.file('README.txt', buildReadme({ exportedAt, email: user.email ?? '', complete, skipped }));
 
-  const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
-  const fileName = `vm-balance-export-${new Date().toISOString().split('T')[0]}.zip`;
-  return exportFile(blob, fileName, mode);
+  const blob = await zip.generateAsync({
+    type: 'blob',
+    compression: 'DEFLATE',
+    compressionOptions: { level: 6 },
+  });
+  const fileName = `vm-balance-izvoz-${exportedAt.split('T')[0]}.zip`;
+  const delivered = await exportFile(blob, fileName, mode);
+
+  return { delivered, exported, skipped, complete };
+}
+
+function buildReadme(args: {
+  exportedAt: string;
+  email: string;
+  complete: boolean;
+  skipped: SkippedTableInfo[];
+}): string {
+  const lines: string[] = [
+    'V&M Balance — izvoz tvojih podataka',
+    '===================================',
+    '',
+    `Izvezeno: ${args.exportedAt}`,
+    `Korisnik: ${args.email}`,
+    '',
+    'ŠTO JE U PAKETU',
+    '  podaci.xlsx    Glavni sadržaj u Excelu, po listovima. Otvara se dvoklikom.',
+    '  data.json      Potpuna kopija svih zapisa, sa svim identifikatorima i vezama',
+    '                 među zapisima (za prijenos u drugi alat).',
+    '  manifest.json  Popis izvezenih tablica s brojem zapisa, popis preskočenih s',
+    '                 razlogom i popis izričito isključenih s obrazloženjem.',
+    '  README.txt     Ova datoteka.',
+    '',
+    'LISTOVI U podaci.xlsx',
+    '  Sažetak                 Pregled svega izvezenog i eventualno preskočenog.',
+    ...SHEET_SPECS.map((s) => `  ${s.name.padEnd(24)}Tablica: ${s.table}`),
+    '',
+    'OVO NIJE REZERVNA KOPIJA',
+    '  Izvoz je snimka tvojih podataka za čitanje i prijenos. Ne može se vratiti',
+    '  natrag u aplikaciju i ne zamjenjuje sigurnosnu kopiju.',
+    '',
+    'PRIVATNOST',
+    '  Informacije o tome koje podatke obrađujemo, na kojoj osnovi i koliko dugo',
+    '  nalaze se u pravilima privatnosti: https://www.vmbalance.com/privacy',
+    '  Za pitanja o svojim pravima piši nam kroz Podršku u aplikaciji.',
+    '',
+    'Čuvaj ovu arhivu na sigurnom — sadrži osobne i financijske podatke.',
+  ];
+
+  if (!args.complete) {
+    lines.push(
+      '',
+      'UPOZORENJE — IZVOZ NIJE POTPUN',
+      `  Nije izvezeno ${args.skipped.length} tablica:`,
+      ...args.skipped.map((s) => `    - ${s.table}: ${s.reason}`),
+      '  Pokušaj ponovno; ako se ponovi, javi nam kroz Podršku.',
+    );
+  }
+
+  return lines.join('\n');
 }

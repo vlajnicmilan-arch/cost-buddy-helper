@@ -289,8 +289,18 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
     }
     setIsExportingZip(true);
     try {
-      await exportAllUserDataAsZip(mode);
-      showSuccess(t('settings.exportZipSuccess', 'Svi podaci izvezeni u ZIP'));
+      const result = await exportAllUserDataAsZip(mode);
+      if (!result.complete) {
+        // Nepotpun izvoz se NIKAD ne prijavljuje kao uspjeh — razlozi su u manifest.json.
+        showError(
+          t('settings.exportZipIncomplete', {
+            defaultValue: 'Izvoz nije potpun — nedostaje {{count}} tablica. Popis i razlozi su u manifest.json.',
+            count: result.skipped.length,
+          }),
+        );
+      } else {
+        showSuccess(t('settings.exportZipSuccess', 'Svi podaci izvezeni u ZIP'));
+      }
     } catch (err) {
       console.error('ZIP export error:', err);
       showError(t('settings.exportZipError', 'Greška pri ZIP izvozu'));

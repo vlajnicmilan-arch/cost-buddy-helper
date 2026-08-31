@@ -1463,7 +1463,8 @@
     "fullName": "Ime i prezime",
     "fullNameDesc": "Tako te vlasnik projekta prepozna kad te povezuje s radnikom.",
     "addSurnameNudge": "Dodaj prezime da te suradnici prepoznaju",
-    "addSurnameNudgeCta": "Dopuni ime"
+    "addSurnameNudgeCta": "Dopuni ime",
+    "exportZipIncomplete": "Izvoz nije potpun — nedostaje {{count}} tablica. Popis i razlozi su u manifest.json."
   },
   "bankMatch": {
     "pendingBank": "Čeka potvrdu banke",

@@ -1459,7 +1459,8 @@
     "fullName": "Full name",
     "fullNameDesc": "This is how the project owner recognises you when linking you to a worker.",
     "addSurnameNudge": "Add your surname so collaborators recognise you",
-    "addSurnameNudgeCta": "Complete your name"
+    "addSurnameNudgeCta": "Complete your name",
+    "exportZipIncomplete": "Export is incomplete — {{count}} table(s) missing. See manifest.json for the list and reasons."
   },
   "bankMatch": {
     "pendingBank": "Awaiting bank confirmation",
