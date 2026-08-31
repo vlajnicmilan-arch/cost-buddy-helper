@@ -1305,7 +1305,7 @@ export const GlobalPDFImportHost = () => {
                 <div className="p-2 bg-primary/5 rounded-lg text-xs text-muted-foreground text-center">{t('import.allAssignedToSource', { name: source.name })}</div>
               </div>
               <div className="p-4 border-t border-border/50">
-                <Button onClick={handleImport} disabled={isImporting} className="w-full rounded-xl min-h-11">
+                <Button onClick={() => void handleImport()} disabled={isImporting} className="w-full rounded-xl min-h-11">
                   {isImporting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t('import.importing')}</> : t('import.importCount', { count: result.transactions.filter(tx => tx.is_statement_total !== true).length })}
                 </Button>
               </div>
