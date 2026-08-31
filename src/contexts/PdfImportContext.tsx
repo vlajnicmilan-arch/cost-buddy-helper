@@ -69,6 +69,8 @@ interface PdfImportContextValue {
   startHtmlImport: (options: StartHtmlImportOptions) => Promise<void>;
   registerHandlers: (handlers: PdfImportHandlers) => () => void;
   _setProcessing: (source: CustomPaymentSource, jobId: string) => void;
+  /** Zamjena odredišnog novčanika usred pregleda (prepoznat drugi račun). */
+  _setSource: (source: CustomPaymentSource) => void;
   _setPreview: (result: PDFParseResult, jobId: string | null) => void;
   _setDuplicates: () => void;
   _setIdle: () => void;
