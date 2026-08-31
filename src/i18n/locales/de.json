@@ -6768,6 +6768,11 @@
       "subtitle_one": "{{count}} Dokument wartet auf Ihre Bestätigung",
       "subtitle_other": "{{count}} Dokumente warten auf Ihre Bestätigung"
     },
+    "homeRow": {
+      "pending_one": "{{count}} Dokument wartet auf Prüfung",
+      "pending_other": "{{count}} Dokumente warten auf Prüfung",
+      "clear": "Keine Dokumente warten auf Prüfung"
+    },
     "scope": {
       "label": "Dokumentziel",
       "personal": "Persönlich",

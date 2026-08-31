@@ -1,21 +1,16 @@
-import { useState } from 'react';
 import type { FindPdfDuplicatesHandler } from '@/contexts/PdfImportContext';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Smartphone, Cloud, LayoutDashboard, FileSpreadsheet, FileClock, LogOut } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { Smartphone, Cloud, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { NotificationsDropdown } from '@/components/NotificationsDropdown';
 import { SettingsDialog } from '@/components/SettingsDialog';
-import { TutorialButton } from '@/components/tutorial';
-import { BulkEditDropdown } from '@/components/BulkEditDropdown';
 import { ReportsDialog } from '@/components/reports/ReportsDialog';
 import { ScanTriggerButton } from '@/components/add-expense/ScanTriggerButton';
 import { ManualAddTriggerButton } from '@/components/add-expense/ManualAddTriggerButton';
 import { useAppState } from '@/contexts/AppStateContext';
 
-import { CSVImportDialog } from '@/components/CSVImportDialog';
 import { GlobalSearch } from '@/components/GlobalSearch';
 import logo from '@/assets/logo.webp';
 import { Expense, ReceiptItem } from '@/types/expense';
@@ -62,43 +57,10 @@ export const HomeHeader = ({
 }: HomeHeaderProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { signOut } = useAuth();
   const { activeBusinessProfileId } = useAppState();
-  const [importOpen, setImportOpen] = useState(false);
 
   // Note: scan trigger now opens a globally-mounted AddExpenseDialog (see
   // GlobalReceiptScanHost) so the camera roundtrip on Android cannot unmount it.
-
-  const handleSignOut = async () => {
-    if (isLocalMode) {
-      navigate('/setup');
-      return;
-    }
-    try {
-      await signOut();
-    } catch (e) {
-      console.error('Sign out error:', e);
-    } finally {
-      // Sign-out preserve: keep non-user-specific local prefs (themes, modul flagovi
-      // i pohrana). Faza 1 modularnog UI-a dodaje `projects_module_enabled`.
-      const theme = localStorage.getItem('theme');
-      const storageConfig = localStorage.getItem('finmate-storage-config');
-      const aiAssistant = localStorage.getItem('ai_assistant_enabled');
-      const krugMode = localStorage.getItem('krug_mode_enabled');
-      const businessMode = localStorage.getItem('business_mode_enabled');
-      const businessFeature = localStorage.getItem('business_feature_enabled');
-      const projectsModule = localStorage.getItem('projects_module_enabled');
-      localStorage.clear();
-      if (theme) localStorage.setItem('theme', theme);
-      if (storageConfig) localStorage.setItem('finmate-storage-config', storageConfig);
-      if (aiAssistant) localStorage.setItem('ai_assistant_enabled', aiAssistant);
-      if (krugMode) localStorage.setItem('krug_mode_enabled', krugMode);
-      if (businessMode) localStorage.setItem('business_mode_enabled', businessMode);
-      if (businessFeature) localStorage.setItem('business_feature_enabled', businessFeature);
-      if (projectsModule) localStorage.setItem('projects_module_enabled', projectsModule);
-      navigate('/');
-    }
-  };
 
   return (
     <header className="flex flex-col gap-3 mb-4 sm:mb-6" data-tutorial="header">
@@ -141,7 +103,6 @@ export const HomeHeader = ({
 
         {/* Navigation icons (right side) */}
         <div className="flex items-center gap-0.5 sm:gap-2 flex-shrink-0">
-          <TutorialButton className="rounded-xl h-8 w-8 sm:h-9 sm:w-9" />
           {!isLocalMode && <NotificationsDropdown />}
           <TooltipProvider>
             <Tooltip>
@@ -160,47 +121,7 @@ export const HomeHeader = ({
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          {!isLocalMode && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => navigate('/dokumenti')}
-                    className="rounded-xl h-8 w-8 sm:h-9 sm:w-9"
-                    aria-label={t('documents.title', 'Dokumenti')}
-                  >
-                    <FileClock className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{t('documents.title', 'Dokumenti')}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
           <SettingsDialog onDataImported={onRefetch} />
-          {!isLocalMode && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleSignOut}
-                    className="rounded-xl h-8 w-8 sm:h-9 sm:w-9"
-                    aria-label={t('common.signOut', 'Odjava')}
-                  >
-                    <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{t('common.signOut', 'Odjava')}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
         </div>
       </div>
 

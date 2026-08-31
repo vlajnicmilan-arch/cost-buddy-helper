@@ -6768,6 +6768,11 @@
       "subtitle_one": "{{count}} document awaiting your confirmation",
       "subtitle_other": "{{count}} documents awaiting your confirmation"
     },
+    "homeRow": {
+      "pending_one": "{{count}} document awaiting review",
+      "pending_other": "{{count}} documents awaiting review",
+      "clear": "No documents awaiting review"
+    },
     "scope": {
       "label": "Document destination",
       "personal": "Personal",
