@@ -26,6 +26,17 @@ import { lookupFingerprintStates, type ExecutorSupabaseClient } from '@/lib/impo
 import type { ImportReviewPayload, ImportReviewRow, ManualCandidateInfo, TransferTargetOption } from '@/lib/importReview/types';
 import { checkAccountIdentity } from '@/lib/importReview/accountIdentityGuard';
 import { AccountIdentityMismatchDialog } from '@/components/import/AccountIdentityMismatchDialog';
+import {
+  StatementWalletSuggestionDialog,
+  type StatementWalletQuestion,
+} from '@/components/import/StatementWalletSuggestionDialog';
+import { pickStatementSource } from '@/lib/mail/statementSourceMatch';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import {
+  useStatementSourceMemory,
+  suggestSourceFromBankAccounts,
+} from '@/hooks/useStatementSourceMemory';
+import { sanitizeIban } from '@/lib/mailImport/iban';
 import { loadTransferRules, matchTransferRule, markTransferRulesUsed } from '@/lib/importReview/transferRules';
 import { resolveTransferDirection, statementDirectionFromType } from '@/lib/importReview/transferDirection';
 import { classifyTransferDescription, type MoneyDirection } from '@/lib/moneyDirection';
@@ -98,11 +109,17 @@ export const GlobalPDFImportHost = () => {
   const pdfImport = usePdfImport();
   const { user } = useAuth();
   const { startPDFParseJob, waitForPDFParseJob, fetchPDFParseJob, normalizeJobResult, parseHTML } = usePDFParser();
+  const { customPaymentSources, updateCustomPaymentSource } = useCustomPaymentSources({ includePersonal: true });
+  const { suggestSourceId } = useStatementSourceMemory(pdfImport.phase === 'preview');
   const [resumeVisible, setResumeVisible] = useState(false);
   // BRANA IDENTITETA: izvod na drugi račun od novčanika → uvoz staje i pita.
   // Potvrda vrijedi samo za ovaj uvoz i nigdje se ne pamti.
   const [identityAsk, setIdentityAsk] = useState<{ statement: string; wallet: string; name: string } | null>(null);
   const identityConfirmedRef = useRef(false);
+  // PRIPADNOST RAČUNA NA DISK-PUTU: isto prepoznavanje kao na mail-putu
+  // (pickStatementSource). Pitanje se postavlja najviše jednom po uvozu.
+  const [walletAsk, setWalletAsk] = useState<StatementWalletQuestion | null>(null);
+  const walletAskHandledRef = useRef(false);
   /** Napredak segmentiranog čitanja („2/5") — dolazi kroz postojeći poll. */
   const [parseProgress, setParseProgress] = useState<string | null>(null);
   const [duplicateInfo, setDuplicateInfo] = useState<DuplicateInfo | null>(null);
@@ -129,6 +146,8 @@ export const GlobalPDFImportHost = () => {
     clearStoredJob();
     setIdentityAsk(null);
     identityConfirmedRef.current = false;
+    setWalletAsk(null);
+    walletAskHandledRef.current = false;
     setDuplicateInfo(null);
     setIncludeDuplicates(false);
     setFuzzyDecisions(new Map());
@@ -487,8 +506,87 @@ export const GlobalPDFImportHost = () => {
    * (`legacyHandleImport` below + `duplicates` phase modal) stays in the
    * source for Korak 4 wiring but is NOT reachable from the UI anymore.
    */
+  /**
+   * PRIPADNOST IZVODA — isto pravilo kao na mail-putu, samo bez pickera:
+   * pravilo > IBAN novčanika > bank_accounts > ime banke. Vraća `true` kad je
+   * uvoz zaustavljen zbog pitanja korisniku.
+   */
+  const askWalletQuestionIfNeeded = async (): Promise<boolean> => {
+    if (walletAskHandledRef.current) return false;
+    const source = pdfImport.source;
+    const result = pdfImport.result;
+    if (!source || !result) return false;
+    const accountIdentifier = sanitizeIban(result.account_iban) || null;
+    const bankName = result.detected_bank ?? null;
+    if (!accountIdentifier && !bankName) return false;
+
+    const fromBank = accountIdentifier && user?.id
+      ? await suggestSourceFromBankAccounts(user.id, accountIdentifier)
+      : null;
+    const match = pickStatementSource({
+      ruleSourceId: accountIdentifier ? suggestSourceId(accountIdentifier) : null,
+      accountIdentifier,
+      bankAccountSourceId: fromBank,
+      bankName,
+      sources: customPaymentSources,
+    });
+
+    if (match && match.sourceId !== source.id) {
+      const suggested = customPaymentSources.find(s => s.id === match.sourceId);
+      if (suggested) {
+        walletAskHandledRef.current = true;
+        setWalletAsk({
+          kind: 'switch',
+          statementIdentifier: accountIdentifier || '',
+          selectedName: source.name,
+          suggestedName: suggested.name,
+        });
+        try { logDiagnostic('import_wallet_suggestion_asked', { source_id: source.id, suggested_id: suggested.id }); } catch {}
+        return true;
+      }
+    }
+
+    const selectedHasIdentity = !!String(source.account_identifier ?? '').trim();
+    if (!match && accountIdentifier && !selectedHasIdentity && source.isOwned !== false) {
+      walletAskHandledRef.current = true;
+      setWalletAsk({
+        kind: 'save',
+        statementIdentifier: accountIdentifier,
+        selectedName: source.name,
+      });
+      try { logDiagnostic('import_wallet_identifier_save_asked', { source_id: source.id }); } catch {}
+      return true;
+    }
+    walletAskHandledRef.current = true;
+    return false;
+  };
+
+  /** Odgovor na pitanje o pripadnosti — pa nastavak istog uvoza. */
+  const resolveWalletAsk = async (accept: boolean) => {
+    const ask = walletAsk;
+    setWalletAsk(null);
+    if (!ask) return;
+    if (accept && ask.kind === 'switch') {
+      const suggested = customPaymentSources.find(s => s.name === ask.suggestedName);
+      if (suggested) pdfImport._setSource(suggested);
+    }
+    if (accept && ask.kind === 'save' && pdfImport.source) {
+      try {
+        await updateCustomPaymentSource(pdfImport.source.id, {
+          account_identifier: ask.statementIdentifier,
+        });
+        pdfImport._setSource({ ...pdfImport.source, account_identifier: ask.statementIdentifier });
+      } catch (e) {
+        try { logDiagnostic('import_wallet_identifier_save_failed', { message: e instanceof Error ? e.message : String(e) }); } catch {}
+      }
+    }
+    void handleImport();
+  };
+
   const handleImport = async () => {
     if (!pdfImport.source || !pdfImport.result || !user?.id) return;
+    // Kojem računu izvod pripada — pitanje prije bilo kakvog upisa.
+    if (await askWalletQuestionIfNeeded()) return;
     // Tuđi izvod nikad tiho: identitet s izvoda vs. identitet novčanika.
     const identity = checkAccountIdentity(
       pdfImport.result.account_iban,
@@ -1208,6 +1306,14 @@ export const GlobalPDFImportHost = () => {
 
             </motion.div>
           </motion.div>
+        )}
+        {walletAsk && (
+          <StatementWalletSuggestionDialog
+            question={walletAsk}
+            onAccept={() => void resolveWalletAsk(true)}
+            onDecline={() => void resolveWalletAsk(false)}
+            onCancel={() => { setWalletAsk(null); resetAll(); }}
+          />
         )}
         {identityAsk && (
           <AccountIdentityMismatchDialog
