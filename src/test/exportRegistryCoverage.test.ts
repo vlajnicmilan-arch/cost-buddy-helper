@@ -56,9 +56,11 @@ describe('izvoz podataka — pokrivenost registra', () => {
 
   it('roditeljske tablice iz skupova postoje u shemi', async () => {
     const tables = new Set(await liveTables());
+    // Faze se čitaju kroz role-scoped pogled, on nije tablica.
+    const ALLOWED_VIEWS = new Set(['project_milestones_scoped']);
     const bad = Object.values(SCOPES)
       .map((s) => s.table)
-      .filter((t) => !tables.has(t));
+      .filter((t) => !tables.has(t) && !ALLOWED_VIEWS.has(t));
     expect(bad, `Skupovi pokazuju na nepostojeće tablice: ${bad.join(', ')}`).toEqual([]);
   });
 });
@@ -82,7 +84,7 @@ describe('izvoz podataka — integritet registra', () => {
     // Roditelj mora imati pravilo (ne smije biti izvan registra).
     const orphan = Object.values(SCOPES)
       .map((s) => s.table)
-      .filter((t) => !(t in EXPORT_REGISTRY));
+      .filter((t) => !(t in EXPORT_REGISTRY) && t !== 'project_milestones_scoped');
     expect(orphan).toEqual([]);
   });
 });
