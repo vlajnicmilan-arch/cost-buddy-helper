@@ -146,15 +146,23 @@ export class OwnedDataReader {
     if (!entry) return { ok: false, reason: 'Tablica nije u registru izvoza' };
     const outcome = await this.fetchByRule(entry.readFrom ?? table, '*', entry.rule);
     if (!outcome.ok) return outcome;
-    const rows = entry.redact?.length
-      ? outcome.rows.map((row) => {
-          const copy = { ...row };
-          entry.redact!.forEach((c) => {
-            if (c in copy) delete copy[c];
-          });
-          return copy;
-        })
-      : outcome.rows;
+    const blank = entry.blankUnlessOwn;
+    const rows =
+      entry.redact?.length || blank
+        ? outcome.rows.map((row) => {
+            const copy = { ...row };
+            entry.redact?.forEach((c) => {
+              if (c in copy) delete copy[c];
+            });
+            if (blank && copy[blank.ownerColumn] !== this.userId) {
+              blank.columns.forEach((c) => {
+                if (c in copy) copy[c] = null;
+              });
+            }
+            return copy;
+          })
+        : outcome.rows;
+
     const via =
       entry.rule.via === 'scope'
         ? `${entry.rule.column} → ${SCOPES[entry.rule.scope].table}`
