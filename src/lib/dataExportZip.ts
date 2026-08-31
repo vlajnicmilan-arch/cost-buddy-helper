@@ -2,7 +2,7 @@ import JSZip from 'jszip';
 import { supabase } from '@/integrations/supabase/client';
 import { exportFile, type ExportMode } from './fileExport';
 import { EXPORT_REGISTRY, EXPORTED_TABLES, EXCLUDED_TABLES } from './export/exportRegistry';
-import { OwnedDataReader } from './export/fetchOwnedRows';
+import { OwnedDataReader, isFetchFail } from './export/fetchOwnedRows';
 import { buildExcelBlob, SHEET_SPECS, type SummaryRow } from './export/excelWorkbook';
 
 /**
@@ -63,11 +63,11 @@ export async function exportAllUserDataAsZip(
     idx++;
     onProgress?.({ current: idx, total, table });
     const outcome = await reader.fetchTable(table);
-    if (outcome.ok) {
+    if (isFetchFail(outcome)) {
+      skipped.push({ table, reason: outcome.reason, code: outcome.code });
+    } else {
       dataPayload[table] = outcome.rows;
       exported.push({ table, rows: outcome.rows.length, via: outcome.via });
-    } else {
-      skipped.push({ table, reason: outcome.reason, code: outcome.code });
     }
   }
 

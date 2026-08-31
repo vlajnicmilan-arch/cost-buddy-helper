@@ -17,9 +17,22 @@ const PAGE_SIZE = 1000;
 /** `in.(...)` ide u URL — dijelimo na komade da se ne probije duljina. */
 const ID_CHUNK = 150;
 
-export type FetchOutcome =
-  | { ok: true; rows: Record<string, unknown>[]; via: string }
-  | { ok: false; reason: string; code?: string };
+export interface FetchOk {
+  ok: true;
+  rows: Record<string, unknown>[];
+  via: string;
+}
+
+export interface FetchFail {
+  ok: false;
+  reason: string;
+  code?: string;
+}
+
+export type FetchOutcome = FetchOk | FetchFail;
+
+/** Eksplicitna straža — narrowing bez oslanjanja na diskriminantu. */
+export const isFetchFail = (o: FetchOutcome): o is FetchFail => o.ok === false;
 
 const describe = (error: { message?: string; code?: string; details?: string } | null): string => {
   if (!error) return 'Nepoznata greška';
@@ -31,8 +44,6 @@ const chunk = <T,>(list: T[], size: number): T[][] => {
   for (let i = 0; i < list.length; i += size) out.push(list.slice(i, i + size));
   return out;
 };
-
-type Query = ReturnType<ReturnType<typeof supabase.from>['select']>;
 
 /** Jedna stranicana pretraga s primijenjenim filtrom. */
 async function paginate(
@@ -82,8 +93,7 @@ export class OwnedDataReader {
       }
       return Array.from(ids);
     }
-    const reason = 'reason' in outcome ? outcome.reason : 'nepoznata greška';
-    return { error: `${def.table}: ${reason}` };
+    return { error: `${def.table}: ${(outcome as FetchFail).reason}` };
   }
 
   private async fetchByRule(table: string, select: string, rule: OwnerRule): Promise<FetchOutcome> {
