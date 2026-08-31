@@ -82,7 +82,8 @@ export class OwnedDataReader {
       }
       return Array.from(ids);
     }
-    return { error: `${def.table}: ${outcome.reason}` };
+    const reason = 'reason' in outcome ? outcome.reason : 'nepoznata greška';
+    return { error: `${def.table}: ${reason}` };
   }
 
   private async fetchByRule(table: string, select: string, rule: OwnerRule): Promise<FetchOutcome> {
