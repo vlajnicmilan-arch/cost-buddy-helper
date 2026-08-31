@@ -29,7 +29,7 @@ const expensesCacheKey = (userId: string | undefined) =>
   `expenses:v3:${userId || 'anon'}`;
 
 export const useExpenseFetch = () => {
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
   const { storageMode } = useStorage();
   const { businessProfileId: viewBusinessProfileId, isPersonalView, isBusinessView } = useWalletViewMode();
 
@@ -57,9 +57,17 @@ export const useExpenseFetch = () => {
   // report how far the paginated fetch got and how long it took.
   const fetchStartedAtRef = useRef<number>(0);
   const fetchRowsRef = useRef<number>(0);
-
+  // Live signed-in identity. The paginated fetch reads this between pages:
+  // if the session disappears mid-flight (sign-out, expiry → navigacija na
+  // /auth), the remaining pages would run as `anon` and RLS would blow up on
+  // `is_project_participant_active`. We stop paging instead of querying.
+  const liveUserIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    liveUserIdRef.current = authReady ? (user?.id ?? null) : null;
+  }, [authReady, user?.id]);
 
   const isLocalMode = storageMode === 'local' && !user;
+
 
   /**
    * Fetches the caller's payment-source memberships and owned income sources.
@@ -118,9 +126,13 @@ export const useExpenseFetch = () => {
   }, [user, isLocalMode]);
 
   const fetchExpenses = useCallback(async (sharedIdsOverride?: Set<string>) => {
+    // Cloud dohvat se NE smije pokrenuti dok se ne zna je li korisnik
+    // prijavljen — inače upit ide kao `anon` i RLS puca.
+    if (!isLocalMode && !authReady) return;
     const cacheKey = expensesCacheKey(user?.id);
     const hasHydrated = hydratedKeyRef.current === cacheKey;
     if (!hasHydrated) setLoading(true);
+
     try {
       if (isLocalMode) {
         await initLocalDB();
@@ -154,10 +166,18 @@ export const useExpenseFetch = () => {
         fetchRowsRef.current = 0;
         let rowsSoFar = 0;
 
+        let sessionLost = false;
+
         const loadAllPages = async (): Promise<any[]> => {
           const collected: any[] = [];
           let from = 0;
           while (true) {
+            // Sign-out / expiry mid-pagination: stop before issuing an anon query.
+            if (liveUserIdRef.current !== user.id) {
+              sessionLost = true;
+              break;
+            }
+
             let query = supabase
               .from('expenses')
               .select(EXPENSE_LIST_SELECT)
@@ -199,7 +219,14 @@ export const useExpenseFetch = () => {
           },
         });
 
+        // Odjava usred straničenja: ne pišemo krnji skup u state/cache.
+        if (sessionLost) {
+          setLoading(false);
+          return;
+        }
+
         if (attempts > 1) {
+
           logDiagnostic({
             event: 'expense_fetch_retried',
             severity: 'info',
@@ -308,7 +335,7 @@ export const useExpenseFetch = () => {
       hydratedKeyRef.current = cacheKey;
       setLoading(false);
     }
-  }, [user, isLocalMode]);
+  }, [user, isLocalMode, authReady]);
 
   const parseExpense = useCallback((raw: Record<string, unknown>): Expense => ({
     ...(raw as unknown as Expense),
@@ -353,6 +380,9 @@ export const useExpenseFetch = () => {
   // first SELECT runs with an empty shared set and legitimately-shared
   // payment-source transactions disappear on first render.
   useEffect(() => {
+    // Ne dohvaćamo ništa s posluživača dok AuthContext ne javi da je stanje
+    // prijave poznato (authReady). Lokalni način ne ovisi o prijavi.
+    if (!isLocalMode && !authReady) return;
     let cancelled = false;
     (async () => {
       const { sharedIds } = await fetchOwnedSources();
@@ -362,11 +392,12 @@ export const useExpenseFetch = () => {
     return () => {
       cancelled = true;
     };
-  }, [fetchOwnedSources, fetchExpenses]);
+  }, [fetchOwnedSources, fetchExpenses, authReady, isLocalMode]);
 
   // Svježina na povratku u fokus / mrežu — dashboard i novčanik brojke se
   // tiho usklade sa serverskom istinom (loading se ne pali nakon hidracije).
-  useAppResume(() => fetchExpenses(), { enabled: !isLocalMode && !!user });
+  useAppResume(() => fetchExpenses(), { enabled: !isLocalMode && !!user && authReady });
+
 
   // Realtime subscription for cloud mode
   useEffect(() => {
