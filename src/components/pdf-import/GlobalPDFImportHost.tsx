@@ -515,6 +515,10 @@ export const GlobalPDFImportHost = () => {
    */
   const askWalletQuestionIfNeeded = async (source: CustomPaymentSource): Promise<boolean> => {
     if (walletAskHandledRef.current) return false;
+    if (sourcesLoading || customPaymentSources.length === 0) {
+      try { logDiagnostic('import_wallet_question_skipped_sources_not_ready', { loading: sourcesLoading, count: customPaymentSources.length }); } catch {}
+      return false;
+    }
     const result = pdfImport.result;
     if (!source || !result) return false;
     const accountIdentifier = sanitizeIban(result.account_iban) || null;
