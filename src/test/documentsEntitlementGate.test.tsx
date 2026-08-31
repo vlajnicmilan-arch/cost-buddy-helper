@@ -59,8 +59,16 @@ describe('ulaz do Dokumenata postoji izvan Postavki', () => {
     path.resolve(__dirname, '../components/home/HomeHeader.tsx'),
     'utf8',
   );
+  const row = fs.readFileSync(
+    path.resolve(__dirname, '../components/home/DocumentsRow.tsx'),
+    'utf8',
+  );
 
-  it('zaglavlje početnog ekrana vodi na /dokumenti', () => {
-    expect(header).toContain("navigate('/dokumenti')");
+  it('stalni red početnog ekrana vodi na /dokumenti', () => {
+    expect(row).toContain("navigate('/dokumenti')");
+  });
+
+  it('Dokumenti više nisu ikona u zaglavlju', () => {
+    expect(header).not.toContain("navigate('/dokumenti')");
   });
 });

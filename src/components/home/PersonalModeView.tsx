@@ -39,6 +39,7 @@ import { BusinessDebtTracker } from '@/components/business/BusinessDebtTracker';
 import { UnpaidInvoicesWidget } from '@/components/business/UnpaidInvoicesWidget';
 import { IncomingInvoicesWidget } from '@/components/business/eracun/IncomingInvoicesWidget';
 import { DocumentsPendingCard } from '@/components/mail/DocumentsPendingCard';
+import { DocumentsRow } from '@/components/home/DocumentsRow';
 import { useMailImportAccess } from '@/hooks/useMailImportAccess';
 import { useMailPendingCount } from '@/hooks/useMailPendingCount';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -419,6 +420,8 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
             onSourceClick={props.onPaymentSourceClick}
           />
         </TrackSection>
+
+        <DocumentsRow pendingCount={mailPendingCount} />
 
         {/* Summary Cards — compact (only month income+expense) */}
         <TrackSection name="summary">

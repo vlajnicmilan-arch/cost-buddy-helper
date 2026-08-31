@@ -6780,6 +6780,12 @@
       "subtitle_few": "{{count}} dokumenta čekaju tvoju potvrdu",
       "subtitle_other": "{{count}} dokumenata čeka tvoju potvrdu"
     },
+    "homeRow": {
+      "pending_one": "{{count}} dokument čeka pregled",
+      "pending_few": "{{count}} dokumenta čekaju pregled",
+      "pending_other": "{{count}} dokumenata čeka pregled",
+      "clear": "Nema dokumenata na čekanju"
+    },
     "scope": {
       "label": "Odredište dokumenta",
       "personal": "Osobno",

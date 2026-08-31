@@ -8,7 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, Settings, Loader2, Download, Check, AlertCircle, FileJson, HelpCircle, ChevronRight, User, Trash2, RotateCcw, Users, Bug, Shield, Share2, Mail, Copy, MessageCircle, Upload } from 'lucide-react';
+import { ArrowLeft, Settings, Loader2, Download, Check, AlertCircle, FileJson, HelpCircle, ChevronRight, User, Trash2, RotateCcw, Users, Bug, Shield, Share2, Mail, Copy, MessageCircle, Upload, LogOut } from 'lucide-react';
 import { BugReportDialog } from '@/components/BugReportDialog';
 import { BusinessProfileDialog } from '@/components/BusinessProfileDialog';
 import { useTranslation } from 'react-i18next';
@@ -57,6 +57,7 @@ import { SettingsCategoryMenu } from './SettingsCategoryMenu';
 import { SETTINGS_CATEGORIES, type SettingsCategoryId, type SettingsSectionKey } from './settingsCategories';
 import { useBackButton } from '@/hooks/useBackButton';
 import { BACK_PRIORITY } from '@/contexts/BackButtonContext';
+import { useTutorial } from '@/contexts/TutorialContext';
 
 interface SettingsDialogProps {
   onDataImported?: () => void;
@@ -115,7 +116,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const [showSetPin, setShowSetPin] = useState(false);
   
   const { storageMode } = useStorage();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { currency, setCurrency, multiCurrencyEnabled, setMultiCurrencyEnabled } = useCurrency();
   const { 
     displayName, setDisplayName,
@@ -124,6 +125,38 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   } = useAppState();
   const isLocalMode = storageMode === 'local';
   const appLock = useAppLock();
+  const { startTutorial, hasCompletedTutorial, resetTutorial } = useTutorial();
+
+  const handleStartTutorial = () => {
+    setOpen(false);
+    if (hasCompletedTutorial) resetTutorial();
+    startTutorial();
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Sign out error:', error);
+    } finally {
+      const preservedKeys = [
+        'theme',
+        'finmate-storage-config',
+        'ai_assistant_enabled',
+        'krug_mode_enabled',
+        'business_mode_enabled',
+        'business_feature_enabled',
+        'projects_module_enabled',
+      ];
+      const preservedValues = preservedKeys.map((key) => [key, localStorage.getItem(key)] as const);
+      localStorage.clear();
+      preservedValues.forEach(([key, value]) => {
+        if (value) localStorage.setItem(key, value);
+      });
+      setOpen(false);
+      navigate('/');
+    }
+  };
 
   useEffect(() => {
     if (open) {
@@ -598,6 +631,22 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
       case 'help':
         return (
           <div className="space-y-4" key="help">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleStartTutorial}
+              className="min-h-[44px] w-full justify-start rounded-xl"
+            >
+              {hasCompletedTutorial ? (
+                <RotateCcw className="mr-2 h-4 w-4" />
+              ) : (
+                <HelpCircle className="mr-2 h-4 w-4" />
+              )}
+              {hasCompletedTutorial
+                ? t('tutorial.restart', 'Ponovi vodič')
+                : t('tutorial.start', 'Pokreni vodič')}
+            </Button>
+
             <button
               onClick={() => { setOpen(false); setShowHelpDialog(true); }}
               className="w-full flex items-center justify-between p-3 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
@@ -772,7 +821,22 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                   </div>
                 ))
               ) : (
-                <SettingsCategoryMenu onSelect={(id) => setActiveCategoryId(id)} />
+                <>
+                  <SettingsCategoryMenu onSelect={(id) => setActiveCategoryId(id)} />
+                  {!isLocalMode && (
+                    <div className="border-t pt-4">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={handleSignOut}
+                        className="min-h-[44px] w-full justify-start gap-3 rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        {t('common.signOut', 'Odjava')}
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
 
               <div className="pt-2 text-center">
