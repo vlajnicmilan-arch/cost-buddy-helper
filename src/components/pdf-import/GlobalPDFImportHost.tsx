@@ -26,6 +26,17 @@ import { lookupFingerprintStates, type ExecutorSupabaseClient } from '@/lib/impo
 import type { ImportReviewPayload, ImportReviewRow, ManualCandidateInfo, TransferTargetOption } from '@/lib/importReview/types';
 import { checkAccountIdentity } from '@/lib/importReview/accountIdentityGuard';
 import { AccountIdentityMismatchDialog } from '@/components/import/AccountIdentityMismatchDialog';
+import {
+  StatementWalletSuggestionDialog,
+  type StatementWalletQuestion,
+} from '@/components/import/StatementWalletSuggestionDialog';
+import { pickStatementSource } from '@/lib/mail/statementSourceMatch';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import {
+  useStatementSourceMemory,
+  suggestSourceFromBankAccounts,
+} from '@/hooks/useStatementSourceMemory';
+import { sanitizeIban } from '@/lib/mailImport/iban';
 import { loadTransferRules, matchTransferRule, markTransferRulesUsed } from '@/lib/importReview/transferRules';
 import { resolveTransferDirection, statementDirectionFromType } from '@/lib/importReview/transferDirection';
 import { classifyTransferDescription, type MoneyDirection } from '@/lib/moneyDirection';
@@ -98,11 +109,18 @@ export const GlobalPDFImportHost = () => {
   const pdfImport = usePdfImport();
   const { user } = useAuth();
   const { startPDFParseJob, waitForPDFParseJob, fetchPDFParseJob, normalizeJobResult, parseHTML } = usePDFParser();
+  const { customPaymentSources, updateCustomPaymentSource } = useCustomPaymentSources({ includePersonal: true });
+  const { suggestSourceId } = useStatementSourceMemory(pdfImport.phase === 'preview');
   const [resumeVisible, setResumeVisible] = useState(false);
   // BRANA IDENTITETA: izvod na drugi račun od novčanika → uvoz staje i pita.
   // Potvrda vrijedi samo za ovaj uvoz i nigdje se ne pamti.
   const [identityAsk, setIdentityAsk] = useState<{ statement: string; wallet: string; name: string } | null>(null);
   const identityConfirmedRef = useRef(false);
+  // PRIPADNOST RAČUNA NA DISK-PUTU: isto prepoznavanje kao na mail-putu
+  // (pickStatementSource). Pitanje se postavlja najviše jednom po uvozu.
+  const [walletAsk, setWalletAsk] = useState<StatementWalletQuestion | null>(null);
+  const walletAskHandledRef = useRef(false);
+  const suggestedSourceRef = useRef<CustomPaymentSource | null>(null);
   /** Napredak segmentiranog čitanja („2/5") — dolazi kroz postojeći poll. */
   const [parseProgress, setParseProgress] = useState<string | null>(null);
   const [duplicateInfo, setDuplicateInfo] = useState<DuplicateInfo | null>(null);
@@ -129,6 +147,9 @@ export const GlobalPDFImportHost = () => {
     clearStoredJob();
     setIdentityAsk(null);
     identityConfirmedRef.current = false;
+    setWalletAsk(null);
+    walletAskHandledRef.current = false;
+    suggestedSourceRef.current = null;
     setDuplicateInfo(null);
     setIncludeDuplicates(false);
     setFuzzyDecisions(new Map());
@@ -487,24 +508,107 @@ export const GlobalPDFImportHost = () => {
    * (`legacyHandleImport` below + `duplicates` phase modal) stays in the
    * source for Korak 4 wiring but is NOT reachable from the UI anymore.
    */
-  const handleImport = async () => {
-    if (!pdfImport.source || !pdfImport.result || !user?.id) return;
+  /**
+   * PRIPADNOST IZVODA — isto pravilo kao na mail-putu, samo bez pickera:
+   * pravilo > IBAN novčanika > bank_accounts > ime banke. Vraća `true` kad je
+   * uvoz zaustavljen zbog pitanja korisniku.
+   */
+  const askWalletQuestionIfNeeded = async (source: CustomPaymentSource): Promise<boolean> => {
+    if (walletAskHandledRef.current) return false;
+    const result = pdfImport.result;
+    if (!source || !result) return false;
+    const accountIdentifier = sanitizeIban(result.account_iban) || null;
+    const bankName = result.detected_bank ?? null;
+    if (!accountIdentifier && !bankName) return false;
+
+    const fromBank = accountIdentifier && user?.id
+      ? await suggestSourceFromBankAccounts(user.id, accountIdentifier)
+      : null;
+    const match = pickStatementSource({
+      ruleSourceId: accountIdentifier ? suggestSourceId(accountIdentifier) : null,
+      accountIdentifier,
+      bankAccountSourceId: fromBank,
+      bankName,
+      sources: customPaymentSources,
+    });
+
+    if (match && match.sourceId !== source.id) {
+      const suggested = customPaymentSources.find(s => s.id === match.sourceId);
+      if (suggested) {
+        walletAskHandledRef.current = true;
+        suggestedSourceRef.current = suggested;
+        setWalletAsk({
+          kind: 'switch',
+          statementIdentifier: accountIdentifier || '',
+          selectedName: source.name,
+          suggestedName: suggested.name,
+        });
+        try { logDiagnostic('import_wallet_suggestion_asked', { source_id: source.id, suggested_id: suggested.id }); } catch {}
+        return true;
+      }
+    }
+
+    const selectedHasIdentity = !!String(source.account_identifier ?? '').trim();
+    if (!match && accountIdentifier && !selectedHasIdentity && source.isOwned !== false) {
+      walletAskHandledRef.current = true;
+      setWalletAsk({
+        kind: 'save',
+        statementIdentifier: accountIdentifier,
+        selectedName: source.name,
+      });
+      try { logDiagnostic('import_wallet_identifier_save_asked', { source_id: source.id }); } catch {}
+      return true;
+    }
+    walletAskHandledRef.current = true;
+    return false;
+  };
+
+  /** Odgovor na pitanje o pripadnosti — pa nastavak istog uvoza. */
+  const resolveWalletAsk = async (accept: boolean) => {
+    const ask = walletAsk;
+    setWalletAsk(null);
+    if (!ask) return;
+    let next = pdfImport.source ?? undefined;
+    if (accept && ask.kind === 'switch' && suggestedSourceRef.current) {
+      next = suggestedSourceRef.current;
+      pdfImport._setSource(next);
+    }
+    if (accept && ask.kind === 'save' && next) {
+      try {
+        await updateCustomPaymentSource(next.id, { account_identifier: ask.statementIdentifier });
+        next = { ...next, account_identifier: ask.statementIdentifier };
+        pdfImport._setSource(next);
+      } catch (e) {
+        try { logDiagnostic('import_wallet_identifier_save_failed', { message: e instanceof Error ? e.message : String(e) }); } catch {}
+      }
+    }
+    suggestedSourceRef.current = null;
+    void handleImport(next);
+  };
+
+  const handleImport = async (overrideSource?: CustomPaymentSource) => {
+    // Odgovor na pitanje o pripadnosti mijenja izvor u istom potezu, prije
+    // nego React prikaže novo stanje — zato izvor može doći kao argument.
+    const activeSource = overrideSource ?? pdfImport.source;
+    if (!activeSource || !pdfImport.result || !user?.id) return;
+    // Kojem računu izvod pripada — pitanje prije bilo kakvog upisa.
+    if (await askWalletQuestionIfNeeded(activeSource)) return;
     // Tuđi izvod nikad tiho: identitet s izvoda vs. identitet novčanika.
     const identity = checkAccountIdentity(
       pdfImport.result.account_iban,
-      pdfImport.source.account_identifier,
+      activeSource.account_identifier,
     );
     if (identity.status === 'mismatch' && !identityConfirmedRef.current) {
       setIdentityAsk({
         statement: identity.statement,
         wallet: identity.wallet,
-        name: pdfImport.source.name,
+        name: activeSource.name,
       });
-      try { logDiagnostic('import_identity_mismatch_asked', { source_id: pdfImport.source.id }); } catch {}
+      try { logDiagnostic('import_identity_mismatch_asked', { source_id: activeSource.id }); } catch {}
       return;
     }
     const transactions = toParsedTransactions();
-    const sourceId = pdfImport.source.id;
+    const sourceId = activeSource.id;
     const paymentSourceValue = `custom:${sourceId}`;
     const jobId = pdfImport.jobId ?? `local-${Date.now()}`;
     try { logDiagnostic('global_pdf_import_review_open_clicked', { source_id: sourceId, count: transactions.length }); } catch {}
@@ -1201,13 +1305,21 @@ export const GlobalPDFImportHost = () => {
                 <div className="p-2 bg-primary/5 rounded-lg text-xs text-muted-foreground text-center">{t('import.allAssignedToSource', { name: source.name })}</div>
               </div>
               <div className="p-4 border-t border-border/50">
-                <Button onClick={handleImport} disabled={isImporting} className="w-full rounded-xl min-h-11">
+                <Button onClick={() => void handleImport()} disabled={isImporting} className="w-full rounded-xl min-h-11">
                   {isImporting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t('import.importing')}</> : t('import.importCount', { count: result.transactions.filter(tx => tx.is_statement_total !== true).length })}
                 </Button>
               </div>
 
             </motion.div>
           </motion.div>
+        )}
+        {walletAsk && (
+          <StatementWalletSuggestionDialog
+            question={walletAsk}
+            onAccept={() => void resolveWalletAsk(true)}
+            onDecline={() => void resolveWalletAsk(false)}
+            onCancel={() => { setWalletAsk(null); resetAll(); }}
+          />
         )}
         {identityAsk && (
           <AccountIdentityMismatchDialog

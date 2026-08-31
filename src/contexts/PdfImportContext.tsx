@@ -69,6 +69,8 @@ interface PdfImportContextValue {
   startHtmlImport: (options: StartHtmlImportOptions) => Promise<void>;
   registerHandlers: (handlers: PdfImportHandlers) => () => void;
   _setProcessing: (source: CustomPaymentSource, jobId: string) => void;
+  /** Zamjena odredišnog novčanika usred pregleda (prepoznat drugi račun). */
+  _setSource: (source: CustomPaymentSource) => void;
   _setPreview: (result: PDFParseResult, jobId: string | null) => void;
   _setDuplicates: () => void;
   _setIdle: () => void;
@@ -203,6 +205,7 @@ export const PdfImportProvider = ({ children }: { children: ReactNode }) => {
     startHtmlImport,
     registerHandlers,
     _setProcessing,
+    _setSource: setSource,
     _setPreview,
     _setDuplicates,
     _setIdle,
@@ -231,6 +234,7 @@ export const usePdfImport = (): PdfImportContextValue => {
       startHtmlImport: async () => {},
       registerHandlers: () => noop,
       _setProcessing: noop,
+      _setSource: noop,
       _setPreview: noop,
       _setDuplicates: noop,
       _setIdle: noop,
