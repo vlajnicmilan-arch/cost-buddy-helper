@@ -57,6 +57,13 @@ export const useBundleFreshness = () => {
     }
 
     pendingShaRef.current = null;
+    // Stamp the reload as ours BEFORE it happens, so the boot watchdog on the
+    // next load does not mistake it for a crash.
+    try {
+      markIntentionalReload({ reason: 'bundle_freshness', from: COMMIT_SHA, to: liveSha });
+    } catch {
+      /* never break the refresh */
+    }
     try {
       logDiagnostic({
         event: 'bundle_refreshed',
@@ -70,6 +77,7 @@ export const useBundleFreshness = () => {
     setTimeout(() => {
       try { window.location.reload(); } catch { /* noop */ }
     }, 150);
+
     return action;
   }, []);
 
