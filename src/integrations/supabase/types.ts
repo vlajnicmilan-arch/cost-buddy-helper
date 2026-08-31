@@ -7880,6 +7880,13 @@ export type Database = {
         Args: { _user_id: string; _worker_id: string }
         Returns: Json
       }
+      list_public_columns: {
+        Args: never
+        Returns: {
+          column_name: string
+          relname: string
+        }[]
+      }
       list_public_relations: {
         Args: never
         Returns: {
