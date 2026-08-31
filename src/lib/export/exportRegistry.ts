@@ -234,8 +234,15 @@ export const EXPORT_REGISTRY: Record<string, TableRule> = {
   krug_expense_split_confirmation: direct(),
   krug_settlement_ledger: { rule: { via: 'orColumns', columns: ['from_user', 'to_user'] } },
   krug_settlement_fx_snapshot: scope('krug_id', 'krugs'),
-  krug_shared_payment_source: scope('krug_id', 'krugs'),
-  krug_deletion_request: scope('krug_id', 'krugs'),
+  // `payment_source_id` je slobodan tekst (naziv izvora), ne šifra — tuđi nazivi ostaju vani.
+  krug_shared_payment_source: col('linked_by'),
+  // `member_snapshot` nabraja druge članove; `reason` ostaje samo u vlastitim zahtjevima.
+  krug_deletion_request: {
+    rule: { via: 'orColumns', columns: ['initiated_by', 'resolved_by'] },
+    redact: ['member_snapshot'],
+    blankUnlessOwn: { columns: ['reason'], ownerColumn: 'initiated_by' },
+  },
+
   krug_deletion_vote: direct(),
   krug_invitations: { rule: { via: 'column', column: 'invited_by' }, redact: ['token'] }, // tuđe pozivnice u istom krugu ne izlaze
   krug_membership_audit: excluded(R.others),
