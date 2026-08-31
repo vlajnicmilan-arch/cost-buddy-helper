@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthedFetchGate } from '@/hooks/useAuthedFetchGate';
 import { ProjectFunding } from '@/types/project';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
@@ -40,13 +41,15 @@ async function enqueueFundingDigest(
 
 export const useProjectFunding = (projectId: string | null) => {
   const { user } = useAuth();
+  const { authReady, canFetch } = useAuthedFetchGate();
   const { t } = useTranslation();
   const [funding, setFunding] = useState<ProjectFunding[]>([]);
   const [incomeSources, setIncomeSources] = useState<ProjectIncomeSource[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchFunding = useCallback(async () => {
-    if (!projectId || !user) {
+    if (!authReady) return;
+    if (!canFetch || !projectId || !user) {
       setFunding([]);
       setIncomeSources([]);
       setLoading(false);
@@ -110,7 +113,7 @@ export const useProjectFunding = (projectId: string | null) => {
     } finally {
       setLoading(false);
     }
-  }, [projectId, user]);
+  }, [projectId, user, authReady, canFetch]);
 
   useEffect(() => {
     fetchFunding();

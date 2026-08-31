@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthedFetchGate } from '@/hooks/useAuthedFetchGate';
 import {
   computeProjectProfitLoss,
   type PLResult,
@@ -39,11 +40,13 @@ const EMPTY: PLResult = {
 
 export const useProjectProfitLoss = (projectId: string | null): ProfitLossData => {
   const { user } = useAuth();
+  const { authReady, canFetch } = useAuthedFetchGate();
   const [result, setResult] = useState<PLResult>(EMPTY);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
-    if (!projectId || !user) {
+    if (!authReady) return;
+    if (!canFetch || !projectId || !user) {
       setLoading(false);
       return;
     }
@@ -135,7 +138,7 @@ export const useProjectProfitLoss = (projectId: string | null): ProfitLossData =
     } finally {
       setLoading(false);
     }
-  }, [projectId, user]);
+  }, [projectId, user, authReady, canFetch]);
 
 
   useEffect(() => {

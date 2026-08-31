@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthedFetchGate } from '@/hooks/useAuthedFetchGate';
 import {
   calculateProjectSpent,
   calculateProjectIncomeFromTransactions,
@@ -42,11 +43,13 @@ interface ProjectStats {
 
 export const useProjectStats = (projectId: string | null, totalBudget: number) => {
   const { user } = useAuth();
+  const { authReady, canFetch, isIdentityAlive } = useAuthedFetchGate();
   const [expenses, setExpenses] = useState<ProjectExpense[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchExpenses = useCallback(async () => {
-    if (!projectId || !user) {
+    if (!authReady) return;
+    if (!canFetch || !projectId || !user) {
       setExpenses([]);
       setLoading(false);
       return;
@@ -59,6 +62,8 @@ export const useProjectStats = (projectId: string | null, totalBudget: number) =
       const pageSize = 1000;
 
       while (true) {
+        // Sesija je mogla nestati usred straničenja — stani bez upita.
+        if (!isIdentityAlive(user.id)) return;
         const { data, error } = await (supabase
           .from('expenses')
           .select('id, user_id, amount, description, category, date, type, milestone_id, status, submitted_by, expense_nature, payment_source, is_advance, collaborator_id, linked_advance_ids') as any)
@@ -83,7 +88,7 @@ export const useProjectStats = (projectId: string | null, totalBudget: number) =
     } finally {
       setLoading(false);
     }
-  }, [projectId, user]);
+  }, [projectId, user, authReady, canFetch, isIdentityAlive]);
 
   useEffect(() => {
     fetchExpenses();

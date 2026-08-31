@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthedFetchGate } from '@/hooks/useAuthedFetchGate';
 import { useStorage } from '@/contexts/StorageContext';
 import { InstallmentPlan, Installment, InstallmentPlanWithProgress } from '@/types/installment';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
@@ -22,6 +23,7 @@ interface CreateInstallmentPlanInput {
 export const useInstallments = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { authReady, canFetch } = useAuthedFetchGate();
   const { storageMode } = useStorage();
   const [plans, setPlans] = useState<InstallmentPlanWithProgress[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,7 +73,8 @@ export const useInstallments = () => {
       return;
     }
 
-    if (!user) {
+    if (!authReady) return;
+    if (!canFetch || !user) {
       setLoading(false);
       return;
     }
@@ -138,7 +141,7 @@ export const useInstallments = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, isLocalMode]);
+  }, [user, authReady, canFetch, isLocalMode]);
 
   // Auto-mark due installments as paid
   const autoMarkDueInstallments = useCallback(async () => {
