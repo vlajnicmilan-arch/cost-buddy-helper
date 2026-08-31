@@ -2,7 +2,10 @@
  * Excel dio izvoza: listovi se sastave, datumi ostanu datumi, iznosi brojevi,
  * a nepotpunost se vidi na listu „Sažetak".
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+// Lijeno učitavanje Excel biblioteke zna trajati na opterećenom stroju.
+vi.setConfig({ testTimeout: 30000 });
 import { buildExcelBlob, SHEET_SPECS } from '@/lib/export/excelWorkbook';
 
 describe('izvoz — Excel radna knjiga', () => {

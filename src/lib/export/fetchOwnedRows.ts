@@ -108,6 +108,24 @@ export class OwnedDataReader {
       return paginate(table, select, (q) => q.or(filter));
     }
 
+    if (rule.via === 'union') {
+      const rows: Record<string, unknown>[] = [];
+      const seen = new Set<string>();
+      const vias: string[] = [];
+      for (const part of rule.rules) {
+        const outcome = await this.fetchByRule(table, select, part);
+        if (!outcome.ok) return outcome;
+        vias.push(outcome.via);
+        for (const row of outcome.rows) {
+          const key = typeof row.id === 'string' ? row.id : JSON.stringify(row);
+          if (seen.has(key)) continue;
+          seen.add(key);
+          rows.push(row);
+        }
+      }
+      return { ok: true, rows, via: vias.filter(Boolean).join(' + ') };
+    }
+
     // rule.via === 'scope'
     const ids = await this.resolveScope(rule.scope);
     if (!Array.isArray(ids)) return { ok: false, reason: `roditelj nedostupan (${ids.error})` };
@@ -142,6 +160,8 @@ export class OwnedDataReader {
         ? `${entry.rule.column} → ${SCOPES[entry.rule.scope].table}`
         : entry.rule.via === 'orColumns'
           ? entry.rule.columns.join(' | ')
+          : entry.rule.via === 'union'
+            ? outcome.via
           : entry.rule.via === 'column'
             ? entry.rule.column
             : '';

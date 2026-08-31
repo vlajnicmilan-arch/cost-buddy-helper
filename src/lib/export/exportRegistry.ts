@@ -35,6 +35,8 @@ export type OwnerRule =
   | { via: 'orColumns'; columns: string[] }
   /** Vlasništvo preko roditelja: `column` mora biti u skupu id-eva `scope`. */
   | { via: 'scope'; column: string; scope: ScopeName }
+  /** Unija više pravila (npr. „moji projekti" + „gdje sam ja član"). */
+  | { via: 'union'; rules: OwnerRule[] }
   /** Izričito isključeno — razlog je obavezan i ide u manifest. */
   | { via: 'excluded'; reason: string };
 
@@ -48,6 +50,11 @@ export interface TableRule {
   readFrom?: string;
   /** Stupci koji se brišu iz izvoza (ključevi, tokeni) — ne podaci. */
   redact?: readonly string[];
+  /**
+   * Relacija je samo pogled na drugu tablicu iz registra — pokrivena je, ali se
+   * NE izvozi zasebno (izbjegavamo dvostruki zapis istih redaka).
+   */
+  mirrorOf?: string;
 }
 
 /** Definicija skupa id-eva roditelja. Sam skup se dohvaća istim pravilima. */
@@ -83,6 +90,16 @@ const scope = (column: string, s: ScopeName, redact?: readonly string[]): TableR
   redact,
 });
 const excluded = (reason: string): TableRule => ({ rule: { via: 'excluded', reason } });
+/** „Moje kroz roditelja" ILI „moj vlastiti redak" (npr. članstvo kod tuđeg vlasnika). */
+const scopeOrMine = (column: string, s: ScopeName, mineColumn = 'user_id'): TableRule => ({
+  rule: {
+    via: 'union',
+    rules: [
+      { via: 'scope', column, scope: s },
+      { via: 'column', column: mineColumn },
+    ],
+  },
+});
 
 /** Razlozi isključenja — kratko i ljudski, ide doslovno u manifest. */
 const R = {
@@ -117,10 +134,10 @@ export const EXPORT_REGISTRY: Record<string, TableRule> = {
   custom_categories: direct(),
   custom_payment_sources: direct(),
   payment_source_cards: direct(),
-  payment_source_members: scope('payment_source_id', 'paymentSources'),
+  payment_source_members: scopeOrMine('payment_source_id', 'paymentSources'),
   payment_source_invitations: scope('payment_source_id', 'paymentSources', ['token']),
   income_sources: direct(),
-  income_source_members: scope('income_source_id', 'incomeSources'),
+  income_source_members: scopeOrMine('income_source_id', 'incomeSources'),
   income_source_invitations: scope('income_source_id', 'incomeSources', ['token']),
   anchor_audit: direct(),
   recurring_transactions: direct(),
@@ -131,7 +148,7 @@ export const EXPORT_REGISTRY: Record<string, TableRule> = {
   notifications: direct(),
   budget_plans: direct(),
   budget_categories: scope('budget_id', 'budgets'),
-  budget_members: scope('budget_id', 'budgets'),
+  budget_members: scopeOrMine('budget_id', 'budgets'),
   budget_invitations: scope('budget_id', 'budgets', ['token']),
 
   // — Banka i uvoz —
@@ -177,8 +194,8 @@ export const EXPORT_REGISTRY: Record<string, TableRule> = {
   project_contract_amendments: scope('project_id', 'projects'),
   project_documents: scope('project_id', 'projects'),
   project_funding: scope('project_id', 'projects'),
-  project_members: scope('project_id', 'projects'),
-  project_member_permissions: scope('project_id', 'projects'),
+  project_members: scopeOrMine('project_id', 'projects'),
+  project_member_permissions: scopeOrMine('project_id', 'projects'),
   project_invitations: scope('project_id', 'projects', ['token']),
   project_activity_log: scope('project_id', 'projects'),
   project_templates: col('created_by'),
@@ -205,7 +222,8 @@ export const EXPORT_REGISTRY: Record<string, TableRule> = {
   krug_membership: direct(),
   krug_ownership: direct(),
   krug_income_ratio: direct(),
-  krug_expense_split_override: scope('krug_id', 'krugs'),
+  krug_expense_split_override: col('proposed_by'), // samo njegovi prijedlozi — tuđi ostaju vani
+  
   krug_expense_split_share: direct(),
   krug_expense_split_confirmation: direct(),
   krug_settlement_ledger: { rule: { via: 'orColumns', columns: ['from_user', 'to_user'] } },
@@ -213,9 +231,16 @@ export const EXPORT_REGISTRY: Record<string, TableRule> = {
   krug_shared_payment_source: scope('krug_id', 'krugs'),
   krug_deletion_request: scope('krug_id', 'krugs'),
   krug_deletion_vote: direct(),
-  krug_invitations: scope('krug_id', 'krugs', ['token']),
+  krug_invitations: { rule: { via: 'column', column: 'invited_by' }, redact: ['token'] }, // tuđe pozivnice u istom krugu ne izlaze
   krug_membership_audit: excluded(R.others),
   krug_act_dedup: excluded(R.internal),
+
+  // — Pogledi —
+  // Role-scoped pogled na faze: pokriven, ali se izvozi pod imenom `project_milestones`.
+  project_milestones_scoped: {
+    rule: { via: 'scope', column: 'project_id', scope: 'projects' },
+    mirrorOf: 'project_milestones',
+  },
 
   // — AI —
   chat_messages: direct(),
@@ -260,7 +285,7 @@ export const EXPORT_REGISTRY: Record<string, TableRule> = {
 };
 
 export const EXPORTED_TABLES = Object.keys(EXPORT_REGISTRY).filter(
-  (t) => EXPORT_REGISTRY[t].rule.via !== 'excluded',
+  (t) => EXPORT_REGISTRY[t].rule.via !== 'excluded' && !EXPORT_REGISTRY[t].mirrorOf,
 );
 
 export const EXCLUDED_TABLES = Object.keys(EXPORT_REGISTRY).filter(
