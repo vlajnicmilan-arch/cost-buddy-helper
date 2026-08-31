@@ -120,6 +120,7 @@ export const GlobalPDFImportHost = () => {
   // (pickStatementSource). Pitanje se postavlja najviše jednom po uvozu.
   const [walletAsk, setWalletAsk] = useState<StatementWalletQuestion | null>(null);
   const walletAskHandledRef = useRef(false);
+  const suggestedSourceRef = useRef<CustomPaymentSource | null>(null);
   /** Napredak segmentiranog čitanja („2/5") — dolazi kroz postojeći poll. */
   const [parseProgress, setParseProgress] = useState<string | null>(null);
   const [duplicateInfo, setDuplicateInfo] = useState<DuplicateInfo | null>(null);
@@ -148,6 +149,7 @@ export const GlobalPDFImportHost = () => {
     identityConfirmedRef.current = false;
     setWalletAsk(null);
     walletAskHandledRef.current = false;
+    suggestedSourceRef.current = null;
     setDuplicateInfo(null);
     setIncludeDuplicates(false);
     setFuzzyDecisions(new Map());
@@ -511,9 +513,8 @@ export const GlobalPDFImportHost = () => {
    * pravilo > IBAN novčanika > bank_accounts > ime banke. Vraća `true` kad je
    * uvoz zaustavljen zbog pitanja korisniku.
    */
-  const askWalletQuestionIfNeeded = async (): Promise<boolean> => {
+  const askWalletQuestionIfNeeded = async (source: CustomPaymentSource): Promise<boolean> => {
     if (walletAskHandledRef.current) return false;
-    const source = pdfImport.source;
     const result = pdfImport.result;
     if (!source || !result) return false;
     const accountIdentifier = sanitizeIban(result.account_iban) || null;
@@ -535,6 +536,7 @@ export const GlobalPDFImportHost = () => {
       const suggested = customPaymentSources.find(s => s.id === match.sourceId);
       if (suggested) {
         walletAskHandledRef.current = true;
+        suggestedSourceRef.current = suggested;
         setWalletAsk({
           kind: 'switch',
           statementIdentifier: accountIdentifier || '',
@@ -566,43 +568,47 @@ export const GlobalPDFImportHost = () => {
     const ask = walletAsk;
     setWalletAsk(null);
     if (!ask) return;
-    if (accept && ask.kind === 'switch') {
-      const suggested = customPaymentSources.find(s => s.name === ask.suggestedName);
-      if (suggested) pdfImport._setSource(suggested);
+    let next = pdfImport.source ?? undefined;
+    if (accept && ask.kind === 'switch' && suggestedSourceRef.current) {
+      next = suggestedSourceRef.current;
+      pdfImport._setSource(next);
     }
-    if (accept && ask.kind === 'save' && pdfImport.source) {
+    if (accept && ask.kind === 'save' && next) {
       try {
-        await updateCustomPaymentSource(pdfImport.source.id, {
-          account_identifier: ask.statementIdentifier,
-        });
-        pdfImport._setSource({ ...pdfImport.source, account_identifier: ask.statementIdentifier });
+        await updateCustomPaymentSource(next.id, { account_identifier: ask.statementIdentifier });
+        next = { ...next, account_identifier: ask.statementIdentifier };
+        pdfImport._setSource(next);
       } catch (e) {
         try { logDiagnostic('import_wallet_identifier_save_failed', { message: e instanceof Error ? e.message : String(e) }); } catch {}
       }
     }
-    void handleImport();
+    suggestedSourceRef.current = null;
+    void handleImport(next);
   };
 
-  const handleImport = async () => {
-    if (!pdfImport.source || !pdfImport.result || !user?.id) return;
+  const handleImport = async (overrideSource?: CustomPaymentSource) => {
+    // Odgovor na pitanje o pripadnosti mijenja izvor u istom potezu, prije
+    // nego React prikaže novo stanje — zato izvor može doći kao argument.
+    const activeSource = overrideSource ?? pdfImport.source;
+    if (!activeSource || !pdfImport.result || !user?.id) return;
     // Kojem računu izvod pripada — pitanje prije bilo kakvog upisa.
-    if (await askWalletQuestionIfNeeded()) return;
+    if (await askWalletQuestionIfNeeded(activeSource)) return;
     // Tuđi izvod nikad tiho: identitet s izvoda vs. identitet novčanika.
     const identity = checkAccountIdentity(
       pdfImport.result.account_iban,
-      pdfImport.source.account_identifier,
+      activeSource.account_identifier,
     );
     if (identity.status === 'mismatch' && !identityConfirmedRef.current) {
       setIdentityAsk({
         statement: identity.statement,
         wallet: identity.wallet,
-        name: pdfImport.source.name,
+        name: activeSource.name,
       });
-      try { logDiagnostic('import_identity_mismatch_asked', { source_id: pdfImport.source.id }); } catch {}
+      try { logDiagnostic('import_identity_mismatch_asked', { source_id: activeSource.id }); } catch {}
       return;
     }
     const transactions = toParsedTransactions();
-    const sourceId = pdfImport.source.id;
+    const sourceId = activeSource.id;
     const paymentSourceValue = `custom:${sourceId}`;
     const jobId = pdfImport.jobId ?? `local-${Date.now()}`;
     try { logDiagnostic('global_pdf_import_review_open_clicked', { source_id: sourceId, count: transactions.length }); } catch {}
