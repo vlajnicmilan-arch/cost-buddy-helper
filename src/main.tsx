@@ -197,14 +197,18 @@ try {
   });
 } catch {}
 
-// Boot watchdog — detects if previous boot died before reaching React mount.
-// On every cold start we set a flag in localStorage, and clear it once React
-// successfully renders. If on next boot the flag is still set, we know the
-// last session crashed silently (likely native crash inside a Capacitor
-// plugin or WebView OOM) and we log a `previous_boot_crashed` event so we can
-// see it in app_diagnostics_logs without needing logcat.
-const BOOT_FLAG = 'vmb-boot-in-progress';
-const BOOT_TS_FLAG = 'vmb-boot-in-progress-started-at';
+// Boot watchdog — detects if the previous boot died before reaching React
+// mount. The flag lives in `sessionStorage` (per tab), an orderly exit clears
+// it, our own reloads are stamped in advance, and `critical` is reserved for a
+// stuck flag with a real error signal next to it. See `lib/bootWatchdog.ts`.
+import {
+  clearBootFlag,
+  consumeIntentionalReload,
+  evaluatePreviousBoot,
+  readBootFlag,
+  readLastErrorAt,
+  setBootFlag,
+} from './lib/bootWatchdog';
 
 // Skip watchdog entirely in Vite dev (HMR reloads cause false-positive
 // `previous_boot_crashed` events because React unmount clears the flag too late).
@@ -226,18 +230,25 @@ const isPreviewEnv = (() => {
 
 if (!isDevHmr) {
   try {
-    const prevFlag = localStorage.getItem(BOOT_FLAG);
-    const prevTs = localStorage.getItem(BOOT_TS_FLAG);
-    if (prevFlag === '1') {
+    const { flag, startedAt } = readBootFlag();
+    const verdict = evaluatePreviousBoot({
+      flag,
+      startedAt,
+      intentionalReload: consumeIntentionalReload(),
+      lastErrorAt: readLastErrorAt(),
+      isPreviewEnv,
+    });
+
+    if (verdict.event) {
       // We don't await this — diagnosticLogger is loaded async. Use idle so it
       // doesn't compete with React boot.
       idle(() => {
         import('./lib/diagnosticLogger')
           .then(({ logDiagnostic }) => logDiagnostic({
-            event: 'previous_boot_crashed',
-            severity: isPreviewEnv ? 'info' : 'critical',
+            event: verdict.event!,
+            severity: verdict.severity,
             details: {
-              previous_started_at: prevTs,
+              ...verdict.details,
               isCapacitor: !!(window as any).Capacitor?.isNativePlatform?.(),
               href: window.location.href,
               env: isPreviewEnv ? 'preview' : 'production',
@@ -246,17 +257,17 @@ if (!isDevHmr) {
           .catch(() => {});
       });
     }
-    localStorage.setItem(BOOT_FLAG, '1');
-    localStorage.setItem(BOOT_TS_FLAG, new Date().toISOString());
-  } catch { /* localStorage unavailable */ }
+
+    setBootFlag();
+  } catch { /* storage unavailable */ }
 }
 
+let bootCompletedOnce = false;
 
 const markBootCompleted = () => {
-  try {
-    localStorage.removeItem(BOOT_FLAG);
-    localStorage.removeItem(BOOT_TS_FLAG);
-  } catch { /* ignore */ }
+  if (bootCompletedOnce) return;
+  bootCompletedOnce = true;
+  clearBootFlag();
   idle(() => {
     import('./lib/diagnosticLogger')
       .then(({ logDiagnostic }) => logDiagnostic('boot_completed', {
@@ -265,6 +276,33 @@ const markBootCompleted = () => {
       .catch(() => {});
   });
 };
+
+/**
+ * `requestAnimationFrame` never fires in a hidden tab, so a perfectly mounted
+ * app that loads in the background would stay marked as "boot in progress".
+ * Whichever path wins first clears the flag; the rest are no-ops.
+ */
+const scheduleBootCompleted = () => {
+  try {
+    requestAnimationFrame(() => markBootCompleted());
+  } catch {
+    /* ignore */
+  }
+  setTimeout(() => markBootCompleted(), 1500);
+};
+
+// An orderly exit is not a crash: closing the tab, backgrounding the app on
+// Android or shutting the system down all clear the flag.
+if (!isDevHmr) {
+  try {
+    const releaseFlag = () => clearBootFlag();
+    window.addEventListener('pagehide', releaseFlag);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') releaseFlag();
+    });
+  } catch { /* ignore */ }
+}
+
 
 // CRITICAL: Force-hide the Capacitor splash screen as soon as JS boots.
 // Without this, the native splash can linger as an invisible overlay on
@@ -323,7 +361,8 @@ if (isFastLanding) {
     );
     // App tree is now rendering. Mark boot completed on the next frame so we
     // know React actually executed the first commit (vs. only the dynamic
-    // imports succeeding).
-    requestAnimationFrame(() => markBootCompleted());
+    // imports succeeding) — with a timer fallback for hidden tabs.
+    scheduleBootCompleted();
+
   });
 }

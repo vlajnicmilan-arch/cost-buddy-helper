@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { APP_VERSION } from '@/lib/version';
 import { captureSentryException, setSentryUser } from '@/lib/sentry';
 import { isChunkLoadError, tryRecoverFromChunkError } from '@/lib/chunkLoadError';
+import { markErrorSignal } from '@/lib/bootWatchdog';
 
 export type DiagnosticSeverity = 'critical' | 'error' | 'warning' | 'info';
 
@@ -88,6 +89,14 @@ const CRITICAL_EVENT_NAMES = new Set([
   'react_error_boundary',
   'app_crash',
 ]);
+
+/** Events that prove a real failure happened in this tab (boot watchdog input). */
+const CRASH_SIGNAL_EVENTS = new Set([
+  'window_error',
+  'unhandled_rejection',
+  'react_error_boundary',
+]);
+
 
 const classifySeverity = (event: string, details?: Record<string, unknown>): DiagnosticSeverity => {
   if (CRITICAL_EVENT_NAMES.has(event)) return 'critical';
@@ -178,6 +187,14 @@ export const logDiagnostic = (input: DiagnosticEventInput | string, details?: Re
       typeof input === 'string' ? { event: input, details } : input;
 
     const severity = payload.severity ?? classifySeverity(payload.event, payload.details);
+
+    // Boot watchdog input: remember that a genuine error signal occurred, so a
+    // stuck boot flag on the next load can be told apart from a quiet reload.
+    if (CRASH_SIGNAL_EVENTS.has(payload.event)) {
+      markErrorSignal();
+    }
+
+
 
     const row: DiagnosticEventRow = {
       session_id: SESSION_ID,
