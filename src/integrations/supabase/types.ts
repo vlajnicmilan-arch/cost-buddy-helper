@@ -7880,6 +7880,13 @@ export type Database = {
         Args: { _user_id: string; _worker_id: string }
         Returns: Json
       }
+      list_public_relations: {
+        Args: never
+        Returns: {
+          relkind: string
+          relname: string
+        }[]
+      }
       list_trash: {
         Args: never
         Returns: {
