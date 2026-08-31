@@ -955,23 +955,22 @@ export const useExpenseCRUD = ({
         if (!authReady) { console.warn('[ExpenseCRUD] auth not ready yet, ignoring save'); return; }
         if (!user) { showError(t('errors.mustBeLoggedIn', 'Moraš biti prijavljen')); return; }
 
-        // Compute deterministic fingerprint for rows missing one. Backed by
-        // unique index `uniq_expenses_user_bank_tx(user_id, bank_transaction_id)`
-        // so re-importing the same statement cannot create duplicates.
-        const { computeImportFingerprint } = await import('@/lib/importFingerprint');
-        let fingerprinted = await Promise.all(transactions.map(async (tx) => {
-          const fingerprint = tx.bank_transaction_id
-            || await computeImportFingerprint({
-              userId: user.id,
-              paymentSource: tx.payment_source,
-              date: tx.date,
-              type: tx.type,
-              amount: tx.amount,
-              description: tx.description,
-              merchantName: tx.merchant_name,
-              balanceAfter: (tx as any).balance_after ?? null,
-            });
-          return { tx, fingerprint };
+        // V2 ključ uvoza (`imp2:`) — gradi se SAMO od stabilnih podataka
+        // (user, novčanik, UTC dan, iznos, saldo ili redni broj). Mora se
+        // računati nad CIJELIM nizom odjednom jer jedino `computeImportKeys`
+        // dodjeljuje `ord:N` redcima bez salda.
+        // Backed by unique index `uniq_expenses_user_bank_tx(user_id, bank_transaction_id)`.
+        const { computeImportKeys } = await import('@/lib/importFingerprint');
+        const computedKeys = await computeImportKeys(transactions.map((tx) => ({
+          userId: user.id,
+          paymentSource: tx.payment_source,
+          date: tx.date,
+          amount: tx.amount,
+          balanceAfter: (tx as any).balance_after ?? null,
+        })));
+        let fingerprinted = transactions.map((tx, i) => ({
+          tx,
+          fingerprint: tx.bank_transaction_id || computedKeys[i],
         }));
 
         // === Auto-merge: spoji izvod redove s postojećim ručnim unosima ===
