@@ -93,6 +93,7 @@ export const MailReviewFieldInput = ({ label, kind, value, dateContext, onChange
               <Calendar
                 mode="single"
                 selected={isoToDate(value)}
+                defaultMonth={isoToDate(value)}
                 disabled={makeCalendarDisabled(range)}
                 onSelect={(d) => {
                   if (d) {
