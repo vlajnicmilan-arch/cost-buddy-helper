@@ -621,6 +621,25 @@ export const GlobalPDFImportHost = () => {
     void handleImport(next);
   };
 
+  /** „Spremi ovaj broj računa na …" u nepotvrđenom slučaju — upis, pa nastavak. */
+  const resolveWalletSaveIdentifier = async () => {
+    const ask = walletAsk;
+    setWalletAsk(null);
+    if (!ask || ask.kind !== 'unconfirmed' || !ask.canSaveIdentifier || !ask.statementIdentifier) return;
+    let next = pdfImport.source ?? undefined;
+    if (next) {
+      try {
+        await updateCustomPaymentSource(next.id, { account_identifier: ask.statementIdentifier });
+        next = { ...next, account_identifier: ask.statementIdentifier };
+        pdfImport._setSource(next);
+        try { logDiagnostic('import_wallet_identifier_save_asked', { source_id: next.id }); } catch {}
+      } catch (e) {
+        try { logDiagnostic('import_wallet_identifier_save_failed', { message: e instanceof Error ? e.message : String(e) }); } catch {}
+      }
+    }
+    void handleImport(next);
+  };
+
   const handleImport = async (overrideSource?: CustomPaymentSource) => {
     // Odgovor na pitanje o pripadnosti mijenja izvor u istom potezu, prije
     // nego React prikaže novo stanje — zato izvor može doći kao argument.
@@ -1353,6 +1372,7 @@ export const GlobalPDFImportHost = () => {
             question={walletAsk}
             onAccept={() => void resolveWalletAsk(true)}
             onDecline={() => void resolveWalletAsk(false)}
+            onSave={() => void resolveWalletSaveIdentifier()}
             onCancel={() => { setWalletAsk(null); resetAll(); }}
           />
         )}
