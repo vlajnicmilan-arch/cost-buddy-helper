@@ -138,11 +138,12 @@ Deno.serve(async (req) => {
       } else {
         try {
           await admin.from("app_diagnostics_logs").insert({
+            session_id: "cron:process-pending-deletions",
             user_id: null,
-            event_type: "account_deletion_not_completed",
+            event: "account_deletion_not_completed",
             severity: "warning",
-            message: `User ${log.user_id} deletion not completed (status: ${status})`,
-            metadata: {
+            details: {
+              message: `User ${log.user_id} deletion not completed (status: ${status})`,
               user_id: log.user_id,
               status,
               blockedBy: purgeResult.blockedBy ?? null,
