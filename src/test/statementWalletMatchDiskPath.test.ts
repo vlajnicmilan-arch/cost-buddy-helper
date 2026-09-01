@@ -21,9 +21,15 @@ describe('ručni uvoz izvoda — pripadnost računa', () => {
     expect(host).toContain('bankName');
   });
 
-  it('nudi spremanje identiteta na novčanik bez upisanog računa', () => {
-    expect(host).toContain("kind: 'save'");
+  it('neprepoznati izvod staje i pita (unconfirmed), uz ponudu spremanja IBAN-a', () => {
+    expect(host).toContain("kind: 'unconfirmed'");
+    expect(host).toContain('canSaveIdentifier');
     expect(host).toContain('account_identifier: ask.statementIdentifier');
+  });
+
+  it('vlastiti izvještaj (Centar) se uvijek zaustavlja', () => {
+    expect(host).toContain("kind: 'own_report'");
+    expect(host).toContain('import_wallet_blocked_own_report');
   });
 
   it('zadržava postojeću branu neslaganja identiteta', () => {
