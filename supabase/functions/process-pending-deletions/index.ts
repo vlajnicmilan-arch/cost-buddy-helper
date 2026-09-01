@@ -68,11 +68,15 @@ async function logResidualWarning(admin: any, userId: string, result: PurgeResul
   if (result.residualScan.total === 0) return;
   try {
     await admin.from("app_diagnostics_logs").insert({
+      session_id: "cron:process-pending-deletions",
       user_id: null,
-      event_type: "hard_delete_residual",
+      event: "hard_delete_residual",
       severity: "warning",
-      message: `User ${userId} purge left ${result.residualScan.total} residual rows`,
-      metadata: result.residualScan,
+      details: {
+        message: `User ${userId} purge left ${result.residualScan.total} residual rows`,
+        user_id: userId,
+        residualScan: result.residualScan,
+      },
     });
   } catch (e) {
     console.warn("[process-pending-deletions] residual log insert failed:", e);
