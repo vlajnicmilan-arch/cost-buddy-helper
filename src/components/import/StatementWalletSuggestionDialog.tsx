@@ -42,6 +42,8 @@ export type StatementWalletQuestion =
       rowCount: number;
       /** Smije li se ponuditi "Spremi ovaj broj računa na …". */
       canSaveIdentifier: boolean;
+      /** Ništa se nije uspjelo pročitati s dokumenta (nema banke ni računa). */
+      noReadInfo?: boolean;
     };
 
 interface Props {
