@@ -509,9 +509,15 @@ export const GlobalPDFImportHost = () => {
    * source for Korak 4 wiring but is NOT reachable from the UI anymore.
    */
   /**
-   * PRIPADNOST IZVODA — isto pravilo kao na mail-putu, samo bez pickera:
-   * pravilo > IBAN novčanika > bank_accounts > ime banke. Vraća `true` kad je
-   * uvoz zaustavljen zbog pitanja korisniku.
+   * PRIPADNOST IZVODA — uvoz nastavlja BEZ pitanja samo kad je pripadnost
+   * POTVRĐENA. Razvrstavanje po snazi dokaza:
+   *   0. izvori se još učitavaju → ne pitaj (kao i prije)
+   *   1. vlastiti izvještaj (Centar) → uvijek stani, samo prekid
+   *   2. prepoznati novčanik JE odabrani → nastavi tiho
+   *   3. prepoznati novčanik je drugi → pitaj (switch)
+   *   4. ništa nije prepoznato → pitaj (unconfirmed; uz IBAN bez upisanog
+   *      identiteta ponudi i spremanje broja računa)
+   * Vraća `true` kad je uvoz zaustavljen zbog pitanja korisniku.
    */
   const askWalletQuestionIfNeeded = async (source: CustomPaymentSource): Promise<boolean> => {
     if (walletAskHandledRef.current) return false;
@@ -523,6 +529,21 @@ export const GlobalPDFImportHost = () => {
     if (!source || !result) return false;
     const accountIdentifier = sanitizeIban(result.account_iban) || null;
     const bankName = result.detected_bank ?? null;
+    const rowCount = result.transactions.filter(tx => tx.is_statement_total !== true).length;
+
+    // 1. VLASTITI IZVJEŠTAJ — ispis same aplikacije, nikad ne ulazi u knjige.
+    // Uvijek zaustavlja (bez "ipak uvezi"), pa ne troši walletAskHandledRef.
+    const bankKey = (bankName ?? '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]/g, '');
+    if (bankKey === 'centar' || bankKey === 'vmbalance') {
+      setWalletAsk({ kind: 'own_report', selectedName: source.name });
+      try { logDiagnostic('import_wallet_blocked_own_report', { detected_bank: bankName, has_iban: !!accountIdentifier, source_id: source.id, rows: rowCount }); } catch {}
+      return true;
+    }
+
     if (!accountIdentifier && !bankName) return false;
 
     const fromBank = accountIdentifier && user?.id
@@ -536,6 +557,14 @@ export const GlobalPDFImportHost = () => {
       sources: customPaymentSources,
     });
 
+    // 2. POTVRĐENO — prepoznati novčanik JE odabrani.
+    if (match && match.sourceId === source.id) {
+      walletAskHandledRef.current = true;
+      try { logDiagnostic('import_wallet_confirmed', { detected_bank: bankName, has_iban: !!accountIdentifier, source_id: source.id, rows: rowCount }); } catch {}
+      return false;
+    }
+
+    // 3. DRUGI NOVČANIK — postojeći switch dijalog.
     if (match && match.sourceId !== source.id) {
       const suggested = customPaymentSources.find(s => s.id === match.sourceId);
       if (suggested) {
@@ -547,24 +576,26 @@ export const GlobalPDFImportHost = () => {
           selectedName: source.name,
           suggestedName: suggested.name,
         });
-        try { logDiagnostic('import_wallet_suggestion_asked', { source_id: source.id, suggested_id: suggested.id }); } catch {}
+        try { logDiagnostic('import_wallet_suggestion_asked', { source_id: source.id, suggested_id: suggested.id, detected_bank: bankName, has_iban: !!accountIdentifier, rows: rowCount }); } catch {}
         return true;
       }
     }
 
+    // 4. NEPOTVRĐENO — ništa nije prepoznato; korisnik potvrđuje ili prekida.
     const selectedHasIdentity = !!String(source.account_identifier ?? '').trim();
-    if (!match && accountIdentifier && !selectedHasIdentity && source.isOwned !== false) {
-      walletAskHandledRef.current = true;
-      setWalletAsk({
-        kind: 'save',
-        statementIdentifier: accountIdentifier,
-        selectedName: source.name,
-      });
-      try { logDiagnostic('import_wallet_identifier_save_asked', { source_id: source.id }); } catch {}
-      return true;
-    }
+    const canSaveIdentifier = !!accountIdentifier && !selectedHasIdentity && source.isOwned !== false;
     walletAskHandledRef.current = true;
-    return false;
+    setWalletAsk({
+      kind: 'unconfirmed',
+      statementIdentifier: accountIdentifier || '',
+      selectedName: source.name,
+      detectedBank: bankName,
+      holderName: result.holder_name ?? null,
+      rowCount,
+      canSaveIdentifier,
+    });
+    try { logDiagnostic('import_wallet_unconfirmed_asked', { detected_bank: bankName, has_iban: !!accountIdentifier, source_id: source.id, rows: rowCount }); } catch {}
+    return true;
   };
 
   /** Odgovor na pitanje o pripadnosti — pa nastavak istog uvoza. */
