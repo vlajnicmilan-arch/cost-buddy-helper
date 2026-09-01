@@ -51,7 +51,9 @@ function buildAuditUpdate(result: PurgeResult): Record<string, unknown> {
   return {
     status,
     completed_at: new Date().toISOString(),
-    user_email: null, // anonymize email in audit row
+    // Adresu anonimiziramo SAMO kad je račun stvarno obrisan.
+    // Kod "failed" adresa ostaje — bez nje nemamo kome poslije javiti.
+    ...(result.authDeleted ? { user_email: null } : {}),
     error_message: result.errors.length > 0 ? JSON.stringify(result.errors).slice(0, 500) : null,
     tables_purged: {
       tables: result.tablesPurged,
