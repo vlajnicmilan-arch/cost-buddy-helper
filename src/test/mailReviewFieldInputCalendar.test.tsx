@@ -15,12 +15,12 @@ vi.mock('react-i18next', async () => ({
 describe('MailReviewFieldInput — kalendar', () => {
   it('odabir datuma upisuje vrijednost i ODMAH zatvara popover', () => {
     const onChange = vi.fn();
-    const today = new Date();
+    const fixedValue = '15.08.2026.';
     render(
       <MailReviewFieldInput
         label="Datum"
         kind="date"
-        value={formatDateHr(today)}
+        value={fixedValue}
         dateContext="expense"
         onChange={onChange}
       />,
@@ -29,15 +29,40 @@ describe('MailReviewFieldInput — kalendar', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Odaberi datum' }));
     expect(screen.getByRole('grid')).toBeInTheDocument();
 
-    // Prvi dan tekućeg mjeseca je uvijek u prošlosti-ili-danas → dopušten za 'expense'.
+    // Odaberi dan koji je sigurno različit od vrijednosti u polju i dopušten za 'expense'.
     const dayCell = screen
       .getAllByRole('gridcell')
-      .find((el) => el.textContent?.trim() === '1' && el.getAttribute('aria-disabled') !== 'true');
+      .find((el) => el.textContent?.trim() === '16' && el.getAttribute('aria-disabled') !== 'true');
     expect(dayCell).toBeTruthy();
     fireEvent.click(dayCell!);
 
-    const expected = formatDateHr(new Date(today.getFullYear(), today.getMonth(), 1));
-    expect(onChange).toHaveBeenCalledWith(expected);
+    expect(onChange).toHaveBeenCalledWith('16.08.2026.');
+    expect(screen.queryByRole('grid')).not.toBeInTheDocument();
+  });
+
+  it('klik na već odabrani datum zatvara popover, ali NE mijenja vrijednost', () => {
+    const onChange = vi.fn();
+    const fixedValue = '15.08.2026.';
+    render(
+      <MailReviewFieldInput
+        label="Datum"
+        kind="date"
+        value={fixedValue}
+        dateContext="expense"
+        onChange={onChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Odaberi datum' }));
+    expect(screen.getByRole('grid')).toBeInTheDocument();
+
+    const dayCell = screen
+      .getAllByRole('gridcell')
+      .find((el) => el.textContent?.trim() === '15' && el.getAttribute('aria-disabled') !== 'true');
+    expect(dayCell).toBeTruthy();
+    fireEvent.click(dayCell!);
+
+    expect(onChange).not.toHaveBeenCalled();
     expect(screen.queryByRole('grid')).not.toBeInTheDocument();
   });
 
