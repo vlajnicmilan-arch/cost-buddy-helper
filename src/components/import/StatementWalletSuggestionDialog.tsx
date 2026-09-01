@@ -42,6 +42,8 @@ export type StatementWalletQuestion =
       rowCount: number;
       /** Smije li se ponuditi "Spremi ovaj broj računa na …". */
       canSaveIdentifier: boolean;
+      /** Ništa se nije uspjelo pročitati s dokumenta (nema banke ni računa). */
+      noReadInfo?: boolean;
     };
 
 interface Props {
@@ -143,6 +145,14 @@ export const StatementWalletSuggestionDialog = ({
                 count: question.rowCount,
               })}
             </p>
+            {question.noReadInfo && (
+              <p data-testid="suggestion-no-read-info" className="text-sm text-amber-600 dark:text-amber-400">
+                {t(
+                  'import.walletSuggestion.noReadInfo',
+                  'S dokumenta nije pročitano ni ime banke ni broj računa.',
+                )}
+              </p>
+            )}
             <p className="pt-2 text-muted-foreground">
               {t('import.walletSuggestion.selected', 'Odabrani novčanik')}
             </p>

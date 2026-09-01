@@ -521,30 +521,33 @@ export const GlobalPDFImportHost = () => {
    */
   const askWalletQuestionIfNeeded = async (source: CustomPaymentSource): Promise<boolean> => {
     if (walletAskHandledRef.current) return false;
-    if (sourcesLoading || customPaymentSources.length === 0) {
-      try { logDiagnostic('import_wallet_question_skipped_sources_not_ready', { loading: sourcesLoading, count: customPaymentSources.length }); } catch {}
-      return false;
-    }
+
     const result = pdfImport.result;
-    if (!source || !result) return false;
-    const accountIdentifier = sanitizeIban(result.account_iban) || null;
-    const bankName = result.detected_bank ?? null;
-    const rowCount = result.transactions.filter(tx => tx.is_statement_total !== true).length;
+    const bankName = result?.detected_bank ?? null;
 
     // 1. VLASTITI IZVJEŠTAJ — ispis same aplikacije, nikad ne ulazi u knjige.
     // Uvijek zaustavlja (bez "ipak uvezi"), pa ne troši walletAskHandledRef.
+    // Ovu provjeru radimo prije učitavanja novčanika jer joj popis nije potreban.
     const bankKey = (bankName ?? '')
       .toLowerCase()
       .normalize('NFD')
       .replace(/[̀-ͯ]/g, '')
       .replace(/[^a-z0-9]/g, '');
     if (bankKey === 'centar' || bankKey === 'vmbalance') {
+      const rowCount = result?.transactions.filter(tx => tx.is_statement_total !== true).length ?? 0;
       setWalletAsk({ kind: 'own_report', selectedName: source.name });
-      try { logDiagnostic('import_wallet_blocked_own_report', { detected_bank: bankName, has_iban: !!accountIdentifier, source_id: source.id, rows: rowCount }); } catch {}
+      try { logDiagnostic('import_wallet_blocked_own_report', { detected_bank: bankName, has_iban: false, source_id: source.id, rows: rowCount }); } catch {}
       return true;
     }
 
-    if (!accountIdentifier && !bankName) return false;
+    if (sourcesLoading || customPaymentSources.length === 0) {
+      try { logDiagnostic('import_wallet_question_skipped_sources_not_ready', { loading: sourcesLoading, count: customPaymentSources.length }); } catch {}
+      return false;
+    }
+
+    if (!source || !result) return false;
+    const accountIdentifier = sanitizeIban(result.account_iban) || null;
+    const rowCount = result.transactions.filter(tx => tx.is_statement_total !== true).length;
 
     const fromBank = accountIdentifier && user?.id
       ? await suggestSourceFromBankAccounts(user.id, accountIdentifier)
@@ -593,6 +596,7 @@ export const GlobalPDFImportHost = () => {
       holderName: result.holder_name ?? null,
       rowCount,
       canSaveIdentifier,
+      noReadInfo: !accountIdentifier && !bankName,
     });
     try { logDiagnostic('import_wallet_unconfirmed_asked', { detected_bank: bankName, has_iban: !!accountIdentifier, source_id: source.id, rows: rowCount }); } catch {}
     return true;
