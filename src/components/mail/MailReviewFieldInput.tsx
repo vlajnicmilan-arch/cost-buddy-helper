@@ -93,10 +93,12 @@ export const MailReviewFieldInput = ({ label, kind, value, dateContext, onChange
               <Calendar
                 mode="single"
                 selected={isoToDate(value)}
+                defaultMonth={isoToDate(value)}
                 disabled={makeCalendarDisabled(range)}
                 onSelect={(d) => {
-                  if (!d) return;
-                  onChange(formatDateHr(dateToIso(d)));
+                  if (d) {
+                    onChange(formatDateHr(dateToIso(d)));
+                  }
                   setCalendarOpen(false);
                 }}
                 initialFocus
