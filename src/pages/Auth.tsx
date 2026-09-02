@@ -46,15 +46,15 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string; consent?: string }>({});
-  const gdprConsentRef = useRef<HTMLInputElement>(null);
+  const [errors, setErrors] = useState<{ email?: string; password?: string; terms?: string }>({});
+  const termsAcceptanceRef = useRef<HTMLInputElement>(null);
   const [awaitingVerification, setAwaitingVerification] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
   const [showWelcome, setShowWelcome] = useState(false);
   const [newUserName, setNewUserName] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
-  const [gdprConsent, setGdprConsent] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [newsletterConsent, setNewsletterConsent] = useState(false);
   
   const { signIn, signUp, resendVerificationEmail, resetPassword, user, loading: authLoading } = useAuth();
