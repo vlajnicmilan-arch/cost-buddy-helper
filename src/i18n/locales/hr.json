@@ -1850,7 +1850,7 @@
     "termsRequired": "Za registraciju je potrebno prihvatiti Uvjete korištenja.",
     "privacyNotice": "Informacije o tome kako obrađujemo tvoje osobne podatke nalaze se u {link}.",
     "privacyNoticeLink": "Politici privatnosti",
-    "freeAccountNote": "Besplatan račun: 30 unosa mjesečno, jedan novčanik, jedan proračun. Bez roka i bez kartice."
+    "freeAccountNote": "Besplatan račun: 30 unosa mjesečno, 25 dokumenata iz e-maila mjesečno i korištenje AI-a. Bez roka i bez kartice."
   },
   "categories": {
     "food": "Hrana",
@@ -4326,7 +4326,7 @@
       "yearly": "Godišnje = platiš deset mjeseci, dobiješ dvanaest.",
       "biznis": "Biznis je zaseban modul i još nije dostupan; cijena i uvjeti bit će objavljeni prije pokretanja.",
       "trial": "Probno razdoblje: 30 dana besplatno PO MODULU, isključivo na svjesnu aktivaciju korisnika unutar aplikacije. Nema automatskog triala pri registraciji. Trial za pojedini modul može se iskoristiti samo jednom i traje od trenutka aktivacije. Modul Biznis nema probno razdoblje.",
-      "free": "Besplatan račun. Račun u Centru je besplatan i bez roka. Uključuje 30 transakcija mjesečno, jedan novčanik i jedan proračun. Moduli (Smjer, Krug, Projekti, Biznis) nisu uključeni. Kad se mjesečni broj transakcija iskoristi, novi unosi su mogući od prvog dana sljedećeg mjeseca. Podaci se ne brišu i ne zaključavaju — sve uneseno ostaje vidljivo i može se izvesti u svakom trenutku. Aktivacijom bilo kojeg modula prestaju ograničenja besplatnog računa (30 transakcija mjesečno, jedan novčanik, jedan proračun).",
+      "free": "Besplatan račun. Račun u Centru je besplatan i bez roka. Uključuje 30 transakcija mjesečno, 25 dokumenata iz e-maila mjesečno i korištenje AI-a. Moduli (Smjer, Krug, Projekti, Biznis) nisu uključeni. Kad se mjesečni broj transakcija iskoristi, novi unosi su mogući od prvog dana sljedećeg mjeseca. Podaci se ne brišu i ne zaključavaju — sve uneseno ostaje vidljivo i može se izvesti u svakom trenutku.",
       "billing": "Naplata: pretplate se obrađuju preko Paddle.com Market Ltd. kao merchant of record; Paddle izdaje račun i provodi povrate. Pretplate se automatski obnavljaju na kraju obračunskog razdoblja (mjesečno ili godišnje) dok ih ne otkažete."
     },
     "s4": {
@@ -6143,8 +6143,6 @@
     "blocked": "Akcija nije dopuštena bez pretplate.",
     "moduleBlocked": "Za ovu značajku potrebna je aktivna pretplata. Podatke vidiš i možeš izvesti.",
     "freeTxLimitReached": "Iskoristio si 30 unosa u {{month}}. Novi unosi su mogući od {{date}}.",
-    "freePaymentSourceLimit": "Free plan dopušta {{limit}} novčanik. Aktiviraj Smjer za više.",
-    "freeBudgetLimit": "Free plan dopušta {{limit}} budžet. Aktiviraj Smjer za više.",
     "freeLimitServer": "Prekoračen je Free limit — potrebna je pretplata."
   },
   "importReview": {

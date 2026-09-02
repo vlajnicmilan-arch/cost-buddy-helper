@@ -1846,7 +1846,7 @@
     "termsRequired": "To create an account, you need to accept the Terms of Use.",
     "privacyNotice": "Information about how we process your personal data is available in the {link}.",
     "privacyNoticeLink": "Privacy Policy",
-    "freeAccountNote": "Free account: 30 entries per month, one wallet, one budget. No time limit, no card required."
+    "freeAccountNote": "Free account: 30 entries per month, 25 email documents per month and AI use. No time limit, no card required."
   },
   "categories": {
     "food": "Food",
@@ -4319,7 +4319,7 @@
       "yearly": "Annual = pay for ten months, get twelve.",
       "biznis": "Biznis is a separate module and is not yet available; pricing and terms will be published before launch.",
       "trial": "Trial: 30 days free PER MODULE, only upon the user's deliberate activation inside the app. There is no automatic trial on registration. Each module's trial can be used only once and starts at the moment of activation. The Business module has no trial.",
-      "free": "Free account. An account in Centar is free and has no time limit. It includes 30 transactions per month, one wallet and one budget. Modules (Smjer, Krug, Projekti, Biznis) are not included. Once the monthly transaction count is used up, new entries become possible again on the first day of the following month. Data is not deleted and not locked — everything entered remains visible and can be exported at any time. Activating any module removes the free account limits (30 transactions per month, one wallet, one budget).",
+      "free": "Free account. An account in Centar is free and has no time limit. It includes 30 transactions per month, 25 email documents per month and AI use. Modules (Smjer, Krug, Projekti, Biznis) are not included. Once the monthly transaction count is used up, new entries become possible again on the first day of the following month. Data is not deleted and not locked — everything entered remains visible and can be exported at any time.",
       "billing": "Billing: subscriptions are processed by Paddle.com Market Ltd. as merchant of record; Paddle issues invoices and handles refunds. Subscriptions renew automatically at the end of each billing period (monthly or annually) until you cancel."
     },
     "s4": {
@@ -6133,8 +6133,6 @@
     "blocked": "Action not allowed without a subscription.",
     "moduleBlocked": "This feature requires an active subscription. You can still view and export your data.",
     "freeTxLimitReached": "You've used 30 entries in {{month}}. New entries are available from {{date}}.",
-    "freePaymentSourceLimit": "Free plan allows {{limit}} wallet. Activate Smjer for more.",
-    "freeBudgetLimit": "Free plan allows {{limit}} budget. Activate Smjer for more.",
     "freeLimitServer": "Free limit exceeded — a subscription is required."
   },
   "importReview": {

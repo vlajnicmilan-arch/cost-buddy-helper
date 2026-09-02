@@ -1846,7 +1846,7 @@
     "termsRequired": "Um ein Konto zu erstellen, musst du die Nutzungsbedingungen akzeptieren.",
     "privacyNotice": "Informationen darüber, wie wir deine personenbezogenen Daten verarbeiten, findest du in der {link}.",
     "privacyNoticeLink": "Datenschutzerklärung",
-    "freeAccountNote": "Kostenloses Konto: 30 Einträge pro Monat, ein Wallet, ein Budget. Ohne Frist und ohne Karte."
+    "freeAccountNote": "Kostenloses Konto: 30 Einträge pro Monat, 25 E-Mail-Dokumente pro Monat und KI-Nutzung. Ohne Frist und ohne Karte."
   },
   "categories": {
     "food": "Essen",
@@ -4319,7 +4319,7 @@
       "yearly": "Jährlich = zehn Monate zahlen, zwölf bekommen.",
       "biznis": "Biznis ist ein separates Modul und noch nicht verfügbar; Preis und Bedingungen werden vor dem Start veröffentlicht.",
       "trial": "Testphase: 30 Tage kostenlos PRO MODUL, ausschließlich nach bewusster Aktivierung durch den Nutzer in der App. Es gibt keinen automatischen Trial bei der Registrierung. Der Trial pro Modul kann nur einmal genutzt werden und beginnt ab der Aktivierung. Das Modul Business hat keinen Trial.",
-      "free": "Kostenloses Konto. Ein Konto bei Centar ist kostenlos und unbefristet. Es umfasst 30 Transaktionen pro Monat, ein Wallet und ein Budget. Module (Smjer, Krug, Projekti, Biznis) sind nicht enthalten. Sobald die monatliche Anzahl an Transaktionen aufgebraucht ist, sind neue Einträge ab dem ersten Tag des folgenden Monats wieder möglich. Daten werden nicht gelöscht und nicht gesperrt — alles Eingegebene bleibt sichtbar und kann jederzeit exportiert werden. Mit der Aktivierung eines beliebigen Moduls entfallen die Beschränkungen des kostenlosen Kontos (30 Transaktionen pro Monat, ein Wallet, ein Budget).",
+      "free": "Kostenloses Konto. Ein Konto bei Centar ist kostenlos und unbefristet. Es umfasst 30 Transaktionen pro Monat, 25 E-Mail-Dokumente pro Monat und KI-Nutzung. Module (Smjer, Krug, Projekti, Biznis) sind nicht enthalten. Sobald die monatliche Anzahl an Transaktionen aufgebraucht ist, sind neue Einträge ab dem ersten Tag des folgenden Monats wieder möglich. Daten werden nicht gelöscht und nicht gesperrt — alles Eingegebene bleibt sichtbar und kann jederzeit exportiert werden.",
       "billing": "Abrechnung: Abonnements werden über Paddle.com Market Ltd. als Merchant of Record abgewickelt; Paddle stellt Rechnungen aus und führt Erstattungen durch. Abonnements verlängern sich automatisch am Ende jedes Abrechnungszeitraums (monatlich oder jährlich), bis sie gekündigt werden."
     },
     "s4": {
@@ -6133,8 +6133,6 @@
     "blocked": "Ohne Abo nicht erlaubt.",
     "moduleBlocked": "Für diese Funktion ist ein aktives Abo nötig. Daten kannst du weiterhin sehen und exportieren.",
     "freeTxLimitReached": "Du hast 30 Einträge im {{month}} verbraucht. Neue Einträge sind ab {{date}} möglich.",
-    "freePaymentSourceLimit": "Free-Plan erlaubt {{limit}} Wallet. Aktiviere Smjer für mehr.",
-    "freeBudgetLimit": "Free-Plan erlaubt {{limit}} Budget. Aktiviere Smjer für mehr.",
     "freeLimitServer": "Free-Limit überschritten — Abo erforderlich."
   },
   "importReview": {
