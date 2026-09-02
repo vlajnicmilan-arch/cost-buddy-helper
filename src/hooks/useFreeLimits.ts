@@ -17,11 +17,7 @@ interface FreeLimitsResult {
   isLimited: boolean;
 }
 
-export function useFreeLimits(
-  expenses: Expense[],
-  paymentSourceCount: number,
-  budgetCount: number,
-): FreeLimitsResult {
+export function useFreeLimits(expenses: Expense[]): FreeLimitsResult {
   const { hasAccess } = useFeatureAccess();
   const { usage } = useFreeTierUsage();
   const isLimited = !hasAccess('unlimited_transactions');
