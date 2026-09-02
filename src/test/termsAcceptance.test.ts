@@ -1,18 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-  insertMock: vi.fn(),
-  diagnosticMock: vi.fn(),
+  mocks.insertMock: vi.fn(),
+  mocks.diagnosticMock: vi.fn(),
 }));
 
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
-    from: () => ({ insert: mocks.insertMock }),
+    from: () => ({ insert: mocks.mocks.insertMock }),
   },
 }));
 
 vi.mock('@/lib/diagnosticLogger', () => ({
-  logDiagnostic: mocks.diagnosticMock,
+  logDiagnostic: mocks.mocks.diagnosticMock,
 }));
 
 import {
@@ -27,9 +27,9 @@ import {
 
 describe('termsAcceptance', () => {
   beforeEach(() => {
-    mocks.insertMock.mockReset();
-    mocks.insertMock.mockResolvedValue({ error: null });
-    mocks.diagnosticMock.mockReset();
+    mocks.mocks.insertMock.mockReset();
+    mocks.mocks.insertMock.mockResolvedValue({ error: null });
+    mocks.mocks.diagnosticMock.mockReset();
     sessionStorage.clear();
   });
 
@@ -45,7 +45,7 @@ describe('termsAcceptance', () => {
   it('upisuje prihvat u terms_acceptances', async () => {
     const payload = buildTermsAcceptancePayload('1.0', 'I accept the Terms of Use.', 'en');
     await expect(recordTermsAcceptance('user-1', payload)).resolves.toBe(true);
-    expect(insertMock).toHaveBeenCalledWith({
+    expect(mocks.insertMock).toHaveBeenCalledWith({
       user_id: 'user-1',
       tos_version: '1.0',
       accepted_text: 'I accept the Terms of Use.',
@@ -55,9 +55,9 @@ describe('termsAcceptance', () => {
   });
 
   it('zapisuje dijagnostiku i ne baca grešku ako upis ne uspije', async () => {
-    insertMock.mockResolvedValue({ error: { message: 'write failed', code: '42501' } });
+    mocks.insertMock.mockResolvedValue({ error: { message: 'write failed', code: '42501' } });
     await expect(recordTermsAcceptance('user-1', buildTermsAcceptancePayload('1.0', 'Tekst', 'hr'))).resolves.toBe(false);
-    expect(diagnosticMock).toHaveBeenCalledWith(expect.objectContaining({
+    expect(mocks.diagnosticMock).toHaveBeenCalledWith(expect.objectContaining({
       event: 'terms_acceptance_write_failed',
       severity: 'error',
     }));
@@ -68,12 +68,12 @@ describe('termsAcceptance', () => {
     stashPendingTermsAcceptance(payload);
     expect(readPendingTermsAcceptance()).toEqual(payload);
     await flushPendingTermsAcceptance('user-9');
-    expect(insertMock).toHaveBeenCalledTimes(1);
+    expect(mocks.insertMock).toHaveBeenCalledTimes(1);
     expect(readPendingTermsAcceptance()).toBeNull();
   });
 
   it('ne čisti odgođeni prihvat ako upis ne uspije', async () => {
-    insertMock.mockResolvedValue({ error: { message: 'write failed' } });
+    mocks.insertMock.mockResolvedValue({ error: { message: 'write failed' } });
     const payload = buildTermsAcceptancePayload('1.0', 'Tekst', 'hr');
     stashPendingTermsAcceptance(payload);
     await flushPendingTermsAcceptance('user-9');
