@@ -4326,7 +4326,7 @@
       "yearly": "Godišnje = platiš deset mjeseci, dobiješ dvanaest.",
       "biznis": "Biznis je zaseban modul i još nije dostupan; cijena i uvjeti bit će objavljeni prije pokretanja.",
       "trial": "Probno razdoblje: 30 dana besplatno PO MODULU, isključivo na svjesnu aktivaciju korisnika unutar aplikacije. Nema automatskog triala pri registraciji. Trial za pojedini modul može se iskoristiti samo jednom i traje od trenutka aktivacije. Modul Biznis nema probno razdoblje.",
-      "free": "Besplatan račun. Račun u Centru je besplatan i bez roka. Uključuje 30 transakcija mjesečno, 25 dokumenata iz e-maila mjesečno i korištenje AI-a. Moduli (Smjer, Krug, Projekti, Biznis) nisu uključeni. Kad se mjesečni broj transakcija iskoristi, novi unosi su mogući od prvog dana sljedećeg mjeseca. Podaci se ne brišu i ne zaključavaju — sve uneseno ostaje vidljivo i može se izvesti u svakom trenutku. Aktivacijom bilo kojeg modula prestaju ograničenja besplatnog računa."
+      "free": "Besplatan račun. Račun u Centru je besplatan i bez roka. Uključuje 30 transakcija mjesečno, 25 dokumenata iz e-maila mjesečno i korištenje AI-a. Moduli (Smjer, Krug, Projekti, Biznis) nisu uključeni. Kad se mjesečni broj transakcija iskoristi, novi unosi su mogući od prvog dana sljedećeg mjeseca. Podaci se ne brišu i ne zaključavaju — sve uneseno ostaje vidljivo i može se izvesti u svakom trenutku. Aktivacijom bilo kojeg modula prestaju ograničenja besplatnog računa.",
       "billing": "Naplata: pretplate se obrađuju preko Paddle.com Market Ltd. kao merchant of record; Paddle izdaje račun i provodi povrate. Pretplate se automatski obnavljaju na kraju obračunskog razdoblja (mjesečno ili godišnje) dok ih ne otkažete."
     },
     "s4": {
