@@ -31,6 +31,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // funnel signup, account-deletion cancel) for duplicate auth events.
   const initialSessionCheckedRef = useRef(false);
   const lastSignedInUserRef = useRef<string | null>(null);
+  const consentFlushRef = useRef<Promise<void> | null>(null);
+
+  const flushPendingConsents = (userId: string) => {
+    if (consentFlushRef.current) return;
+    consentFlushRef.current = Promise.all([
+      flushPendingNewsletterConsent(userId),
+      flushPendingTermsAcceptance(userId),
+    ]).then(() => undefined).finally(() => {
+      consentFlushRef.current = null;
+    });
+  };
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -40,10 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(nextSession?.user ?? null);
 
         if (nextSession?.user) {
-          void Promise.all([
-            flushPendingNewsletterConsent(nextSession.user.id),
-            flushPendingTermsAcceptance(nextSession.user.id),
-          ]);
+          flushPendingConsents(nextSession.user.id);
         }
 
         // Only mark loading=false / authReady=true after the initial
@@ -124,10 +132,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAuthReady(true);
 
       if (validatedSession?.user) {
-        void Promise.all([
-          flushPendingNewsletterConsent(validatedSession.user.id),
-          flushPendingTermsAcceptance(validatedSession.user.id),
-        ]);
+        flushPendingConsents(validatedSession.user.id);
         lastSignedInUserRef.current = validatedSession.user.id;
         const deviceInfo = {
           userAgent: navigator.userAgent,

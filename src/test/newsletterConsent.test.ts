@@ -80,6 +80,16 @@ describe('newsletterConsent', () => {
     }));
   });
 
+  it('iznimka pri upisu ostaje vidljiva u dijagnostici', async () => {
+    mocks.insertMock.mockRejectedValue(new Error('network'));
+    const ok = await recordNewsletterConsent('user-1', buildConsentPayload('a@b.c', 't', 'hr'));
+    expect(ok).toBe(false);
+    expect(mocks.diagnosticMock).toHaveBeenCalledWith(expect.objectContaining({
+      event: 'newsletter_consent_write_failed',
+      severity: 'error',
+    }));
+  });
+
   it('stash → read → clear roundtrip (odložena privola pri potvrdi maila)', () => {
     const p = buildConsentPayload('ana@example.com', 'Tekst', 'hr');
     stashPendingConsent(p);

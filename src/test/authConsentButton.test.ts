@@ -5,6 +5,11 @@ import { resolve } from 'node:path';
 const src = readFileSync(resolve(process.cwd(), 'src/pages/Auth.tsx'), 'utf8');
 
 describe('auth register button — consent is validated on submit, not by disabling', () => {
+  it('uses the user identity returned by signUp instead of reading the session', () => {
+    expect(src).toContain('const uid = data?.user?.id;');
+    expect(src).not.toContain('const { data: sessionData } = await supabase.auth.getSession()');
+  });
+
   it('submit button is disabled only while loading (never by missing consent)', () => {
     // The register/login submit is the one rendering auth.login / auth.register.
     const submit = src.match(/<Button\s+type="submit"[\s\S]*?auth\.register[\s\S]*?<\/Button>/)?.[0] ?? '';
