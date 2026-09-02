@@ -67,9 +67,6 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const quotaResp = await checkAiQuota(userClient, user.id, "generate-ai-insights");
-    if (quotaResp) return quotaResp;
-
 
     // Optional: force regenerate
     let force = false;
@@ -424,14 +421,39 @@ Deno.serve(async (req) => {
 
     const top = candidates.slice(0, 3);
 
+    const buildFallback = (): FinalInsight[] =>
+      top.map(c => ({
+        id: c.id,
+        type: c.type,
+        title: c.factsHr,
+        prompt: c.followupHr,
+        severity: c.severity,
+        action: c.action,
+      }));
+
+    // Quota/cost cap is only consumed when we are about to call the AI.
+    const quotaResp = await checkAiQuota(userClient, user.id, "generate-ai-insights");
+    if (quotaResp) {
+      const fallback = buildFallback();
+      return new Response(JSON.stringify({ insights: fallback, quota_exhausted: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const __cap = await checkAiCostCap(userClient);
+    if (__cap) {
+      const fallback = buildFallback();
+      return new Response(JSON.stringify({ insights: fallback, quota_exhausted: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // ===== AI: formulate short titles in target language =====
     const langName = language === "en" ? "English" : language === "de" ? "German" : "Croatian";
     const systemPrompt = `You write very short, factual, friendly insight cards for a personal finance app. Output language: ${langName}. Never invent numbers; use exactly what's provided. Each title 8-14 words, no emojis, no exclamation marks, no quotes around currency. Use the same currency symbol as in the facts.`;
 
     const userPrompt = `Generate ${top.length} insight card titles. For each input fact, output a one-sentence card title in ${langName} that summarizes the fact naturally.\n\nFacts (in Croatian, translate to ${langName}):\n${top.map((c, i) => `${i + 1}. [${c.type}] ${c.factsHr}`).join("\n")}`;
 
-    const __cap = await checkAiCostCap(userClient);
-    if (__cap) return __cap;
     const aiResp = await callGemini({
       model: "google/gemini-2.5-flash-lite",
       messages: [
@@ -462,23 +484,12 @@ Deno.serve(async (req) => {
     });
 
     if (!aiResp.ok) {
-      if (aiResp.status === 429) {
-        return new Response(JSON.stringify({ error: "rate_limited" }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      recordAiCost(userClient, "generate-ai-insights").catch(() => {});
-      if (aiResp.status === 402) {
-        return new Response(JSON.stringify({ error: "payment_required" }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+      if (aiResp.status === 429 || aiResp.status === 402) {
+        recordAiCost(userClient, "generate-ai-insights").catch(() => {});
       }
       const txt = await aiResp.text();
       console.error("AI gateway error:", aiResp.status, txt);
-      // Fallback to raw HR facts
-      const fallback: FinalInsight[] = top.map(c => ({
-        id: c.id, type: c.type, title: c.factsHr, prompt: c.followupHr, severity: c.severity, action: c.action,
-      }));
+      const fallback = buildFallback();
       return new Response(JSON.stringify({ insights: fallback, fallback: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
