@@ -1841,7 +1841,7 @@
     },
     "nameFullOptional": "Vor- und Nachname (optional)",
     "alreadyHaveAccount": "Ich habe bereits ein Konto",
-    "consentRequired": "Um ein Konto zu erstellen, musst du die Datenschutzerklärung akzeptieren.",
+    
     "termsAcceptLabel": "Ich akzeptiere die {link}.",
     "termsAcceptLink": "Nutzungsbedingungen",
     "termsRequired": "Um ein Konto zu erstellen, musst du die Nutzungsbedingungen akzeptieren.",
@@ -3448,8 +3448,6 @@
     "customize": "Anpassen",
     "savePreferences": "Einstellungen speichern",
     "privacyPolicy": "Datenschutzrichtlinie",
-    "consentLabel": "Ich akzeptiere die {link} und stimme der Verarbeitung personenbezogener Daten gemäß der DSGVO zu.",
-    "privacyPolicyLink": "Datenschutzrichtlinie",
     "settingsPrivacyTitle": "Datenschutzrichtlinie",
     "settingsPrivacyDesc": "DSGVO-Rechte und Datenverarbeitung",
     "settingsTermsTitle": "Nutzungsbedingungen",
