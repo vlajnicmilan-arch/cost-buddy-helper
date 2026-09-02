@@ -1,18 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-  mocks.insertMock: vi.fn(),
-  mocks.diagnosticMock: vi.fn(),
+  insertMock: vi.fn(),
+  diagnosticMock: vi.fn(),
 }));
 
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
-    from: () => ({ insert: mocks.mocks.insertMock }),
+    from: () => ({ insert: mocks.insertMock }),
   },
 }));
 
 vi.mock('@/lib/diagnosticLogger', () => ({
-  logDiagnostic: mocks.mocks.diagnosticMock,
+  logDiagnostic: mocks.diagnosticMock,
 }));
 
 import {
