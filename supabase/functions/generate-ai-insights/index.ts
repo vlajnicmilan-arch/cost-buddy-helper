@@ -421,6 +421,33 @@ Deno.serve(async (req) => {
 
     const top = candidates.slice(0, 3);
 
+    const buildFallback = (): FinalInsight[] =>
+      top.map(c => ({
+        id: c.id,
+        type: c.type,
+        title: c.factsHr,
+        prompt: c.followupHr,
+        severity: c.severity,
+        action: c.action,
+      }));
+
+    // Quota/cost cap is only consumed when we are about to call the AI.
+    const quotaResp = await checkAiQuota(userClient, user.id, "generate-ai-insights");
+    if (quotaResp) {
+      const fallback = buildFallback();
+      return new Response(JSON.stringify({ insights: fallback, quota_exhausted: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const __cap = await checkAiCostCap(userClient);
+    if (__cap) {
+      const fallback = buildFallback();
+      return new Response(JSON.stringify({ insights: fallback, quota_exhausted: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // ===== AI: formulate short titles in target language =====
     const langName = language === "en" ? "English" : language === "de" ? "German" : "Croatian";
     const systemPrompt = `You write very short, factual, friendly insight cards for a personal finance app. Output language: ${langName}. Never invent numbers; use exactly what's provided. Each title 8-14 words, no emojis, no exclamation marks, no quotes around currency. Use the same currency symbol as in the facts.`;
