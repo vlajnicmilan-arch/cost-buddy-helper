@@ -2355,7 +2355,7 @@
       "goalAlreadyAdded": "Dieses Sparziel ist bereits in der Gruppe"
     },
     "limits": {
-      "paymentSources": "Sie haben das Limit für Zahlungsquellen erreicht. Auf Pro upgraden für unbegrenzte Quellen."
+      "paymentSources": "Sie haben das Limit erreicht. Für weitere Wallets ist das Modul Smjer erforderlich."
     },
     "receipt": {
       "cloudRequired": "KI-Belegscan erfordert Cloud-Modus und Anmeldung. Sie können die Daten manuell eingeben.",

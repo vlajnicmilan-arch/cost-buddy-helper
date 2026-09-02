@@ -268,7 +268,7 @@ export const ModuleUpgradeDialog = ({ open, onOpenChange, module }: Props) => {
           </div>
         )}
 
-        <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between gap-2 pt-2">
+        <DialogFooter className="grid grid-cols-1 gap-2 pt-2 sm:grid-cols-2 sm:space-x-0">
           {confirming ? (
             <>
               <Button
@@ -291,35 +291,35 @@ export const ModuleUpgradeDialog = ({ open, onOpenChange, module }: Props) => {
             </>
           ) : (
             <>
-              <Button variant="ghost" onClick={() => onOpenChange(false)} className="sm:w-auto w-full">
-                {t('moduleUpgrade.notNow', 'Ne sada')}
-              </Button>
-              <div className="flex flex-col sm:flex-row gap-2 sm:w-auto w-full">
+              <div className="order-2 grid min-w-0 grid-cols-1 gap-2 sm:col-span-2 sm:grid-cols-2">
+                <Button variant="ghost" onClick={() => onOpenChange(false)} className="w-full min-w-0">
+                  {t('moduleUpgrade.notNow', 'Ne sada')}
+                </Button>
                 {canOfferTrial && (
                   <Button
                     variant="outline"
                     onClick={() => setConfirming(true)}
-                    className="sm:w-auto w-full gap-2"
+                    className="w-full min-w-0 gap-2 whitespace-normal"
                   >
                     <Sparkles className="w-4 h-4" />
                     {t('moduleUpgrade.trial.tryCta', 'Isprobaj besplatno 30 dana')}
                   </Button>
                 )}
-                {meta.paywallPlan ? (
-                  <Button
-                    onClick={goPaywall}
-                    disabled={pricesLoading}
-                    className="sm:w-auto w-full gap-2"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    {t('moduleUpgrade.unlockCta', 'Otključaj')} {t(meta.titleKey, meta.titleFallback)}
-                  </Button>
-                ) : (
-                  <Button disabled className="sm:w-auto w-full">
-                    {t('moduleUpgrade.comingSoonCta', 'Uskoro')}
-                  </Button>
-                )}
               </div>
+              {meta.paywallPlan ? (
+                <Button
+                  onClick={goPaywall}
+                  disabled={pricesLoading}
+                  className="order-1 w-full min-w-0 gap-2 whitespace-normal sm:col-span-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  {t('moduleUpgrade.unlockCta', 'Otključaj')} {t(meta.titleKey, meta.titleFallback)}
+                </Button>
+              ) : (
+                <Button disabled className="order-1 w-full min-w-0 sm:col-span-2">
+                  {t('moduleUpgrade.comingSoonCta', 'Uskoro')}
+                </Button>
+              )}
             </>
           )}
         </DialogFooter>

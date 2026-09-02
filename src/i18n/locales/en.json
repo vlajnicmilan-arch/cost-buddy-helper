@@ -2355,7 +2355,7 @@
       "goalAlreadyAdded": "This savings goal is already in the group"
     },
     "limits": {
-      "paymentSources": "You've reached the payment source limit. Upgrade to Pro for unlimited sources."
+      "paymentSources": "You've reached the limit. The Smjer module is required for more wallets."
     },
     "receipt": {
       "cloudRequired": "AI receipt scanning requires cloud mode and sign-in. You can enter the data manually.",
