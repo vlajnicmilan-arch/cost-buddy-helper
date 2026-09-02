@@ -1846,7 +1846,7 @@
     "nameFullOptional": "Ime i prezime (opcionalno)",
     "alreadyHaveAccount": "Već imam račun",
     "consentRequired": "Za registraciju je potrebno prihvatiti Politiku privatnosti.",
-    "freeAccountNote": "Račun je besplatan. Bez roka i bez kartice."
+    "freeAccountNote": "Besplatan račun: 30 unosa mjesečno, jedan novčanik, jedan proračun. Bez roka i bez kartice."
   },
   "categories": {
     "food": "Hrana",
@@ -6135,7 +6135,7 @@
     "cta": "Aktiviraj pretplatu",
     "blocked": "Akcija nije dopuštena bez pretplate.",
     "moduleBlocked": "Za ovu značajku potrebna je aktivna pretplata. Podatke vidiš i možeš izvesti.",
-    "freeTxLimitReached": "Iskoristio si {{used}}/{{limit}} besplatnih transakcija ovaj mjesec. Brisanje ne oslobađa limit.",
+    "freeTxLimitReached": "Iskoristio si 30 unosa u {{month}}. Novi unosi su mogući od {{date}}.",
     "freePaymentSourceLimit": "Free plan dopušta {{limit}} novčanik. Aktiviraj Smjer za više.",
     "freeBudgetLimit": "Free plan dopušta {{limit}} budžet. Aktiviraj Smjer za više.",
     "freeLimitServer": "Prekoračen je Free limit — potrebna je pretplata."

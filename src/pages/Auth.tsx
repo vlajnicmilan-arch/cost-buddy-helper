@@ -568,7 +568,7 @@ const Auth = () => {
           </p>
           {!isLogin && (
             <p className="text-xs text-muted-foreground/70 mt-1">
-              {t('auth.freeAccountNote', 'Račun je besplatan. Bez roka i bez kartice.')}
+              {t('auth.freeAccountNote', 'Besplatan račun: 30 unosa mjesečno, jedan novčanik, jedan proračun. Bez roka i bez kartice.')}
             </p>
           )}
         </div>

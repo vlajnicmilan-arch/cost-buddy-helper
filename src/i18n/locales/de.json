@@ -1842,7 +1842,7 @@
     "nameFullOptional": "Vor- und Nachname (optional)",
     "alreadyHaveAccount": "Ich habe bereits ein Konto",
     "consentRequired": "Um ein Konto zu erstellen, musst du die Datenschutzerklärung akzeptieren.",
-    "freeAccountNote": "Das Konto ist kostenlos. Ohne Frist und ohne Karte."
+    "freeAccountNote": "Kostenloses Konto: 30 Einträge pro Monat, ein Wallet, ein Budget. Ohne Frist und ohne Karte."
   },
   "categories": {
     "food": "Essen",
@@ -6125,7 +6125,7 @@
     "cta": "Abo aktivieren",
     "blocked": "Ohne Abo nicht erlaubt.",
     "moduleBlocked": "Für diese Funktion ist ein aktives Abo nötig. Daten kannst du weiterhin sehen und exportieren.",
-    "freeTxLimitReached": "Du hast {{used}}/{{limit}} Gratistransaktionen diesen Monat verbraucht. Löschen setzt das Limit nicht zurück.",
+    "freeTxLimitReached": "Du hast 30 Einträge im {{month}} verbraucht. Neue Einträge sind ab {{date}} möglich.",
     "freePaymentSourceLimit": "Free-Plan erlaubt {{limit}} Wallet. Aktiviere Smjer für mehr.",
     "freeBudgetLimit": "Free-Plan erlaubt {{limit}} Budget. Aktiviere Smjer für mehr.",
     "freeLimitServer": "Free-Limit überschritten — Abo erforderlich."

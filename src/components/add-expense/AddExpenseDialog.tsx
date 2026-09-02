@@ -24,11 +24,9 @@ import { ScanningOverlay } from '@/components/ScanningOverlay';
 import { useCategoryHabits } from '@/hooks/useCategoryHabits';
 import { useAICategorization } from '@/hooks/useAICategorization';
 import { useAppState } from '@/contexts/AppStateContext';
-import { supabase } from '@/integrations/supabase/client';
 import { useLoanDetection, DetectedLoan } from '@/hooks/useLoanDetection';
 import { LoanDetectionDialog } from '@/components/business/LoanDetectionDialog';
 import { useBusinessDebts } from '@/hooks/useBusinessDebts';
-import { useFeatureAccess, FREE_LIMITS } from '@/hooks/useFeatureAccess';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useInAppReview } from '@/hooks/useInAppReview';
 import { useLocation } from '@/hooks/useLocation';
@@ -45,6 +43,7 @@ import {
   type OwnerFundingChoice,
 } from '@/lib/receiptBusinessRouting';
 import { buildKrugFields } from '@/lib/krugExpenseFields';
+import { getFreeTransactionLimitPeriod } from '@/lib/freeTransactionLimit';
 
 import { ScannedDataPreview } from './ScannedDataPreview';
 import { ManualExpenseForm } from './ManualExpenseForm';
@@ -121,8 +120,15 @@ export const AddExpenseDialog = ({
   businessProfileId,
   initialCapturedImage = null,
 }: AddExpenseDialogProps) => {
-  const { t } = useTranslation();
-  const { hasAccess } = useFeatureAccess();
+  const { t, i18n } = useTranslation();
+  const showFreeTransactionLimitError = useCallback((error: unknown) => {
+    if (!/free_limit_exceeded/i.test(String((error as { message?: unknown })?.message ?? error))) {
+      return false;
+    }
+    const { month, resetDate } = getFreeTransactionLimitPeriod(i18n.language);
+    showError(t('access.freeTxLimitReached', { month, date: resetDate }));
+    return true;
+  }, [i18n.language, t]);
   const { successVibration } = useHaptics();
   const { maybeRequestReview } = useInAppReview();
   const { getCurrentLocation, loading: locationLoading } = useLocation();
@@ -909,7 +915,9 @@ export const AddExpenseDialog = ({
           details: { message: error instanceof Error ? error.message : String(error) },
         });
       } catch {}
-      showError(t('transactions.saveError'));
+      if (!showFreeTransactionLimitError(error)) {
+        showError(t('transactions.saveError'));
+      }
     } finally {
       isSavingRef.current = false;
       setIsSaving(false);
@@ -1030,7 +1038,9 @@ export const AddExpenseDialog = ({
       return (created ?? undefined) as Expense | undefined;
     } catch (error) {
       console.error('Error saving transaction:', error);
-      showError(t('transactions.saveError') || 'Greška pri spremanju transakcije.');
+      if (!showFreeTransactionLimitError(error)) {
+        showError(t('transactions.saveError'));
+      }
       throw error;
     }
   };
@@ -1180,21 +1190,6 @@ export const AddExpenseDialog = ({
       }
     }
 
-    if (!hasAccess('unlimited_transactions')) {
-      const now = new Date();
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
-      const { count } = await supabase
-        .from('expenses')
-        .select('*', { count: 'exact', head: true })
-        .gte('date', monthStart)
-        .lte('date', monthEnd);
-      if (count !== null && count >= FREE_LIMITS.transactions_per_month) {
-        showError(t('limits.transactionsReached', `Dosegnuli ste limit od ${FREE_LIMITS.transactions_per_month} transakcija mjesečno. Nadogradite na Pro za neograničene transakcije.`));
-        return;
-      }
-    }
-
     const parsedAmount = validateAmountInput(amount).value;
 
     if (isInstallment && type !== 'transfer') {
@@ -1239,7 +1234,12 @@ export const AddExpenseDialog = ({
 
         needs_explanation: needsExplanation,
       };
-      await onAdd(installmentExpense, validItems.length > 0 ? validItems : undefined);
+      try {
+        await onAdd(installmentExpense, validItems.length > 0 ? validItems : undefined);
+      } catch (error) {
+        if (!showFreeTransactionLimitError(error)) throw error;
+        return;
+      }
       resetForm();
       setOpen(false);
       return;

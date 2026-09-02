@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { showError } from '@/hooks/useStatusFeedback';
 import { useFeatureAccess, Feature, FREE_LIMITS } from '@/hooks/useFeatureAccess';
 import { useFreeTierUsage } from '@/hooks/useFreeTierUsage';
+import { getFreeTransactionLimitPeriod } from '@/lib/freeTransactionLimit';
 
 export type WriteScope =
   | { kind: 'module'; feature: Feature }
@@ -31,7 +32,8 @@ interface GuardResult {
 }
 
 export function useWriteGuard(scope: WriteScope): GuardResult {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const language = i18n?.language ?? 'hr';
   const navigate = useNavigate();
   const { hasAccess, isFreeTier } = useFeatureAccess();
   const { usage } = useFreeTierUsage();
@@ -50,11 +52,8 @@ export function useWriteGuard(scope: WriteScope): GuardResult {
       const used = usage?.transactions_created ?? 0;
       if (used >= FREE_LIMITS.transactions_per_month) {
         canWrite = false;
-        blockReason = t(
-          'access.freeTxLimitReached',
-          'Iskoristio si {{used}}/{{limit}} besplatnih transakcija ovaj mjesec. Brisanje ne oslobađa limit.',
-          { used, limit: FREE_LIMITS.transactions_per_month }
-        );
+        const { month, resetDate } = getFreeTransactionLimitPeriod(language);
+        blockReason = t('access.freeTxLimitReached', { month, date: resetDate });
       }
     }
   } else if (scope.kind === 'freePaymentSource') {
@@ -86,20 +85,29 @@ export function useWriteGuard(scope: WriteScope): GuardResult {
           const msg = String(err?.message || err);
           // Server je poslao "free_limit_exceeded" — pretvori u prijateljski toast.
           if (/free_limit_exceeded/i.test(msg)) {
-            showError(t('access.freeLimitServer', 'Prekoračen je Free limit — potrebna je pretplata.'), {
-              action: { label: ctaLabel, onClick: () => navigate('/paywall') },
-            });
+            if (scope.kind === 'freeTx') {
+              const { month, resetDate } = getFreeTransactionLimitPeriod(language);
+              showError(t('access.freeTxLimitReached', { month, date: resetDate }));
+            } else {
+              showError(t('access.freeLimitServer', 'Prekoračen je Free limit — potrebna je pretplata.'), {
+                action: { label: ctaLabel, onClick: () => navigate('/paywall') },
+              });
+            }
             return undefined;
           }
           throw err;
         }
       }
-      showError(blockReason ?? t('access.blocked', 'Akcija nije dopuštena bez pretplate.'), {
-        action: { label: ctaLabel, onClick: () => navigate('/paywall') },
-      });
+      if (scope.kind === 'freeTx') {
+        showError(blockReason ?? t('access.freeTxLimitReached'));
+      } else {
+        showError(blockReason ?? t('access.blocked', 'Akcija nije dopuštena bez pretplate.'), {
+          action: { label: ctaLabel, onClick: () => navigate('/paywall') },
+        });
+      }
       return undefined;
     },
-    [canWrite, blockReason, ctaLabel, navigate, t]
+    [canWrite, blockReason, ctaLabel, language, navigate, scope.kind, t]
   );
 
   return { canWrite, blockReason, guard };
