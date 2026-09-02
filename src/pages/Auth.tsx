@@ -780,21 +780,21 @@ const Auth = () => {
                   className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary"
                 />
                 <label htmlFor="termsAcceptance" className="text-xs text-muted-foreground leading-relaxed">
-                  {t('auth.termsAcceptLabel', { link: '' }).split('{link}')[0]}
+                  {t('auth.termsAcceptLabel', { link: '__LINK__' }).split('__LINK__')[0]}
                   <Link to="/terms-of-service" className="text-primary hover:underline">
                     {t('auth.termsAcceptLink')}
                   </Link>
-                  {t('auth.termsAcceptLabel', { link: '' }).split('{link}')[1]}
+                  {t('auth.termsAcceptLabel', { link: '__LINK__' }).split('__LINK__')[1]}
                   {' '}<span className="text-destructive" aria-hidden="true">*</span>
                 </label>
               </div>
               {errors.terms && <p className="text-sm text-destructive">{errors.terms}</p>}
               <p className="text-xs text-muted-foreground leading-relaxed">
-                {t('auth.privacyNotice', { link: '' }).split('{link}')[0]}
+                {t('auth.privacyNotice', { link: '__LINK__' }).split('__LINK__')[0]}
                 <Link to="/privacy-policy" className="text-primary hover:underline">
                   {t('auth.privacyNoticeLink')}
                 </Link>
-                {t('auth.privacyNotice', { link: '' }).split('{link}')[1]}
+                {t('auth.privacyNotice', { link: '__LINK__' }).split('__LINK__')[1]}
               </p>
             </div>
           )}

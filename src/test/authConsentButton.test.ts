@@ -15,24 +15,24 @@ describe('auth register button — consent is validated on submit, not by disabl
     expect(src).not.toMatch(/disabled=\{[^}]*gdprConsent[^}]*\}/);
   });
 
-  it('submit without consent shows an inline error instead of silence', () => {
+  it('submit without terms shows an inline error instead of silence', () => {
     // handleSubmit must short-circuit with a visible message...
-    expect(src).toContain("error_code: 'consent_required'");
+    expect(src).toContain("error_code: 'terms_not_accepted'");
     expect(src).toContain("stage: 'client_validation'");
-    expect(src).toContain("t('auth.consentRequired')");
+    expect(src).toContain("t('auth.termsRequired')");
     // ...rendered next to the checkbox like other field errors.
-    expect(src).toContain('errors.consent && <p className="text-sm text-destructive"');
+    expect(src).toContain('errors.terms && <p className="text-sm text-destructive"');
     // ...and the checkbox receives focus so the user sees where the problem is.
-    expect(src).toContain('gdprConsentRef.current?.focus()');
+    expect(src).toContain('termsAcceptanceRef.current?.focus()');
   });
 
-  it('marks the consent checkbox as required', () => {
+  it('marks the terms checkbox as required', () => {
     expect(src).toContain('aria-required="true"');
-    expect(src).toContain('aria-invalid={!!errors.consent}');
+    expect(src).toContain('aria-invalid={!!errors.terms}');
   });
 
-  it('clears the consent error once the checkbox is ticked', () => {
-    expect(src).toContain('setErrors((prev) => ({ ...prev, consent: undefined }))');
+  it('clears the terms error once the checkbox is ticked', () => {
+    expect(src).toContain('setErrors((prev) => ({ ...prev, terms: undefined }))');
   });
 
   it('OAuth buttons sit above the form fields, divider between them', () => {
