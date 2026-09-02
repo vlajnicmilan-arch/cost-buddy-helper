@@ -1,4 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const mocks = vi.hoisted(() => ({
+  insertMock: vi.fn(),
+  diagnosticMock: vi.fn(),
+}));
+
+vi.mock('@/integrations/supabase/client', () => ({
+  supabase: {
+    from: () => ({ insert: mocks.insertMock }),
+  },
+}));
+
+vi.mock('@/lib/diagnosticLogger', () => ({
+  logDiagnostic: mocks.diagnosticMock,
+}));
+
 import {
   buildTermsAcceptancePayload,
   clearPendingTermsAcceptance,
@@ -8,19 +24,6 @@ import {
   stashPendingTermsAcceptance,
   TERMS_ACCEPTANCE_SOURCE,
 } from '@/lib/termsAcceptance';
-
-const insertMock = vi.fn();
-const diagnosticMock = vi.fn();
-
-vi.mock('@/integrations/supabase/client', () => ({
-  supabase: {
-    from: () => ({ insert: insertMock }),
-  },
-}));
-
-vi.mock('@/lib/diagnosticLogger', () => ({
-  logDiagnostic: diagnosticMock,
-}));
 
 describe('termsAcceptance', () => {
   beforeEach(() => {
