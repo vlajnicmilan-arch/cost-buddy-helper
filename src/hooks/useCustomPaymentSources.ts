@@ -6,7 +6,6 @@ import { useStorage } from '@/contexts/StorageContext';
 import { useAppState } from '@/contexts/AppStateContext';
 import { CustomPaymentSource, PaymentSourceCard } from '@/types/customPaymentSource';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
-import { useFeatureAccess, FREE_LIMITS } from '@/hooks/useFeatureAccess';
 import { tr } from '@/lib/errorMessages';
 import { instantCache } from '@/lib/instantCache';
 import { useAppResume } from '@/hooks/useAppResume';
@@ -41,7 +40,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
   const { onPaymentSourcesReordered, emitPaymentSourcesReordered, activeBusinessProfileId } = useAppState();
   const hasOverride = 'businessProfileIdOverride' in options;
   const readProfileId = hasOverride ? businessProfileIdOverride ?? null : activeBusinessProfileId;
-  const { hasAccess } = useFeatureAccess();
+  
   const initialKey = paymentSourcesCacheKey(user?.id, readProfileId, includePersonal);
   const initialCached = user ? instantCache.read<CustomPaymentSource[]>(initialKey) : null;
   const [customPaymentSources, setCustomPaymentSources] = useState<CustomPaymentSource[]>(initialCached || []);
@@ -307,11 +306,6 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
 
 
   const addCustomPaymentSource = async (source: Omit<CustomPaymentSource, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    // Check free tier payment source limit
-    if (!hasAccess('unlimited_payment_sources') && customPaymentSources.length >= FREE_LIMITS.payment_sources) {
-      showError(tr('errors.limits.paymentSources', 'Dosegnuli ste ograničenje. Za više novčanika potreban je modul Smjer.'));
-      return null;
-    }
 
     if (isLocalMode) {
       const maxSortOrder = customPaymentSources.reduce((max, src) => Math.max(max, src.sort_order || 0), -1);

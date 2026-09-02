@@ -5,7 +5,7 @@ import { useStorage } from '@/contexts/StorageContext';
 import { useExpenses } from '@/hooks/useExpenses';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
-import { useFeatureAccess, FREE_LIMITS } from '@/hooks/useFeatureAccess';
+
 import { 
   Budget, 
   BudgetCategory, 
@@ -24,7 +24,7 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
   const { storageMode } = useStorage();
   const { expenses: internalExpenses } = useExpenses();
   const { t } = useTranslation();
-  const { hasAccess } = useFeatureAccess();
+  
   
   // Use external expenses if provided, otherwise use internal
   const expenses = options?.externalExpenses ?? internalExpenses;
