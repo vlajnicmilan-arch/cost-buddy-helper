@@ -97,6 +97,7 @@ export const CardScannerDialog = ({
               }),
             );
           }
+        }
         throw new Error(funcError.message);
       }
 
