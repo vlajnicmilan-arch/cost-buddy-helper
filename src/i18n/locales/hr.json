@@ -6581,7 +6581,9 @@
     "reason": {
       "privitak_prevelik": "Privitak prevelik",
       "brana_sat": "Previše poruka u sat vremena",
-      "brana_dan": "Previše poruka u danu"
+      "brana_dan": "Previše poruka u danu",
+      "kvota_iscrpljena": "Mjesečna kvota uvoza iz maila je iskorištena",
+      "ai_cap_reached": "AI obrada je privremeno pauzirana do 1. u mjesecu"
     }
   },
   "mailReview": {
