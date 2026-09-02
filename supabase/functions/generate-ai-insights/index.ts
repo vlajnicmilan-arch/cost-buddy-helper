@@ -486,23 +486,12 @@ Deno.serve(async (req) => {
     });
 
     if (!aiResp.ok) {
-      if (aiResp.status === 429) {
-        return new Response(JSON.stringify({ error: "rate_limited" }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      recordAiCost(userClient, "generate-ai-insights").catch(() => {});
-      if (aiResp.status === 402) {
-        return new Response(JSON.stringify({ error: "payment_required" }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+      if (aiResp.status === 429 || aiResp.status === 402) {
+        recordAiCost(userClient, "generate-ai-insights").catch(() => {});
       }
       const txt = await aiResp.text();
       console.error("AI gateway error:", aiResp.status, txt);
-      // Fallback to raw HR facts
-      const fallback: FinalInsight[] = top.map(c => ({
-        id: c.id, type: c.type, title: c.factsHr, prompt: c.followupHr, severity: c.severity, action: c.action,
-      }));
+      const fallback = buildFallback();
       return new Response(JSON.stringify({ insights: fallback, fallback: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
