@@ -47,6 +47,8 @@ import { buildReportFileName, type ConfidentialityLevel } from '@/lib/reportDesi
 import { useReportOwner } from '@/hooks/useReportOwner';
 import { ConfidentialityPicker, useConfidentialityLevel } from '@/components/ConfidentialityPicker';
 import i18n from '@/i18n';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { compareImportRowsDesc } from '@/lib/importRowSort';
@@ -132,6 +134,8 @@ export const PaymentSourceTransactionsDialog = ({
     registerHandlers: registerPdfImportHandlers,
   } = usePdfImport();
   const { customCategories } = useCustomCategories();
+  const { hasAccess, getRequiredTier } = useFeatureAccess();
+  const canImportStatement = hasAccess('pdf_import');
   const isLocalPdfProcessing = pdfJobPhase === 'starting' || pdfJobPhase === 'processing' || !!pdfJobId;
   const isPdfProcessing = isGlobalPdfImportBusy || isLocalPdfProcessing;
 
@@ -899,7 +903,7 @@ export const PaymentSourceTransactionsDialog = ({
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 min-w-0 sm:justify-end">
-                  {onImportCSV && (
+                  {onImportCSV && canImportStatement && (
                     <>
                       <input
                         ref={pdfInputRef}
@@ -922,14 +926,16 @@ export const PaymentSourceTransactionsDialog = ({
                         )}
                         PDF
                       </Button>
-                      {/* HTML ulaz uklonjen: išao je STARIM sinkronim putem
-                          (usePDFParser.parseHTML → izravan poziv, bez sustava
-                          poslova) pa nije dobivao segmentaciju velikih izvoda.
-                          CSV ulaz uklonjen: CSV_IMPORT_ENABLED = false, pa je
-                          gumb tražio cijeli posao od korisnika i tek na kraju
-                          odbijao uvoz. PDF put ostaje jedini ulaz s diska. */}
                     </>
                   )}
+                  {onImportCSV && !canImportStatement && (
+                    <UpgradePrompt
+                      feature={t('import.statementFeature', 'Uvoz izvoda')}
+                      requiredTier={getRequiredTier('pdf_import')}
+                      compact
+                    />
+                  )}
+                  {/* HTML i CSV ulazi ostaju uklonjeni iz ovog dijaloga. */}
                   {filteredSourceExpenses.length > 0 && (
                     <>
                       <DropdownMenu>

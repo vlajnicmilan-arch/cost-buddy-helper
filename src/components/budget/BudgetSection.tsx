@@ -18,6 +18,7 @@ interface BudgetSectionProps {
   onUpdateBudget: (budget: BudgetWithStats) => Promise<void>;
   onDeleteBudget: (id: string) => Promise<void>;
   onResetBudget: (id: string) => Promise<void>;
+  canWrite?: boolean;
   trendData?: { date: string; spent: number; limit: number }[];
 }
 
@@ -28,6 +29,7 @@ export const BudgetSection = ({
   onUpdateBudget,
   onDeleteBudget,
   onResetBudget,
+  canWrite = true,
 }: BudgetSectionProps) => {
   const { t } = useTranslation();
   const location = useLocation();
@@ -89,10 +91,12 @@ export const BudgetSection = ({
             </p>
           </div>
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)} size="sm" variant="module" className="gap-1.5">
-          <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">{t('budget.create', 'Novi plan smjera')}</span>
-        </Button>
+        {canWrite && (
+          <Button onClick={() => setCreateDialogOpen(true)} size="sm" variant="module" className="gap-1.5">
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">{t('budget.create', 'Novi plan smjera')}</span>
+          </Button>
+        )}
       </div>
 
       {/* Budget Cards */}
@@ -105,7 +109,7 @@ export const BudgetSection = ({
           variant="budgets"
           title={t('budget.noBudgets', 'Nema budžeta')}
           description={t('budget.noBudgetsHint', 'Koristi gumb iznad za kreiranje prvog budžeta')}
-          action={{ label: t('budget.create', 'Novi budžet'), onClick: () => setCreateDialogOpen(true) }}
+          action={canWrite ? { label: t('budget.create', 'Novi budžet'), onClick: () => setCreateDialogOpen(true) } : undefined}
         />
       ) : (
         <>
@@ -135,9 +139,9 @@ export const BudgetSection = ({
                 key={budget.id}
                 budget={budget}
                 onClick={() => handleCardClick(budget)}
-                onEdit={() => handleEdit(budget)}
-                onDelete={() => onDeleteBudget(budget.id)}
-                onReset={() => onResetBudget(budget.id)}
+                onEdit={canWrite ? () => handleEdit(budget) : undefined}
+                onDelete={canWrite ? () => onDeleteBudget(budget.id) : undefined}
+                onReset={canWrite ? () => onResetBudget(budget.id) : undefined}
               />
             ))}
           </div>
@@ -149,8 +153,9 @@ export const BudgetSection = ({
         open={fullScreenOpen}
         onClose={handleCloseFullScreen}
         budget={selectedBudget}
+        readOnly={!canWrite}
         onEdit={() => {
-          if (selectedBudget) {
+          if (selectedBudget && canWrite) {
             setFullScreenOpen(false);
             handleEdit(selectedBudget);
           }
@@ -163,6 +168,7 @@ export const BudgetSection = ({
         open={createDialogOpen}
         onOpenChange={handleDialogClose}
         onSave={async (budget) => {
+          if (!canWrite) return;
           if (editingBudget) {
             await onUpdateBudget(budget as BudgetWithStats);
           } else {

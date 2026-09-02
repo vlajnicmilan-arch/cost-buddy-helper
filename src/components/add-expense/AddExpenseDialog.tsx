@@ -44,6 +44,8 @@ import {
 } from '@/lib/receiptBusinessRouting';
 import { buildKrugFields } from '@/lib/krugExpenseFields';
 import { getFreeTransactionLimitPeriod } from '@/lib/freeTransactionLimit';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { useWriteGuard } from '@/hooks/useWriteGuard';
 
 import { ScannedDataPreview } from './ScannedDataPreview';
 import { ManualExpenseForm } from './ManualExpenseForm';
@@ -225,6 +227,8 @@ export const AddExpenseDialog = ({
   const { projects } = useProjects();
   const { budgets } = useBudgets();
   const { createPlan: createInstallmentPlan } = useInstallments();
+  const { hasAccess } = useFeatureAccess();
+  const installmentWriteGuard = useWriteGuard({ kind: 'module', feature: 'installments' });
   const { recordHabit, getSuggestedCategory } = useCategoryHabits();
   const { categorize: aiCategorize, cancel: cancelAICategorize } = useAICategorization();
   const { activeBusinessProfileId } = useAppState();
@@ -888,7 +892,7 @@ export const AddExpenseDialog = ({
       }
 
       if (isInstallment && scannedData.installment_count) {
-        await createInstallmentPlan({
+        const plan = await installmentWriteGuard.guard(() => createInstallmentPlan({
           description: scannedData.description,
           total_amount: scannedData.amount,
           installment_count: scannedData.installment_count,
@@ -897,7 +901,11 @@ export const AddExpenseDialog = ({
           type: 'expense',
           payment_source: finalPaymentSource,
           payment_source_card_id: finalCardId || undefined
-        });
+        }));
+        if (!plan) {
+          setIsSaving(false);
+          return;
+        }
         await executeAdd(newExpense, validItems.length > 0 ? validItems : undefined);
         try { logDiagnostic('receipt_scan_accept_success', { amount: scannedData.amount, is_installment: true }); } catch {}
         setIsSaving(false);
@@ -1193,7 +1201,7 @@ export const AddExpenseDialog = ({
     const parsedAmount = validateAmountInput(amount).value;
 
     if (isInstallment && type !== 'transfer') {
-      await createInstallmentPlan({
+      const plan = await installmentWriteGuard.guard(() => createInstallmentPlan({
         description,
         total_amount: parsedAmount,
         installment_count: installmentCount,
@@ -1202,7 +1210,8 @@ export const AddExpenseDialog = ({
         payment_source: paymentSource,
         payment_source_card_id: selectedCardId,
         type: type as 'expense' | 'income'
-      });
+      }));
+      if (!plan) return;
       const validItems = items.filter(item => item.name && item.total_price > 0);
       let receiptUrl: string | undefined;
       if (saveReceipt && receiptImage) {
@@ -1481,7 +1490,14 @@ export const AddExpenseDialog = ({
               expenseDate={expenseDate}
               onExpenseDateChange={setExpenseDate}
               isInstallment={isInstallment}
-              onIsInstallmentChange={setIsInstallment}
+              installmentsReadOnly={!hasAccess('installments')}
+              onIsInstallmentChange={(value) => {
+                if (!value) {
+                  setIsInstallment(false);
+                  return;
+                }
+                void installmentWriteGuard.guard(() => setIsInstallment(true));
+              }}
               installmentCount={installmentCount}
               onInstallmentCountChange={setInstallmentCount}
               firstPaymentDate={firstPaymentDate}

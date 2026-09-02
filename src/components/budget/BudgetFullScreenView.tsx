@@ -45,6 +45,7 @@ interface BudgetFullScreenViewProps {
   onClose: () => void;
   budget: BudgetWithStats | null;
   onEdit: () => void;
+  readOnly?: boolean;
 }
 
 export const BudgetFullScreenView = ({
@@ -52,6 +53,7 @@ export const BudgetFullScreenView = ({
   onClose,
   budget,
   onEdit,
+  readOnly = false,
 }: BudgetFullScreenViewProps) => {
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
@@ -196,10 +198,12 @@ export const BudgetFullScreenView = ({
                   </div>
                 </div>
               </div>
-              <Button variant="outline" size="sm" onClick={onEdit}>
-                <Edit className="w-4 h-4 mr-1" />
-                {t('common.edit', 'Uredi')}
-              </Button>
+              {!readOnly && (
+                <Button variant="outline" size="sm" onClick={onEdit}>
+                  <Edit className="w-4 h-4 mr-1" />
+                  {t('common.edit', 'Uredi')}
+                </Button>
+              )}
             </header>
 
             {/* Content */}
@@ -507,7 +511,7 @@ export const BudgetFullScreenView = ({
                           <TransactionItem
                             key={expense.id}
                             expense={expense}
-                            onDelete={handleDeleteExpense}
+                            onDelete={readOnly ? () => undefined : handleDeleteExpense}
                             onClick={handleExpenseClick}
                           />
                         ))}
@@ -540,15 +544,15 @@ export const BudgetFullScreenView = ({
         setDetailOpen(open);
         if (!open) setSelectedExpense(null);
       }}
-      onEdit={handleEditFromDetail}
-      onDelete={handleDeleteExpense}
+      onEdit={readOnly ? () => undefined : handleEditFromDetail}
+      onDelete={readOnly ? () => undefined : handleDeleteExpense}
     />
 
     <EditTransactionDialog
       expense={editExpense}
-      open={editOpen}
+      open={editOpen && !readOnly}
       onOpenChange={setEditOpen}
-      onSave={handleSaveExpense}
+      onSave={readOnly ? async () => undefined : handleSaveExpense}
     />
     </>
   );

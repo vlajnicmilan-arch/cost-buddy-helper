@@ -30,7 +30,7 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { path: '/home', icon: LayoutDashboard, labelKey: 'nav.dashboard', fallback: 'Centar', activePaths: ['/home', '/dashboard'], module: 'core', colorKey: 'overview' },
   { path: '/projects', icon: FolderKanban, labelKey: 'nav.projects', fallback: 'Projekti', activePaths: ['/projects'], module: 'projects', colorKey: 'projects' },
   { path: '/wallet', icon: Wallet, labelKey: 'nav.wallet', fallback: 'Novčanik', activePaths: ['/wallet'], module: 'core', colorKey: 'wallet' },
-  { path: '/budgets', icon: Target, labelKey: 'nav.budgets', fallback: 'Budžeti', activePaths: ['/budgets'], module: 'core', colorKey: 'budgets' },
+  { path: '/budgets', icon: Target, labelKey: 'nav.budgets', fallback: 'Budžeti', activePaths: ['/budgets'], module: 'smjer', colorKey: 'budgets' },
   // Krug: dijeljene grupe (računi, projekti, budžeti). Gated po `krug` AppModule-u
   // (toggle u Settings → Moduli) + tier (Pro+).
   { path: '/krug', icon: Circle, labelKey: 'nav.krug', fallback: 'Krug', activePaths: ['/krug'], module: 'krug', colorKey: 'krug' },
@@ -60,6 +60,7 @@ export const BottomNav = () => {
   const GATE_BY_PATH: Record<string, { feature: Feature; module: UpgradeModule }> = {
     '/krug': { feature: 'krug', module: 'krug' },
     '/projects': { feature: 'projects', module: 'projects' },
+    '/budgets': { feature: 'unlimited_budgets', module: 'smjer' },
   };
 
   const handleNavClick = (path: string) => {

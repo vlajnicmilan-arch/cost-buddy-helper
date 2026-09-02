@@ -49,9 +49,10 @@ interface InstallmentDetailContentProps {
   onMarkPaid: (id: string) => void;
   onMarkUnpaid: (id: string) => void;
   onDelete: (id: string) => void;
+  isReadOnly: boolean;
 }
 
-const InstallmentDetailContent = ({ plan, onMarkPaid, onMarkUnpaid, onDelete }: InstallmentDetailContentProps) => {
+const InstallmentDetailContent = ({ plan, onMarkPaid, onMarkUnpaid, onDelete, isReadOnly }: InstallmentDetailContentProps) => {
   const { formatAmount } = useCurrency();
   const { t, i18n } = useTranslation();
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
@@ -117,7 +118,8 @@ const InstallmentDetailContent = ({ plan, onMarkPaid, onMarkUnpaid, onDelete }: 
                   >
                     <div className="flex items-center gap-3">
                       <button
-                        onClick={() => isPaid ? onMarkUnpaid(installment.id) : onMarkPaid(installment.id)}
+                        onClick={() => isReadOnly ? undefined : (isPaid ? onMarkUnpaid(installment.id) : onMarkPaid(installment.id))}
+                        disabled={isReadOnly}
                         className="hover:scale-110 transition-transform"
                       >
                         {isPaid ? (
@@ -172,6 +174,7 @@ const InstallmentDetailContent = ({ plan, onMarkPaid, onMarkUnpaid, onDelete }: 
             variant="destructive"
             className="w-full"
             onClick={() => setDeleteDialogOpen(true)}
+            disabled={isReadOnly}
           >
             <Trash2 className="w-4 h-4 mr-2" />
             {t('installments.deletePlan', 'Obriši plan')}
@@ -191,6 +194,7 @@ const InstallmentDetailContent = ({ plan, onMarkPaid, onMarkUnpaid, onDelete }: 
             <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
+                if (isReadOnly) return;
                 onDelete(plan.id);
                 setDeleteDialogOpen(false);
               }}
@@ -304,6 +308,12 @@ export const InstallmentsPanel = () => {
             style={{ overflow: 'hidden' }}
           >
             <CardContent className="space-y-3 pt-0">
+              {isReadOnly && (
+                <ReadOnlyBanner
+                  title={t('installments.readOnlyTitle', 'Plaćanja na rate su u načinu samo za pregled')}
+                  body={t('installments.readOnlyBody', 'Postojeće planove vidiš, ali nove planove i izmjene možeš raditi nakon aktivacije Smjera.')}
+                />
+              )}
               <AnimatePresence mode="popLayout">
                 {plans.map((plan) => {
                   const categoryInfo = getCategoryInfo(plan.category as any);
@@ -377,6 +387,7 @@ export const InstallmentsPanel = () => {
                         onMarkPaid={markInstallmentPaid}
                         onMarkUnpaid={markInstallmentUnpaid}
                         onDelete={deletePlan}
+                        isReadOnly={isReadOnly}
                       />
                     </Dialog>
                   );

@@ -7,15 +7,21 @@ import { BottomNav } from '@/components/BottomNav';
 import { PageHeader } from '@/components/PageHeader';
 import { Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { useModuleGate } from '@/hooks/useModuleGate';
+import { ReadOnlyBanner } from '@/components/access/ReadOnlyBanner';
 
 const Budgets = () => {
   const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   const { storageMode } = useStorage();
   const navigate = useNavigate();
+  const { hasModuleAccess } = useFeatureAccess();
+  const { requestModule } = useModuleGate();
+  const hasSmjerAccess = hasModuleAccess('smjer');
   const { allExpenses, refetch } = useExpenses();
   const { 
     budgets, 
@@ -33,6 +39,13 @@ const Budgets = () => {
       navigate('/', { replace: true });
     }
   }, [user, authLoading, navigate, storageMode]);
+
+  const gatePromptedRef = useState<{ done: boolean }>({ done: false })[0];
+  useEffect(() => {
+    if (isLocalMode || loading || hasSmjerAccess || budgets.length > 0 || gatePromptedRef.done) return;
+    gatePromptedRef.done = true;
+    requestModule('smjer', { onDismiss: () => navigate('/home', { replace: true }) });
+  }, [budgets.length, gatePromptedRef, hasSmjerAccess, isLocalMode, loading, navigate, requestModule]);
 
   if (authLoading && storageMode === 'cloud') {
     return (
@@ -73,9 +86,17 @@ const Budgets = () => {
           title={t('nav.budgets', 'Budžeti')}
           onDataImported={refetch}
         />
+        {!hasSmjerAccess && budgets.length > 0 && (
+          <ReadOnlyBanner
+            className="mb-4"
+            title={t('budget.readOnlyTitle', 'Smjer je u načinu samo za pregled')}
+            body={t('budget.readOnlyBody', 'Postojeće planove vidiš, ali nove planove i izmjene možeš raditi nakon aktivacije Smjera.')}
+          />
+        )}
         <BudgetSection
           budgets={budgets}
           loading={loading}
+          canWrite={hasSmjerAccess}
           onCreateBudget={createBudget}
           onUpdateBudget={updateBudget}
           onDeleteBudget={deleteBudget}
