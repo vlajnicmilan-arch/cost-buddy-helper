@@ -89,7 +89,14 @@ export const CardScannerDialog = ({
             emitCoreScanLimitReached(quotaError.resetAt);
             return;
           }
-        }
+          if (quotaError?.kind === 'monthly_limit') {
+            throw new Error(
+              t('errors.ai.monthlyLimitReached', {
+                limit: quotaError.limit,
+                date: new Date(quotaError.resetAt).toLocaleDateString('hr-HR'),
+              }),
+            );
+          }
         throw new Error(funcError.message);
       }
 
