@@ -4294,7 +4294,8 @@
   "tos": {
     "back": "Natrag",
     "title": "Uvjeti korištenja",
-    "lastUpdated": "Zadnja izmjena: travanj 2026.",
+    "lastUpdated": "Zadnja izmjena: 2. rujna 2026.",
+    "versionLabel": "Verzija",
     "allRightsReserved": "Sva prava pridržana.",
     "s1": {
       "title": "1. Uvod",
@@ -4318,8 +4319,7 @@
       "yearly": "Godišnje = platiš deset mjeseci, dobiješ dvanaest.",
       "biznis": "Biznis je zaseban modul i još nije dostupan; cijena i uvjeti bit će objavljeni prije pokretanja.",
       "trial": "Probno razdoblje: 30 dana besplatno PO MODULU, isključivo na svjesnu aktivaciju korisnika unutar aplikacije. Nema automatskog triala pri registraciji. Trial za pojedini modul može se iskoristiti samo jednom i traje od trenutka aktivacije. Modul Biznis nema probno razdoblje.",
-      "free": "Free razina (nakon isteka probe bez pretplate): pristup s ograničenjem od 30 transakcija mjesečno, 1 novčanika i 1 budžeta. Moduli (Smjer, Krug, Projekti, Biznis) nisu uključeni u Free razinu. Podaci se ne brišu: sve što je korisnik prije unio — uključujući transakcije, novčanike, budžete i module iznad Free limita — ostaje vidljivo u načinu \"čitanje i izvoz\". Korisnik može te podatke pregledavati i izvesti (backup), ali ne može ih stvarati, uređivati ni brisati dok ne aktivira odgovarajuću pretplatu.",
-      "founding": "Founding — prvih 100: Prvih 100 godišnjih pretplata dobiva zaključan popust izražen u postotku. Koliko god Centar poslije poskupio, tvoj popust ostaje — dok pretplatu obnavljaš bez prekida. Vrijedi i ako kasnije prijeđeš na veći paket. Prekid pretplate poništava popust; kod ponovnog uključivanja vrijedi cijena koja tada bude na snazi.",
+      "free": "Besplatan račun. Račun u Centru je besplatan i bez roka. Uključuje 30 transakcija mjesečno, jedan novčanik i jedan proračun. Moduli (Smjer, Krug, Projekti, Biznis) nisu uključeni. Kad se mjesečni broj transakcija iskoristi, novi unosi su mogući od prvog dana sljedećeg mjeseca. Podaci se ne brišu i ne zaključavaju — sve uneseno ostaje vidljivo i može se izvesti u svakom trenutku.",
       "billing": "Naplata: pretplate se obrađuju preko Paddle.com Market Ltd. kao merchant of record; Paddle izdaje račun i provodi povrate. Pretplate se automatski obnavljaju na kraju obračunskog razdoblja (mjesečno ili godišnje) dok ih ne otkažete."
     },
     "s4": {
@@ -4347,7 +4347,13 @@
       "portability": "Prenosivost",
       "portabilityDesc": "Pravo izvoza vaših podataka u strojno čitljivom formatu",
       "objection": "Prigovor",
-      "objectionDesc": "Pravo prigovora na određenu obradu vaših podataka"
+      "objectionDesc": "Pravo prigovora na određenu obradu vaših podataka",
+      "restriction": "Ograničenje obrade",
+      "restrictionDesc": "Pravo tražiti da se obrada vaših podataka privremeno ograniči",
+      "consent": "Povlačenje privole",
+      "consentDesc": "Pravo povući danu privolu u svakom trenutku, bez utjecaja na zakonitost obrade prije povlačenja",
+      "complaint": "Pritužba nadzornom tijelu",
+      "complaintDesc": "Pravo podnijeti pritužbu Agenciji za zaštitu osobnih podataka (AZOP), Selska cesta 136, Zagreb"
     },
     "s7": {
       "title": "7. Izmjene uvjeta",
