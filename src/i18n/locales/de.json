@@ -1841,7 +1841,6 @@
     },
     "nameFullOptional": "Vor- und Nachname (optional)",
     "alreadyHaveAccount": "Ich habe bereits ein Konto",
-    
     "termsAcceptLabel": "Ich akzeptiere die {link}.",
     "termsAcceptLink": "Nutzungsbedingungen",
     "termsRequired": "Um ein Konto zu erstellen, musst du die Nutzungsbedingungen akzeptieren.",
@@ -2140,7 +2139,8 @@
       "hint": "Wähle eine andere Wallet oder brich den Import ab. Wenn du trotzdem fortfährst, wird dies nicht als Regel gespeichert.",
       "cancel": "Import abbrechen",
       "confirm": "Trotzdem importieren"
-    }
+    },
+    "statementFeature": "Kontoauszug-Import"
   },
   "bulk": {
     "paymentSource": "Massen-Zahlung",
@@ -2675,7 +2675,9 @@
       "onTrack": "Auf Kurs — Tempo im Plan",
       "projectedOver": "In diesem Tempo: ~{{projected}} bis zum Ende (Plan {{plan}})",
       "tooEarly": "Zu früh für eine Tempo-Einschätzung"
-    }
+    },
+    "readOnlyTitle": "Smjer ist im Lesemodus",
+    "readOnlyBody": "Bestehende Pläne siehst du, neue Pläne und Änderungen erfordern die Aktivierung von Smjer."
   },
   "projectStatus": {
     "draft": "Entwurf",
@@ -3083,7 +3085,9 @@
     "deleteConfirmMessage": "Diese Aktion löscht den Plan und alle zugehörigen Raten dauerhaft. Dies kann nicht rückgängig gemacht werden.",
     "noPlans": "Keine aktiven Ratenzahlungspläne",
     "addHint": "Fügen Sie eine neue Ausgabe oder Einnahme hinzu und wählen Sie die Option \"Ratenzahlung\"",
-    "installment": "Rate"
+    "installment": "Rate",
+    "readOnlyTitle": "Ratenzahlungen sind im Lesemodus",
+    "readOnlyBody": "Bestehende Pläne siehst du, neue Pläne und Änderungen erfordern die Aktivierung von Smjer."
   },
   "insights": {
     "positiveBalance": "Super! Ihr Saldo ist {{amount}} im Plus.",
