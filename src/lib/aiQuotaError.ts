@@ -12,9 +12,15 @@
  */
 export type AiQuotaError =
   | { kind: "daily_limit"; limit: number; tier: string; route?: string }
+  | { kind: "monthly_limit"; limit: number; tier: string; resetAt: string }
   | { kind: "core_scan_limit"; resetAt: string | null }
   | { kind: "cost_cap"; resetAt: string | null }
   | { kind: "rate_limit" };
+
+/** Prvi dan sljedećeg mjeseca — trenutak kad se mjesečna kvota obnavlja. */
+export function monthlyQuotaRenewalIso(now: Date = new Date()): string {
+  return new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
+}
 
 export interface QuotaResponseLike {
   status: number;
@@ -34,6 +40,17 @@ export async function parseAiQuotaError(
         limit: typeof body.limit === "number" ? body.limit : 0,
         tier: typeof body.tier === "string" ? body.tier : "free",
         route: typeof body.route === "string" ? body.route : undefined,
+      };
+    }
+    if (body && body.error === "monthly_ai_limit_reached") {
+      return {
+        kind: "monthly_limit",
+        limit: typeof body.monthly_limit === "number" ? body.monthly_limit : 0,
+        tier: typeof body.tier === "string" ? body.tier : "free",
+        resetAt:
+          typeof body.reset_at === "string"
+            ? body.reset_at
+            : monthlyQuotaRenewalIso(),
       };
     }
     if (body && body.error === "core_scan_limit_reached") {

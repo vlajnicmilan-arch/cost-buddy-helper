@@ -41,8 +41,10 @@ const QUOTAS: Record<string, Record<Tier, number>> = {
 
 // Mjesečni ukupni cap po korisniku (kroz sve rute). null = neograničeno.
 // Milan (17.07.2026): trial = 150 poziva / 30 dana ukupno.
+// Milan (02.09.2026): free = 150 poziva mjesečno ukupno — dnevni zbroj ruta
+// (~75/dan ≈ 2250/mj.) bio je rupa; plaćeni korisnici mjere 300–400/mj.
 const MONTHLY_LIMITS: Record<Tier, number | null> = {
-  free: null,
+  free: 150,
   trial: 150,
   pro: null,
   business: null,

@@ -55,6 +55,27 @@ describe("parseAiQuotaError", () => {
     expect(result).toEqual({ kind: "cost_cap", resetAt: null });
   });
 
+  it("recognises monthly_ai_limit_reached payload", async () => {
+    const result = await parseAiQuotaError(
+      makeResp(429, {
+        error: "monthly_ai_limit_reached",
+        route: "parse-receipt",
+        tier: "free",
+        monthly_limit: 150,
+      }),
+    );
+    expect(result?.kind).toBe("monthly_limit");
+    if (result?.kind === "monthly_limit") {
+      expect(result.limit).toBe(150);
+      expect(result.tier).toBe("free");
+      // resetAt mora biti prvi dan sljedećeg mjeseca
+      const reset = new Date(result.resetAt);
+      const now = new Date();
+      expect(reset.getDate()).toBe(1);
+      expect(reset > now).toBe(true);
+    }
+  });
+
 
 
   it("falls back to rate_limit for other 429 bodies", async () => {

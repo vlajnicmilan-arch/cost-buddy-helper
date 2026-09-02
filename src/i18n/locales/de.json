@@ -2361,7 +2361,8 @@
       "scanFailed": "Beleg konnte nicht gescannt werden"
     },
     "ai": {
-      "capReached": "Die KI-Verarbeitung ist bis zum 1. des nächsten Monats vorübergehend pausiert. Wir entschuldigen uns für die Unannehmlichkeiten."
+      "capReached": "Die KI-Verarbeitung ist bis zum 1. des nächsten Monats vorübergehend pausiert. Wir entschuldigen uns für die Unannehmlichkeiten.",
+      "monthlyLimitReached": "Monatliches KI-Aktionslimit erreicht ({{limit}}). Erneuerung am {{date}}."
     },
     "pdf": {
       "loginRequired": "Sie müssen angemeldet sein, um Auszüge zu analysieren",
@@ -6569,7 +6570,9 @@
     "reason": {
       "privitak_prevelik": "Anhang zu groß",
       "brana_sat": "Zu viele Nachrichten in dieser Stunde",
-      "brana_dan": "Zu viele Nachrichten heute"
+      "brana_dan": "Zu viele Nachrichten heute",
+      "kvota_iscrpljena": "Monatliches E-Mail-Importkontingent erschöpft",
+      "ai_cap_reached": "Die KI-Verarbeitung ist bis zum 1. des nächsten Monats pausiert"
     }
   },
   "mailReview": {
