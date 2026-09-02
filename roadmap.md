@@ -1,3 +1,3 @@
 # Roadmap
 
-- [ ] Gate Smjer PDF import, installments, and budgets
+- [x] Gate Smjer PDF import, installments, and budgets
