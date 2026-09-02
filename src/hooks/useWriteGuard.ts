@@ -33,6 +33,7 @@ interface GuardResult {
 
 export function useWriteGuard(scope: WriteScope): GuardResult {
   const { t, i18n } = useTranslation();
+  const language = i18n?.language ?? 'hr';
   const navigate = useNavigate();
   const { hasAccess, isFreeTier } = useFeatureAccess();
   const { usage } = useFreeTierUsage();
@@ -51,7 +52,7 @@ export function useWriteGuard(scope: WriteScope): GuardResult {
       const used = usage?.transactions_created ?? 0;
       if (used >= FREE_LIMITS.transactions_per_month) {
         canWrite = false;
-        const { month, resetDate } = getFreeTransactionLimitPeriod(i18n.language);
+        const { month, resetDate } = getFreeTransactionLimitPeriod(language);
         blockReason = t('access.freeTxLimitReached', { month, date: resetDate });
       }
     }
@@ -85,7 +86,7 @@ export function useWriteGuard(scope: WriteScope): GuardResult {
           // Server je poslao "free_limit_exceeded" — pretvori u prijateljski toast.
           if (/free_limit_exceeded/i.test(msg)) {
             if (scope.kind === 'freeTx') {
-              const { month, resetDate } = getFreeTransactionLimitPeriod(i18n?.language ?? 'hr');
+              const { month, resetDate } = getFreeTransactionLimitPeriod(language);
               showError(t('access.freeTxLimitReached', { month, date: resetDate }));
             } else {
               showError(t('access.freeLimitServer', 'Prekoračen je Free limit — potrebna je pretplata.'), {
@@ -106,7 +107,7 @@ export function useWriteGuard(scope: WriteScope): GuardResult {
       }
       return undefined;
     },
-    [canWrite, blockReason, ctaLabel, i18n.language, navigate, scope.kind, t]
+    [canWrite, blockReason, ctaLabel, language, navigate, scope.kind, t]
   );
 
   return { canWrite, blockReason, guard };
