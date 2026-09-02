@@ -454,8 +454,6 @@ Deno.serve(async (req) => {
 
     const userPrompt = `Generate ${top.length} insight card titles. For each input fact, output a one-sentence card title in ${langName} that summarizes the fact naturally.\n\nFacts (in Croatian, translate to ${langName}):\n${top.map((c, i) => `${i + 1}. [${c.type}] ${c.factsHr}`).join("\n")}`;
 
-    const __cap = await checkAiCostCap(userClient);
-    if (__cap) return __cap;
     const aiResp = await callGemini({
       model: "google/gemini-2.5-flash-lite",
       messages: [
