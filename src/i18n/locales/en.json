@@ -4319,7 +4319,7 @@
       "yearly": "Annual = pay for ten months, get twelve.",
       "biznis": "Biznis is a separate module and is not yet available; pricing and terms will be published before launch.",
       "trial": "Trial: 30 days free PER MODULE, only upon the user's deliberate activation inside the app. There is no automatic trial on registration. Each module's trial can be used only once and starts at the moment of activation. The Business module has no trial.",
-      "free": "30 transactions per month; 25 email documents per month; AI use.",
+      "free": "Free account. An account in Centar is free and has no time limit. It includes 30 transactions per month, 25 email documents per month and AI use. Modules (Smjer, Krug, Projekti, Biznis) are not included. Once the monthly transaction count is used up, new entries become possible again on the first day of the following month. Data is not deleted and not locked — everything entered remains visible and can be exported at any time. Activating any module removes the free account limits.",
       "billing": "Billing: subscriptions are processed by Paddle.com Market Ltd. as merchant of record; Paddle issues invoices and handles refunds. Subscriptions renew automatically at the end of each billing period (monthly or annually) until you cancel."
     },
     "s4": {
