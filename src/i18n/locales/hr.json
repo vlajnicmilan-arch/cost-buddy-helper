@@ -4294,7 +4294,8 @@
   "tos": {
     "back": "Natrag",
     "title": "Uvjeti korištenja",
-    "lastUpdated": "Zadnja izmjena: travanj 2026.",
+    "lastUpdated": "Zadnja izmjena: 2. rujna 2026.",
+    "versionLabel": "Verzija",
     "allRightsReserved": "Sva prava pridržana.",
     "s1": {
       "title": "1. Uvod",
@@ -4347,7 +4348,13 @@
       "portability": "Prenosivost",
       "portabilityDesc": "Pravo izvoza vaših podataka u strojno čitljivom formatu",
       "objection": "Prigovor",
-      "objectionDesc": "Pravo prigovora na određenu obradu vaših podataka"
+      "objectionDesc": "Pravo prigovora na određenu obradu vaših podataka",
+      "restriction": "Ograničenje obrade",
+      "restrictionDesc": "Pravo tražiti da se obrada vaših podataka privremeno ograniči",
+      "consent": "Povlačenje privole",
+      "consentDesc": "Pravo povući danu privolu u svakom trenutku, bez utjecaja na zakonitost obrade prije povlačenja",
+      "complaint": "Pritužba nadzornom tijelu",
+      "complaintDesc": "Pravo podnijeti pritužbu Agenciji za zaštitu osobnih podataka (AZOP), Selska cesta 136, Zagreb"
     },
     "s7": {
       "title": "7. Izmjene uvjeta",
