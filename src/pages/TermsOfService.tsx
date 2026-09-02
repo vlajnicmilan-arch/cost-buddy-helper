@@ -23,7 +23,7 @@ const TermsOfService = () => {
 
         <h1 className="text-3xl font-bold text-foreground mb-2">{t('tos.title')}</h1>
         <p className="text-muted-foreground mb-1">{t('tos.lastUpdated')}</p>
-        <p className="text-muted-foreground mb-8">{t('tos.versionLabel')} {TOS_VERSION} — 2. rujna 2026.</p>
+        <p className="text-muted-foreground mb-8">{t('tos.versionLabel')} {TOS_VERSION}</p>
 
         <div className="prose prose-sm max-w-none space-y-8 text-foreground">
 
@@ -56,7 +56,6 @@ const TermsOfService = () => {
             <p className="text-muted-foreground leading-relaxed mt-2">{t('tos.s3.biznis')}</p>
             <p className="text-muted-foreground leading-relaxed mt-2">{t('tos.s3.trial')}</p>
             <p className="text-muted-foreground leading-relaxed mt-2">{t('tos.s3.free')}</p>
-            <p className="text-muted-foreground leading-relaxed mt-2">{t('tos.s3.founding')}</p>
             <p className="text-muted-foreground leading-relaxed mt-2">{t('tos.s3.billing')}</p>
             
           </section>
@@ -86,6 +85,9 @@ const TermsOfService = () => {
               <li><strong>{t('tos.s6.erasure')}</strong> — {t('tos.s6.erasureDesc')}</li>
               <li><strong>{t('tos.s6.portability')}</strong> — {t('tos.s6.portabilityDesc')}</li>
               <li><strong>{t('tos.s6.objection')}</strong> — {t('tos.s6.objectionDesc')}</li>
+              <li><strong>{t('tos.s6.restriction')}</strong> — {t('tos.s6.restrictionDesc')}</li>
+              <li><strong>{t('tos.s6.consent')}</strong> — {t('tos.s6.consentDesc')}</li>
+              <li><strong>{t('tos.s6.complaint')}</strong> — {t('tos.s6.complaintDesc')}</li>
             </ul>
           </section>
 
@@ -99,7 +101,7 @@ const TermsOfService = () => {
             <p className="text-muted-foreground leading-relaxed">{t('tos.s8.p1')}</p>
             <div className="mt-3 p-4 bg-muted rounded-lg">
               <p className="font-medium">Tactura j.d.o.o. (pružatelj usluge Centar)</p>
-              <p className="text-muted-foreground">Email: legal@vmbalance.app</p>
+              <p className="text-muted-foreground">Email: legal@vmbalance.com</p>
             </div>
           </section>
 
