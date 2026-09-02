@@ -3,6 +3,8 @@ import { User, Session } from '@supabase/supabase-js';
 import { readAuthEntry } from '@/lib/authFunnel';
 import { supabase } from '@/integrations/supabase/client';
 import { APP_VERSION } from '@/lib/version';
+import { flushPendingNewsletterConsent } from '@/lib/newsletterConsent';
+import { flushPendingTermsAcceptance } from '@/lib/termsAcceptance';
 
 interface AuthContextValue {
   user: User | null;
@@ -36,6 +38,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       (event, nextSession) => {
         setSession(nextSession);
         setUser(nextSession?.user ?? null);
+
+        if (nextSession?.user) {
+          void Promise.all([
+            flushPendingNewsletterConsent(nextSession.user.id),
+            flushPendingTermsAcceptance(nextSession.user.id),
+          ]);
+        }
 
         // Only mark loading=false / authReady=true after the initial
         // getSession() resolves below. Premature flips cause downstream
@@ -115,6 +124,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAuthReady(true);
 
       if (validatedSession?.user) {
+        void Promise.all([
+          flushPendingNewsletterConsent(validatedSession.user.id),
+          flushPendingTermsAcceptance(validatedSession.user.id),
+        ]);
         lastSignedInUserRef.current = validatedSession.user.id;
         const deviceInfo = {
           userAgent: navigator.userAgent,

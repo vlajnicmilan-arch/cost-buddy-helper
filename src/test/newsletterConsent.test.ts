@@ -18,12 +18,19 @@ import {
   NEWSLETTER_CONSENT_SOURCE,
 } from '@/lib/newsletterConsent';
 
-const insertMock = vi.fn();
+const mocks = vi.hoisted(() => ({
+  insertMock: vi.fn(),
+  diagnosticMock: vi.fn(),
+}));
 
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
-    from: () => ({ insert: insertMock }),
+    from: () => ({ insert: mocks.insertMock }),
   },
+}));
+
+vi.mock('@/lib/diagnosticLogger', () => ({
+  logDiagnostic: mocks.diagnosticMock,
 }));
 
 vi.mock('react-i18next', async () => {
@@ -33,8 +40,9 @@ vi.mock('react-i18next', async () => {
 
 describe('newsletterConsent', () => {
   beforeEach(() => {
-    insertMock.mockReset();
-    insertMock.mockResolvedValue({ error: null });
+    mocks.insertMock.mockReset();
+    mocks.insertMock.mockResolvedValue({ error: null });
+    mocks.diagnosticMock.mockReset();
     sessionStorage.clear();
   });
 
@@ -52,8 +60,8 @@ describe('newsletterConsent', () => {
     const p = buildConsentPayload('ana@example.com', 'Točan tekst privole', 'de');
     const ok = await recordNewsletterConsent('user-1', p);
     expect(ok).toBe(true);
-    expect(insertMock).toHaveBeenCalledTimes(1);
-    expect(insertMock).toHaveBeenCalledWith({
+    expect(mocks.insertMock).toHaveBeenCalledTimes(1);
+    expect(mocks.insertMock).toHaveBeenCalledWith({
       user_id: 'user-1',
       email: 'ana@example.com',
       consent_text: 'Točan tekst privole',
@@ -63,9 +71,13 @@ describe('newsletterConsent', () => {
   });
 
   it('greška pri upisu ne baca iznimku (privola ne blokira registraciju)', async () => {
-    insertMock.mockResolvedValue({ error: new Error('rls') });
+    mocks.insertMock.mockResolvedValue({ error: { message: 'rls', code: '42501' } });
     const ok = await recordNewsletterConsent('user-1', buildConsentPayload('a@b.c', 't', 'hr'));
     expect(ok).toBe(false);
+    expect(mocks.diagnosticMock).toHaveBeenCalledWith(expect.objectContaining({
+      event: 'newsletter_consent_write_failed',
+      severity: 'error',
+    }));
   });
 
   it('stash → read → clear roundtrip (odložena privola pri potvrdi maila)', () => {
@@ -79,14 +91,14 @@ describe('newsletterConsent', () => {
   it('flush upisuje odloženu privolu i čisti storage', async () => {
     stashPendingConsent(buildConsentPayload('ana@example.com', 'Tekst', 'hr'));
     await flushPendingNewsletterConsent('user-9');
-    expect(insertMock).toHaveBeenCalledTimes(1);
-    expect(insertMock.mock.calls[0][0].user_id).toBe('user-9');
+    expect(mocks.insertMock).toHaveBeenCalledTimes(1);
+    expect(mocks.insertMock.mock.calls[0][0].user_id).toBe('user-9');
     expect(readPendingConsent()).toBeNull();
   });
 
   it('flush bez odložene privole NE dira bazu', async () => {
     await flushPendingNewsletterConsent('user-9');
-    expect(insertMock).not.toHaveBeenCalled();
+    expect(mocks.insertMock).not.toHaveBeenCalled();
   });
 });
 

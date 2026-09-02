@@ -21,8 +21,8 @@ import { Sparkles } from 'lucide-react';
 
 import i18n from '@/i18n';
 import { readAuthEntry, sanitizeAuthError, resolveInitialAuthTab } from '@/lib/authFunnel';
-import { buildConsentPayload, recordNewsletterConsent, stashPendingConsent, flushPendingNewsletterConsent } from '@/lib/newsletterConsent';
-import { buildTermsAcceptancePayload, recordTermsAcceptance, stashPendingTermsAcceptance, flushPendingTermsAcceptance } from '@/lib/termsAcceptance';
+import { buildConsentPayload, recordNewsletterConsent, stashPendingConsent } from '@/lib/newsletterConsent';
+import { buildTermsAcceptancePayload, recordTermsAcceptance, stashPendingTermsAcceptance } from '@/lib/termsAcceptance';
 import { TOS_VERSION } from '@/lib/legalVersions';
 const authSchema = z.object({
   email: z.string().trim().email(i18n.t('auth.validation.invalidEmail')).max(255, i18n.t('auth.validation.emailTooLong')),
@@ -96,10 +96,6 @@ const Auth = () => {
   useEffect(() => {
     if (user && !storageMode) {
       setStorageMode('cloud');
-    }
-    if (user) {
-      flushPendingNewsletterConsent(user.id);
-      flushPendingTermsAcceptance(user.id);
     }
   }, [user, storageMode, setStorageMode]);
 
@@ -210,7 +206,7 @@ const Auth = () => {
         showSuccess(t('toasts.welcomeBack'));
         // Routing is handled centrally by App.tsx — no navigate needed here
       } else {
-        const { error, needsEmailConfirmation } = await signUp(email.trim(), password, displayName.trim() || undefined);
+        const { data, error, needsEmailConfirmation } = await signUp(email.trim(), password, displayName.trim() || undefined);
         if (error) {
           track('signup_failed', { stage: 'server', ...sanitizeAuthError(error as any), ...attribution });
           if (error.message.includes('already registered')) {
@@ -226,12 +222,12 @@ const Auth = () => {
           t('auth.termsAcceptLabel', { link: t('auth.termsAcceptLink') }),
           i18n.language,
         );
-        const { data: sessionData } = await supabase.auth.getSession();
-        const uid = sessionData.session?.user.id;
+        const uid = data?.user?.id;
         if (uid) {
-          await recordTermsAcceptance(uid, termsPayload);
+          const recorded = await recordTermsAcceptance(uid, termsPayload);
+          if (!recorded) stashPendingTermsAcceptance(termsPayload);
         } else {
-          // Nema sesije (potvrda maila) — namjera se upisuje pri prvoj prijavi.
+          // Identitet nije vraćen — namjera se upisuje pri prvoj prijavi.
           stashPendingTermsAcceptance(termsPayload);
         }
 
@@ -239,9 +235,10 @@ const Auth = () => {
         if (newsletterConsent) {
           const payload = buildConsentPayload(email, t('gdpr.newsletterConsentLabel'), i18n.language);
           if (uid) {
-            await recordNewsletterConsent(uid, payload);
+            const recorded = await recordNewsletterConsent(uid, payload);
+            if (!recorded) stashPendingConsent(payload);
           } else {
-            // Nema sesije (potvrda maila) — namjera se upisuje pri prvoj prijavi.
+            // Identitet nije vraćen — namjera se upisuje pri prvoj prijavi.
             stashPendingConsent(payload);
           }
         }
