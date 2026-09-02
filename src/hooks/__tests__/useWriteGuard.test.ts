@@ -96,7 +96,4 @@ describe('useWriteGuard', () => {
     expect(toastError).toHaveBeenCalledTimes(1);
   });
 
-  it('ne postoji brojčana brana za novčanike ili proračune', () => {
-    expect('freePaymentSource' in {} || 'freeBudget' in {}).toBe(false);
-  });
 });

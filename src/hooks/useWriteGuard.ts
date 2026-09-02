@@ -14,7 +14,8 @@ import { getFreeTransactionLimitPeriod } from '@/lib/freeTransactionLimit';
 
 export type WriteScope =
   | { kind: 'module'; feature: Feature }
-  | { kind: 'freeTx' };                    // 30 tx/mj limit za free
+  | { kind: 'freeTx' }; // 30 tx/mj limit za free
+
 
 interface GuardResult {
   canWrite: boolean;
@@ -26,7 +27,7 @@ export function useWriteGuard(scope: WriteScope): GuardResult {
   const { t, i18n } = useTranslation();
   const language = i18n?.language ?? 'hr';
   const navigate = useNavigate();
-  const { hasAccess, isFreeTier } = useFeatureAccess();
+  const { hasAccess } = useFeatureAccess();
   const { usage } = useFreeTierUsage();
 
   let canWrite = true;
@@ -47,6 +48,8 @@ export function useWriteGuard(scope: WriteScope): GuardResult {
         blockReason = t('access.freeTxLimitReached', { month, date: resetDate });
       }
     }
+  }
+
 
   const guard = useCallback(
     async <T,>(action: () => T | Promise<T>): Promise<T | undefined> => {
