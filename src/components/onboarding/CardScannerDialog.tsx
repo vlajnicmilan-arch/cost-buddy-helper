@@ -90,12 +90,14 @@ export const CardScannerDialog = ({
             return;
           }
           if (quotaError?.kind === 'monthly_limit') {
-            throw new Error(
+            setError(
               t('errors.ai.monthlyLimitReached', {
                 limit: quotaError.limit,
                 date: new Date(quotaError.resetAt).toLocaleDateString('hr-HR'),
               }),
             );
+            setShowManualEntry(true);
+            return;
           }
         }
         throw new Error(funcError.message);
