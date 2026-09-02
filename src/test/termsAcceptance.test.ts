@@ -18,9 +18,11 @@ vi.mock('@/lib/diagnosticLogger', () => ({
 import {
   buildTermsAcceptancePayload,
   clearPendingTermsAcceptance,
+  composeLinkedConsentText,
   flushPendingTermsAcceptance,
   readPendingTermsAcceptance,
   recordTermsAcceptance,
+  resolveAppLocale,
   stashPendingTermsAcceptance,
   TERMS_ACCEPTANCE_SOURCE,
 } from '@/lib/termsAcceptance';
@@ -79,5 +81,22 @@ describe('termsAcceptance', () => {
     await flushPendingTermsAcceptance('user-9');
     expect(readPendingTermsAcceptance()).toEqual(payload);
     clearPendingTermsAcceptance();
+  });
+
+  it('composeLinkedConsentText umeće naziv poveznice umjesto {link}', () => {
+    expect(composeLinkedConsentText('Prihvaćam {link}.', 'Uvjete korištenja'))
+      .toBe('Prihvaćam Uvjete korištenja.');
+    expect(composeLinkedConsentText('I accept the {link}.', 'Terms of Use'))
+      .toBe('I accept the Terms of Use.');
+    expect(composeLinkedConsentText('Prihvaćam {link}.', 'Uvjete korištenja')).not.toContain('{link}');
+  });
+
+  it('resolveAppLocale svodi sirove oznake preglednika na hr/en/de', () => {
+    expect(resolveAppLocale('en-US@posix')).toBe('en');
+    expect(resolveAppLocale('hr-HR')).toBe('hr');
+    expect(resolveAppLocale('de-AT')).toBe('de');
+    expect(resolveAppLocale('fr-FR')).toBe('hr');
+    expect(resolveAppLocale(undefined)).toBe('hr');
+    expect(resolveAppLocale('')).toBe('hr');
   });
 });

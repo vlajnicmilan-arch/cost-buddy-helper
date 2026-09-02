@@ -34,6 +34,27 @@ export function buildTermsAcceptancePayload(
   };
 }
 
+const SUPPORTED_LOCALES = ['hr', 'en', 'de'] as const;
+export const DEFAULT_APP_LOCALE = 'hr';
+
+/**
+ * Svodi razriješeni jezik i18n-a na osnovni kod aplikacije.
+ * Sirove oznake preglednika (npr. "en-US@posix") NE smiju u bazu.
+ */
+export function resolveAppLocale(language: string | undefined | null): string {
+  const base = (language ?? '').split(/[-_@]/)[0]?.toLowerCase();
+  return (SUPPORTED_LOCALES as readonly string[]).includes(base) ? base : DEFAULT_APP_LOCALE;
+}
+
+/**
+ * Sastavlja rečenicu koju je korisnik stvarno vidio: prijevodi koriste
+ * JEDNOSTRUKE vitičaste zagrade "{link}", koje i18next NE zamjenjuje,
+ * pa se naziv poveznice umeće ručno. Isti izlaz koriste i prikaz i zapis.
+ */
+export function composeLinkedConsentText(label: string, linkText: string): string {
+  return label.split('{link}').join(linkText);
+}
+
 export function stashPendingTermsAcceptance(payload: TermsAcceptancePayload): void {
   try {
     sessionStorage.setItem(PENDING_KEY, JSON.stringify(payload));
