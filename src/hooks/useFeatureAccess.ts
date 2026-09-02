@@ -50,8 +50,6 @@ const FEATURE_TIERS: Record<Feature, SubscriptionTier> = {
 
 export const FREE_LIMITS = {
   transactions_per_month: 30,
-  payment_sources: 1,
-  budgets: 1,
 } as const;
 
 const TIER_RANK: Record<SubscriptionTier, number> = {

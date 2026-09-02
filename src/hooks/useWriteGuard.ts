@@ -1,15 +1,8 @@
 /**
  * useWriteGuard — jedini klijentski autoritet za "smijem li pisati?".
  *
- * Pravilo (Milanova politika):
- *   - Free razina: dozvoljeno stvaranje unutar limita (30 tx / 1 wallet / 1 budget).
- *   - Iznad limita i za sve module bez entitlementa: ČITANJE I IZVOZ,
- *     ali sve CUD operacije su blokirane s jasnom porukom + CTA na paywall.
- *   - Brisanje je dopušteno, ali NE oslobađa mjesečni limit (server trigger je increment-only).
- *
- * Vraća `guard(action)` koji:
- *   - ako je pisanje dopušteno → izvršava `action()` i vraća njen rezultat,
- *   - ako nije → prikazuje toast s razlogom + CTA "Aktiviraj", vraća `undefined`.
+ * Free račun ima kvotu od 30 transakcija mjesečno. Modulskim značajkama
+ * bez prava i dalje se upravlja kroz module entitlement gateove.
  */
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -21,9 +14,8 @@ import { getFreeTransactionLimitPeriod } from '@/lib/freeTransactionLimit';
 
 export type WriteScope =
   | { kind: 'module'; feature: Feature }
-  | { kind: 'freeTx' }                    // 30 tx/mj limit za free
-  | { kind: 'freePaymentSource'; currentCount: number }
-  | { kind: 'freeBudget'; currentCount: number };
+  | { kind: 'freeTx' }; // 30 tx/mj limit za free
+
 
 interface GuardResult {
   canWrite: boolean;
@@ -35,7 +27,7 @@ export function useWriteGuard(scope: WriteScope): GuardResult {
   const { t, i18n } = useTranslation();
   const language = i18n?.language ?? 'hr';
   const navigate = useNavigate();
-  const { hasAccess, isFreeTier } = useFeatureAccess();
+  const { hasAccess } = useFeatureAccess();
   const { usage } = useFreeTierUsage();
 
   let canWrite = true;
@@ -56,25 +48,8 @@ export function useWriteGuard(scope: WriteScope): GuardResult {
         blockReason = t('access.freeTxLimitReached', { month, date: resetDate });
       }
     }
-  } else if (scope.kind === 'freePaymentSource') {
-    if (!hasAccess('unlimited_payment_sources') && scope.currentCount >= FREE_LIMITS.payment_sources) {
-      canWrite = false;
-      blockReason = t(
-        'access.freePaymentSourceLimit',
-        'Free plan dopušta {{limit}} novčanik. Aktiviraj Smjer za više.',
-        { limit: FREE_LIMITS.payment_sources }
-      );
-    }
-  } else if (scope.kind === 'freeBudget') {
-    if (!hasAccess('unlimited_budgets') && scope.currentCount >= FREE_LIMITS.budgets) {
-      canWrite = false;
-      blockReason = t(
-        'access.freeBudgetLimit',
-        'Free plan dopušta {{limit}} budžet. Aktiviraj Smjer za više.',
-        { limit: FREE_LIMITS.budgets }
-      );
-    }
   }
+
 
   const guard = useCallback(
     async <T,>(action: () => T | Promise<T>): Promise<T | undefined> => {

@@ -15,10 +15,10 @@ vi.mock('react-i18next', async () => ({
   useTranslation: () => ({ t: (_k: string, d?: string | Record<string, unknown>) => (typeof d === 'string' ? d : _k) }),
 }));
 
-const mockAccess = { hasAccess: vi.fn(), isFreeTier: true };
+const mockAccess = { hasAccess: vi.fn() };
 vi.mock('@/hooks/useFeatureAccess', () => ({
   useFeatureAccess: () => mockAccess,
-  FREE_LIMITS: { transactions_per_month: 30, payment_sources: 1, budgets: 1 },
+  FREE_LIMITS: { transactions_per_month: 30 },
 }));
 
 const mockUsage = { usage: { transactions_created: 0, month_key: '2026-08' } };
@@ -96,19 +96,4 @@ describe('useWriteGuard', () => {
     expect(toastError).toHaveBeenCalledTimes(1);
   });
 
-  it('freePaymentSource limit dosegnut → blokira', () => {
-    mockAccess.hasAccess.mockReturnValue(false);
-    const { result } = renderHook(() =>
-      useWriteGuard({ kind: 'freePaymentSource', currentCount: 1 })
-    );
-    expect(result.current.canWrite).toBe(false);
-  });
-
-  it('freeBudget limit dosegnut → blokira', () => {
-    mockAccess.hasAccess.mockReturnValue(false);
-    const { result } = renderHook(() =>
-      useWriteGuard({ kind: 'freeBudget', currentCount: 1 })
-    );
-    expect(result.current.canWrite).toBe(false);
-  });
 });

@@ -48,8 +48,6 @@ BEGIN
       ('public.dismiss_notification(uuid)', 'anon, PUBLIC'),
       ('public.drain_participant_digest(uuid, uuid)', 'anon'),
       ('public.email_queue_dispatch()', 'anon, authenticated, PUBLIC'),
-      ('public.enforce_free_budget_cap()', 'anon, authenticated'),
-      ('public.enforce_free_payment_source_cap()', 'anon, authenticated'),
       ('public.enforce_free_transaction_cap()', 'anon, authenticated'),
       ('public.enqueue_email(text, jsonb)', 'anon, authenticated, PUBLIC'),
       ('public.enqueue_participant_digest_event(uuid, uuid, jsonb)', 'anon'),

@@ -5,7 +5,7 @@ import { useStorage } from '@/contexts/StorageContext';
 import { useExpenses } from '@/hooks/useExpenses';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
-import { useFeatureAccess, FREE_LIMITS } from '@/hooks/useFeatureAccess';
+
 import { 
   Budget, 
   BudgetCategory, 
@@ -24,7 +24,7 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
   const { storageMode } = useStorage();
   const { expenses: internalExpenses } = useExpenses();
   const { t } = useTranslation();
-  const { hasAccess } = useFeatureAccess();
+  
   
   // Use external expenses if provided, otherwise use internal
   const expenses = options?.externalExpenses ?? internalExpenses;
@@ -315,11 +315,6 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
   const createBudget = useCallback(async (budgetData: Partial<BudgetWithStats>) => {
     if (isLocalMode || !user) return;
 
-    // Check free tier budget limit
-    if (!hasAccess('unlimited_budgets') && budgets.length >= FREE_LIMITS.budgets) {
-      showError(t('limits.budgetsReached', `Dosegnuli ste limit od ${FREE_LIMITS.budgets} budžeta. Nadogradite na Pro za neograničene budžete.`));
-      return;
-    }
 
     try {
       const { data: newBudget, error: budgetError } = await supabase
@@ -366,7 +361,7 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
       console.error('Error creating budget:', error);
       showError(t('errors.createBudget', 'Greška pri kreiranju budžeta'));
     }
-  }, [user, isLocalMode, t, fetchBudgets, hasAccess, budgets.length]);
+  }, [user, isLocalMode, t, fetchBudgets]);
 
   // Update budget — atomic via update_budget_with_categories RPC.
   // Previously three separate client calls (UPDATE plan → DELETE cats → INSERT cats)
