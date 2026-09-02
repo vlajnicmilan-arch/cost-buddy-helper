@@ -22,7 +22,7 @@ import { Sparkles } from 'lucide-react';
 import i18n from '@/i18n';
 import { readAuthEntry, sanitizeAuthError, resolveInitialAuthTab } from '@/lib/authFunnel';
 import { buildConsentPayload, recordNewsletterConsent, stashPendingConsent } from '@/lib/newsletterConsent';
-import { buildTermsAcceptancePayload, recordTermsAcceptance, stashPendingTermsAcceptance } from '@/lib/termsAcceptance';
+import { buildTermsAcceptancePayload, composeLinkedConsentText, recordTermsAcceptance, resolveAppLocale, stashPendingTermsAcceptance } from '@/lib/termsAcceptance';
 import { TOS_VERSION } from '@/lib/legalVersions';
 const authSchema = z.object({
   email: z.string().trim().email(i18n.t('auth.validation.invalidEmail')).max(255, i18n.t('auth.validation.emailTooLong')),
@@ -233,7 +233,7 @@ const Auth = () => {
 
         // Newsletter privola — samo ako je kvačica označena. Bez oznake NE upisuje se redak.
         if (newsletterConsent) {
-          const payload = buildConsentPayload(email, t('gdpr.newsletterConsentLabel'), i18n.language);
+          const payload = buildConsentPayload(email, t('gdpr.newsletterConsentLabel'), resolveAppLocale(i18n.language));
           if (uid) {
             const recorded = await recordNewsletterConsent(uid, payload);
             if (!recorded) stashPendingConsent(payload);
@@ -777,21 +777,21 @@ const Auth = () => {
                   className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary"
                 />
                 <label htmlFor="termsAcceptance" className="text-xs text-muted-foreground leading-relaxed">
-                  {t('auth.termsAcceptLabel', { link: '__LINK__' }).split('__LINK__')[0]}
+                  {t('auth.termsAcceptLabel').split('{link}')[0]}
                   <Link to="/terms-of-service" className="text-primary hover:underline">
                     {t('auth.termsAcceptLink')}
                   </Link>
-                  {t('auth.termsAcceptLabel', { link: '__LINK__' }).split('__LINK__')[1]}
+                  {t('auth.termsAcceptLabel').split('{link}')[1] ?? null}
                   {' '}<span className="text-destructive" aria-hidden="true">*</span>
                 </label>
               </div>
               {errors.terms && <p className="text-sm text-destructive">{errors.terms}</p>}
               <p className="text-xs text-muted-foreground leading-relaxed">
-                {t('auth.privacyNotice', { link: '__LINK__' }).split('__LINK__')[0]}
+                {t('auth.privacyNotice').split('{link}')[0]}
                 <Link to="/privacy-policy" className="text-primary hover:underline">
                   {t('auth.privacyNoticeLink')}
                 </Link>
-                {t('auth.privacyNotice', { link: '__LINK__' }).split('__LINK__')[1]}
+                {t('auth.privacyNotice').split('{link}')[1] ?? null}
               </p>
             </div>
           )}
