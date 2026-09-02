@@ -361,7 +361,7 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
       console.error('Error creating budget:', error);
       showError(t('errors.createBudget', 'Greška pri kreiranju budžeta'));
     }
-  }, [user, isLocalMode, t, fetchBudgets, hasAccess, budgets.length]);
+  }, [user, isLocalMode, t, fetchBudgets]);
 
   // Update budget — atomic via update_budget_with_categories RPC.
   // Previously three separate client calls (UPDATE plan → DELETE cats → INSERT cats)
