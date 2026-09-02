@@ -125,6 +125,9 @@ export const EXPORT_REGISTRY: Record<string, TableRule> = {
   user_entitlements: direct(),
   user_subscriptions: direct(),
   newsletter_consents: direct(),
+  // Ulazi u izvoz: podatak o samom korisniku — kada je prihvatio Uvjete, koju verziju
+  // i na kojem jeziku. Ništa osjetljivo; zapis pripada korisniku na uvid.
+  terms_acceptances: direct(),
   user_memories: direct(),
   dashboard_hidden_sources: direct(),
   feedback_submissions: direct(),
