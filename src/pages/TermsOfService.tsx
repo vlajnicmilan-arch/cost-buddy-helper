@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { TOS_VERSION } from '@/lib/legalVersions';
 
 const TermsOfService = () => {
   const { t } = useTranslation();
@@ -21,7 +22,8 @@ const TermsOfService = () => {
         </Button>
 
         <h1 className="text-3xl font-bold text-foreground mb-2">{t('tos.title')}</h1>
-        <p className="text-muted-foreground mb-8">{t('tos.lastUpdated')}</p>
+        <p className="text-muted-foreground mb-1">{t('tos.lastUpdated')}</p>
+        <p className="text-muted-foreground mb-8">{t('tos.versionLabel')} {TOS_VERSION} — 2. rujna 2026.</p>
 
         <div className="prose prose-sm max-w-none space-y-8 text-foreground">
 
