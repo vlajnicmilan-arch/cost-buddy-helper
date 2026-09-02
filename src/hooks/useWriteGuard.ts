@@ -85,7 +85,7 @@ export function useWriteGuard(scope: WriteScope): GuardResult {
           // Server je poslao "free_limit_exceeded" — pretvori u prijateljski toast.
           if (/free_limit_exceeded/i.test(msg)) {
             if (scope.kind === 'freeTx') {
-              const { month, resetDate } = getFreeTransactionLimitPeriod(i18n.language);
+              const { month, resetDate } = getFreeTransactionLimitPeriod(i18n?.language ?? 'hr');
               showError(t('access.freeTxLimitReached', { month, date: resetDate }));
             } else {
               showError(t('access.freeLimitServer', 'Prekoračen je Free limit — potrebna je pretplata.'), {
