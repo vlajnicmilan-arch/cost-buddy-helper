@@ -1842,6 +1842,11 @@
     "nameFullOptional": "Vor- und Nachname (optional)",
     "alreadyHaveAccount": "Ich habe bereits ein Konto",
     "consentRequired": "Um ein Konto zu erstellen, musst du die Datenschutzerklärung akzeptieren.",
+    "termsAcceptLabel": "Ich akzeptiere die {link}.",
+    "termsAcceptLink": "Nutzungsbedingungen",
+    "termsRequired": "Um ein Konto zu erstellen, musst du die Nutzungsbedingungen akzeptieren.",
+    "privacyNotice": "Informationen darüber, wie wir deine personenbezogenen Daten verarbeiten, findest du in der {link}.",
+    "privacyNoticeLink": "Datenschutzerklärung",
     "freeAccountNote": "Kostenloses Konto: 30 Einträge pro Monat, ein Wallet, ein Budget. Ohne Frist und ohne Karte."
   },
   "categories": {

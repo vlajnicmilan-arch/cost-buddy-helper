@@ -99,6 +99,7 @@ const Auth = () => {
     }
     if (user) {
       flushPendingNewsletterConsent(user.id);
+      flushPendingTermsAcceptance(user.id);
     }
   }, [user, storageMode, setStorageMode]);
 
@@ -220,11 +221,23 @@ const Auth = () => {
           return;
         }
 
+        const termsPayload = buildTermsAcceptancePayload(
+          TOS_VERSION,
+          t('auth.termsAcceptLabel', { link: t('auth.termsAcceptLink') }),
+          i18n.language,
+        );
+        const { data: sessionData } = await supabase.auth.getSession();
+        const uid = sessionData.session?.user.id;
+        if (uid) {
+          await recordTermsAcceptance(uid, termsPayload);
+        } else {
+          // Nema sesije (potvrda maila) — namjera se upisuje pri prvoj prijavi.
+          stashPendingTermsAcceptance(termsPayload);
+        }
+
         // Newsletter privola — samo ako je kvačica označena. Bez oznake NE upisuje se redak.
         if (newsletterConsent) {
           const payload = buildConsentPayload(email, t('gdpr.newsletterConsentLabel'), i18n.language);
-          const { data: sessionData } = await supabase.auth.getSession();
-          const uid = sessionData.session?.user.id;
           if (uid) {
             await recordNewsletterConsent(uid, payload);
           } else {
@@ -749,37 +762,40 @@ const Auth = () => {
             )}
           </div>
 
-          {/* GDPR Consent checkbox - only on registration (required) */}
+          {/* Terms acceptance checkbox — only on registration (required) */}
           {!isLogin && (
             <div className="space-y-1">
               <div className="flex items-start gap-2">
                 <input
                   type="checkbox"
-                  id="gdprConsent"
-                  ref={gdprConsentRef}
-                  checked={gdprConsent}
+                  id="termsAcceptance"
+                  ref={termsAcceptanceRef}
+                  checked={termsAccepted}
                   onChange={(e) => {
-                    setGdprConsent(e.target.checked);
-                    if (e.target.checked) setErrors((prev) => ({ ...prev, consent: undefined }));
+                    setTermsAccepted(e.target.checked);
+                    if (e.target.checked) setErrors((prev) => ({ ...prev, terms: undefined }));
                   }}
                   aria-required="true"
-                  aria-invalid={!!errors.consent}
+                  aria-invalid={!!errors.terms}
                   className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary"
                 />
-                <label htmlFor="gdprConsent" className="text-xs text-muted-foreground leading-relaxed">
-                  {t('gdpr.consentLabel', 'Prihvaćam {link} i suglasan/na sam s obradom osobnih podataka u skladu s GDPR regulativom.').split('{link}')[0]}
-                  <button
-                    type="button"
-                    onClick={() => navigate('/privacy-policy')}
-                    className="text-primary hover:underline"
-                  >
-                    {t('gdpr.privacyPolicyLink', 'Politiku privatnosti')}
-                  </button>
-                  {t('gdpr.consentLabel', 'Prihvaćam {link} i suglasan/na sam s obradom osobnih podataka u skladu s GDPR regulativom.').split('{link}')[1]}
+                <label htmlFor="termsAcceptance" className="text-xs text-muted-foreground leading-relaxed">
+                  {t('auth.termsAcceptLabel', { link: '' }).split('{link}')[0]}
+                  <Link to="/terms-of-service" className="text-primary hover:underline">
+                    {t('auth.termsAcceptLink')}
+                  </Link>
+                  {t('auth.termsAcceptLabel', { link: '' }).split('{link}')[1]}
                   {' '}<span className="text-destructive" aria-hidden="true">*</span>
                 </label>
               </div>
-              {errors.consent && <p className="text-sm text-destructive">{errors.consent}</p>}
+              {errors.terms && <p className="text-sm text-destructive">{errors.terms}</p>}
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {t('auth.privacyNotice', { link: '' }).split('{link}')[0]}
+                <Link to="/privacy-policy" className="text-primary hover:underline">
+                  {t('auth.privacyNoticeLink')}
+                </Link>
+                {t('auth.privacyNotice', { link: '' }).split('{link}')[1]}
+              </p>
             </div>
           )}
 
@@ -819,7 +835,7 @@ const Auth = () => {
               onClick={() => {
                 setIsLogin(!isLogin);
                 setErrors({});
-                setGdprConsent(false);
+                setTermsAccepted(false);
                 setNewsletterConsent(false);
               }}
               className="text-primary font-medium hover:underline"
