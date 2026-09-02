@@ -226,6 +226,14 @@ export const usePDFParser = () => {
           emitCoreScanLimitReached(quotaError.resetAt);
           throw new Error(t('scanner.coreQuota.title', 'Iskorišten je besplatni limit skeniranja'));
         }
+        if (quotaError?.kind === 'monthly_limit') {
+          throw new Error(
+            t('errors.ai.monthlyLimitReached', {
+              limit: quotaError.limit,
+              date: new Date(quotaError.resetAt).toLocaleDateString('hr-HR'),
+            }),
+          );
+        }
         if (quotaError?.kind === 'cost_cap') {
           throw new Error(t('errors.ai.capReached', 'AI obrada je privremeno pauzirana do 1. u mjesecu.'));
         }
@@ -391,6 +399,15 @@ export const usePDFParser = () => {
           const quotaError = await parseAiQuotaError(response.clone());
           if (quotaError?.kind === 'core_scan_limit') {
             emitCoreScanLimitReached(quotaError.resetAt);
+            return null;
+          }
+          if (quotaError?.kind === 'monthly_limit') {
+            showError(
+              t('errors.ai.monthlyLimitReached', {
+                limit: quotaError.limit,
+                date: new Date(quotaError.resetAt).toLocaleDateString('hr-HR'),
+              }),
+            );
             return null;
           }
           if (quotaError?.kind === 'cost_cap') {

@@ -679,17 +679,10 @@ async function processMessage(
         needsAiEnrichment(result.extraction, hasExtractableText(input), result.classification));
 
     if (wantsAi) {
-      const { data: quota } = await supabase.rpc("mail_import_quota_status", {
-        p_user_id: ownerId,
-      });
-      const q = quota as Record<string, unknown> | null;
-      if (q && q.allowed === false) {
-        await supabase
-          .from("inbound_messages")
-          .update({ status: "ceka_kvotu", last_error: "kvota_iscrpljena" })
-          .eq("id", messageId);
-        return;
-      }
+      // Redoslijed: prvo globalni cost cap, pa tek onda potrošnja mjesečne
+      // kvote. mail_import_consume_quota NE povećava brojač kad bi prešao
+      // granicu, pa je "potroši pa provjeri allowed" sigurno — nema
+      // dvostrukog trošenja ni trošenja kad kapica blokira.
       const capBlocked = await checkAiCostCap(supabase);
       if (capBlocked) {
         await supabase
@@ -698,7 +691,18 @@ async function processMessage(
           .eq("id", messageId);
         return;
       }
-      await supabase.rpc("mail_import_consume_quota", { p_user_id: ownerId, p_count: 1 });
+      const { data: consumed } = await supabase.rpc("mail_import_consume_quota", {
+        p_user_id: ownerId,
+        p_count: 1,
+      });
+      const c = consumed as Record<string, unknown> | null;
+      if (c && c.allowed === false) {
+        await supabase
+          .from("inbound_messages")
+          .update({ status: "ceka_kvotu", last_error: "kvota_iscrpljena" })
+          .eq("id", messageId);
+        return;
+      }
       const withAi = await classifyDocument(input, { parseUbl, analyzeWithAi: aiAnalyze });
       const aiMemory = applyMemory(withAi);
       warnings.push(...aiMemory.warnings);
