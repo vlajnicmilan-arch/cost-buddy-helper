@@ -1842,6 +1842,11 @@
     "nameFullOptional": "Full name (optional)",
     "alreadyHaveAccount": "I already have an account",
     "consentRequired": "To create an account, you need to accept the Privacy Policy.",
+    "termsAcceptLabel": "I accept the {link}.",
+    "termsAcceptLink": "Terms of Use",
+    "termsRequired": "To create an account, you need to accept the Terms of Use.",
+    "privacyNotice": "Information about how we process your personal data is available in the {link}.",
+    "privacyNoticeLink": "Privacy Policy",
     "freeAccountNote": "Free account: 30 entries per month, one wallet, one budget. No time limit, no card required."
   },
   "categories": {
