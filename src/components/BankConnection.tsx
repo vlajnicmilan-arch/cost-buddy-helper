@@ -19,6 +19,8 @@ import { LoanDetectionDialog } from '@/components/business/LoanDetectionDialog';
 import { useBusinessDebts } from '@/hooks/useBusinessDebts';
 import { setNativeFlowActive } from '@/lib/nativeFlowGuard';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 
 interface BankConnectionProps {
   onImportCSV?: (transactions: ParsedTransaction[]) => Promise<void>;
@@ -43,6 +45,8 @@ const SUPPORTED_SOURCES = [
 export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, defaultBusinessPaymentSourceId }: BankConnectionProps) => {
   const { t } = useTranslation();
   const { activeBusinessProfileId } = useAppState();
+  const { hasAccess, getRequiredTier } = useFeatureAccess();
+  const canImportStatement = hasAccess('pdf_import');
   const [infoOpen, setInfoOpen] = useState(false);
   const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
   const [duplicateWarningOpen, setDuplicateWarningOpen] = useState(false);
@@ -393,6 +397,13 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
       <div className="flex flex-col gap-2">
         {onImportCSV && <CSVImportDialog onImport={onImportCSV} existingExpenses={existingExpenses} findDuplicates={findDuplicates} defaultPaymentSource={defaultBusinessPaymentSourceId ? `custom:${defaultBusinessPaymentSourceId}` : undefined} />}
         
+        {!canImportStatement ? (
+          <UpgradePrompt
+            feature={t('import.statementFeature', 'Uvoz izvoda')}
+            requiredTier={getRequiredTier('pdf_import')}
+          />
+        ) : (
+          <>
         {/* Photo Import */}
         <input
           ref={cameraInputRef}
@@ -477,6 +488,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
           )}
           {parsing ? t('import.analyzingPDF') : 'Uvezi HTML izvod'}
         </Button>
+        </>)}
       </div>
 
       {/* PDF Preview Dialog */}

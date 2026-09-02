@@ -53,6 +53,7 @@ interface ManualExpenseFormProps {
   // Installments
   isInstallment: boolean;
   onIsInstallmentChange: (value: boolean) => void;
+  installmentsReadOnly?: boolean;
   installmentCount: number;
   onInstallmentCountChange: (value: number) => void;
   firstPaymentDate: string;
@@ -399,6 +400,7 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
             <InstallmentToggle
               enabled={props.isInstallment}
               onEnabledChange={props.onIsInstallmentChange}
+              disabled={props.installmentsReadOnly}
               installmentCount={props.installmentCount}
               onInstallmentCountChange={props.onInstallmentCountChange}
               firstPaymentDate={props.firstPaymentDate}

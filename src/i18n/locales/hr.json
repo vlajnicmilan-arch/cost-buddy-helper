@@ -1845,7 +1845,6 @@
     },
     "nameFullOptional": "Ime i prezime (opcionalno)",
     "alreadyHaveAccount": "Već imam račun",
-    
     "termsAcceptLabel": "Prihvaćam {link}.",
     "termsAcceptLink": "Uvjete korištenja",
     "termsRequired": "Za registraciju je potrebno prihvatiti Uvjete korištenja.",
@@ -2145,7 +2144,8 @@
       "hint": "Odaberi drugi novčanik ili prekini uvoz. Ako svejedno nastaviš, ovo se neće zapamtiti kao pravilo.",
       "cancel": "Prekini uvoz",
       "confirm": "Svejedno uvezi"
-    }
+    },
+    "statementFeature": "Uvoz izvoda"
   },
   "bulk": {
     "paymentSource": "Grupno plaćanje",
@@ -2680,7 +2680,9 @@
       "onTrack": "Na dobrom putu — tempo je u okviru plana",
       "projectedOver": "Ovim tempom: ~{{projected}} do kraja (plan {{plan}})",
       "tooEarly": "Prerano za procjenu tempa"
-    }
+    },
+    "readOnlyTitle": "Smjer je u načinu samo za pregled",
+    "readOnlyBody": "Postojeće planove vidiš, ali nove planove i izmjene možeš raditi nakon aktivacije Smjera."
   },
   "projectStatus": {
     "draft": "Nacrt",
@@ -3089,7 +3091,9 @@
     "deleteConfirmMessage": "Ova radnja će trajno obrisati plan i sve povezane rate. Ovo se ne može poništiti.",
     "noPlans": "Nema aktivnih planova plaćanja na rate",
     "addHint": "Dodaj novi trošak ili prihod i odaberi opciju \"Na rate\"",
-    "installment": "Rata"
+    "installment": "Rata",
+    "readOnlyTitle": "Plaćanja na rate su u načinu samo za pregled",
+    "readOnlyBody": "Postojeće planove vidiš, ali nove planove i izmjene možeš raditi nakon aktivacije Smjera."
   },
   "insights": {
     "positiveBalance": "Odlično! Tvoje stanje je {{amount}} u plusu.",

@@ -1841,7 +1841,6 @@
     },
     "nameFullOptional": "Full name (optional)",
     "alreadyHaveAccount": "I already have an account",
-    
     "termsAcceptLabel": "I accept the {link}.",
     "termsAcceptLink": "Terms of Use",
     "termsRequired": "To create an account, you need to accept the Terms of Use.",
@@ -2140,7 +2139,8 @@
       "hint": "Choose another wallet or cancel the import. If you continue anyway, this will not be remembered as a rule.",
       "cancel": "Cancel import",
       "confirm": "Import anyway"
-    }
+    },
+    "statementFeature": "Statement import"
   },
   "bulk": {
     "paymentSource": "Bulk Payment",
@@ -2675,7 +2675,9 @@
       "onTrack": "On track — pace is within plan",
       "projectedOver": "At this pace: ~{{projected}} by period end (plan {{plan}})",
       "tooEarly": "Too early to estimate pace"
-    }
+    },
+    "readOnlyTitle": "Smjer is in read-only mode",
+    "readOnlyBody": "You can see existing plans, but new plans and changes require activating Smjer."
   },
   "projectStatus": {
     "draft": "Draft",
@@ -3083,7 +3085,9 @@
     "deleteConfirmMessage": "This action will permanently delete the plan and all related installments. This cannot be undone.",
     "noPlans": "No active installment payment plans",
     "addHint": "Add a new expense or income and select the \"Installments\" option",
-    "installment": "Installment"
+    "installment": "Installment",
+    "readOnlyTitle": "Installments are in read-only mode",
+    "readOnlyBody": "You can see existing plans, but new plans and changes require activating Smjer."
   },
   "insights": {
     "positiveBalance": "Great! Your balance is {{amount}} in the positive.",

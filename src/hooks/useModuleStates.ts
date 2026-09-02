@@ -16,6 +16,10 @@ export function useModuleStates(): Record<AppModule, ModuleState> {
 
   return useMemo<Record<AppModule, ModuleState>>(() => ({
     core: { enabled: true, tierUnlocked: true },
+    smjer: {
+      enabled: true,
+      tierUnlocked: hasAccess('unlimited_budgets'),
+    },
     krug: {
       enabled: krugModeEnabled,
       tierUnlocked: hasAccess('krug'),

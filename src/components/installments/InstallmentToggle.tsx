@@ -11,6 +11,7 @@ import { showError } from '@/hooks/useStatusFeedback';
 interface InstallmentToggleProps {
   enabled: boolean;
   onEnabledChange: (enabled: boolean) => void;
+  disabled?: boolean;
   installmentCount: number;
   onInstallmentCountChange: (count: number) => void;
   firstPaymentDate: string;
@@ -21,6 +22,7 @@ interface InstallmentToggleProps {
 export const InstallmentToggle = ({
   enabled,
   onEnabledChange,
+  disabled = false,
   installmentCount,
   onInstallmentCountChange,
   firstPaymentDate,
@@ -52,6 +54,7 @@ export const InstallmentToggle = ({
           id="installment-toggle"
           checked={enabled}
           onCheckedChange={onEnabledChange}
+          disabled={disabled}
         />
       </div>
 
