@@ -27,9 +27,9 @@ import {
 
 describe('termsAcceptance', () => {
   beforeEach(() => {
-    mocks.mocks.insertMock.mockReset();
-    mocks.mocks.insertMock.mockResolvedValue({ error: null });
-    mocks.mocks.diagnosticMock.mockReset();
+    mocks.insertMock.mockReset();
+    mocks.insertMock.mockResolvedValue({ error: null });
+    mocks.diagnosticMock.mockReset();
     sessionStorage.clear();
   });
 
