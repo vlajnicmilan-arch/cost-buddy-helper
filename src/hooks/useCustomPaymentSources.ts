@@ -309,7 +309,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
   const addCustomPaymentSource = async (source: Omit<CustomPaymentSource, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     // Check free tier payment source limit
     if (!hasAccess('unlimited_payment_sources') && customPaymentSources.length >= FREE_LIMITS.payment_sources) {
-      showError(tr('errors.limits.paymentSources', 'Dosegnuli ste limit izvora plaćanja. Nadogradite na Pro za neograničene izvore.'));
+      showError(tr('errors.limits.paymentSources', 'Dosegnuli ste ograničenje. Za više novčanika potreban je modul Smjer.'));
       return null;
     }
 

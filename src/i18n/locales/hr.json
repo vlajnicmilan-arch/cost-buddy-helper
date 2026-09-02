@@ -2360,7 +2360,7 @@
       "goalAlreadyAdded": "Cilj štednje je već dodan u grupu"
     },
     "limits": {
-      "paymentSources": "Dosegnuli ste limit izvora plaćanja. Nadogradite na Pro za neograničene izvore."
+      "paymentSources": "Dosegnuli ste ograničenje. Za više novčanika potreban je modul Smjer."
     },
     "receipt": {
       "cloudRequired": "AI skeniranje računa zahtijeva cloud način rada i prijavu. Možeš ručno unijeti podatke.",
