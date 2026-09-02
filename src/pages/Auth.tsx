@@ -219,8 +219,8 @@ const Auth = () => {
 
         const termsPayload = buildTermsAcceptancePayload(
           TOS_VERSION,
-          t('auth.termsAcceptLabel', { link: t('auth.termsAcceptLink') }),
-          i18n.language,
+          composeLinkedConsentText(t('auth.termsAcceptLabel'), t('auth.termsAcceptLink')),
+          resolveAppLocale(i18n.language),
         );
         const uid = data?.user?.id;
         if (uid) {
