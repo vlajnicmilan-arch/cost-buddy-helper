@@ -2361,7 +2361,8 @@
       "scanFailed": "Failed to scan receipt"
     },
     "ai": {
-      "capReached": "AI processing is temporarily paused until the 1st of next month. Sorry for the inconvenience."
+      "capReached": "AI processing is temporarily paused until the 1st of next month. Sorry for the inconvenience.",
+      "monthlyLimitReached": "Monthly AI action limit reached ({{limit}}). It renews on {{date}}."
     },
     "pdf": {
       "loginRequired": "You must be signed in to analyse statements",
@@ -6569,7 +6570,9 @@
     "reason": {
       "privitak_prevelik": "Attachment too large",
       "brana_sat": "Too many messages this hour",
-      "brana_dan": "Too many messages today"
+      "brana_dan": "Too many messages today",
+      "kvota_iscrpljena": "Monthly mail import quota exhausted",
+      "ai_cap_reached": "AI processing is temporarily paused until the 1st of next month"
     }
   },
   "mailReview": {

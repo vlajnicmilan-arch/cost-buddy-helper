@@ -2366,7 +2366,8 @@
       "scanFailed": "Greška pri skeniranju računa"
     },
     "ai": {
-      "capReached": "AI obrada je privremeno pauzirana do 1. u mjesecu. Ispričavamo se na neugodnosti."
+      "capReached": "AI obrada je privremeno pauzirana do 1. u mjesecu. Ispričavamo se na neugodnosti.",
+      "monthlyLimitReached": "Mjesečni limit AI radnji je iskorišten ({{limit}}). Obnavlja se {{date}}."
     },
     "pdf": {
       "loginRequired": "Moraš biti prijavljen za analizu izvoda",
