@@ -198,7 +198,7 @@ const FAQ: FaqCategory[] = [
         qKey: 'faq.q.plans',
         aKey: 'faq.a.plans',
         qFallback: 'Koji su dostupni planovi?',
-        aFallback: 'Besplatna razina s ograničenjima (30 transakcija mjesečno, 1 novčanik, 1 plan) te zasebni moduli Smjer, Krug i Projekti ili Komplet paket. Detalji u Postavke → Pretplata.',
+        aFallback: 'Besplatna razina s ograničenjima (30 transakcija mjesečno, 25 dokumenata iz e-maila mjesečno i korištenje AI-a). Detalji u Postavke → Pretplata.',
       },
       {
         slug: 'cancel-subscription',
