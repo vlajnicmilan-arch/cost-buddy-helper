@@ -3,6 +3,8 @@ import { User, Session } from '@supabase/supabase-js';
 import { readAuthEntry } from '@/lib/authFunnel';
 import { supabase } from '@/integrations/supabase/client';
 import { APP_VERSION } from '@/lib/version';
+import { flushPendingNewsletterConsent } from '@/lib/newsletterConsent';
+import { flushPendingTermsAcceptance } from '@/lib/termsAcceptance';
 
 interface AuthContextValue {
   user: User | null;
@@ -29,6 +31,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // funnel signup, account-deletion cancel) for duplicate auth events.
   const initialSessionCheckedRef = useRef(false);
   const lastSignedInUserRef = useRef<string | null>(null);
+  const consentFlushRef = useRef<Promise<void> | null>(null);
+
+  const flushPendingConsents = (userId: string) => {
+    if (consentFlushRef.current) return;
+    consentFlushRef.current = Promise.all([
+      flushPendingNewsletterConsent(userId),
+      flushPendingTermsAcceptance(userId),
+    ]).then(() => undefined).finally(() => {
+      consentFlushRef.current = null;
+    });
+  };
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -36,6 +49,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       (event, nextSession) => {
         setSession(nextSession);
         setUser(nextSession?.user ?? null);
+
+        if (nextSession?.user) {
+          flushPendingConsents(nextSession.user.id);
+        }
 
         // Only mark loading=false / authReady=true after the initial
         // getSession() resolves below. Premature flips cause downstream
@@ -115,6 +132,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAuthReady(true);
 
       if (validatedSession?.user) {
+        flushPendingConsents(validatedSession.user.id);
         lastSignedInUserRef.current = validatedSession.user.id;
         const deviceInfo = {
           userAgent: navigator.userAgent,

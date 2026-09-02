@@ -8,6 +8,7 @@
  * - Odjava se bilježi upisom revoked_at — redak se NIKAD ne briše.
  */
 import { supabase } from '@/integrations/supabase/client';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 
 export const NEWSLETTER_CONSENT_SOURCE = 'registracija';
 
@@ -74,8 +75,32 @@ export async function recordNewsletterConsent(
       locale: payload.locale,
       source: payload.source,
     });
-    return !error;
-  } catch {
+    if (error) {
+      logDiagnostic({
+        event: 'newsletter_consent_write_failed',
+        severity: 'error',
+        details: {
+          user_id: userId,
+          locale: payload.locale,
+          source: payload.source,
+          message: error.message,
+          code: (error as { code?: string }).code,
+        },
+      });
+      return false;
+    }
+    return true;
+  } catch (e) {
+    logDiagnostic({
+      event: 'newsletter_consent_write_failed',
+      severity: 'error',
+      details: {
+        user_id: userId,
+        locale: payload.locale,
+        source: payload.source,
+        message: e instanceof Error ? e.message : String(e),
+      },
+    });
     return false;
   }
 }
