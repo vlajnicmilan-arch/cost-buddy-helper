@@ -1845,7 +1845,12 @@
     },
     "nameFullOptional": "Ime i prezime (opcionalno)",
     "alreadyHaveAccount": "Već imam račun",
-    "consentRequired": "Za registraciju je potrebno prihvatiti Politiku privatnosti.",
+    
+    "termsAcceptLabel": "Prihvaćam {link}.",
+    "termsAcceptLink": "Uvjete korištenja",
+    "termsRequired": "Za registraciju je potrebno prihvatiti Uvjete korištenja.",
+    "privacyNotice": "Informacije o tome kako obrađujemo tvoje osobne podatke nalaze se u {link}.",
+    "privacyNoticeLink": "Politici privatnosti",
     "freeAccountNote": "Besplatan račun: 30 unosa mjesečno, jedan novčanik, jedan proračun. Bez roka i bez kartice."
   },
   "categories": {
@@ -3449,8 +3454,6 @@
     "customize": "Prilagodi",
     "savePreferences": "Spremi postavke",
     "privacyPolicy": "Politika privatnosti",
-    "consentLabel": "Prihvaćam {link} i suglasan/na sam s obradom osobnih podataka u skladu s GDPR regulativom.",
-    "privacyPolicyLink": "Politiku privatnosti",
     "settingsPrivacyTitle": "Politika privatnosti",
     "settingsPrivacyDesc": "GDPR prava i obrada podataka",
     "settingsTermsTitle": "Uvjeti korištenja",

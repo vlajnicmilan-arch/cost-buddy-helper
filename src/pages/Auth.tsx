@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { Label } from '@/components/ui/label';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { Mail, Lock, Loader2, CheckCircle, RefreshCw, User, ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
@@ -22,6 +22,8 @@ import { Sparkles } from 'lucide-react';
 import i18n from '@/i18n';
 import { readAuthEntry, sanitizeAuthError, resolveInitialAuthTab } from '@/lib/authFunnel';
 import { buildConsentPayload, recordNewsletterConsent, stashPendingConsent, flushPendingNewsletterConsent } from '@/lib/newsletterConsent';
+import { buildTermsAcceptancePayload, recordTermsAcceptance, stashPendingTermsAcceptance, flushPendingTermsAcceptance } from '@/lib/termsAcceptance';
+import { TOS_VERSION } from '@/lib/legalVersions';
 const authSchema = z.object({
   email: z.string().trim().email(i18n.t('auth.validation.invalidEmail')).max(255, i18n.t('auth.validation.emailTooLong')),
   password: z.string().min(6, i18n.t('auth.validation.passwordTooShort')).max(72, i18n.t('auth.validation.passwordTooLong'))
@@ -44,15 +46,15 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string; consent?: string }>({});
-  const gdprConsentRef = useRef<HTMLInputElement>(null);
+  const [errors, setErrors] = useState<{ email?: string; password?: string; terms?: string }>({});
+  const termsAcceptanceRef = useRef<HTMLInputElement>(null);
   const [awaitingVerification, setAwaitingVerification] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
   const [showWelcome, setShowWelcome] = useState(false);
   const [newUserName, setNewUserName] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
-  const [gdprConsent, setGdprConsent] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [newsletterConsent, setNewsletterConsent] = useState(false);
   
   const { signIn, signUp, resendVerificationEmail, resetPassword, user, loading: authLoading } = useAuth();
@@ -97,6 +99,7 @@ const Auth = () => {
     }
     if (user) {
       flushPendingNewsletterConsent(user.id);
+      flushPendingTermsAcceptance(user.id);
     }
   }, [user, storageMode, setStorageMode]);
 
@@ -146,13 +149,13 @@ const Auth = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Consent is validated on submit (not by disabling the button) so the user
+    // Terms are validated on submit (not by disabling the button) so the user
     // always gets visible feedback instead of a silent dead button.
-    if (!isLogin && !gdprConsent) {
-      setErrors((prev) => ({ ...prev, consent: t('auth.consentRequired') }));
-      track('signup_failed', { stage: 'client_validation', error_code: 'consent_required', ...readAuthEntry() });
-      gdprConsentRef.current?.focus();
-      gdprConsentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (!isLogin && !termsAccepted) {
+      setErrors((prev) => ({ ...prev, terms: t('auth.termsRequired') }));
+      track('signup_failed', { stage: 'client_validation', error_code: 'terms_not_accepted', ...readAuthEntry() });
+      termsAcceptanceRef.current?.focus();
+      termsAcceptanceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 
@@ -218,11 +221,23 @@ const Auth = () => {
           return;
         }
 
+        const termsPayload = buildTermsAcceptancePayload(
+          TOS_VERSION,
+          t('auth.termsAcceptLabel', { link: t('auth.termsAcceptLink') }),
+          i18n.language,
+        );
+        const { data: sessionData } = await supabase.auth.getSession();
+        const uid = sessionData.session?.user.id;
+        if (uid) {
+          await recordTermsAcceptance(uid, termsPayload);
+        } else {
+          // Nema sesije (potvrda maila) — namjera se upisuje pri prvoj prijavi.
+          stashPendingTermsAcceptance(termsPayload);
+        }
+
         // Newsletter privola — samo ako je kvačica označena. Bez oznake NE upisuje se redak.
         if (newsletterConsent) {
           const payload = buildConsentPayload(email, t('gdpr.newsletterConsentLabel'), i18n.language);
-          const { data: sessionData } = await supabase.auth.getSession();
-          const uid = sessionData.session?.user.id;
           if (uid) {
             await recordNewsletterConsent(uid, payload);
           } else {
@@ -747,37 +762,40 @@ const Auth = () => {
             )}
           </div>
 
-          {/* GDPR Consent checkbox - only on registration (required) */}
+          {/* Terms acceptance checkbox — only on registration (required) */}
           {!isLogin && (
             <div className="space-y-1">
               <div className="flex items-start gap-2">
                 <input
                   type="checkbox"
-                  id="gdprConsent"
-                  ref={gdprConsentRef}
-                  checked={gdprConsent}
+                  id="termsAcceptance"
+                  ref={termsAcceptanceRef}
+                  checked={termsAccepted}
                   onChange={(e) => {
-                    setGdprConsent(e.target.checked);
-                    if (e.target.checked) setErrors((prev) => ({ ...prev, consent: undefined }));
+                    setTermsAccepted(e.target.checked);
+                    if (e.target.checked) setErrors((prev) => ({ ...prev, terms: undefined }));
                   }}
                   aria-required="true"
-                  aria-invalid={!!errors.consent}
+                  aria-invalid={!!errors.terms}
                   className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary"
                 />
-                <label htmlFor="gdprConsent" className="text-xs text-muted-foreground leading-relaxed">
-                  {t('gdpr.consentLabel', 'Prihvaćam {link} i suglasan/na sam s obradom osobnih podataka u skladu s GDPR regulativom.').split('{link}')[0]}
-                  <button
-                    type="button"
-                    onClick={() => navigate('/privacy-policy')}
-                    className="text-primary hover:underline"
-                  >
-                    {t('gdpr.privacyPolicyLink', 'Politiku privatnosti')}
-                  </button>
-                  {t('gdpr.consentLabel', 'Prihvaćam {link} i suglasan/na sam s obradom osobnih podataka u skladu s GDPR regulativom.').split('{link}')[1]}
+                <label htmlFor="termsAcceptance" className="text-xs text-muted-foreground leading-relaxed">
+                  {t('auth.termsAcceptLabel', { link: '__LINK__' }).split('__LINK__')[0]}
+                  <Link to="/terms-of-service" className="text-primary hover:underline">
+                    {t('auth.termsAcceptLink')}
+                  </Link>
+                  {t('auth.termsAcceptLabel', { link: '__LINK__' }).split('__LINK__')[1]}
                   {' '}<span className="text-destructive" aria-hidden="true">*</span>
                 </label>
               </div>
-              {errors.consent && <p className="text-sm text-destructive">{errors.consent}</p>}
+              {errors.terms && <p className="text-sm text-destructive">{errors.terms}</p>}
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {t('auth.privacyNotice', { link: '__LINK__' }).split('__LINK__')[0]}
+                <Link to="/privacy-policy" className="text-primary hover:underline">
+                  {t('auth.privacyNoticeLink')}
+                </Link>
+                {t('auth.privacyNotice', { link: '__LINK__' }).split('__LINK__')[1]}
+              </p>
             </div>
           )}
 
@@ -817,7 +835,7 @@ const Auth = () => {
               onClick={() => {
                 setIsLogin(!isLogin);
                 setErrors({});
-                setGdprConsent(false);
+                setTermsAccepted(false);
                 setNewsletterConsent(false);
               }}
               className="text-primary font-medium hover:underline"

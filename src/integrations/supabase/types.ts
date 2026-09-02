@@ -6675,6 +6675,39 @@ export type Database = {
         }
         Relationships: []
       }
+      terms_acceptances: {
+        Row: {
+          accepted_at: string
+          accepted_text: string
+          created_at: string
+          id: string
+          locale: string
+          source: string
+          tos_version: string
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          accepted_text: string
+          created_at?: string
+          id?: string
+          locale: string
+          source?: string
+          tos_version: string
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string
+          accepted_text?: string
+          created_at?: string
+          id?: string
+          locale?: string
+          source?: string
+          tos_version?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       transaction_notes: {
         Row: {
           content: string

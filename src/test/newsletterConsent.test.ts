@@ -119,15 +119,15 @@ describe('Auth forma — newsletter kvačica', () => {
     expect(submit).toContain('disabled={loading}');
   });
 
-  it('slanje bez GDPR privole ne prolazi i daje vidljivu poruku uz kvačicu', async () => {
+  it('slanje bez prihvata Uvjeta ne prolazi i daje vidljivu poruku uz kvačicu', async () => {
     const fs = await import('node:fs/promises');
     const src = await fs.readFile('src/pages/Auth.tsx', 'utf-8');
-    expect(src).toContain("error_code: 'consent_required'");
-    expect(src).toContain("t('auth.consentRequired')");
-    expect(src).toContain('errors.consent && <p className="text-sm text-destructive"');
-    expect(src).toContain('gdprConsentRef.current?.focus()');
+    expect(src).toContain("error_code: 'terms_not_accepted'");
+    expect(src).toContain("t('auth.termsRequired')");
+    expect(src).toContain('errors.terms && <p className="text-sm text-destructive"');
+    expect(src).toContain('termsAcceptanceRef.current?.focus()');
     // Newsletter kvačica nije dio te validacije.
-    const validation = src.slice(src.indexOf('consent_required') - 600, src.indexOf('consent_required') + 600);
+    const validation = src.slice(src.indexOf('terms_not_accepted') - 600, src.indexOf('terms_not_accepted') + 600);
     expect(validation).not.toContain('newsletterConsent');
   });
 
