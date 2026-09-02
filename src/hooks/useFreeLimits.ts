@@ -1,10 +1,8 @@
 /**
  * useFreeLimits — read-only projekcija stanja Free razine.
  *
- * IZVOR ISTINE za broj transakcija = server counter iz
- * `free_tier_usage_monthly` (increment-only, ne pada na DELETE).
- * Fallback na klijentski računanje `expenses[]` samo kada server
- * odgovor još nije stigao — server trigger svejedno enforcea.
+ * Jedina brojčana kvota ovog hooka je server-side brojač od 30 transakcija
+ * mjesečno. Novčanici i proračuni nemaju brojčanu free kvotu.
  */
 import { useMemo } from 'react';
 import { useFeatureAccess, FREE_LIMITS } from '@/hooks/useFeatureAccess';
@@ -14,14 +12,8 @@ import { startOfMonth, endOfMonth } from 'date-fns';
 
 interface FreeLimitsResult {
   canAddTransaction: boolean;
-  canAddPaymentSource: boolean;
-  canAddBudget: boolean;
   transactionsThisMonth: number;
   transactionLimit: number;
-  paymentSourceCount: number;
-  paymentSourceLimit: number;
-  budgetCount: number;
-  budgetLimit: number;
   isLimited: boolean;
 }
 
@@ -49,14 +41,8 @@ export function useFreeLimits(
 
   return {
     canAddTransaction: !isLimited || transactionsThisMonth < FREE_LIMITS.transactions_per_month,
-    canAddPaymentSource: hasAccess('unlimited_payment_sources') || paymentSourceCount < FREE_LIMITS.payment_sources,
-    canAddBudget: hasAccess('unlimited_budgets') || budgetCount < FREE_LIMITS.budgets,
     transactionsThisMonth,
     transactionLimit: FREE_LIMITS.transactions_per_month,
-    paymentSourceCount,
-    paymentSourceLimit: FREE_LIMITS.payment_sources,
-    budgetCount,
-    budgetLimit: FREE_LIMITS.budgets,
     isLimited,
   };
 }
