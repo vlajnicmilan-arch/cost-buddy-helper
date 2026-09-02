@@ -4288,7 +4288,7 @@
   "tos": {
     "back": "Zurück",
     "title": "Nutzungsbedingungen",
-    "lastUpdated": "Letzte Änderung: April 2026.",
+    "lastUpdated": "Letzte Änderung: 2. September 2026.",
     "allRightsReserved": "Alle Rechte vorbehalten.",
     "s1": {
       "title": "1. Einleitung",
@@ -4312,8 +4312,7 @@
       "yearly": "Jährlich = zehn Monate zahlen, zwölf bekommen.",
       "biznis": "Biznis ist ein separates Modul und noch nicht verfügbar; Preis und Bedingungen werden vor dem Start veröffentlicht.",
       "trial": "Testphase: 30 Tage kostenlos PRO MODUL, ausschließlich nach bewusster Aktivierung durch den Nutzer in der App. Es gibt keinen automatischen Trial bei der Registrierung. Der Trial pro Modul kann nur einmal genutzt werden und beginnt ab der Aktivierung. Das Modul Business hat keinen Trial.",
-      "free": "Free-Stufe (nach Ablauf der Testphase ohne Abonnement): Zugang mit einer Beschränkung von 30 Transaktionen pro Monat, 1 Wallet und 1 Budget. Module (Smjer, Krug, Projekti, Biznis) sind in der Free-Stufe nicht enthalten. Daten werden nicht gelöscht: Alles, was der Nutzer zuvor eingegeben hat — einschließlich Transaktionen, Wallets, Budgets und Modulen über den Free-Limits — bleibt im Modus \"Lesen und Exportieren\" sichtbar. Der Nutzer kann diese Daten einsehen und exportieren (Backup), aber nicht erstellen, bearbeiten oder löschen, bis das entsprechende Abonnement aktiviert wird.",
-      "founding": "Founding — erste 100: Die ersten 100 Jahresabonnements erhalten einen fest zugesicherten prozentualen Rabatt. Egal wie stark Centar später im Preis steigt, dein Rabatt bleibt — solange dein Abo ohne Unterbrechung verlängert wird. Gilt auch, wenn du später auf ein größeres Paket wechselst. Bei Unterbrechung des Abos verfällt der Rabatt; bei erneutem Abschluss gilt der dann aktuelle Preis.",
+      "free": "Kostenloses Konto. Ein Konto bei Centar ist kostenlos und unbefristet. Es umfasst 30 Transaktionen pro Monat, ein Wallet und ein Budget. Module (Smjer, Krug, Projekti, Biznis) sind nicht enthalten. Sobald die monatliche Anzahl an Transaktionen aufgebraucht ist, sind neue Einträge ab dem ersten Tag des folgenden Monats wieder möglich. Daten werden nicht gelöscht und nicht gesperrt — alles Eingegebene bleibt sichtbar und kann jederzeit exportiert werden.",
       "billing": "Abrechnung: Abonnements werden über Paddle.com Market Ltd. als Merchant of Record abgewickelt; Paddle stellt Rechnungen aus und führt Erstattungen durch. Abonnements verlängern sich automatisch am Ende jedes Abrechnungszeitraums (monatlich oder jährlich), bis sie gekündigt werden."
     },
     "s4": {
@@ -4341,7 +4340,13 @@
       "portability": "Datenübertragbarkeit",
       "portabilityDesc": "Recht auf Export Ihrer Daten in einem maschinenlesbaren Format",
       "objection": "Widerspruch",
-      "objectionDesc": "Recht auf Widerspruch gegen bestimmte Verarbeitungen Ihrer Daten"
+      "objectionDesc": "Recht auf Widerspruch gegen bestimmte Verarbeitungen Ihrer Daten",
+      "restriction": "Einschränkung der Verarbeitung",
+      "restrictionDesc": "Recht zu verlangen, dass die Verarbeitung Ihrer Daten vorübergehend eingeschränkt wird",
+      "consent": "Widerruf der Einwilligung",
+      "consentDesc": "Recht, eine erteilte Einwilligung jederzeit zu widerrufen, ohne die Rechtmäßigkeit der vor dem Widerruf erfolgten Verarbeitung zu berühren",
+      "complaint": "Beschwerde bei der Aufsichtsbehörde",
+      "complaintDesc": "Recht, eine Beschwerde bei der kroatischen Datenschutzbehörde (AZOP), Selska cesta 136, Zagreb, einzureichen"
     },
     "s7": {
       "title": "7. Änderungen der Bedingungen",
@@ -4358,7 +4363,8 @@
       "l2": "Exporte (PDF/Excel) aus der Anwendung sind interne Berichte und können nicht als Hauptbeweis vor Finanzbehörden, Arbeitsinspektionen oder Gerichten verwendet werden.",
       "l3": "Der Nutzer ist verpflichtet, offizielle Aufzeichnungen in dafür zugelassenen Systemen zu führen.",
       "p2": "Durch die Nutzung der Anwendung akzeptiert der Nutzer diese Einschränkungen und übernimmt die volle Verantwortung für die Einhaltung der geltenden Vorschriften."
-    }
+    },
+    "versionLabel": "Version"
   },
   "form": {
     "moreOptions": "Mehr Optionen",
