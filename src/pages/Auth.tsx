@@ -148,13 +148,13 @@ const Auth = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Consent is validated on submit (not by disabling the button) so the user
+    // Terms are validated on submit (not by disabling the button) so the user
     // always gets visible feedback instead of a silent dead button.
-    if (!isLogin && !gdprConsent) {
-      setErrors((prev) => ({ ...prev, consent: t('auth.consentRequired') }));
-      track('signup_failed', { stage: 'client_validation', error_code: 'consent_required', ...readAuthEntry() });
-      gdprConsentRef.current?.focus();
-      gdprConsentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (!isLogin && !termsAccepted) {
+      setErrors((prev) => ({ ...prev, terms: t('auth.termsRequired') }));
+      track('signup_failed', { stage: 'client_validation', error_code: 'terms_not_accepted', ...readAuthEntry() });
+      termsAcceptanceRef.current?.focus();
+      termsAcceptanceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 
