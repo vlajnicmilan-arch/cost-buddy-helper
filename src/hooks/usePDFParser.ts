@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Category, PaymentSource, TransactionType } from '@/types/expense';
-import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { showSuccess, showError, showWarning } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { parseAiQuotaError, emitCoreScanLimitReached } from '@/lib/aiQuotaError';
@@ -52,11 +52,30 @@ export interface PDFParseResult {
   closing_currency?: string | null;
   /** Kraj razdoblja izvoda — datum na koji saldo vrijedi. */
   statement_period_to?: string | null;
+  /** Početak razdoblja izvoda — donja granica brane na datum stavke. */
+  statement_period_from?: string | null;
+  /** BRANA NA DATUM STAVKE: što je ispravljeno, a što zaustavljeno. */
+  date_guard?: StatementDateGuard | null;
   summary: {
     total_income: number;
     total_expenses: number;
     transaction_count: number;
   } | null;
+}
+
+export interface StatementDateGuardRow {
+  index: number;
+  original: string;
+  corrected?: string;
+  swapped?: string | null;
+  description: string | null;
+  amount: number | null;
+}
+
+export interface StatementDateGuard {
+  period: { from: string; to: string } | null;
+  corrected: StatementDateGuardRow[];
+  blocked: StatementDateGuardRow[];
 }
 
 export type PDFParseJobStatus = 'pending' | 'processing' | 'completed' | 'failed';
@@ -134,6 +153,15 @@ const toParseResult = (data: any): PDFParseResult => ({
   closing_currency: typeof data.closing_currency === 'string' ? data.closing_currency : null,
   statement_period_to:
     typeof data.statement_period_to === 'string' ? data.statement_period_to : null,
+  statement_period_from:
+    typeof data.statement_period_from === 'string' ? data.statement_period_from : null,
+  date_guard: data.date_guard
+    ? {
+        period: data.date_guard.period ?? null,
+        corrected: Array.isArray(data.date_guard.corrected) ? data.date_guard.corrected : [],
+        blocked: Array.isArray(data.date_guard.blocked) ? data.date_guard.blocked : [],
+      }
+    : null,
   summary: data.summary
 });
 
@@ -200,7 +228,54 @@ export const usePDFParser = () => {
     return token;
   };
 
-  const startPDFParseJob = async (base64Data: string, bankType?: string, isImage?: boolean): Promise<string> => {
+  /**
+   * BRANA NA DATUM STAVKE — korisnik mora čuti razlog razumljivom rečenicom.
+   * Ispravak (zamijenjeni dan i mjesec) je obavijest, zaustavljanje je
+   * upozorenje: te stavke NISU ušle u knjige.
+   */
+  const reportDateGuard = (result: PDFParseResult) => {
+    const guard = result.date_guard;
+    if (!guard?.period) return;
+    if (guard.corrected.length > 0) {
+      showWarning(
+        t('import.dateGuard.corrected', {
+          count: guard.corrected.length,
+          from: guard.period.from,
+          to: guard.period.to,
+          defaultValue:
+            'Ispravljen je datum na {{count}} stavci — dan i mjesec bili su zamijenjeni. Razdoblje izvatka: {{from}} – {{to}}.',
+        }),
+        { module: 'wallet' },
+      );
+    }
+    if (guard.blocked.length > 0) {
+      showError(
+        t('import.dateGuard.blocked', {
+          count: guard.blocked.length,
+          from: guard.period.from,
+          to: guard.period.to,
+          defaultValue:
+            'Zaustavljeno je {{count}} stavaka jer im datum ne pripada razdoblju izvatka ({{from}} – {{to}}). Te stavke nisu uvezene.',
+        }),
+        { module: 'wallet' },
+      );
+    }
+    logDiagnostic('statement_date_guard_reported', {
+      corrected: guard.corrected.length,
+      blocked: guard.blocked.length,
+      period_from: guard.period.from,
+      period_to: guard.period.to,
+    });
+  };
+
+
+
+  const startPDFParseJob = async (
+    base64Data: string,
+    bankType?: string,
+    isImage?: boolean,
+    fileName?: string | null,
+  ): Promise<string> => {
     const token = await getAccessToken();
     const response = await fetch(
       `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-pdf-statement`,
@@ -214,6 +289,7 @@ export const usePDFParser = () => {
           pdfBase64: base64Data,
           bankType,
           isImage: isImage || false,
+          fileName: fileName ?? null,
           async: true,
         }),
       }
@@ -322,6 +398,7 @@ export const usePDFParser = () => {
       if (job.status === 'completed' && job.result) {
         const result = toParseResult(job.result);
         setParsedData(result);
+        reportDateGuard(result);
         logDiagnostic('pdf_parse_job_completed', {
           job_id: jobId,
           count: result.transactions.length,

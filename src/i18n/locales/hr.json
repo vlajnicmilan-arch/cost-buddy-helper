@@ -2145,7 +2145,15 @@
       "cancel": "Prekini uvoz",
       "confirm": "Svejedno uvezi"
     },
-    "statementFeature": "Uvoz izvoda"
+    "statementFeature": "Uvoz izvoda",
+    "dateGuard": {
+      "corrected_one": "Ispravljen je datum na {{count}} stavci — dan i mjesec bili su zamijenjeni. Razdoblje izvatka: {{from}} – {{to}}.",
+      "corrected_few": "Ispravljen je datum na {{count}} stavke — dan i mjesec bili su zamijenjeni. Razdoblje izvatka: {{from}} – {{to}}.",
+      "corrected_other": "Ispravljen je datum na {{count}} stavaka — dan i mjesec bili su zamijenjeni. Razdoblje izvatka: {{from}} – {{to}}.",
+      "blocked_one": "Zaustavljena je {{count}} stavka jer joj datum ne pripada razdoblju izvatka ({{from}} – {{to}}). Nije uvezena.",
+      "blocked_few": "Zaustavljene su {{count}} stavke jer im datum ne pripada razdoblju izvatka ({{from}} – {{to}}). Nisu uvezene.",
+      "blocked_other": "Zaustavljeno je {{count}} stavaka jer im datum ne pripada razdoblju izvatka ({{from}} – {{to}}). Nisu uvezene."
+    }
   },
   "bulk": {
     "paymentSource": "Grupno plaćanje",

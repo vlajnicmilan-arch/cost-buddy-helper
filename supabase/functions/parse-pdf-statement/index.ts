@@ -13,6 +13,7 @@ import {
   type RawLineSource,
 } from "../_shared/statement/rawLineMatch.ts";
 import { markPendingTransactions } from "./pendingSection.ts";
+import { guardStatementDates, normalizePeriod } from "../_shared/statement/datePeriodGuard.ts";
 import {
   blockYieldFailure,
   buildBlockContext,
@@ -122,6 +123,8 @@ serve(async (req) => {
 
     const body = await req.json();
     const { pdfBase64, bankType, isImage, htmlContent } = body;
+    /** Ime datoteke — samo za dijagnostiku brane na datum stavke. */
+    const fileName: string | null = typeof body.fileName === 'string' ? body.fileName : null;
     /**
      * NAPREDAK: unutarnji (async) poziv nosi id posla kako bi segmentirano
      * čitanje moglo javljati „obrađujem dio n/m" kroz postojeći poll.
@@ -260,7 +263,8 @@ serve(async (req) => {
     // Bez prepoznatog salda ostaje null — nagađanja nema.
     const statementBalance = pdfPlainText
       ? extractStatementBalance(pdfPlainText)
-      : { closingBalance: null, currency: null, periodTo: null };
+      : { closingBalance: null, currency: null, periodTo: null, periodFrom: null };
+
     if (statementBalance.closingBalance !== null) {
       console.log(
         `saldo s izvoda: ${statementBalance.closingBalance} ${statementBalance.currency ?? ''} (razdoblje do ${statementBalance.periodTo ?? '—'})`,
@@ -813,7 +817,7 @@ DOSLOVAN REDAK (raw_line):
     // Filter and sanitize transactions; preserve installment + statement-total metadata
     const rawTransactions = statementData.transactions || [];
     let droppedInvalidDate = 0;
-    const transactions = rawTransactions.map((t: any) => {
+    let transactions = rawTransactions.map((t: any) => {
       const normDate = normalizeDate(t.date);
       const normDueOverride = normalizeDate(t.due_date_override);
       const balAfter = typeof t.balance_after === 'number' && Number.isFinite(t.balance_after) ? t.balance_after : null;
@@ -848,6 +852,46 @@ DOSLOVAN REDAK (raw_line):
     if (droppedInvalidDate > 0) {
       console.warn(`WARN: dropped ${droppedInvalidDate} transaction(s) with invalid/unrecognised date format`);
     }
+
+    // BRANA NA DATUM STAVKE — razdoblje izvatka je jedini sudac.
+    // Model zna zamijeniti dan i mjesec (02.09. → 2026-02-09). Ispravak je
+    // dopušten SAMO zamjenom dana i mjeseca; što ne stane u razdoblje, ne ide
+    // tiho u knjige. Bez razdoblja brana miruje.
+    const guardPeriod = normalizePeriod(statementBalance.periodFrom, statementBalance.periodTo);
+    const dateGuard = guardStatementDates(transactions, guardPeriod);
+    transactions = dateGuard.rows;
+    if (guardPeriod && (dateGuard.corrections.length > 0 || dateGuard.blocked.length > 0)) {
+      console.warn(
+        `statement_date_guard: ${dateGuard.corrections.length} ispravljeno, ${dateGuard.blocked.length} zaustavljeno (razdoblje ${guardPeriod.from}..${guardPeriod.to})`,
+      );
+      const commonDetails = {
+        period_from: guardPeriod.from,
+        period_to: guardPeriod.to,
+        job_id: progressJobId,
+        file_name: fileName,
+        bank: (statementData as any).detected_bank ?? null,
+      };
+      for (const c of dateGuard.corrections) {
+        void logParseFailure('statement_date_corrected', userId, {
+          ...commonDetails,
+          original_date: c.original,
+          corrected_date: c.corrected,
+          description: c.description,
+          amount: c.amount,
+        });
+      }
+      for (const b of dateGuard.blocked) {
+        void logParseFailure('statement_date_blocked', userId, {
+          ...commonDetails,
+          original_date: b.original,
+          swapped_date: b.swapped,
+          reason: 'outside_statement_period',
+          description: b.description,
+          amount: b.amount,
+        });
+      }
+    }
+
 
     // CITAT S IZVODA: deterministički redak ima prednost pred AI prepisom.
     {
@@ -975,6 +1019,14 @@ DOSLOVAN REDAK (raw_line):
         closing_balance: statementBalance.closingBalance,
         closing_currency: statementBalance.currency,
         statement_period_to: statementBalance.periodTo,
+        statement_period_from: statementBalance.periodFrom,
+        // BRANA NA DATUM STAVKE — što je ispravljeno i što je zaustavljeno.
+        date_guard: {
+          period: guardPeriod,
+          corrected: dateGuard.corrections,
+          blocked: dateGuard.blocked,
+        },
+
         summary: {
           total_income: totalIncome,
           total_expenses: totalExpenses,

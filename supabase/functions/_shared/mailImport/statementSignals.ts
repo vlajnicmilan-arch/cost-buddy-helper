@@ -237,8 +237,17 @@ export function detectPeriodRange(text: string): { from: string; to: string } | 
     const to = isoFromNumeric(d[2]);
     if (from && to) return { from, to };
   }
+  // Jednodnevni izvadak: „Za razdoblje (po datumu obrade): 02.09.2026."
+  // Razdoblje je izričito napisano, samo su mu oba ruba isti dan.
+  const SINGLE = /\bza\s+razdoblje\b[^\n]*?(\d{1,2}\.\s?\d{1,2}\.\s?\d{4})/i;
+  const s = text.match(SINGLE);
+  if (s) {
+    const only = isoFromNumeric(s[1]);
+    if (only) return { from: only, to: only };
+  }
   return null;
 }
+
 
 
 function detectPeriod(text: string): { from: string | null; to: string | null } {
@@ -633,7 +642,10 @@ export interface StatementBalanceReading {
   currency: string | null;
   /** Kraj razdoblja — datum na koji saldo vrijedi. */
   periodTo: string | null;
+  /** Početak razdoblja — donja granica brane na datum stavke. */
+  periodFrom: string | null;
 }
+
 
 const CURRENCY_SYMBOLS: readonly (readonly [RegExp, string])[] = [
   [/€|\bEUR\b/i, 'EUR'],
@@ -666,13 +678,20 @@ export function extractStatementBalance(
   rawText: string | null | undefined,
 ): StatementBalanceReading {
   const text = normalizeSpace(rawText ?? '');
-  if (text.trim().length === 0) return { closingBalance: null, currency: null, periodTo: null };
+  if (text.trim().length === 0) {
+    return { closingBalance: null, currency: null, periodTo: null, periodFrom: null };
+  }
   const lines = text.split(/\r?\n/);
   const zone = issuerZone(lines);
   const closing = detectSummaryClosingBalance(zone) ?? detectClosingBalance(lines);
   const period = detectPeriodRange(zone.join('\n')) ?? detectPeriodRange(text);
   if (closing === null) {
-    return { closingBalance: null, currency: null, periodTo: period?.to ?? null };
+    return {
+      closingBalance: null,
+      currency: null,
+      periodTo: period?.to ?? null,
+      periodFrom: period?.from ?? null,
+    };
   }
   const line = closingBalanceLine(zone.length > 0 ? zone : lines, closing)
     ?? closingBalanceLine(lines, closing);
@@ -680,5 +699,7 @@ export function extractStatementBalance(
     closingBalance: closing,
     currency: line ? currencyFromLine(line) : null,
     periodTo: period?.to ?? null,
+    periodFrom: period?.from ?? null,
   };
 }
+
