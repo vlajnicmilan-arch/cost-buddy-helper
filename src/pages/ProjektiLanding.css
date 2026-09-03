@@ -1,4 +1,8 @@
 /** Scoped layout for the locked /projekti landing skeleton. */
+body:has(.projekti-landing) {
+  overflow-x: clip;
+}
+
 .projekti-landing {
   --landing-shadow: 0 1px 3px hsl(var(--foreground) / 0.08);
   --landing-shadow-lift: 0 6px 20px -10px hsl(var(--foreground) / 0.25);
