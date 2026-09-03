@@ -1,6 +1,7 @@
 import { useState, useEffect, forwardRef } from 'react';
 import { Building2, ChevronDown, User } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useBusinessFeature } from '@/hooks/useBusinessFeature';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +17,8 @@ interface BusinessProfile {
 export const BusinessProfileSwitcher = forwardRef<HTMLDivElement>((_, ref) => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { activeBusinessProfileId, setActiveBusinessProfileId, businessFeatureEnabled, businessModeEnabled, setBusinessModeEnabled } = useAppState();
+  const { activeBusinessProfileId, setActiveBusinessProfileId, businessModeEnabled, setBusinessModeEnabled } = useAppState();
+  const businessFeatureEnabled = useBusinessFeature();
   const [profiles, setProfiles] = useState<BusinessProfile[]>([]);
   const [open, setOpen] = useState(false);
 

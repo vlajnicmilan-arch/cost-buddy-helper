@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import { FolderKanban, Plus, ChevronRight, Wallet, Sparkles, Clock, Pause, Info, AlertCircle } from 'lucide-react';
 import { ProjectWithOwnership, DEFAULT_PROJECT_COLORS } from '@/types/project';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { useModuleStates } from '@/hooks/useModuleStates';
+import { isModuleActive } from '@/lib/moduleVisibility';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -79,7 +81,8 @@ export const ActiveProjectsStrip = React.memo(({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { hasAccess } = useFeatureAccess();
-  const { projectsModuleEnabled } = useAppState();
+  const moduleStates = useModuleStates();
+  const projectsModuleEnabled = isModuleActive('projects', moduleStates.projects);
   const { lightTap } = useHaptics();
   const { formatAmount } = useCurrency();
   const { requestModule } = useModuleGate();

@@ -25,6 +25,8 @@ import { MilestoneSelectRow } from './MilestoneSelectRow';
 
 import { InstallmentToggle } from '@/components/installments';
 import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
+import { useModuleStates } from '@/hooks/useModuleStates';
+import { isModuleActive } from '@/lib/moduleVisibility';
 import { useAppState } from '@/contexts/AppStateContext';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { getDateRange, toInputDate, clampInputDate, getDateValidationKey } from '@/lib/dateValidation';
@@ -151,7 +153,8 @@ interface ManualExpenseFormProps {
 
 export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
   const { t } = useTranslation();
-  const { projectsModuleEnabled } = useAppState();
+  const moduleStates = useModuleStates();
+  const projectsModuleEnabled = isModuleActive('projects', moduleStates.projects);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   return (

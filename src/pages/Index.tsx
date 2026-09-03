@@ -13,6 +13,7 @@ import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { useInstallments } from '@/hooks/useInstallments';
 import { useBudgets } from '@/hooks/useBudgets';
 import { useProjects } from '@/hooks/useProjects';
+import { useBusinessFeature } from '@/hooks/useBusinessFeature';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useBusinessDebts } from '@/hooks/useBusinessDebts';
 import { useBulkActions } from '@/hooks/useBulkActions';
@@ -39,7 +40,8 @@ const Index = () => {
   const { storageMode } = useStorage();
   const { formatAmount, currency, multiCurrencyEnabled } = useCurrency();
   const { convert } = useExchangeRates(multiCurrencyEnabled);
-  const { displayName, aiAssistantEnabled, activeBusinessProfileId, setActiveBusinessProfileId, businessFeatureEnabled, businessModeEnabled, setBusinessModeEnabled } = useAppState();
+  const { displayName, aiAssistantEnabled, activeBusinessProfileId, setActiveBusinessProfileId, businessModeEnabled, setBusinessModeEnabled } = useAppState();
+  const businessFeatureEnabled = useBusinessFeature();
   const { totalReceivable, totalPayable } = useBusinessDebts();
   // Sync wallet view-mode chips ↔ activeBusinessProfileId so dashboard metrics
   // (Saldo, Novčanici, Slobodno, Neto, Prihodi/Rashodi) all reflect the chosen context.
