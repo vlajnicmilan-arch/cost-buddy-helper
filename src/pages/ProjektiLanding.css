@@ -1,6 +1,5 @@
 /** Scoped layout for the locked /projekti landing skeleton. */
 .projekti-landing {
-  --module-accent: 217 91% 60%;
   --landing-shadow: 0 1px 3px hsl(var(--foreground) / 0.08);
   --landing-shadow-lift: 0 6px 20px -10px hsl(var(--foreground) / 0.25);
   min-height: 100dvh;
@@ -165,6 +164,7 @@
   .projekti-landing .final .signin:hover { color:hsl(var(--band-primary)); }
   .projekti-landing .final .cta { background:hsl(var(--band-primary)); color:hsl(var(--band)); }
   .projekti-landing .final .micro { color:hsl(var(--band-muted)); }
+  .projekti-landing .final .after { font-size:22px; line-height:29px; margin-bottom:26px; }
 
   .projekti-landing footer.site { margin-top:36px; text-align:center; font-size:13px; line-height:20px; color:hsl(var(--muted-foreground)); }
 
