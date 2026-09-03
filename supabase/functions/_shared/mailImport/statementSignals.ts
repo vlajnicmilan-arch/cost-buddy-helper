@@ -237,11 +237,21 @@ export function detectPeriodRange(text: string): { from: string; to: string } | 
     const to = isoFromNumeric(d[2]);
     if (from && to) return { from, to };
   }
+  // „01.08.2026. do 31.08.2026." — raspon bez riječi „od".
+  const TO_RANGE =
+    /(\d{1,2}\.\s?\d{1,2}\.\s?\d{4})\.?\s+do\s+(\d{1,2}\.\s?\d{1,2}\.\s?\d{4})/i;
+  const t = text.match(TO_RANGE);
+  if (t) {
+    const from = isoFromNumeric(t[1]);
+    const to = isoFromNumeric(t[2]);
+    if (from && to) return { from, to };
+  }
   // Jednodnevni izvadak: „Za razdoblje (po datumu obrade): 02.09.2026."
-  // Razdoblje je izričito napisano, samo su mu oba ruba isti dan.
-  const SINGLE = /\bza\s+razdoblje\b[^\n]*?(\d{1,2}\.\s?\d{1,2}\.\s?\d{4})/i;
+  // Okida SAMO ako iza prvog datuma na tom retku nema drugog datuma —
+  // dva datuma znače raspon, a njega obrađuju grane iznad.
+  const SINGLE = /\bza\s+razdoblje\b[^\n]*?(\d{1,2}\.\s?\d{1,2}\.\s?\d{4})([^\n]*)/i;
   const s = text.match(SINGLE);
-  if (s) {
+  if (s && !/\d{1,2}\.\s?\d{1,2}\.\s?\d{4}/.test(s[2] ?? '')) {
     const only = isoFromNumeric(s[1]);
     if (only) return { from: only, to: only };
   }
