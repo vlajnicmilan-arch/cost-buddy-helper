@@ -6,7 +6,7 @@
  */
 
 const ISO_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
-const HR_RE = /^(\d{1,2})\s*[.\/-]\s*(\d{1,2})\s*[.\/-]\s*(\d{4})\s*\.?$/;
+const HR_RE = /^(\d{1,2})\s*[./-]\s*(\d{1,2})\s*[./-]\s*(\d{4})\s*\.?$/;
 
 const isRealDate = (y: number, m: number, d: number): boolean => {
   if (m < 1 || m > 12 || d < 1 || d > 31) return false;

@@ -526,7 +526,7 @@ const ImportReview = () => {
     } finally {
       setConfirming(false);
     }
-  }, [payload, decisions, summary, navigate, t, user, activeBusinessProfileId, formatAmount]);
+  }, [payload, decisions, summary, navigate, t, user, activeBusinessProfileId, formatAmount, i18n.language]);
 
   const updateAuto = useCallback((idx: number, value: boolean) => {
     setDecisions(prev => (prev ? setAutoMerge(prev, idx, value) : prev));
@@ -1394,7 +1394,7 @@ async function enqueueReconciliationForBatch(
       .select('id')
       .eq('import_batch_id', batchId)
       .maybeSingle();
-    statementId = (data as any)?.id ?? null;
+    statementId = data?.id ?? null;
   } catch { /* noop — banner iz TUR 2 se neće znati vratiti, ali dijalog radi */ }
 
   const fallbackAsOfIso = new Date().toISOString();
