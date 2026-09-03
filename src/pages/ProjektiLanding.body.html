@@ -1,23 +1,57 @@
-<div class="phone">
+<div class="wrap">
 
   <header class="top">
     <span class="brand"><span class="mark"></span>CENTAR</span>
-    <a class="login" href="/auth" data-telemetry-target="login">Prijava</a>
+    <a class="cta-mini" href="/auth?mode=signup" data-telemetry-target="header_cta">Otvori račun</a>
   </header>
 
-  <p class="eyebrow">Vođenje projekata i odluka</p>
-  <h1>Kad se odluka promijeni, povijest se ne prepisuje.</h1>
-  <p class="lede">Centar bilježi svaki korak odluke — prijedlog, odgovor, korekciju i ishod — zajedno s autorom, datumom i vremenom.</p>
-  <p class="claim">Nakon prvog odgovora postojeći koraci više se ne mogu mijenjati ni brisati.</p>
-
-  <a class="cta" href="/auth?mode=signup" data-telemetry-target="hero_cta">Otvori račun</a>
-  <p class="micro">Bez kartice · 30 dana Projekata aktiviraš kada želiš</p>
-  <a class="scrollhint" href="#pravilo" data-telemetry-target="scroll_hint">Pogledaj kako radi ↓</a>
-
-  <div class="peek" aria-hidden="true">
-    <img src="/assets/landing/centar-odluka-tijek.jpg" alt="">
+  <!-- 1 ── HERO -->
+  <div class="hero">
+    <p class="eyebrow">Vođenje projekata i odluka</p>
+    <h1>Kad se odluka promijeni, povijest se ne prepisuje.</h1>
+    <p class="lede">Centar bilježi svaki korak odluke — prijedlog, odgovor, korekciju i ishod — zajedno s autorom, datumom i vremenom.</p>
+    <a class="cta" href="/auth?mode=signup" data-telemetry-target="hero_cta">Otvori račun</a>
+    <p class="micro">Bez kartice · 30 dana Projekata aktiviraš kada želiš</p>
   </div>
 
+  <!-- 2 ── PROBLEM + 3 ── PRIJELAZ -->
+  <section class="band" id="problem">
+    <h2>Jedno gradilište još nekako pratite. Ali što kada ih imate više?</h2>
+    <div class="cards">
+      <div>Račun je ostao u autu.</div>
+      <div>Dogovor s investitorom je u WhatsAppu.</div>
+      <div>Troškovi su u Excelu.</div>
+      <div>Izmjena je dogovorena telefonom.</div>
+    </div>
+    <p class="turn">
+      <span>A nekoliko mjeseci poslije treba odgovoriti na jednostavno pitanje:</span>
+      Što smo zapravo dogovorili?
+    </p>
+  </section>
+
+  <!-- 4 ── MEHANIZAM ODLUKE -->
+  <section id="mehanizam" class="split">
+    <div class="col">
+      <p class="eyebrow">Odluke</p>
+      <h2>Odluka u Centru ima svoj trag.</h2>
+      <div class="seq">
+        <b>prijedlog</b><i>↓</i>
+        <b>odgovor</b><i>↓</i>
+        <b>korekcija</b><i>↓</i>
+        <b>prihvaćanje ili odbijanje</b>
+      </div>
+      <p>Svaki korak nosi autora, datum i vrijeme.</p>
+      <p>Centar ne pokušava odlučiti tko je u pravu. Čuva ono što se stvarno dogodilo.</p>
+    </div>
+    <div class="aside">
+      <figure class="shot">
+        <img src="__ODLUKA__" alt="Slijed koraka odluke u Centru: prijedlog, protuprijedlog s cijenom, korekcija i prihvacanje, uz automatski upisanu izmjenu ugovora">
+        <figcaption>Stvarna odluka iz Centra. Zeleni redak na vrhu nitko nije napisao — nastao je u trenutku prihvaćanja.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 5 ── PRAVILO NEPROMJENJIVOSTI -->
   <section id="pravilo">
     <h2>Prijedlog možeš povući. Zajedničku povijest ne možeš prepisati.</h2>
     <p>Dok druga strana nije odgovorila, predlagatelj može povući vlastiti prijedlog. Ali čim stigne prvi odgovor, dotadašnji koraci postaju nepromjenjivi.</p>
@@ -26,32 +60,16 @@
       <li>Nema brisanja neugodnog odbijanja.</li>
       <li>Nema prepisivanja razloga.</li>
     </ul>
-    <p>Ako se odluka mijenja, njezin se tijek nastavlja.</p>
-
-    <figure class="shot">
-      <img src="/assets/landing/centar-odluka-tijek.jpg" alt="Slijed koraka odluke u Centru: prijedlog, protuprijedlog s cijenom, korekcija i prihvacanje, uz automatski upisanu izmjenu ugovora" loading="lazy">
-      <figcaption>Stvarna odluka iz Centra. Zeleni redak na vrhu nitko nije napisao — nastao je u trenutku prihvaćanja.</figcaption>
-    </figure>
+    <p class="claim">Promjena ne briše povijest. Nastavlja je.</p>
   </section>
 
-  <section id="problem">
-    <h2>„Nismo se tako dogovorili."</h2>
-    <p>Možda niste.<br>Možda jeste.</p>
-    <p>Problem nastaje kada nekoliko mjeseci poslije odgovor ovisi samo o tome tko se bolje sjeća.</p>
-    <div class="seq">
-      <b>prijedlog</b><span>↓</span>
-      <b>odgovor</b><span>↓</span>
-      <b>korekcija</b><span>↓</span>
-      <b>prihvaćanje ili odbijanje</b>
+  <!-- 6 ── PONIŠTENJE -->
+  <section id="ponistenje" class="split">
+    <div class="col">
+      <h2>Čak ni poništenje ne briše odluku.</h2>
+      <p>Ako se prihvaćena odluka kasnije mora poništiti, jedna strana traži poništenje, a druga ga mora potvrditi. Isti čovjek ne može napraviti oboje.</p>
+      <p class="chain-note">Iznos je prikazni primjer. Prethodni tijek odluke ostaje sačuvan — poništenje se dodaje, ne briše.</p>
     </div>
-    <p>Svaki korak ima autora, datum i vrijeme.</p>
-    <p>Centar ne pokušava odlučiti tko je u pravu. Čuva ono što se stvarno dogodilo.</p>
-  </section>
-
-  <section id="ponistenje">
-    <h2>Čak ni poništenje ne briše odluku.</h2>
-    <p>Ako se prihvaćena odluka kasnije mora poništiti, jedna strana traži poništenje, a druga ga mora potvrditi. Isti čovjek ne može napraviti oboje.</p>
-
     <div class="chain">
       <div class="node up"><span class="k">Prihvaćena odluka</span><span class="amt">+ 1.500,00 €</span></div>
       <div class="link"></div>
@@ -63,13 +81,15 @@
       <div class="link"></div>
       <div class="node"><span class="k">Ugovorena vrijednost</span><span class="v">vraćena</span></div>
     </div>
-    <p class="chain-note">Iznos je prikazni primjer. Prethodni tijek odluke ostaje sačuvan — poništenje se dodaje, ne briše.</p>
   </section>
 
-  <section id="posljedica">
-    <h2>Prihvaćena odluka može automatski promijeniti projekt.</h2>
-    <p>Ako prihvaćena odluka ima iznos različit od nule, Centar jednom evidentira pripadajuću izmjenu ugovora i ažurira ugovorenu vrijednost projekta.</p>
-
+  <!-- 7 ── ODLUKA MIJENJA PROJEKT -->
+  <section id="posljedica" class="split">
+    <div class="col">
+      <h2>Prihvaćena odluka može automatski promijeniti projekt.</h2>
+      <p>Ako prihvaćena odluka ima iznos različit od nule, Centar jednom evidentira pripadajuću izmjenu ugovora i ažurira ugovorenu vrijednost projekta.</p>
+      <p class="chain-note">Ako odluka smanjuje cijenu, vrijednost se ažurira bez otvaranja nove faze.</p>
+    </div>
     <div class="chain">
       <div class="node"><span class="k">Odluka prihvaćena</span><span class="v">iznos zadnjeg koraka s cijenom</span></div>
       <div class="link"></div>
@@ -79,71 +99,101 @@
       <div class="cond">ako je poskupljenje</div>
       <div class="node"><span class="k">Nova faza</span><span class="v">otvorena</span></div>
     </div>
-    <p class="chain-note">Ako odluka smanjuje cijenu, vrijednost se ažurira bez otvaranja nove faze.</p>
   </section>
 
-  <section id="sirina">
-    <h2>Ali projekt nije samo niz odluka.</h2>
-    <p>Odluka može imati dokument. Može nastati zbog fotografije s terena. Može utjecati na trošak. Može promijeniti tijek radova.</p>
-    <p>Zato u Centru stvari ne moraju živjeti odvojeno.</p>
-
-    <figure class="shot">
-      <img src="/assets/landing/centar-projekt-kartica.jpg" alt="Kartica aktivnog projekta u Centru: iskoristeno 67 posto, preostalo 9.705,96 eura, dva dana kasnjenja" loading="lazy">
-    </figure>
-    <figure class="shot">
-      <img src="/assets/landing/centar-sekcije-projekta.jpg" alt="Popis sekcija unutar projekta u Centru: tim projekta, financiranje, transakcije, dnevnik rada, dokumenti i aktivnost" loading="lazy">
-      <figcaption>Tim, financiranje, transakcije, dnevnici rada, dokumenti i povijest promjena — sve unutar istog projekta.</figcaption>
-    </figure>
+  <!-- ŠIRINA PROJEKTA -->
+  <section id="sirina" class="split">
+    <div class="col">
+      <h2>Ali projekt nije samo niz odluka.</h2>
+      <p>Odluka može imati dokument. Može nastati zbog fotografije s terena. Može utjecati na trošak. Može promijeniti tijek radova.</p>
+      <p class="soft">Tim, financiranje, transakcije, dnevnici rada, dokumenti i povijest promjena — sve unutar istog projekta.</p>
+    </div>
+    <div class="aside">
+      <figure class="shot">
+        <img src="__SEKCIJE__" alt="Popis sekcija unutar projekta u Centru: tim projekta, financiranje, transakcije, dnevnik rada, dokumenti i aktivnost">
+      </figure>
+    </div>
   </section>
 
-  <section id="novac">
-    <h2>Koliko je ugovoreno, koliko naplaćeno, koliko potrošeno.</h2>
-    <p>Tri broja koja na projektu obično žive u tri različite bilježnice.</p>
-    <figure class="shot">
-      <img src="/assets/landing/centar-budzet.jpg" alt="Pregled budzeta projekta u Centru: ugovoreno, primljeno, potroseno i preostalo" loading="lazy">
-    </figure>
+  <section id="stanje" class="split">
+    <div class="col">
+      <h2>Gdje projekt trenutno stoji.</h2>
+      <p>Iskorišteno, preostalo, primljeno i koliko dana kasni — na jednoj kartici.</p>
+    </div>
+    <div class="aside">
+      <figure class="shot">
+        <img src="__PROJEKT__" alt="Kartica aktivnog projekta u Centru: iskoristeno 67 posto, preostalo 9.705,96 eura, dva dana kasnjenja">
+      </figure>
+    </div>
   </section>
 
-  <section id="dnevnik">
-    <h2>Danas zabilježeno. Sutra pronađeno.</h2>
-    <p>Ono što se dogodilo na projektu ostaje dio njegove povijesti.</p>
-    <figure class="shot">
-      <img src="/assets/landing/centar-dnevnik-rada.jpg" alt="Dnevnik rada u Centru: zapisi po danima s opisom posla i satima radnika" loading="lazy">
-    </figure>
+  <section id="novac" class="split">
+    <div class="col">
+      <h2>Koliko je ugovoreno, koliko naplaćeno, koliko potrošeno.</h2>
+      <p>Tri broja koja na projektu obično žive u tri različite bilježnice.</p>
+    </div>
+    <div class="aside">
+      <figure class="shot">
+        <img src="__BUDZET__" alt="Pregled budzeta projekta u Centru: ugovoreno, primljeno, potroseno i preostalo">
+      </figure>
+    </div>
   </section>
 
-  <section id="trosak">
-    <h2>Trošak ne mora biti samo broj.</h2>
-    <p>Može ostati povezan s fazom kojoj pripada, sa svakim artiklom s računa.</p>
-    <figure class="shot">
-      <img src="/assets/landing/centar-trosak-artikli.jpg" alt="Detalji troska u Centru: iznos, faza vodoinstalaterski radovi i popis artikala s cijenama" loading="lazy">
-    </figure>
+  <section id="dnevnik" class="split">
+    <div class="col">
+      <h2>Danas zabilježeno. Sutra pronađeno.</h2>
+      <p>Ono što se dogodilo na projektu ostaje dio njegove povijesti.</p>
+    </div>
+    <div class="aside">
+      <figure class="shot">
+        <img src="__DNEVNIK__" alt="Dnevnik rada u Centru: zapisi po danima s opisom posla i satima radnika">
+      </figure>
+    </div>
   </section>
 
-  <section id="cta2">
-    <h2>Ako ti ovo nedostaje na projektu, probaj ga na svom.</h2>
+  <section id="trosak" class="split">
+    <div class="col">
+      <h2>Trošak ne mora biti samo broj.</h2>
+      <p>Može ostati povezan s fazom kojoj pripada, sa svakim artiklom s računa.</p>
+    </div>
+    <div class="aside">
+      <figure class="shot">
+        <img src="__TROSAK__" alt="Detalji troska u Centru: iznos, faza vodoinstalaterski radovi i popis artikala s cijenama">
+      </figure>
+    </div>
+  </section>
+
+  <section id="korak">
+    <p class="thatsit">To je to.</p>
     <a class="cta" href="/auth?mode=signup" data-telemetry-target="mid_cta">Otvori račun</a>
     <p class="micro">Bez kartice</p>
   </section>
 
-  <section id="cijena">
-    <p class="eyebrow" style="margin-top:0">Cijena</p>
-    <h2>Prvih 30 dana ne plaćaš ništa.</h2>
-    <p>Probni period Projekata pokrećeš sam, kada želiš.</p>
-
-    <div class="plan">
-      <span class="tag">Projekti</span>
-      <span class="price">21,99 €<small> / mjesečno</small></span>
-      <span class="year">219,90 € godišnje</span>
-      <span class="deal">Godišnje: koristiš 12 mjeseci, plaćaš cijenu 10.</span>
-      <ul>
-        <li>Projekti, faze i stanje radova</li>
-        <li>Odluke sa sljedivim tijekom</li>
-        <li>Troškovi, budžet i ugovorne izmjene</li>
-        <li>Dnevnik rada</li>
-        <li>Tim i uloge</li>
-        <li>Dokumenti i fotografije</li>
-      </ul>
+  <!-- PONUDA -->
+  <section class="band" id="ponuda">
+    <div class="split">
+      <div class="col">
+        <p class="eyebrow">Cijena</p>
+        <h2>Prvih 30 dana ne plaćaš ništa.</h2>
+        <p class="strong">Probni period Projekata pokrećeš sam, kada želiš.</p>
+      </div>
+      <div class="offer">
+        <span class="tag">Projekti</span>
+        <span class="big">0 € prvih<br>30 dana</span>
+        <span class="price">zatim 21,99 €<small> / mjesečno</small></span>
+        <span class="year">ili 219,90 € godišnje</span>
+        <span class="deal">Godišnje: koristiš 12 mjeseci, plaćaš cijenu 10.</span>
+        <ul>
+          <li>Projekti, faze i stanje radova</li>
+          <li>Odluke sa sljedivim tijekom</li>
+          <li>Troškovi, budžet i ugovorne izmjene</li>
+          <li>Dnevnik rada</li>
+          <li>Tim i uloge</li>
+          <li>Dokumenti i fotografije</li>
+        </ul>
+        <a class="cta" href="/auth?mode=signup" data-telemetry-target="offer_cta">Otvori račun</a>
+        <p class="micro">Bez kartice</p>
+      </div>
     </div>
   </section>
 
@@ -182,7 +232,7 @@
     <div class="author">
       <p>Gradim ga nakon godina rada na stvarnim projektima u kojima sam gledao kako se dogovori, dokumenti, troškovi i odluke s vremenom razdvoje.</p>
       <p>Nisam htio napraviti još jedan popis zadataka. Htio sam sustav u kojem se kasnije može vidjeti što se stvarno dogodilo.</p>
-      <p class="sign">Milan<small>Tactura j.d.o.o.</small></p>
+      <p class="sign">Osnivač</p>
     </div>
   </section>
 
@@ -195,20 +245,18 @@
     </nav>
   </section>
 
-  <section class="final">
+  <section class="band final" id="kraj">
     <h2>Odluka će se dogoditi i bez Centra.</h2>
-    <p class="after">Razlika je u tome hoće li poslije postojati njezin trag.</p>
+    <p class="strong after">Razlika je u tome hoće li poslije postojati njezin trag.</p>
     <a class="cta" href="/auth?mode=signup" data-telemetry-target="final_cta">Otvori račun</a>
     <p class="micro">Bez kartice · 30 dana Projekata aktiviraš kada želiš</p>
     <a class="signin" href="/auth" data-telemetry-target="final_signin">Već imaš račun? Prijavi se</a>
   </section>
 
-  <footer class="site">
-    Centar · Tactura j.d.o.o.
-  </footer>
+  <footer class="site">Centar</footer>
 
 </div>
 
-<div class="sticky" id="projekti-sticky">
-  <div class="sticky-inner"><a class="cta" href="/auth?mode=signup" data-telemetry-target="sticky_cta">Otvori račun</a></div>
+<div class="sticky" id="sticky">
+  <a class="cta" href="/auth?mode=signup" data-telemetry-target="sticky_cta">Otvori račun</a>
 </div>

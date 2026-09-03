@@ -36,6 +36,16 @@
     --income: 160 75% 42%;
     --income-foreground: 0 0% 100%;
 
+    /* Fixed dark contrast surfaces used by the public Projects landing in
+       both themes. These are intentionally independent of `.dark`. */
+    --band: 220 15% 5%;
+    --band-foreground: 0 0% 98%;
+    --band-card: 225 13% 9%;
+    --band-border: 220 10% 17%;
+    --band-muted: 225 10% 74%;
+    --band-primary: 167 73% 48%;
+    --landing-cta-foreground: 175 30% 10%;
+
     --warning: 43 96% 56%;
     --warning-foreground: 30 60% 20%;
 

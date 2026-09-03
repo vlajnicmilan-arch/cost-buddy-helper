@@ -62,6 +62,14 @@ export default {
           DEFAULT: "hsl(var(--income))",
           foreground: "hsl(var(--income-foreground))",
         },
+        band: {
+          DEFAULT: "hsl(var(--band))",
+          foreground: "hsl(var(--band-foreground))",
+          card: "hsl(var(--band-card))",
+          border: "hsl(var(--band-border))",
+          muted: "hsl(var(--band-muted))",
+          primary: "hsl(var(--band-primary))",
+        },
         warning: {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",

@@ -1,184 +1,237 @@
-/**
- * Prodajna stranica modula Projekti (/projekti).
- *
- * Boje dolaze isključivo iz globalnih tokena aplikacije (hsl(var(--…))) pa
- * stranica prati svijetlu i tamnu temu bez vlastitog prekidača. Jedina
- * namjerna iznimka je glavni gumb: tirkizna pozadina + TAMNA tinta
- * (`--cta-ink`, definirana lokalno na `.projekti-landing`) jer bijeli tekst
- * na `--primary` pada ispod praga čitljivosti. Globalni
- * `--primary-foreground` se NE dira.
- *
- * `--projects` (modulska boja) postavlja se inline iz `src/lib/moduleColors`.
- *
- * Okviri oko snimaka namjerno ostaju tamni i u svijetloj temi — snimke su
- * iz tamne teme aplikacije.
- */
-
+/** Scoped layout for the locked /projekti landing skeleton. */
 .projekti-landing {
-  --shadow: 0 1px 3px hsl(var(--foreground) / 0.08);
-  --shadow-lift: 0 6px 20px -10px hsl(var(--foreground) / 0.25);
-  --shot-bg: #0B0C0F;
-  --shot-line: #272A30;
-  --shot-fg: #B6BAC3;
-
-  background: hsl(var(--background));
-  color: hsl(var(--foreground));
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  font-size: 17px;
-  line-height: 1.55;
-  -webkit-font-smoothing: antialiased;
+  --landing-shadow: 0 1px 3px hsl(var(--foreground) / 0.08);
+  --landing-shadow-lift: 0 6px 20px -10px hsl(var(--foreground) / 0.25);
   min-height: 100dvh;
-  scroll-behavior: smooth;
 }
 
-.projekti-landing * { box-sizing: border-box; }
-.projekti-landing p,
-.projekti-landing h1,
-.projekti-landing h2,
-.projekti-landing ul,
-.projekti-landing figure { margin: 0; padding: 0; }
+/* Tokeni preuzeti 1:1 iz src/index.css */
 
-.projekti-landing .phone { max-width: 390px; margin: 0 auto; padding: 0 20px 120px; }
+  .projekti-landing * { box-sizing:border-box; }
+  .projekti-landing {
+    background:hsl(var(--background)); color:hsl(var(--foreground));
+    font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+    font-size:17px; line-height:1.55; -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  .projekti-landing .wrap { max-width:390px; margin:0 auto; padding:0 20px 130px; }
 
-.projekti-landing header.top { height: 64px; display: flex; align-items: center; justify-content: space-between; }
-.projekti-landing .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 17px; letter-spacing: .02em; }
-.projekti-landing .brand .mark { width: 22px; height: 22px; border-radius: 7px; background: hsl(var(--primary)); flex: 0 0 auto; }
-.projekti-landing .login { font-size: 15px; font-weight: 500; color: hsl(var(--foreground)); text-decoration: none; padding: 8px 4px; min-height: 44px; display: flex; align-items: center; }
-.projekti-landing .login:hover { color: hsl(var(--primary)); }
+  /* ── zaglavlje ──────────────────────────────────────────────────── */
+  .projekti-landing header.top {
+    position:sticky; top:0; z-index:30; height:60px;
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    margin:0 -20px; padding:0 20px;
+    background:color-mix(in srgb, hsl(var(--background)) 92%, transparent);
+    backdrop-filter:blur(12px);
+  }
+  .projekti-landing .brand { display:flex; align-items:center; gap:8px; font-weight:700; font-size:16px; letter-spacing:.02em; }
+  .projekti-landing .brand .mark { width:20px; height:20px; border-radius:6px; background:hsl(var(--primary)); flex:0 0 auto; }
+  .projekti-landing .cta-mini {
+    display:inline-flex; align-items:center; height:36px; padding:0 14px; border-radius:12px;
+    background:hsl(var(--primary)); color:hsl(var(--landing-cta-foreground));
+    font-size:14px; font-weight:600; text-decoration:none; white-space:nowrap;
+  }
+  .projekti-landing .cta-mini:hover { filter:brightness(1.05); }
 
-.projekti-landing .eyebrow {
-  display: flex; align-items: center; gap: 8px;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase;
-  color: hsl(var(--muted-foreground)); margin: 28px 0 14px;
-}
-.projekti-landing .eyebrow::before { content: ''; width: 14px; height: 2px; border-radius: 2px; background: hsl(var(--projects)); flex: 0 0 auto; }
+  /* ── tipografija ────────────────────────────────────────────────── */
+  .projekti-landing .eyebrow {
+    display:flex; align-items:center; gap:8px;
+    font-family:'JetBrains Mono',ui-monospace,monospace;
+    font-size:11px; font-weight:500; letter-spacing:.12em; text-transform:uppercase;
+    color:hsl(var(--muted-foreground)); margin:26px 0 14px;
+  }
+  .projekti-landing .eyebrow::before { content:''; width:14px; height:2px; border-radius:2px; background:hsl(var(--module-accent)); flex:0 0 auto; }
+  .projekti-landing h1 { font-size:40px; line-height:44px; font-weight:800; letter-spacing:-.03em; margin:0 0 18px; text-wrap:balance; }
+  .projekti-landing h2 { font-size:30px; line-height:35px; font-weight:700; letter-spacing:-.022em; margin:0 0 18px; text-wrap:balance; }
+  .projekti-landing .lede { margin:0 0 26px; font-size:17px; line-height:26px; }
+  .projekti-landing section > p, .projekti-landing .col > p { margin:0 0 16px; }
+  .projekti-landing .soft { color:hsl(var(--muted-foreground)); }
 
-.projekti-landing h1 { font-size: 40px; line-height: 44px; font-weight: 700; letter-spacing: -.025em; margin: 0 0 18px; text-wrap: balance; }
-.projekti-landing .lede { margin: 0 0 28px; font-size: 17px; line-height: 26px; }
+  .projekti-landing .cta {
+    display:flex; align-items:center; justify-content:center;
+    width:100%; height:56px; border-radius:12px;
+    background:hsl(var(--primary)); color:hsl(var(--landing-cta-foreground));
+    font-size:17px; font-weight:600; text-decoration:none; border:0; cursor:pointer;
+    box-shadow:var(--landing-shadow-lift);
+  }
+  .projekti-landing .cta:hover { filter:brightness(1.04); }
+  .projekti-landing .cta:focus-visible { outline:3px solid hsl(var(--module-accent)); outline-offset:3px; }
+  .projekti-landing .micro { margin:12px 0 0; font-size:15px; line-height:22px; text-align:center; }
 
-.projekti-landing .cta {
-  display: flex; align-items: center; justify-content: center;
-  width: 100%; height: 56px; border-radius: 12px;
-  background: hsl(var(--primary)); color: hsl(var(--cta-ink));
-  font-size: 17px; font-weight: 600; text-decoration: none; border: 0; cursor: pointer;
-  box-shadow: var(--shadow-lift);
-}
-.projekti-landing .cta:hover { filter: brightness(1.04); }
-.projekti-landing .cta:focus-visible { outline: 3px solid hsl(var(--projects)); outline-offset: 3px; }
-.projekti-landing .micro { margin: 12px 0 0; font-size: 15px; line-height: 22px; text-align: center; }
-.projekti-landing .scrollhint { display: block; text-align: center; margin: 26px 0 0; font-size: 15px; font-weight: 500; color: hsl(var(--muted-foreground)); text-decoration: none; }
+  .projekti-landing section { padding-top:80px; }
 
-.projekti-landing .claim {
-  margin: 0 0 28px; padding: 16px 18px;
-  background: hsl(var(--secondary)); border-left: 3px solid hsl(var(--primary));
-  border-radius: 12px; font-size: 17px; line-height: 25px; font-weight: 600;
-}
+  /* ── tamna ploha preko cijele širine ────────────────────────────── */
+  .projekti-landing .band {
+    margin-top:80px; margin-left:calc(50% - 50vw); margin-right:calc(50% - 50vw);
+    padding:56px calc(50vw - 50% + 20px) 60px;
+    background:hsl(var(--band)); color:hsl(var(--band-foreground));
+  }
+  .projekti-landing section.band { padding-top:56px; }
+  .projekti-landing .band h2 { color:hsl(var(--band-foreground)); }
+  .projekti-landing .band .eyebrow { color:hsl(var(--band-muted)); margin-top:0; }
+  .projekti-landing .band p { color:hsl(var(--band-muted)); }
+  .projekti-landing .band p.strong { color:hsl(var(--band-foreground)); font-weight:600; }
 
-.projekti-landing .peek {
-  margin: 22px 0 0; height: 104px; overflow: hidden;
-  border: 1px solid var(--shot-line); border-top-left-radius: 16px; border-top-right-radius: 16px;
-  background: var(--shot-bg); padding: 10px 10px 0;
-  -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent);
-  mask-image: linear-gradient(180deg, #000 55%, transparent);
-}
-.projekti-landing .peek img { display: block; width: 100%; border-radius: 8px 8px 0 0; }
+  .projekti-landing .cards { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:22px 0 26px; }
+  .projekti-landing .cards div {
+    background:hsl(var(--band-card)); border:1px solid hsl(var(--band-border)); border-radius:16px;
+    padding:16px 14px; font-size:16px; line-height:1.35; font-weight:600; color:hsl(var(--band-foreground));
+  }
+  .projekti-landing .turn { margin:0; font-size:22px; line-height:29px; font-weight:700; letter-spacing:-.012em; color:hsl(var(--band-foreground)); }
+  .projekti-landing .turn span { display:block; font-size:17px; line-height:25px; font-weight:400; color:hsl(var(--band-muted)); margin-bottom:10px; }
 
-.projekti-landing .shot { margin: 30px 0 0; background: var(--shot-bg); border: 1px solid var(--shot-line); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; padding: 10px; }
-.projekti-landing .shot img { display: block; width: 100%; border-radius: 8px; }
-.projekti-landing .shot figcaption { margin: 12px 4px 2px; font-size: 13px; line-height: 19px; color: var(--shot-fg); }
+  /* ── snimke: nikad rastegnute ───────────────────────────────────── */
+  .projekti-landing .shot {
+    margin:26px 0 0; background:hsl(var(--band)); border:1px solid hsl(var(--band-border)); border-radius:16px;
+    box-shadow:var(--landing-shadow); overflow:hidden; padding:10px; max-width:420px;
+  }
+  .projekti-landing .shot img { display:block; width:100%; border-radius:8px; }
+  .projekti-landing .shot figcaption { margin:12px 4px 2px; font-size:13px; line-height:19px; color:hsl(var(--band-muted)); }
 
-.projekti-landing section { padding-top: 96px; }
-.projekti-landing h2 { font-size: 30px; line-height: 35px; font-weight: 700; letter-spacing: -.02em; margin: 0 0 20px; text-wrap: balance; }
-.projekti-landing section > p { margin: 0 0 16px; }
-.projekti-landing section > p:last-of-type { margin-bottom: 0; }
-.projekti-landing .soft { color: hsl(var(--muted-foreground)); }
+  .projekti-landing .nots { list-style:none; margin:20px 0; padding:0; display:flex; flex-direction:column; gap:1px;
+    background:hsl(var(--border)); border:1px solid hsl(var(--border)); border-radius:16px; overflow:hidden; }
+  .projekti-landing .nots li { background:hsl(var(--card)); padding:14px 18px; font-weight:600; }
+  .projekti-landing .claim {
+    margin:22px 0 0; padding:18px; background:hsl(var(--secondary)); border-left:3px solid hsl(var(--primary));
+    border-radius:12px; font-size:20px; line-height:27px; font-weight:700; letter-spacing:-.01em;
+  }
+  .projekti-landing .quiet { margin:22px 0 0; font-size:22px; line-height:29px; font-weight:600; letter-spacing:-.01em; }
+  .projekti-landing .quiet span { display:block; font-size:17px; line-height:25px; font-weight:400; color:hsl(var(--muted-foreground)); margin-top:10px; }
 
-.projekti-landing .nots { list-style: none; margin: 20px 0; padding: 0; display: flex; flex-direction: column; gap: 1px; background: hsl(var(--border)); border: 1px solid hsl(var(--border)); border-radius: 16px; overflow: hidden; }
-.projekti-landing .nots li { background: hsl(var(--card)); padding: 14px 18px; font-weight: 600; }
+  .projekti-landing .seq { margin:22px 0; display:flex; flex-direction:column; align-items:flex-start; }
+  .projekti-landing .seq b { font-weight:600; font-size:19px; }
+  .projekti-landing .seq i { font-style:normal; color:hsl(var(--muted-foreground)); font-size:15px; line-height:1.1; padding:6px 0 6px 3px; }
 
-.projekti-landing .seq { margin: 22px 0; display: flex; flex-direction: column; align-items: flex-start; gap: 0; }
-.projekti-landing .seq b { font-weight: 600; font-size: 19px; }
-.projekti-landing .seq span { color: hsl(var(--muted-foreground)); font-size: 15px; line-height: 1.1; padding: 6px 0 6px 3px; }
+  .projekti-landing .chain { margin:24px 0 0; display:flex; flex-direction:column; max-width:420px; }
+  .projekti-landing .node { background:hsl(var(--card)); border:1px solid hsl(var(--border)); border-radius:16px;
+    padding:14px 18px; box-shadow:var(--landing-shadow); display:flex; flex-direction:column; gap:3px; }
+  .projekti-landing .node .k { font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:hsl(var(--muted-foreground)); }
+  .projekti-landing .node .v { font-weight:600; }
+  .projekti-landing .node .amt { font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600; font-variant-numeric:tabular-nums; }
+  .projekti-landing .node.up .amt { color:hsl(var(--income)); }
+  .projekti-landing .node.down .amt { color:hsl(var(--expense)); }
+  .projekti-landing .link { width:2px; height:16px; margin-left:28px; background:hsl(var(--border)); }
+  .projekti-landing .cond { margin-left:20px; padding:8px 0 2px; font-size:14px; color:hsl(var(--muted-foreground)); }
+  .projekti-landing .chain-note { margin:14px 0 0; font-size:14px; line-height:21px; color:hsl(var(--muted-foreground)); max-width:420px; }
 
-.projekti-landing .chain { margin: 24px 0 0; display: flex; flex-direction: column; gap: 0; }
-.projekti-landing .node {
-  background: hsl(var(--card)); border: 1px solid hsl(var(--border)); border-radius: 16px;
-  padding: 14px 18px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 3px;
-}
-.projekti-landing .node .k { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: hsl(var(--muted-foreground)); }
-.projekti-landing .node .v { font-weight: 600; }
-.projekti-landing .node .amt { font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 600; font-variant-numeric: tabular-nums; }
-.projekti-landing .node.up .amt { color: hsl(var(--income)); }
-.projekti-landing .node.down .amt { color: hsl(var(--expense)); }
-.projekti-landing .link { width: 2px; height: 16px; margin-left: 28px; background: hsl(var(--border)); }
-.projekti-landing .cond { margin-left: 20px; padding: 8px 0 2px; font-size: 14px; color: hsl(var(--muted-foreground)); }
-.projekti-landing .chain-note { margin: 14px 0 0; font-size: 14px; line-height: 21px; color: hsl(var(--muted-foreground)); }
+  .projekti-landing .thatsit { margin:34px 0 16px; text-align:center; font-size:22px; font-weight:700; letter-spacing:-.01em; }
 
-.projekti-landing .sticky {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
-  padding: 10px 20px calc(10px + env(safe-area-inset-bottom, 0px));
-  background: color-mix(in srgb, hsl(var(--background)) 92%, transparent);
-  backdrop-filter: blur(12px); border-top: 1px solid hsl(var(--border));
-  transform: translateY(110%); transition: transform .22s ease-out;
-}
-.projekti-landing .sticky.on { transform: translateY(0); }
-.projekti-landing .sticky .cta { height: 50px; font-size: 16px; box-shadow: none; }
-.projekti-landing .sticky-inner { max-width: 390px; margin: 0 auto; }
-@media (prefers-reduced-motion: reduce) { .projekti-landing .sticky { transition: none; } }
+  /* ── ponuda ─────────────────────────────────────────────────────── */
+  .projekti-landing .offer {
+    background:hsl(var(--band-card)); border:1px solid hsl(var(--band-border)); border-radius:20px;
+    padding:26px 22px; display:flex; flex-direction:column; gap:16px; color:hsl(var(--band-foreground));
+  }
+  .projekti-landing .offer .tag {
+    display:inline-flex; align-items:center; gap:7px; align-self:flex-start;
+    font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; font-weight:500;
+    letter-spacing:.12em; text-transform:uppercase; color:hsl(var(--band-muted));
+  }
+  .projekti-landing .offer .tag::before { content:''; width:9px; height:9px; border-radius:3px; background:hsl(var(--module-accent)); }
+  .projekti-landing .offer .big { font-size:40px; line-height:1.02; font-weight:800; letter-spacing:-.03em; }
+  .projekti-landing .offer .price { font-family:'JetBrains Mono',ui-monospace,monospace; font-size:22px; font-weight:600; font-variant-numeric:tabular-nums; }
+  .projekti-landing .offer .price small { font-size:14px; font-weight:500; color:hsl(var(--band-muted)); }
+  .projekti-landing .offer .year { font-family:'JetBrains Mono',ui-monospace,monospace; font-size:14px; color:hsl(var(--band-muted)); }
+  .projekti-landing .offer .deal { font-size:16px; font-weight:600; }
+  .projekti-landing .offer ul { list-style:none; margin:2px 0 0; padding:0; display:flex; flex-direction:column; gap:8px; }
+  .projekti-landing .offer li { display:flex; gap:9px; font-size:16px; line-height:1.4; color:hsl(var(--band-muted)); }
+  .projekti-landing .offer li::before { content:'✓'; color:hsl(var(--band-primary)); font-weight:700; flex:0 0 auto; }
+  .projekti-landing .offer .cta { background:hsl(var(--band-primary)); color:hsl(var(--band)); box-shadow:none; }
+  .projekti-landing .offer .micro { color:hsl(var(--band-muted)); }
 
-.projekti-landing .plan {
-  margin: 24px 0 0; background: hsl(var(--card)); border: 1px solid hsl(var(--border));
-  border-radius: 16px; padding: 22px 20px; box-shadow: var(--shadow);
-  display: flex; flex-direction: column; gap: 14px;
-}
-.projekti-landing .plan .tag {
-  display: inline-flex; align-items: center; gap: 7px; align-self: flex-start;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase;
-  color: hsl(var(--muted-foreground));
-}
-.projekti-landing .plan .tag::before { content: ''; width: 9px; height: 9px; border-radius: 3px; background: hsl(var(--projects)); }
-.projekti-landing .plan .price {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 34px; font-weight: 600; line-height: 1; letter-spacing: -.02em;
-  font-variant-numeric: tabular-nums;
-}
-.projekti-landing .plan .price small { font-size: 15px; font-weight: 500; color: hsl(var(--muted-foreground)); letter-spacing: 0; }
-.projekti-landing .plan .year { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 14px; color: hsl(var(--muted-foreground)); }
-.projekti-landing .plan .deal { font-size: 15px; font-weight: 600; }
-.projekti-landing .plan ul { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
-.projekti-landing .plan li { display: flex; gap: 9px; font-size: 16px; line-height: 1.4; }
-.projekti-landing .plan li::before { content: '✓'; color: hsl(var(--primary)); font-weight: 700; flex: 0 0 auto; }
+  .projekti-landing .faq { margin:22px 0 0; border:1px solid hsl(var(--border)); border-radius:16px; overflow:hidden; background:hsl(var(--card)); }
+  .projekti-landing .faq details { border-top:1px solid hsl(var(--border)); }
+  .projekti-landing .faq details:first-child { border-top:0; }
+  .projekti-landing .faq summary { list-style:none; cursor:pointer; padding:16px 18px; font-size:16px; font-weight:600; display:flex; gap:12px; }
+  .projekti-landing .faq summary::-webkit-details-marker { display:none; }
+  .projekti-landing .faq summary::after { content:'+'; margin-left:auto; color:hsl(var(--muted-foreground)); font-weight:400; font-size:20px; line-height:1; }
+  .projekti-landing .faq details[open] summary::after { content:'–'; }
+  .projekti-landing .faq summary:focus-visible { outline:2px solid hsl(var(--primary)); outline-offset:-2px; }
+  .projekti-landing .faq p { margin:0; padding:0 18px 16px; color:hsl(var(--muted-foreground)); font-size:16px; line-height:1.5; }
 
-.projekti-landing .faq { margin: 22px 0 0; border: 1px solid hsl(var(--border)); border-radius: 16px; overflow: hidden; background: hsl(var(--card)); }
-.projekti-landing .faq details { border-top: 1px solid hsl(var(--border)); }
-.projekti-landing .faq details:first-child { border-top: 0; }
-.projekti-landing .faq summary {
-  list-style: none; cursor: pointer; padding: 16px 18px; min-height: 44px;
-  font-size: 16px; font-weight: 600; display: flex; gap: 12px; align-items: flex-start;
-}
-.projekti-landing .faq summary::-webkit-details-marker { display: none; }
-.projekti-landing .faq summary::after { content: '+'; margin-left: auto; color: hsl(var(--muted-foreground)); font-weight: 400; font-size: 20px; line-height: 1; }
-.projekti-landing .faq details[open] summary::after { content: '–'; }
-.projekti-landing .faq summary:focus-visible { outline: 2px solid hsl(var(--primary)); outline-offset: -2px; }
-.projekti-landing .faq p { margin: 0; padding: 0 18px 16px; color: hsl(var(--muted-foreground)); font-size: 16px; line-height: 1.5; }
+  .projekti-landing .author { margin:20px 0 0; padding:20px; background:hsl(var(--secondary)); border-radius:16px; }
+  .projekti-landing .author p { margin:0 0 12px; }
+  .projekti-landing .author p:last-child { margin:0; }
+  .projekti-landing .author .sign { font-weight:600; }
+  .projekti-landing .author .sign small { display:block; font-weight:400; font-size:13px; color:hsl(var(--muted-foreground)); margin-top:2px; }
 
-.projekti-landing .author { margin: 22px 0 0; padding: 20px; background: hsl(var(--secondary)); border-radius: 16px; }
-.projekti-landing .author p { margin: 0 0 12px; }
-.projekti-landing .author p:last-child { margin: 0; }
-.projekti-landing .author .sign { font-weight: 600; }
-.projekti-landing .author .sign small { display: block; font-weight: 400; font-size: 13px; color: hsl(var(--muted-foreground)); margin-top: 2px; }
+  .projekti-landing .legal { margin:18px 0 0; display:flex; flex-direction:column; gap:1px; background:hsl(var(--border));
+    border:1px solid hsl(var(--border)); border-radius:16px; overflow:hidden; }
+  .projekti-landing .legal a { background:hsl(var(--card)); padding:15px 18px; font-size:16px; font-weight:500; color:hsl(var(--foreground)); text-decoration:none; display:flex; }
+  .projekti-landing .legal a::after { content:'→'; margin-left:auto; color:hsl(var(--muted-foreground)); }
+  .projekti-landing .legal a:hover { color:hsl(var(--primary)); }
 
-.projekti-landing .legal { margin: 20px 0 0; display: flex; flex-direction: column; gap: 1px; background: hsl(var(--border)); border: 1px solid hsl(var(--border)); border-radius: 16px; overflow: hidden; }
-.projekti-landing .legal a { background: hsl(var(--card)); padding: 15px 18px; min-height: 44px; font-size: 16px; font-weight: 500; color: hsl(var(--foreground)); text-decoration: none; display: flex; align-items: center; }
-.projekti-landing .legal a::after { content: '→'; margin-left: auto; color: hsl(var(--muted-foreground)); }
-.projekti-landing .legal a:hover { color: hsl(var(--primary)); }
+  .projekti-landing .final .signin { display:block; text-align:center; margin:18px 0 0; font-size:15px; font-weight:500; color:hsl(var(--band-muted)); text-decoration:none; }
+  .projekti-landing .final .signin:hover { color:hsl(var(--band-primary)); }
+  .projekti-landing .final .cta { background:hsl(var(--band-primary)); color:hsl(var(--band)); }
+  .projekti-landing .final .micro { color:hsl(var(--band-muted)); }
+  .projekti-landing .final .after { font-size:22px; line-height:29px; margin-bottom:26px; }
 
-.projekti-landing .final { margin-top: 96px; padding: 44px 20px 40px; background: hsl(var(--secondary)); border-radius: 20px; }
-.projekti-landing .final h2 { margin-bottom: 10px; }
-.projekti-landing .final .after { font-size: 22px; line-height: 29px; font-weight: 600; letter-spacing: -.01em; margin: 0 0 28px; }
-.projekti-landing .final .signin { display: block; text-align: center; margin: 18px 0 0; font-size: 15px; font-weight: 500; color: hsl(var(--muted-foreground)); text-decoration: none; }
-.projekti-landing .final .signin:hover { color: hsl(var(--primary)); }
+  .projekti-landing footer.site { margin-top:36px; text-align:center; font-size:13px; line-height:20px; color:hsl(var(--muted-foreground)); }
 
-.projekti-landing footer.site { margin-top: 40px; text-align: center; font-size: 13px; line-height: 20px; color: hsl(var(--muted-foreground)); }
+  .projekti-landing .sticky {
+    position:fixed; left:0; right:0; bottom:0; z-index:40;
+    padding:10px 20px calc(10px + env(safe-area-inset-bottom,0px));
+    background:color-mix(in srgb, hsl(var(--background)) 92%, transparent);
+    backdrop-filter:blur(12px); border-top:1px solid hsl(var(--border));
+    transform:translateY(110%); transition:transform .22s ease-out;
+  }
+  .projekti-landing .sticky.on { transform:translateY(0); }
+  .projekti-landing .sticky .cta { height:50px; font-size:16px; box-shadow:none; max-width:390px; margin:0 auto; }
+  @media (prefers-reduced-motion: reduce) { .projekti-landing .sticky { transition:none; } }
+
+  /* ═══════════ ŠIRI EKRAN — tekst lijevo, dokaz desno ═══════════ */
+  @media (min-width: 760px) {
+    .projekti-landing { font-size:18px; }
+    .projekti-landing .wrap { max-width:1040px; padding:0 40px 60px; }
+    .projekti-landing header.top { height:76px; margin:0 -40px; padding:0 40px; }
+    .projekti-landing .brand { font-size:18px; }
+    .projekti-landing .brand .mark { width:24px; height:24px; }
+    .projekti-landing .cta-mini { height:44px; padding:0 20px; font-size:15px; }
+
+    .projekti-landing h1 { font-size:60px; line-height:62px; }
+    .projekti-landing h2 { font-size:40px; line-height:46px; }
+    .projekti-landing .lede { font-size:19px; line-height:29px; }
+    .projekti-landing .eyebrow { margin-top:36px; }
+
+    .projekti-landing section { padding-top:120px; }
+    .projekti-landing section.band { padding-top:88px; }
+    .projekti-landing .band { margin-top:120px; padding:88px calc(50vw - 50% + 40px) 92px; }
+
+    /* hero: mirno, bez izmišljene slike sa strane */
+    .projekti-landing .hero { max-width:760px; }
+    .projekti-landing .hero .cta { max-width:320px; }
+    .projekti-landing .hero .micro { text-align:left; }
+
+    /* dva stupca */
+    .projekti-landing .split { display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:center; }
+    .projekti-landing .split .col > :first-child { margin-top:0; }
+    .projekti-landing .split .eyebrow { margin-top:0; }
+    .projekti-landing .split .shot, .projekti-landing .split .chain, .projekti-landing .split .chain-note { margin-top:0; }
+
+    /* snimka ostaje prirodne širine, s prostorom oko sebe */
+    .projekti-landing .aside { display:flex; justify-content:center; }
+    .projekti-landing .shot { max-width:390px; margin:0; }
+
+    .projekti-landing .cards { grid-template-columns:repeat(4, 1fr); gap:16px; margin:32px 0 34px; }
+    .projekti-landing .cards div { font-size:18px; padding:22px 20px; }
+    .projekti-landing .turn { font-size:28px; line-height:36px; }
+    .projekti-landing .turn span { font-size:19px; line-height:28px; }
+
+    .projekti-landing .nots { flex-direction:row; gap:1px; }
+    .projekti-landing .nots li { flex:1; }
+
+    .projekti-landing .claim { font-size:24px; line-height:32px; padding:24px 26px; }
+    .projekti-landing .quiet { font-size:26px; line-height:34px; }
+
+    .projekti-landing .thatsit { font-size:26px; margin:44px 0 20px; }
+    .projekti-landing .thatsit + .cta { max-width:360px; margin-inline:auto; }
+    .projekti-landing .thatsit ~ .micro { text-align:center; }
+
+    .projekti-landing .offer .big { font-size:52px; }
+    .projekti-landing .faq, .projekti-landing .author, .projekti-landing .legal { max-width:760px; }
+    .projekti-landing .final { text-align:center; }
+    .projekti-landing .final .cta { max-width:360px; margin-inline:auto; }
+    .projekti-landing .final h2, .projekti-landing .final p { margin-inline:auto; max-width:720px; }
+
+    .projekti-landing .sticky { display:none; }
+  }
