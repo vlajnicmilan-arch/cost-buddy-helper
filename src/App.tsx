@@ -87,6 +87,7 @@ const AvatarDemo = lazy(() => import("./pages/AvatarDemo"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const PublicProject = lazy(() => import("./pages/PublicProject"));
 const Landing = lazy(() => import("./pages/CentarLanding"));
+const ProjektiLanding = lazy(() => import("./pages/ProjektiLanding"));
 const NativeOAuthCallback = lazy(() => import("./pages/NativeOAuthCallback"));
 const Trash = lazy(() => import("./pages/Trash"));
 const PaywallAuthRedirect = lazy(() => import("./pages/PaywallAuthRedirect"));
@@ -283,7 +284,9 @@ const AppRoutes = () => {
           <Route path="/p/:token" element={<PublicProject />} />
           <Route path="/join-project/:token" element={<JoinProject />} />
           <Route path="/join-budget/:token" element={<JoinBudget />} />
-          <Route path="/landing" element={<Navigate to="/" replace />} />
+          <Route path="/projekti" element={<ProjektiLanding />} />
+          <Route path="/projekti" element={<Suspense fallback={<PageLoader />}><ProjektiLanding /></Suspense>} />
+      <Route path="/landing" element={<Navigate to="/" replace />} />
           <Route path="/landing-legacy" element={<Navigate to="/" replace />} />
           <Route path="/centar" element={<Navigate to="/" replace />} />
           <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
@@ -327,7 +330,9 @@ const AppRoutes = () => {
           <Route path="/p/:token" element={<PublicProject />} />
           <Route path="/join-project/:token" element={<JoinProject />} />
           <Route path="/join-budget/:token" element={<JoinBudget />} />
-          <Route path="/landing" element={<Navigate to="/" replace />} />
+          <Route path="/projekti" element={<ProjektiLanding />} />
+          <Route path="/projekti" element={<Suspense fallback={<PageLoader />}><ProjektiLanding /></Suspense>} />
+      <Route path="/landing" element={<Navigate to="/" replace />} />
           <Route path="/landing-legacy" element={<Navigate to="/" replace />} />
           <Route path="/centar" element={<Navigate to="/" replace />} />
           <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
@@ -377,6 +382,7 @@ const AppRoutes = () => {
       <Route path="/admin/security-audit" element={<Suspense fallback={<PageLoader />}><AdminSecurityAudit /></Suspense>} />
 
       <Route path="/avatar-demo" element={<Suspense fallback={<PageLoader />}><AvatarDemo /></Suspense>} />
+      <Route path="/projekti" element={<Suspense fallback={<PageLoader />}><ProjektiLanding /></Suspense>} />
       <Route path="/landing" element={<Navigate to="/" replace />} />
       <Route path="/landing-legacy" element={<Navigate to="/" replace />} />
       <Route path="/centar" element={<Navigate to="/" replace />} />
