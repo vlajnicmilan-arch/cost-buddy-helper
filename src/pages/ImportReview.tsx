@@ -694,13 +694,13 @@ const ImportReview = () => {
             <span className="text-[10px] uppercase tracking-wide text-muted-foreground block">{t('importReview.lateMatch.manualSide')}</span>
             <span className="text-xs text-muted-foreground block">{fmtDate(cand.date)}</span>
             <span className="text-sm block truncate">{cand.merchantName || cand.description || '—'}</span>
-            <span className="font-mono text-sm block">{formatAmount(cand.amount)}</span>
+            <AmountCell amount={cand.amount} type={cand.type} formatAmount={formatAmount} />
           </div>
           <div className="min-w-0 rounded-md border border-border/40 p-2">
             <span className="text-[10px] uppercase tracking-wide text-muted-foreground block">{t('importReview.lateMatch.bankSide')}</span>
             <span className="text-xs text-muted-foreground block">{fmtDate(row.date)}</span>
             <span className="text-sm block truncate">{row.merchantName || row.description || '—'}</span>
-            <span className="font-mono text-sm block">{formatAmount(row.amount)}</span>
+            <AmountCell amount={row.amount} type={row.type} formatAmount={formatAmount} />
             {renderRawLine(row.index)}
           </div>
         </div>
@@ -1038,7 +1038,7 @@ const ImportReview = () => {
                       <div className="flex-1 min-w-0 space-y-1">
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-xs text-muted-foreground">{fmtDate(row.date)}</span>
-                          <span className="font-mono font-semibold text-sm">{formatAmount(row.amount)}</span>
+                          <AmountCell amount={row.amount} type={row.type} formatAmount={formatAmount} />
                         </div>
                         <p className="text-sm">
                           <span className="text-muted-foreground">{t('importReview.bank')}: </span>
@@ -1122,7 +1122,7 @@ const ImportReview = () => {
                     <div className="flex-1 min-w-0 space-y-1">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs text-muted-foreground">{fmtDate(row.date)}</span>
-                        <span className="font-mono font-semibold text-sm">{formatAmount(row.amount)}</span>
+                        <AmountCell amount={row.amount} type={row.type} formatAmount={formatAmount} />
                       </div>
                       <p className="text-sm">
                         <span className="text-muted-foreground">{t('importReview.bank')}: </span>
@@ -1179,7 +1179,7 @@ const ImportReview = () => {
                   )}>
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs text-muted-foreground">{fmtDate(row.date)}</span>
-                      <span className="font-mono font-semibold text-sm">{formatAmount(row.amount)}</span>
+                      <AmountCell amount={row.amount} type={row.type} formatAmount={formatAmount} />
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5">
                       <Badge variant="outline" className="text-[10px]">{t(reasonKey)}</Badge>
@@ -1268,7 +1268,7 @@ const ImportReview = () => {
                       <div className="flex-1 min-w-0 space-y-1">
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-xs text-muted-foreground">{fmtDate(row.date)}</span>
-                          <span className="font-mono font-semibold text-sm">{formatAmount(row.amount)}</span>
+                          <AmountCell amount={row.amount} type={row.type} formatAmount={formatAmount} />
                         </div>
                         <p className="text-sm truncate">
                           <span className="font-medium">{row.merchantName || '—'}</span>
