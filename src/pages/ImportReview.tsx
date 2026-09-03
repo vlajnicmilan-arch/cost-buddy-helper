@@ -90,8 +90,9 @@ function formatFailedOutcome(
   item: ImportOutcomeFailure,
   t: (key: string, options?: Record<string, unknown>) => string,
   formatAmount: (amount: number) => string,
+  language?: string,
 ): string {
-  const date = new Date(item.dateIso).toLocaleDateString(undefined, { day: 'numeric', month: 'numeric' });
+  const date = formatDateUi(item.dateIso, language);
   return t('importReview.failedOutcomeRow', {
     date,
     description: item.description,
@@ -99,6 +100,37 @@ function formatFailedOutcome(
     reason: t(`importReview.failureReasons.${item.reason}`),
   });
 }
+
+/**
+ * Iznos retka prema istom dogovoru kao u TransactionItem:
+ * - expense: predznak −, boja text-expense
+ * - income: predznak +, boja text-income
+ * - transfer: predznak ↔, boja text-muted-foreground
+ */
+const AmountCell = ({
+  amount,
+  type,
+  formatAmount,
+}: {
+  amount: number;
+  type: string;
+  formatAmount: (amount: number) => string;
+}) => {
+  const isExpense = type === 'expense';
+  const isIncome = type === 'income';
+  const isTransfer = type === 'transfer';
+  return (
+    <span
+      className={cn(
+        'font-mono font-semibold text-sm',
+        isExpense ? 'text-expense' : isIncome ? 'text-income' : 'text-muted-foreground',
+      )}
+    >
+      {isExpense ? '−' : isIncome ? '+' : '↔'}
+      {formatAmount(amount)}
+    </span>
+  );
+};
 
 /**
  * Opis retka: ljudski dio u primarnom retku, tehnički identifikatori
