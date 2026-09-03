@@ -18,11 +18,6 @@ interface AppStateContextValue {
   setDisplayName: (name: string) => void;
   aiAssistantEnabled: boolean;
   setAiAssistantEnabled: (enabled: boolean) => void;
-  krugModeEnabled: boolean;
-  setKrugModeEnabled: (enabled: boolean) => void;
-  // Master switch (controlled from Settings) — does the user want business features at all?
-  businessFeatureEnabled: boolean;
-  setBusinessFeatureEnabled: (enabled: boolean) => void;
   // Session view flag — is the business view currently open right now?
   businessModeEnabled: boolean;
   setBusinessModeEnabled: (enabled: boolean) => void;
@@ -35,11 +30,6 @@ interface AppStateContextValue {
   // sa projectsModuleEnabled). Ostaje za onboarding analitiku/telemetriju.
   usageProfile: UsageProfile;
   setUsageProfile: (p: UsageProfile) => void;
-  // Projects modul toggle (user-controlled). Faza 1 modularnog UI-a.
-  // Pravi izvor istine za sve project UI entry pointe; tier gate ostaje u
-  // useFeatureAccess('projects').
-  projectsModuleEnabled: boolean;
-  setProjectsModuleEnabled: (enabled: boolean) => void;
   appStateReady: boolean;
   onAvatarEvent: (handler: AvatarEventHandler) => () => void;
   emitAvatarEvent: (mood: AvatarMood, message?: string) => void;
@@ -48,6 +38,22 @@ interface AppStateContextValue {
   onPaymentSourcesReordered: (handler: PaymentSourcesHandler) => () => void;
   emitPaymentSourcesReordered: (sources: CustomPaymentSource[]) => void;
 }
+
+/**
+ * localStorage ključevi koji pripadaju KORISNIKU (ne uređaju) i moraju se
+ * očistiti pri odjavi. Ključevi uređaja (`theme`, `finmate-storage-config`,
+ * `ai_assistant_enabled`) namjerno ostaju.
+ */
+const USER_SCOPED_KEYS = [
+  'business_feature_enabled',
+  'business_mode_enabled',
+  'active_business_profile_id',
+  'usage_profile',
+  'projects_module_enabled',
+  'krug_mode_enabled',
+  'user_display_name',
+  'onboarding_completed',
+] as const;
 
 const AppStateContext = createContext<AppStateContextValue | null>(null);
 
@@ -58,18 +64,6 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   const [aiAssistantEnabled, setAiAssistantEnabledState] = useState<boolean>(
     () => localStorage.getItem('ai_assistant_enabled') !== 'false'
   );
-  // Krug modul — default ON za sve. User može isključiti u Settings → Moduli.
-  const [krugModeEnabled, setKrugModeEnabledState] = useState<boolean>(
-    () => localStorage.getItem('krug_mode_enabled') !== 'false'
-  );
-  // Master switch from Settings — persisted. If user upgrades from old build,
-  // migrate from the previous `business_mode_enabled` key (which used to act as master).
-  const [businessFeatureEnabled, setBusinessFeatureEnabledState] = useState<boolean>(() => {
-    const explicit = localStorage.getItem('business_feature_enabled');
-    if (explicit !== null) return explicit === 'true';
-    // Migration: previously `business_mode_enabled === 'true'` meant feature was on
-    return localStorage.getItem('business_mode_enabled') === 'true';
-  });
   // Business view (Personal vs Tvrtka) persists across cold starts, like every
   // other user setting. The chip on the dashboard always shows the current
   // context, so there is no "safety reset" to Personal on app relaunch.
@@ -86,17 +80,6 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     const v = localStorage.getItem('usage_profile');
     return v === 'finance_only' || v === 'finance_projects' ? v : null;
   });
-  // Projects modul flag. Faza 1 modularnog UI-a — zamjenjuje usageProfile kao UI gate.
-  // Legacy init: ako nema eksplicitnog ključa, čita iz usage_profile-a:
-  //   - 'finance_only' → false
-  //   - 'finance_projects' / null (legacy) → true
-  // Backfill auto-on (korisnik ima projekte ili membership) radi se u resolveOnboarding().
-  const [projectsModuleEnabled, setProjectsModuleEnabledState] = useState<boolean>(() => {
-    const explicit = localStorage.getItem('projects_module_enabled');
-    if (explicit !== null) return explicit === 'true';
-    const usage = localStorage.getItem('usage_profile');
-    return usage !== 'finance_only';
-  });
   const [appStateReady, setAppStateReady] = useState(false);
 
   // Jednokratni cleanup uklonjenih legacy ključeva (Faza 2 & 3 revizije postavki):
@@ -108,6 +91,10 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
       localStorage.removeItem('simple_mode_enabled');
       localStorage.removeItem('dashboard_v2_enabled');
       localStorage.removeItem('pwa-auto-update');
+      // Ukinuti prekidači modula — vrijednosti više nemaju čitatelja.
+      localStorage.removeItem('krug_mode_enabled');
+      localStorage.removeItem('projects_module_enabled');
+      localStorage.removeItem('business_feature_enabled');
     } catch {
       /* noop */
     }
@@ -202,38 +189,6 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
           /* best-effort, ignore */
         }
 
-        // Faza 1 modularnog UI-a: jednokratni backfill module flagova za
-        // postojeće korisnike koji nisu eksplicitno toggleali u Settings.
-        // Smjer je "auto-on kad postoji signal koji modul treba", nikad off.
-        try {
-          // Krug: default ON, ali poštuj eksplicitnu user odluku.
-          if (localStorage.getItem('krug_mode_enabled') === null) {
-            localStorage.setItem('krug_mode_enabled', 'true');
-            setKrugModeEnabledState(true);
-          }
-          if (localStorage.getItem('projects_module_enabled') === null) {
-            const usage = localStorage.getItem('usage_profile');
-            if (usage !== 'finance_only') {
-              // Za legacy ('finance_projects' ili null) provjeri ima li projekata
-              // ili membershipa; ako da → ON; inače ostaje na default-u iz
-              // initial state-a (true) — ali zapiši ga radi stabilnosti.
-              const [{ count: ownCount }, { count: memberCount }] = await Promise.all([
-                supabase.from('projects').select('id', { count: 'exact', head: true }).eq('user_id', session.user.id),
-                supabase.from('project_members').select('id', { count: 'exact', head: true }).eq('user_id', session.user.id),
-              ]);
-              const hasAny = (ownCount ?? 0) > 0 || (memberCount ?? 0) > 0;
-              const next = hasAny; // legacy useri bez projekata dobivaju OFF — Core-only iskustvo
-              localStorage.setItem('projects_module_enabled', next.toString());
-              setProjectsModuleEnabledState(next);
-            } else {
-              localStorage.setItem('projects_module_enabled', 'false');
-              setProjectsModuleEnabledState(false);
-            }
-          }
-        } catch (err) {
-          // Backfill je best-effort; sljedeći mount će opet pokušati.
-          console.warn('[module-visibility] backfill skipped:', err);
-        }
       } catch (e) {
         console.error('Failed to resolve onboarding state from DB:', e);
         // Fallback na localStorage cache ako je mreža pala — bolje pustiti korisnika u app
@@ -263,8 +218,16 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
         resolveOnboarding();
       } else if (event === 'SIGNED_OUT') {
         lastResolvedUserRef.current = null;
+        // Ključevi vezani UZ RAČUN, ne uz uređaj — inače ih sljedeći korisnik
+        // na istom pregledniku naslijedi.
+        USER_SCOPED_KEYS.forEach((key) => {
+          try { localStorage.removeItem(key); } catch { /* noop */ }
+        });
         setOnboardingCompletedState(false);
         setDisplayNameState('');
+        setBusinessModeEnabledState(false);
+        setActiveBusinessProfileIdState(null);
+        setUsageProfileState(null);
         setAppStateReady(true);
       }
     });
@@ -286,26 +249,6 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   const setAiAssistantEnabled = useCallback((enabled: boolean) => {
     setAiAssistantEnabledState(enabled);
     localStorage.setItem('ai_assistant_enabled', enabled.toString());
-  }, []);
-
-  const setKrugModeEnabled = useCallback((enabled: boolean) => {
-    setKrugModeEnabledState(enabled);
-    localStorage.setItem('krug_mode_enabled', enabled.toString());
-  }, []);
-
-  const setBusinessFeatureEnabled = useCallback((enabled: boolean) => {
-    setBusinessFeatureEnabledState(enabled);
-    localStorage.setItem('business_feature_enabled', enabled.toString());
-    // When user disables the master switch, also exit any active business view —
-    // but KEEP the active_business_profile_id so it returns when re-enabled.
-    if (!enabled) {
-      setBusinessModeEnabledState(false);
-      localStorage.setItem('business_mode_enabled', 'false');
-    } else {
-      // Restore business view when feature is re-enabled
-      setBusinessModeEnabledState(true);
-      localStorage.setItem('business_mode_enabled', 'true');
-    }
   }, []);
 
   const setBusinessModeEnabled = useCallback((enabled: boolean) => {
@@ -336,11 +279,6 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     } else {
       localStorage.setItem('usage_profile', p);
     }
-  }, []);
-
-  const setProjectsModuleEnabled = useCallback((enabled: boolean) => {
-    setProjectsModuleEnabledState(enabled);
-    localStorage.setItem('projects_module_enabled', enabled.toString());
   }, []);
 
   const onAvatarEvent = useCallback((handler: AvatarEventHandler) => {
@@ -375,10 +313,6 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     setDisplayName,
     aiAssistantEnabled,
     setAiAssistantEnabled,
-    krugModeEnabled,
-    setKrugModeEnabled,
-    businessFeatureEnabled,
-    setBusinessFeatureEnabled,
     businessModeEnabled,
     setBusinessModeEnabled,
     activeBusinessProfileId,
@@ -387,8 +321,6 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     setOnboardingCompleted,
     usageProfile,
     setUsageProfile,
-    projectsModuleEnabled,
-    setProjectsModuleEnabled,
     appStateReady,
     onAvatarEvent,
     emitAvatarEvent,
@@ -399,13 +331,10 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   }), [
     displayName, setDisplayName,
     aiAssistantEnabled, setAiAssistantEnabled,
-    krugModeEnabled, setKrugModeEnabled,
-    businessFeatureEnabled, setBusinessFeatureEnabled,
     businessModeEnabled, setBusinessModeEnabled,
     activeBusinessProfileId, setActiveBusinessProfileId,
     onboardingCompleted, setOnboardingCompleted,
     usageProfile, setUsageProfile,
-    projectsModuleEnabled, setProjectsModuleEnabled,
     appStateReady,
     onAvatarEvent, emitAvatarEvent,
     onFinancialReset, emitFinancialReset,
