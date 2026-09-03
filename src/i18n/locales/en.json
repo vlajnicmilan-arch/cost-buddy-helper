@@ -2140,7 +2140,13 @@
       "cancel": "Cancel import",
       "confirm": "Import anyway"
     },
-    "statementFeature": "Statement import"
+    "statementFeature": "Statement import",
+    "dateGuard": {
+      "corrected_one": "Fixed the date on {{count}} row — day and month were swapped. Statement period: {{from}} – {{to}}.",
+      "corrected_other": "Fixed the date on {{count}} rows — day and month were swapped. Statement period: {{from}} – {{to}}.",
+      "blocked_one": "Stopped {{count}} row because its date is outside the statement period ({{from}} – {{to}}). It was not imported.",
+      "blocked_other": "Stopped {{count}} rows because their dates are outside the statement period ({{from}} – {{to}}). They were not imported."
+    }
   },
   "bulk": {
     "paymentSource": "Bulk Payment",

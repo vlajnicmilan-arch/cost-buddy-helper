@@ -2140,7 +2140,13 @@
       "cancel": "Import abbrechen",
       "confirm": "Trotzdem importieren"
     },
-    "statementFeature": "Kontoauszug-Import"
+    "statementFeature": "Kontoauszug-Import",
+    "dateGuard": {
+      "corrected_one": "Bei {{count}} Buchung wurde das Datum korrigiert — Tag und Monat waren vertauscht. Auszugszeitraum: {{from}} – {{to}}.",
+      "corrected_other": "Bei {{count}} Buchungen wurde das Datum korrigiert — Tag und Monat waren vertauscht. Auszugszeitraum: {{from}} – {{to}}.",
+      "blocked_one": "{{count}} Buchung wurde gestoppt, weil ihr Datum außerhalb des Auszugszeitraums liegt ({{from}} – {{to}}). Sie wurde nicht importiert.",
+      "blocked_other": "{{count}} Buchungen wurden gestoppt, weil ihre Daten außerhalb des Auszugszeitraums liegen ({{from}} – {{to}}). Sie wurden nicht importiert."
+    }
   },
   "bulk": {
     "paymentSource": "Massen-Zahlung",
