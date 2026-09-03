@@ -237,8 +237,17 @@ export function detectPeriodRange(text: string): { from: string; to: string } | 
     const to = isoFromNumeric(d[2]);
     if (from && to) return { from, to };
   }
+  // Jednodnevni izvadak: „Za razdoblje (po datumu obrade): 02.09.2026."
+  // Razdoblje je izričito napisano, samo su mu oba ruba isti dan.
+  const SINGLE = /\bza\s+razdoblje\b[^\n]*?(\d{1,2}\.\s?\d{1,2}\.\s?\d{4})/i;
+  const s = text.match(SINGLE);
+  if (s) {
+    const only = isoFromNumeric(s[1]);
+    if (only) return { from: only, to: only };
+  }
   return null;
 }
+
 
 
 function detectPeriod(text: string): { from: string | null; to: string | null } {
