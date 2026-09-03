@@ -850,6 +850,46 @@ DOSLOVAN REDAK (raw_line):
       console.warn(`WARN: dropped ${droppedInvalidDate} transaction(s) with invalid/unrecognised date format`);
     }
 
+    // BRANA NA DATUM STAVKE — razdoblje izvatka je jedini sudac.
+    // Model zna zamijeniti dan i mjesec (02.09. → 2026-02-09). Ispravak je
+    // dopušten SAMO zamjenom dana i mjeseca; što ne stane u razdoblje, ne ide
+    // tiho u knjige. Bez razdoblja brana miruje.
+    const guardPeriod = normalizePeriod(statementBalance.periodFrom, statementBalance.periodTo);
+    const dateGuard = guardStatementDates(transactions, guardPeriod);
+    const guardedTransactions = dateGuard.rows;
+    if (guardPeriod && (dateGuard.corrections.length > 0 || dateGuard.blocked.length > 0)) {
+      console.warn(
+        `statement_date_guard: ${dateGuard.corrections.length} ispravljeno, ${dateGuard.blocked.length} zaustavljeno (razdoblje ${guardPeriod.from}..${guardPeriod.to})`,
+      );
+      const commonDetails = {
+        period_from: guardPeriod.from,
+        period_to: guardPeriod.to,
+        job_id: progressJobId,
+        file_name: fileName,
+        bank: (statementData as any).detected_bank ?? null,
+      };
+      for (const c of dateGuard.corrections) {
+        void logParseFailure('statement_date_corrected', userId, {
+          ...commonDetails,
+          original_date: c.original,
+          corrected_date: c.corrected,
+          description: c.description,
+          amount: c.amount,
+        });
+      }
+      for (const b of dateGuard.blocked) {
+        void logParseFailure('statement_date_blocked', userId, {
+          ...commonDetails,
+          original_date: b.original,
+          swapped_date: b.swapped,
+          reason: 'outside_statement_period',
+          description: b.description,
+          amount: b.amount,
+        });
+      }
+    }
+
+
     // CITAT S IZVODA: deterministički redak ima prednost pred AI prepisom.
     {
       const matches = sourceLines.length > 0
