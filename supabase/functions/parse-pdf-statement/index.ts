@@ -1019,6 +1019,14 @@ DOSLOVAN REDAK (raw_line):
         closing_balance: statementBalance.closingBalance,
         closing_currency: statementBalance.currency,
         statement_period_to: statementBalance.periodTo,
+        statement_period_from: statementBalance.periodFrom,
+        // BRANA NA DATUM STAVKE — što je ispravljeno i što je zaustavljeno.
+        date_guard: {
+          period: guardPeriod,
+          corrected: dateGuard.corrections,
+          blocked: dateGuard.blocked,
+        },
+
         summary: {
           total_income: totalIncome,
           total_expenses: totalExpenses,
