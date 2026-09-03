@@ -13,3 +13,4 @@
 - [Brief-vrata V1](mem://features/brief-gate-v1) — pozdravni ekran, flag + allowlist + učestalost/tišina
 - [Ljudi — identitet satnog radnika](mem://features/worker-identity-people) — workers + project_workers.worker_id, pogled Projekti|Ljudi, bez automatskog spajanja; suradnici izvan dosega
 - [Plaćanje suradnika](mem://features/collaborator-payments) — pravi registar plaćanja, storno, legacy_paid_amount
+- [Prekidači modula ukinuti](mem://constraints/module-toggles-removed) — nav uvijek pun, pristup kroz pretplatu
