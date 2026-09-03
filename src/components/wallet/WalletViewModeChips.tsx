@@ -3,7 +3,7 @@ import { Briefcase, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWalletViewMode, WalletViewMode } from '@/contexts/WalletViewModeContext';
 import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
-import { useAppState } from '@/contexts/AppStateContext';
+import { useBusinessFeature } from '@/hooks/useBusinessFeature';
 
 interface WalletViewModeChipsProps {
   className?: string;
@@ -13,7 +13,7 @@ export const WalletViewModeChips = ({ className }: WalletViewModeChipsProps) => 
   const { t } = useTranslation();
   const { mode, setMode } = useWalletViewMode();
   const { profiles } = useBusinessProfiles();
-  const { businessFeatureEnabled } = useAppState();
+  const businessFeatureEnabled = useBusinessFeature();
 
   type Item = { key: WalletViewMode; label: string; icon: typeof User };
   const items: Item[] = [

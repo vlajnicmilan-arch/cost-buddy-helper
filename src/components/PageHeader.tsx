@@ -32,23 +32,14 @@ export const PageHeader = ({ title, subtitle, onDataImported }: PageHeaderProps)
       } catch (error) {
         console.error('Sign out error:', error);
       } finally {
-        // Preserve non-user-specific settings. Faza 1 modularnog UI-a:
-        // sinkronizirano s HomeHeader-om, uključujući `projects_module_enabled`.
+        // Preserve only device-scoped settings; account-scoped keys are cleared.
         const theme = localStorage.getItem('theme');
         const storageConfig = localStorage.getItem('finmate-storage-config');
         const aiAssistant = localStorage.getItem('ai_assistant_enabled');
-        const krugMode = localStorage.getItem('krug_mode_enabled');
-        const businessMode = localStorage.getItem('business_mode_enabled');
-        const businessFeature = localStorage.getItem('business_feature_enabled');
-        const projectsModule = localStorage.getItem('projects_module_enabled');
         localStorage.clear();
         if (theme) localStorage.setItem('theme', theme);
         if (storageConfig) localStorage.setItem('finmate-storage-config', storageConfig);
         if (aiAssistant) localStorage.setItem('ai_assistant_enabled', aiAssistant);
-        if (krugMode) localStorage.setItem('krug_mode_enabled', krugMode);
-        if (businessMode) localStorage.setItem('business_mode_enabled', businessMode);
-        if (businessFeature) localStorage.setItem('business_feature_enabled', businessFeature);
-        if (projectsModule) localStorage.setItem('projects_module_enabled', projectsModule);
         navigate('/');
       }
     }

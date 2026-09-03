@@ -33,15 +33,15 @@ export function isModuleActive(module: AppModule, state: ModuleState): boolean {
 
 /**
  * Visibility za BottomNav stavku.
- * Pravilo: ako modul nije enabled → 'hidden'. Tier gate NIJE briga
- * nav helpera — locked moduli ostaju skriveni iz nav-a; nadogradnja se
- * nudi u Settings → Moduli.
+ *
+ * Od ukidanja prekidača modula: SVE stavke su uvijek vidljive. Pristup i dalje
+ * određuje isključivo pretplata/probno razdoblje — dodir na zaključan modul
+ * otvara prodajni dijalog (`useModuleGate`), ne skriva karticu.
  */
-export function getNavVisibility(module: AppModule, state: ModuleState): ModuleVisibility {
-  if (module === 'core') return 'visible';
-  if (!state.enabled) return 'hidden';
+export function getNavVisibility(_module: AppModule, _state: ModuleState): ModuleVisibility {
   return 'visible';
 }
+
 
 /**
  * State kartice u Settings → Moduli.

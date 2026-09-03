@@ -38,7 +38,6 @@ export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, s
     "invoices.widget.overdueDays": "Compact unit label",
     
     "settings.modules.business.title": "Same word in EN",
-    "settings.modules.overrideBadge.source": "Admin terminology",
     "settings.adminPanel": "Admin terminology",
     "transactions.transactionsCountFiltered": "Placeholder-only counter",
     "nav.profit": "Same word in EN",
@@ -165,7 +164,6 @@ export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, s
     
     "settings.profile": "Same word in DE",
     "settings.modules.business.title": "Same word in DE",
-    "settings.modules.overrideBadge.source": "Admin terminology",
     "transactions.transactionsCountFiltered": "Placeholder-only counter",
     "nav.profit": "Business metric label",
     "nav.dashboard": "Brand navigation label",

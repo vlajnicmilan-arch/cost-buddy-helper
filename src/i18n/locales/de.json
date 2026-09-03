@@ -1319,32 +1319,15 @@
     "businessModeEnabled": "Geschäftsmodus aktiviert",
     "businessModeDisabled": "Persönlicher Modus wiederhergestellt",
     "modules": {
-      "title": "Module",
-      "subtitle": "Aktiviere nur, was du brauchst — die Oberfläche bleibt aufgeräumt.",
-      "active": "Aktiv",
-      "lockedToast": "Modul freischalten",
-      "upgradeCta": "Freischalten",
-      "family": {
-        "title": "Familie",
-        "description": "Familiengruppen, geteilte Konten und Budgets",
-        "locked": "Verfügbar mit Krug-Abo"
-      },
       "projects": {
-        "title": "Projekte",
-        "description": "Budgets und Ausgaben pro Projekt verfolgen",
-        "locked": "Verfügbar mit Projekti-Abo",
-        "enabled": "Projekte aktiviert",
-        "disabled": "Projekte deaktiviert"
+        "title": "Projekte"
       },
       "business": {
         "title": "Business",
-        "description": "Geschäftsterminologie und Firmenprofile",
-        "locked": "Modul Biznis — kommt bald"
+        "description": "Geschäftsterminologie und Firmenprofile"
       },
-      "overrideBadge": {
-        "source": "Admin-Override",
-        "permanent": "Dauerhaft"
-      }
+      "assistantTitle": "Assistent",
+      "assistantSubtitle": "KI-Assistenten ein- oder ausschalten. Hat keinen Einfluss auf dein Abo."
     },
     "profile": "Profil",
     "displayName": "Ihr Name",

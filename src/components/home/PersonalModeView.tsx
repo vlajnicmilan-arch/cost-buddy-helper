@@ -30,6 +30,8 @@ import { Smartphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { APP_VERSION } from '@/lib/version';
+import { useModuleStates } from '@/hooks/useModuleStates';
+import { isModuleActive } from '@/lib/moduleVisibility';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useHiddenPaymentSources } from '@/hooks/useHiddenPaymentSources';
 import { useReceiptScan } from '@/contexts/ReceiptScanContext';
@@ -146,7 +148,9 @@ interface PersonalModeViewProps {
 export const PersonalModeView = (props: PersonalModeViewProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { projectsModuleEnabled, activeBusinessProfileId } = useAppState();
+  const { activeBusinessProfileId } = useAppState();
+  const moduleStates = useModuleStates();
+  const projectsModuleEnabled = isModuleActive('projects', moduleStates.projects);
   // Faza 1 modularnog UI-a: izvor istine je `projectsModuleEnabled` (zamijenio
   // legacy `usageProfile === 'finance_only'` check). Strip/CTA-i nestaju kad
   // korisnik isključi modul iz Settings → Moduli.

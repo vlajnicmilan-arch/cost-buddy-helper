@@ -139,14 +139,12 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
     } catch (error) {
       console.error('Sign out error:', error);
     } finally {
+      // Samo postavke UREĐAJA preživljavaju odjavu; ključevi vezani uz račun
+      // se brišu (moduli više nemaju prekidače).
       const preservedKeys = [
         'theme',
         'finmate-storage-config',
         'ai_assistant_enabled',
-        'krug_mode_enabled',
-        'business_mode_enabled',
-        'business_feature_enabled',
-        'projects_module_enabled',
       ];
       const preservedValues = preservedKeys.map((key) => [key, localStorage.getItem(key)] as const);
       localStorage.clear();
@@ -452,13 +450,9 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         await clearLocalData();
         const storageConfig = localStorage.getItem('finmate-storage-config');
         const aiAssistant = localStorage.getItem('ai_assistant_enabled');
-        const krugMode = localStorage.getItem('krug_mode_enabled');
-        const businessMode = localStorage.getItem('business_mode_enabled');
         localStorage.clear();
         if (storageConfig) localStorage.setItem('finmate-storage-config', storageConfig);
         if (aiAssistant) localStorage.setItem('ai_assistant_enabled', aiAssistant);
-        if (krugMode) localStorage.setItem('krug_mode_enabled', krugMode);
-        if (businessMode) localStorage.setItem('business_mode_enabled', businessMode);
         showSuccess(t('settings.accountDeleted', 'Račun uspješno obrisan'));
         window.location.href = '/onboarding';
       } else if (user) {
@@ -480,13 +474,9 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         await supabase.auth.signOut();
         const storageConfig = localStorage.getItem('finmate-storage-config');
         const aiAssistant = localStorage.getItem('ai_assistant_enabled');
-        const krugMode = localStorage.getItem('krug_mode_enabled');
-        const businessMode = localStorage.getItem('business_mode_enabled');
         localStorage.clear();
         if (storageConfig) localStorage.setItem('finmate-storage-config', storageConfig);
         if (aiAssistant) localStorage.setItem('ai_assistant_enabled', aiAssistant);
-        if (krugMode) localStorage.setItem('krug_mode_enabled', krugMode);
-        if (businessMode) localStorage.setItem('business_mode_enabled', businessMode);
         window.location.href = '/';
       }
     } catch (error) {
