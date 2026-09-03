@@ -260,7 +260,8 @@ serve(async (req) => {
     // Bez prepoznatog salda ostaje null — nagađanja nema.
     const statementBalance = pdfPlainText
       ? extractStatementBalance(pdfPlainText)
-      : { closingBalance: null, currency: null, periodTo: null };
+      : { closingBalance: null, currency: null, periodTo: null, periodFrom: null };
+
     if (statementBalance.closingBalance !== null) {
       console.log(
         `saldo s izvoda: ${statementBalance.closingBalance} ${statementBalance.currency ?? ''} (razdoblje do ${statementBalance.periodTo ?? '—'})`,
