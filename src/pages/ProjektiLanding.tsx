@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import bodyHtml from './ProjektiLanding.body.html?raw';
 import { useLandingTelemetry } from '@/hooks/useLandingTelemetry';
 import { MODULE_HSL } from '@/lib/moduleColors';
@@ -22,6 +22,11 @@ import './ProjektiLanding.css';
  */
 export default function ProjektiLanding() {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const [theme, setTheme] = useState<'dark' | 'light'>(() =>
+    typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
+      ? 'dark'
+      : 'light',
+  );
   const renderedBody = bodyHtml
     .replace('__ODLUKA__', odluka)
     .replace('__SEKCIJE__', sekcije)
@@ -31,12 +36,16 @@ export default function ProjektiLanding() {
     .replace('__TROSAK__', trosak);
 
   // Telemetrija: page_view, section_view, scroll_depth, cta_click,
-  // time_on_page, page_ready. Jezik je fiksno hr; tema se čita s <html>.
-  const theme =
-    typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
-      ? 'dark'
-      : 'light';
+  // time_on_page, page_ready. Jezik je fiksno hr; tema se prati na <html>.
   useLandingTelemetry(containerRef, 'hr', theme);
+
+  useEffect(() => {
+    const html = document.documentElement;
+    const syncTheme = () => setTheme(html.classList.contains('dark') ? 'dark' : 'light');
+    const observer = new MutationObserver(syncTheme);
+    observer.observe(html, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   // Ljepljivi CTA na dnu — pojavi se kad glavni CTA izađe iz vidnog polja.
   useEffect(() => {

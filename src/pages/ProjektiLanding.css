@@ -12,7 +12,7 @@
     background:hsl(var(--background)); color:hsl(var(--foreground));
     font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
     font-size:17px; line-height:1.55; -webkit-font-smoothing:antialiased;
-    overflow-x:hidden;
+    overflow-x:clip;
   }
   .projekti-landing .wrap { max-width:390px; margin:0 auto; padding:0 20px 130px; }
 
