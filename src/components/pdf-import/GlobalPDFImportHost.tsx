@@ -276,7 +276,7 @@ export const GlobalPDFImportHost = () => {
 
           const base64 = await readAsDataUrl(pendingPdf.file);
           if (!base64) throw new Error('file_read_failed');
-          const jobId = await startPDFParseJob(base64);
+          const jobId = await startPDFParseJob(base64, undefined, false, pendingPdf.file.name);
           try {
             localStorage.setItem(`vmb-pdf-parse-job:${source.id}`, JSON.stringify({
               jobId,
