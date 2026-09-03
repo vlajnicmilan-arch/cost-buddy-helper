@@ -1323,32 +1323,15 @@
     "businessModeEnabled": "Poslovni način uključen",
     "businessModeDisabled": "Osobni način vraćen",
     "modules": {
-      "title": "Moduli",
-      "subtitle": "Uključi samo ono što ti treba — sučelje ostaje čisto.",
-      "active": "Aktivno",
-      "lockedToast": "Otključaj modul",
-      "upgradeCta": "Otključaj",
-      "family": {
-        "title": "Obitelj",
-        "description": "Obiteljske grupe, dijeljeni računi i budžeti",
-        "locked": "Dostupno uz Krug pretplatu"
-      },
       "projects": {
-        "title": "Projekti",
-        "description": "Praćenje budžeta i troškova po projektu",
-        "locked": "Dostupno uz Projekti pretplatu",
-        "enabled": "Projekti uključeni",
-        "disabled": "Projekti isključeni"
+        "title": "Projekti"
       },
       "business": {
         "title": "Business",
-        "description": "Poslovna terminologija i profili tvrtki",
-        "locked": "Biznis modul — uskoro"
+        "description": "Poslovna terminologija i profili tvrtki"
       },
-      "overrideBadge": {
-        "source": "Admin override",
-        "permanent": "Trajno"
-      }
+      "assistantTitle": "Asistent",
+      "assistantSubtitle": "Uključi ili isključi AI asistenta. Ne utječe na pretplatu."
     },
     "profile": "Profil",
     "displayName": "Vaše ime",

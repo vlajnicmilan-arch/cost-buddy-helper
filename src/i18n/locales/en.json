@@ -1319,32 +1319,15 @@
     "businessModeEnabled": "Business mode enabled",
     "businessModeDisabled": "Personal mode restored",
     "modules": {
-      "title": "Modules",
-      "subtitle": "Turn on only what you need — keep the interface clean.",
-      "active": "Active",
-      "lockedToast": "Unlock module",
-      "upgradeCta": "Unlock",
-      "family": {
-        "title": "Family",
-        "description": "Family groups, shared accounts and budgets",
-        "locked": "Available with Krug subscription"
-      },
       "projects": {
-        "title": "Projects",
-        "description": "Track budgets and expenses per project",
-        "locked": "Available with Projekti subscription",
-        "enabled": "Projects enabled",
-        "disabled": "Projects disabled"
+        "title": "Projects"
       },
       "business": {
         "title": "Business",
-        "description": "Business terminology and company profiles",
-        "locked": "Biznis module — coming soon"
+        "description": "Business terminology and company profiles"
       },
-      "overrideBadge": {
-        "source": "Admin override",
-        "permanent": "Permanent"
-      }
+      "assistantTitle": "Assistant",
+      "assistantSubtitle": "Turn the AI assistant on or off. Does not affect your subscription."
     },
     "profile": "Profile",
     "displayName": "Your name",
