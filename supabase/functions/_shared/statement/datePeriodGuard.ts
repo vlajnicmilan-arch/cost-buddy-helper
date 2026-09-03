@@ -65,8 +65,21 @@ export function swapDayMonth(value: unknown): string | null {
   return `${y}-${String(d).padStart(2, '0')}-${String(m).padStart(2, '0')}`;
 }
 
+/**
+ * OKNO ±7 DANA. Brana lovi samo zamjenu dana i mjeseca, a ona pomiče datum za
+ * najmanje ~28 dana. Datum valute koji je dan-dva izvan razdoblja obrade je
+ * legitiman i mora proći.
+ */
+const WINDOW_DAYS = 7;
+
+const shiftIso = (iso: string, days: number): string => {
+  const [y, m, d] = iso.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + days));
+  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
+};
+
 const inPeriod = (iso: string, period: StatementPeriod): boolean =>
-  iso >= period.from && iso <= period.to;
+  iso >= shiftIso(period.from, -WINDOW_DAYS) && iso <= shiftIso(period.to, WINDOW_DAYS);
 
 export function guardStatementDate(
   date: unknown,
