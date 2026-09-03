@@ -669,13 +669,20 @@ export function extractStatementBalance(
   rawText: string | null | undefined,
 ): StatementBalanceReading {
   const text = normalizeSpace(rawText ?? '');
-  if (text.trim().length === 0) return { closingBalance: null, currency: null, periodTo: null };
+  if (text.trim().length === 0) {
+    return { closingBalance: null, currency: null, periodTo: null, periodFrom: null };
+  }
   const lines = text.split(/\r?\n/);
   const zone = issuerZone(lines);
   const closing = detectSummaryClosingBalance(zone) ?? detectClosingBalance(lines);
   const period = detectPeriodRange(zone.join('\n')) ?? detectPeriodRange(text);
   if (closing === null) {
-    return { closingBalance: null, currency: null, periodTo: period?.to ?? null };
+    return {
+      closingBalance: null,
+      currency: null,
+      periodTo: period?.to ?? null,
+      periodFrom: period?.from ?? null,
+    };
   }
   const line = closingBalanceLine(zone.length > 0 ? zone : lines, closing)
     ?? closingBalanceLine(lines, closing);
@@ -683,5 +690,7 @@ export function extractStatementBalance(
     closingBalance: closing,
     currency: line ? currencyFromLine(line) : null,
     periodTo: period?.to ?? null,
+    periodFrom: period?.from ?? null,
   };
 }
+
