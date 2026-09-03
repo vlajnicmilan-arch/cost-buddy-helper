@@ -518,7 +518,7 @@ const ImportReview = () => {
       } catch { /* noop */ }
       if (e instanceof ImportExecutionIncompleteError && e.failedOutcomes.length > 0) {
         showError(t('importReview.incompleteNamed', {
-          rows: e.failedOutcomes.map(item => formatFailedOutcome(item, t, formatAmount)).join('\n'),
+          rows: e.failedOutcomes.map(item => formatFailedOutcome(item, t, formatAmount, i18n.language)).join('\n'),
         }), { module: 'wallet' });
       } else {
         showError(t('importReview.confirmFailed'), { module: 'wallet' });
