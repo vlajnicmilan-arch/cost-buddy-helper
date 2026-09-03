@@ -13,6 +13,7 @@ import {
   type RawLineSource,
 } from "../_shared/statement/rawLineMatch.ts";
 import { markPendingTransactions } from "./pendingSection.ts";
+import { guardStatementDates, normalizePeriod } from "../_shared/statement/datePeriodGuard.ts";
 import {
   blockYieldFailure,
   buildBlockContext,
@@ -122,6 +123,8 @@ serve(async (req) => {
 
     const body = await req.json();
     const { pdfBase64, bankType, isImage, htmlContent } = body;
+    /** Ime datoteke — samo za dijagnostiku brane na datum stavke. */
+    const fileName: string | null = typeof body.fileName === 'string' ? body.fileName : null;
     /**
      * NAPREDAK: unutarnji (async) poziv nosi id posla kako bi segmentirano
      * čitanje moglo javljati „obrađujem dio n/m" kroz postojeći poll.
@@ -814,7 +817,7 @@ DOSLOVAN REDAK (raw_line):
     // Filter and sanitize transactions; preserve installment + statement-total metadata
     const rawTransactions = statementData.transactions || [];
     let droppedInvalidDate = 0;
-    const transactions = rawTransactions.map((t: any) => {
+    let transactions = rawTransactions.map((t: any) => {
       const normDate = normalizeDate(t.date);
       const normDueOverride = normalizeDate(t.due_date_override);
       const balAfter = typeof t.balance_after === 'number' && Number.isFinite(t.balance_after) ? t.balance_after : null;
@@ -856,7 +859,7 @@ DOSLOVAN REDAK (raw_line):
     // tiho u knjige. Bez razdoblja brana miruje.
     const guardPeriod = normalizePeriod(statementBalance.periodFrom, statementBalance.periodTo);
     const dateGuard = guardStatementDates(transactions, guardPeriod);
-    const guardedTransactions = dateGuard.rows;
+    transactions = dateGuard.rows;
     if (guardPeriod && (dateGuard.corrections.length > 0 || dateGuard.blocked.length > 0)) {
       console.warn(
         `statement_date_guard: ${dateGuard.corrections.length} ispravljeno, ${dateGuard.blocked.length} zaustavljeno (razdoblje ${guardPeriod.from}..${guardPeriod.to})`,
