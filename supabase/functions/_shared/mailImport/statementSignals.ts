@@ -633,7 +633,10 @@ export interface StatementBalanceReading {
   currency: string | null;
   /** Kraj razdoblja — datum na koji saldo vrijedi. */
   periodTo: string | null;
+  /** Početak razdoblja — donja granica brane na datum stavke. */
+  periodFrom: string | null;
 }
+
 
 const CURRENCY_SYMBOLS: readonly (readonly [RegExp, string])[] = [
   [/€|\bEUR\b/i, 'EUR'],
