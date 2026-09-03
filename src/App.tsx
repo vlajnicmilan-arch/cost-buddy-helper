@@ -285,7 +285,6 @@ const AppRoutes = () => {
           <Route path="/join-project/:token" element={<JoinProject />} />
           <Route path="/join-budget/:token" element={<JoinBudget />} />
           <Route path="/projekti" element={<ProjektiLanding />} />
-          <Route path="/projekti" element={<Suspense fallback={<PageLoader />}><ProjektiLanding /></Suspense>} />
       <Route path="/landing" element={<Navigate to="/" replace />} />
           <Route path="/landing-legacy" element={<Navigate to="/" replace />} />
           <Route path="/centar" element={<Navigate to="/" replace />} />
@@ -331,7 +330,6 @@ const AppRoutes = () => {
           <Route path="/join-project/:token" element={<JoinProject />} />
           <Route path="/join-budget/:token" element={<JoinBudget />} />
           <Route path="/projekti" element={<ProjektiLanding />} />
-          <Route path="/projekti" element={<Suspense fallback={<PageLoader />}><ProjektiLanding /></Suspense>} />
       <Route path="/landing" element={<Navigate to="/" replace />} />
           <Route path="/landing-legacy" element={<Navigate to="/" replace />} />
           <Route path="/centar" element={<Navigate to="/" replace />} />
