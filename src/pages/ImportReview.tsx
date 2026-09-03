@@ -153,7 +153,7 @@ const RowDescription = ({ description }: { description?: string | null }) => {
 };
 
 const ImportReview = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { formatAmount } = useCurrency();
 
