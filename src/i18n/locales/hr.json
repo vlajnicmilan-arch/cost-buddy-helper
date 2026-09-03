@@ -1828,11 +1828,9 @@
     },
     "nameFullOptional": "Ime i prezime (opcionalno)",
     "alreadyHaveAccount": "Već imam račun",
-    "termsAcceptLabel": "Prihvaćam {link}.",
-    "termsAcceptLink": "Uvjete korištenja",
-    "termsRequired": "Za registraciju je potrebno prihvatiti Uvjete korištenja.",
-    "privacyNotice": "Informacije o tome kako obrađujemo tvoje osobne podatke nalaze se u {link}.",
-    "privacyNoticeLink": "Politici privatnosti",
+    "termsNotice": "Otvaranjem računa ili prijavom, bilo kojim od navedenih načina, prihvaćaš {terms}. Podatke obrađujemo u skladu s {privacy}.",
+    "termsNoticeTermsLink": "Uvjete korištenja",
+    "termsNoticePrivacyLink": "Politikom privatnosti",
     "freeAccountNote": "Besplatan račun: 30 transakcija mjesečno, 25 dokumenata iz e-maila mjesečno i korištenje AI-a."
   },
   "categories": {

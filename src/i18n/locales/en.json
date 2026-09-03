@@ -1824,11 +1824,9 @@
     },
     "nameFullOptional": "Full name (optional)",
     "alreadyHaveAccount": "I already have an account",
-    "termsAcceptLabel": "I accept the {link}.",
-    "termsAcceptLink": "Terms of Use",
-    "termsRequired": "To create an account, you need to accept the Terms of Use.",
-    "privacyNotice": "Information about how we process your personal data is available in the {link}.",
-    "privacyNoticeLink": "Privacy Policy",
+    "termsNotice": "By creating an account or signing in, in any of the ways listed, you accept the {terms}. We process your data in accordance with the {privacy}.",
+    "termsNoticeTermsLink": "Terms of Use",
+    "termsNoticePrivacyLink": "Privacy Policy",
     "freeAccountNote": "Free account: 30 transactions per month, 25 email documents per month and AI use."
   },
   "categories": {

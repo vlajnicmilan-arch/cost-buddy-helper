@@ -55,6 +55,18 @@ export function composeLinkedConsentText(label: string, linkText: string): strin
   return label.split('{link}').join(linkText);
 }
 
+/**
+ * Rečenica uz obrazac ima DVIJE poveznice ({terms} i {privacy}). Isti izlaz
+ * koriste i prikaz i zapis, pa doslovan tekst u bazi odgovara viđenome.
+ */
+export function composeTermsNoticeText(
+  template: string,
+  termsLabel: string,
+  privacyLabel: string,
+): string {
+  return template.split('{terms}').join(termsLabel).split('{privacy}').join(privacyLabel);
+}
+
 export function stashPendingTermsAcceptance(payload: TermsAcceptancePayload): void {
   try {
     sessionStorage.setItem(PENDING_KEY, JSON.stringify(payload));
@@ -86,12 +98,21 @@ export function clearPendingTermsAcceptance(): void {
 /**
  * Upisuje prihvat za prijavljenog korisnika. Ne baca grešku — neuspjeh ne smije
  * srušiti registraciju, ali MORA ostati vidljiv u dijagnostičkom zapisu.
+ * Ako za tekuću verziju Uvjeta zapis već postoji, duplikat se NE upisuje.
  */
 export async function recordTermsAcceptance(
   userId: string,
   payload: TermsAcceptancePayload,
 ): Promise<boolean> {
   try {
+    const { data: existing } = await supabase
+      .from('terms_acceptances')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('tos_version', payload.tosVersion)
+      .limit(1);
+    if (existing && existing.length > 0) return true;
+
     const { error } = await supabase.from('terms_acceptances').insert({
       user_id: userId,
       tos_version: payload.tosVersion,

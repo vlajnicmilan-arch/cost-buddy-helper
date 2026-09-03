@@ -22,7 +22,7 @@ import { Sparkles } from 'lucide-react';
 import i18n from '@/i18n';
 import { readAuthEntry, sanitizeAuthError, resolveInitialAuthTab } from '@/lib/authFunnel';
 import { buildConsentPayload, recordNewsletterConsent, stashPendingConsent } from '@/lib/newsletterConsent';
-import { buildTermsAcceptancePayload, composeLinkedConsentText, recordTermsAcceptance, resolveAppLocale, stashPendingTermsAcceptance } from '@/lib/termsAcceptance';
+import { buildTermsAcceptancePayload, composeTermsNoticeText, recordTermsAcceptance, resolveAppLocale, stashPendingTermsAcceptance } from '@/lib/termsAcceptance';
 import { TOS_VERSION } from '@/lib/legalVersions';
 const authSchema = z.object({
   email: z.string().trim().email(i18n.t('auth.validation.invalidEmail')).max(255, i18n.t('auth.validation.emailTooLong')),
@@ -46,15 +46,13 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string; terms?: string }>({});
-  const termsAcceptanceRef = useRef<HTMLInputElement>(null);
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [awaitingVerification, setAwaitingVerification] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
   const [showWelcome, setShowWelcome] = useState(false);
   const [newUserName, setNewUserName] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
-  const [termsAccepted, setTermsAccepted] = useState(false);
   const [newsletterConsent, setNewsletterConsent] = useState(false);
   
   const { signIn, signUp, resendVerificationEmail, resetPassword, user, loading: authLoading } = useAuth();
@@ -63,6 +61,20 @@ const Auth = () => {
   const { storageMode, setStorageMode } = useStorage();
   const { t } = useTranslation();
   const { signInWithOAuth: signInWithOAuthNative, isNative } = useNativeOAuth();
+
+  /**
+   * Doslovna rečenica koju korisnik vidi uz obrazac — ista se sprema kao dokaz
+   * prihvata, bez obzira ulazi li mailom, Googleom ili Appleom.
+   */
+  const buildTermsPayload = useCallback(() => buildTermsAcceptancePayload(
+    TOS_VERSION,
+    composeTermsNoticeText(
+      t('auth.termsNotice'),
+      t('auth.termsNoticeTermsLink'),
+      t('auth.termsNoticePrivacyLink'),
+    ),
+    resolveAppLocale(i18n.language),
+  ), [t]);
 
   // Auto-switch to signup mode if navigated with mode: 'signup'
   useEffect(() => {
@@ -145,16 +157,6 @@ const Auth = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Terms are validated on submit (not by disabling the button) so the user
-    // always gets visible feedback instead of a silent dead button.
-    if (!isLogin && !termsAccepted) {
-      setErrors((prev) => ({ ...prev, terms: t('auth.termsRequired') }));
-      track('signup_failed', { stage: 'client_validation', error_code: 'terms_not_accepted', ...readAuthEntry() });
-      termsAcceptanceRef.current?.focus();
-      termsAcceptanceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
-    }
-
     if (!validateForm()) {
       if (!isLogin) {
         track('signup_failed', { stage: 'client_validation', error_code: 'invalid_form' });
@@ -203,6 +205,9 @@ const Auth = () => {
         if (!storageMode) {
           setStorageMode('cloud');
         }
+        // Prijava je radnja pod obavijesti — prihvat se bilježi i za postojeće
+        // račune (bez duplikata za istu verziju Uvjeta).
+        stashPendingTermsAcceptance(buildTermsPayload());
         showSuccess(t('toasts.welcomeBack'));
         // Routing is handled centrally by App.tsx — no navigate needed here
       } else {
@@ -217,11 +222,7 @@ const Auth = () => {
           return;
         }
 
-        const termsPayload = buildTermsAcceptancePayload(
-          TOS_VERSION,
-          composeLinkedConsentText(t('auth.termsAcceptLabel'), t('auth.termsAcceptLink')),
-          resolveAppLocale(i18n.language),
-        );
+        const termsPayload = buildTermsPayload();
         const uid = data?.user?.id;
         if (uid) {
           const recorded = await recordTermsAcceptance(uid, termsPayload);
@@ -594,6 +595,9 @@ const Auth = () => {
             className="w-full h-12 rounded-xl font-medium gap-3"
             onClick={async () => {
               setLoading(true);
+              // Identitet je poznat tek po povratku — namjeru spremamo prije
+              // preusmjeravanja, AuthContext je upisuje čim sesija postoji.
+              stashPendingTermsAcceptance(buildTermsPayload());
               try {
                 if (!storageMode) {
                   setStorageMode('cloud');
@@ -640,6 +644,9 @@ const Auth = () => {
             className="w-full h-12 rounded-xl font-medium gap-3"
             onClick={async () => {
               setLoading(true);
+              // Identitet je poznat tek po povratku — namjeru spremamo prije
+              // preusmjeravanja, AuthContext je upisuje čim sesija postoji.
+              stashPendingTermsAcceptance(buildTermsPayload());
               try {
                 if (!storageMode) {
                   setStorageMode('cloud');
@@ -759,42 +766,18 @@ const Auth = () => {
             )}
           </div>
 
-          {/* Terms acceptance checkbox — only on registration (required) */}
-          {!isLogin && (
-            <div className="space-y-1">
-              <div className="flex items-start gap-2">
-                <input
-                  type="checkbox"
-                  id="termsAcceptance"
-                  ref={termsAcceptanceRef}
-                  checked={termsAccepted}
-                  onChange={(e) => {
-                    setTermsAccepted(e.target.checked);
-                    if (e.target.checked) setErrors((prev) => ({ ...prev, terms: undefined }));
-                  }}
-                  aria-required="true"
-                  aria-invalid={!!errors.terms}
-                  className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary"
-                />
-                <label htmlFor="termsAcceptance" className="text-xs text-muted-foreground leading-relaxed">
-                  {t('auth.termsAcceptLabel').split('{link}')[0]}
-                  <Link to="/terms-of-service" className="text-primary hover:underline">
-                    {t('auth.termsAcceptLink')}
-                  </Link>
-                  {t('auth.termsAcceptLabel').split('{link}')[1] ?? null}
-                  {' '}<span className="text-destructive" aria-hidden="true">*</span>
-                </label>
-              </div>
-              {errors.terms && <p className="text-sm text-destructive">{errors.terms}</p>}
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {t('auth.privacyNotice').split('{link}')[0]}
-                <Link to="/privacy-policy" className="text-primary hover:underline">
-                  {t('auth.privacyNoticeLink')}
-                </Link>
-                {t('auth.privacyNotice').split('{link}')[1] ?? null}
-              </p>
-            </div>
-          )}
+          {/* Prihvat Uvjeta — rečenica uz obrazac, u OBA načina (registracija i prijava) */}
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            {t('auth.termsNotice').split(/\{terms\}|\{privacy\}/)[0]}
+            <Link to="/terms-of-service" className="text-primary hover:underline">
+              {t('auth.termsNoticeTermsLink')}
+            </Link>
+            {t('auth.termsNotice').split(/\{terms\}|\{privacy\}/)[1] ?? null}
+            <Link to="/privacy-policy" className="text-primary hover:underline">
+              {t('auth.termsNoticePrivacyLink')}
+            </Link>
+            {t('auth.termsNotice').split(/\{terms\}|\{privacy\}/)[2] ?? null}
+          </p>
 
           {/* Newsletter consent — zasebna, PRAZNA, NEOBAVEZNA kvačica (nikad pred-označena) */}
           {!isLogin && (
@@ -832,7 +815,6 @@ const Auth = () => {
               onClick={() => {
                 setIsLogin(!isLogin);
                 setErrors({});
-                setTermsAccepted(false);
                 setNewsletterConsent(false);
               }}
               className="text-primary font-medium hover:underline"
