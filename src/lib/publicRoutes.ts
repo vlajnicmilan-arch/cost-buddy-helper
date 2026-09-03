@@ -27,6 +27,7 @@ const PUBLIC_ROUTES: ReadonlyArray<string> = [
   "/help",
   "/unsubscribe",
   "/landing",
+  "/projekti",
   "/.lovable/oauth/consent",
 ];
 
