@@ -2,12 +2,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   insertMock: vi.fn(),
+  existingRowsMock: vi.fn(() => [] as unknown[]),
   diagnosticMock: vi.fn(),
 }));
 
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
-    from: () => ({ insert: mocks.insertMock }),
+    from: () => ({
+      insert: mocks.insertMock,
+      select: () => ({
+        eq: () => ({
+          eq: () => ({
+            limit: () => Promise.resolve({ data: mocks.existingRowsMock(), error: null }),
+          }),
+        }),
+      }),
+    }),
   },
 }));
 
@@ -19,6 +29,7 @@ import {
   buildTermsAcceptancePayload,
   clearPendingTermsAcceptance,
   composeLinkedConsentText,
+  composeTermsNoticeText,
   flushPendingTermsAcceptance,
   readPendingTermsAcceptance,
   recordTermsAcceptance,
@@ -31,6 +42,8 @@ describe('termsAcceptance', () => {
   beforeEach(() => {
     mocks.insertMock.mockReset();
     mocks.insertMock.mockResolvedValue({ error: null });
+    mocks.existingRowsMock.mockReset();
+    mocks.existingRowsMock.mockReturnValue([]);
     mocks.diagnosticMock.mockReset();
     sessionStorage.clear();
   });
@@ -81,6 +94,17 @@ describe('termsAcceptance', () => {
     await flushPendingTermsAcceptance('user-9');
     expect(readPendingTermsAcceptance()).toEqual(payload);
     clearPendingTermsAcceptance();
+  });
+
+  it('ne upisuje duplikat ako zapis za tekuću verziju već postoji', async () => {
+    mocks.existingRowsMock.mockReturnValue([{ id: 'row-1' }]);
+    await expect(recordTermsAcceptance('user-1', buildTermsAcceptancePayload('1.1', 'Tekst', 'hr'))).resolves.toBe(true);
+    expect(mocks.insertMock).not.toHaveBeenCalled();
+  });
+
+  it('composeTermsNoticeText umeće obje poveznice', () => {
+    expect(composeTermsNoticeText('A {terms} B {privacy} C', 'Uvjete korištenja', 'Politikom privatnosti'))
+      .toBe('A Uvjete korištenja B Politikom privatnosti C');
   });
 
   it('composeLinkedConsentText umeće naziv poveznice umjesto {link}', () => {

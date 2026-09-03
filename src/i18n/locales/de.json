@@ -1824,11 +1824,9 @@
     },
     "nameFullOptional": "Vor- und Nachname (optional)",
     "alreadyHaveAccount": "Ich habe bereits ein Konto",
-    "termsAcceptLabel": "Ich akzeptiere die {link}.",
-    "termsAcceptLink": "Nutzungsbedingungen",
-    "termsRequired": "Um ein Konto zu erstellen, musst du die Nutzungsbedingungen akzeptieren.",
-    "privacyNotice": "Informationen darüber, wie wir deine personenbezogenen Daten verarbeiten, findest du in der {link}.",
-    "privacyNoticeLink": "Datenschutzerklärung",
+    "termsNotice": "Mit der Kontoeröffnung oder Anmeldung, auf eine der genannten Arten, akzeptierst du die {terms}. Deine Daten verarbeiten wir gemäß der {privacy}.",
+    "termsNoticeTermsLink": "Nutzungsbedingungen",
+    "termsNoticePrivacyLink": "Datenschutzerklärung",
     "freeAccountNote": "Kostenloses Konto: 30 Transaktionen pro Monat, 25 E-Mail-Dokumente pro Monat und KI-Nutzung."
   },
   "categories": {

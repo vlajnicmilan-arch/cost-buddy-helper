@@ -20,24 +20,21 @@ describe('auth register button — consent is validated on submit, not by disabl
     expect(src).not.toMatch(/disabled=\{[^}]*gdprConsent[^}]*\}/);
   });
 
-  it('submit without terms shows an inline error instead of silence', () => {
-    // handleSubmit must short-circuit with a visible message...
-    expect(src).toContain("error_code: 'terms_not_accepted'");
-    expect(src).toContain("stage: 'client_validation'");
-    expect(src).toContain("t('auth.termsRequired')");
-    // ...rendered next to the checkbox like other field errors.
-    expect(src).toContain('errors.terms && <p className="text-sm text-destructive"');
-    // ...and the checkbox receives focus so the user sees where the problem is.
-    expect(src).toContain('termsAcceptanceRef.current?.focus()');
+  it('terms are a notice next to the form, shown in BOTH modes', () => {
+    expect(src).not.toContain("error_code: 'terms_not_accepted'");
+    expect(src).toContain("t('auth.termsNotice')");
+    expect(src).toContain('/terms-of-service');
+    expect(src).toContain('/privacy-policy');
+    // The notice is not wrapped in a !isLogin branch.
+    const idx = src.indexOf("t('auth.termsNotice')");
+    expect(src.slice(idx - 300, idx)).not.toContain('{!isLogin && (');
   });
 
-  it('marks the terms checkbox as required', () => {
-    expect(src).toContain('aria-required="true"');
-    expect(src).toContain('aria-invalid={!!errors.terms}');
-  });
-
-  it('clears the terms error once the checkbox is ticked', () => {
-    expect(src).toContain('setErrors((prev) => ({ ...prev, terms: undefined }))');
+  it('terms acceptance is recorded on all three paths', () => {
+    const stashes = src.match(/stashPendingTermsAcceptance\(buildTermsPayload\(\)\)/g) ?? [];
+    // login + google + apple
+    expect(stashes.length).toBe(3);
+    expect(src).toContain('recordTermsAcceptance(uid, termsPayload)');
   });
 
   it('OAuth buttons sit above the form fields, divider between them', () => {

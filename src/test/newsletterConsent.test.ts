@@ -141,16 +141,16 @@ describe('Auth forma — newsletter kvačica', () => {
     expect(submit).toContain('disabled={loading}');
   });
 
-  it('slanje bez prihvata Uvjeta ne prolazi i daje vidljivu poruku uz kvačicu', async () => {
+  it('kvačica za Uvjete je ukinuta — umjesto nje stoji rečenica uz obrazac', async () => {
     const fs = await import('node:fs/promises');
     const src = await fs.readFile('src/pages/Auth.tsx', 'utf-8');
-    expect(src).toContain("error_code: 'terms_not_accepted'");
-    expect(src).toContain("t('auth.termsRequired')");
-    expect(src).toContain('errors.terms && <p className="text-sm text-destructive"');
-    expect(src).toContain('termsAcceptanceRef.current?.focus()');
-    // Newsletter kvačica nije dio te validacije.
-    const validation = src.slice(src.indexOf('terms_not_accepted') - 600, src.indexOf('terms_not_accepted') + 600);
-    expect(validation).not.toContain('newsletterConsent');
+    expect(src).not.toContain("terms_not_accepted");
+    expect(src).not.toContain('termsAcceptanceRef');
+    expect(src).not.toContain('termsAccepted');
+    expect(src).toContain("t('auth.termsNotice')");
+    // Newsletter kvačica ostaje zasebna i neobavezna.
+    expect(src).toContain('id="newsletterConsent"');
+    expect(src).toContain('if (newsletterConsent)');
   });
 
 
