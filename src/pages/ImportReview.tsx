@@ -107,7 +107,7 @@ function formatFailedOutcome(
  * - income: predznak +, boja text-income
  * - transfer: predznak ↔, boja text-muted-foreground
  */
-const AmountCell = ({
+export const AmountCell = ({
   amount,
   type,
   formatAmount,
