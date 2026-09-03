@@ -75,3 +75,26 @@ export const isoToDate = (value: string | null | undefined): Date | undefined =>
 /** `Date` → ISO (`yyyy-mm-dd`), lokalna zona (bez UTC pomaka). */
 export const dateToIso = (date: Date): string =>
   iso(date.getFullYear(), date.getMonth() + 1, date.getDate());
+
+/**
+ * UI prikaz datuma prema aktivnom jeziku, s vidljivom godinom.
+ * Koristi postojeći hrvatski pomoćnik za HR; za EN/DE koristi Intl.
+ */
+export const formatDateUi = (iso: string, language?: string | null): string => {
+  const lang = (language ?? 'hr').toLowerCase();
+  if (lang === 'hr' || lang.startsWith('hr')) {
+    return formatDateHr(iso);
+  }
+  const locale = lang === 'en' ? 'en-GB' : lang === 'de' ? 'de-DE' : 'en-GB';
+  const date = isoToDate(iso);
+  if (!date) return formatDateHr(iso);
+  try {
+    return new Intl.DateTimeFormat(locale, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    }).format(date);
+  } catch {
+    return formatDateHr(iso);
+  }
+};
