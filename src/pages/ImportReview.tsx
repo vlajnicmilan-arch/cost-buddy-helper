@@ -18,6 +18,7 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { supabase } from '@/integrations/supabase/client';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { cn } from '@/lib/utils';
+import { formatDateUi } from '@/lib/dateFormat';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { RawLineDisclosure } from '@/components/statement/RawLineDisclosure';
 import { splitRowDescription } from '@/lib/importReview/describeRow';
@@ -89,8 +90,9 @@ function formatFailedOutcome(
   item: ImportOutcomeFailure,
   t: (key: string, options?: Record<string, unknown>) => string,
   formatAmount: (amount: number) => string,
+  language?: string,
 ): string {
-  const date = new Date(item.dateIso).toLocaleDateString(undefined, { day: 'numeric', month: 'numeric' });
+  const date = formatDateUi(item.dateIso, language);
   return t('importReview.failedOutcomeRow', {
     date,
     description: item.description,
@@ -98,6 +100,37 @@ function formatFailedOutcome(
     reason: t(`importReview.failureReasons.${item.reason}`),
   });
 }
+
+/**
+ * Iznos retka prema istom dogovoru kao u TransactionItem:
+ * - expense: predznak −, boja text-expense
+ * - income: predznak +, boja text-income
+ * - transfer: predznak ↔, boja text-muted-foreground
+ */
+export const AmountCell = ({
+  amount,
+  type,
+  formatAmount,
+}: {
+  amount: number;
+  type: string;
+  formatAmount: (amount: number) => string;
+}) => {
+  const isExpense = type === 'expense';
+  const isIncome = type === 'income';
+  const isTransfer = type === 'transfer';
+  return (
+    <span
+      className={cn(
+        'font-mono font-semibold text-sm',
+        isExpense ? 'text-expense' : isIncome ? 'text-income' : 'text-muted-foreground',
+      )}
+    >
+      {isExpense ? '−' : isIncome ? '+' : '↔'}
+      {formatAmount(amount)}
+    </span>
+  );
+};
 
 /**
  * Opis retka: ljudski dio u primarnom retku, tehnički identifikatori
@@ -120,7 +153,7 @@ const RowDescription = ({ description }: { description?: string | null }) => {
 };
 
 const ImportReview = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { formatAmount } = useCurrency();
 
@@ -485,7 +518,7 @@ const ImportReview = () => {
       } catch { /* noop */ }
       if (e instanceof ImportExecutionIncompleteError && e.failedOutcomes.length > 0) {
         showError(t('importReview.incompleteNamed', {
-          rows: e.failedOutcomes.map(item => formatFailedOutcome(item, t, formatAmount)).join('\n'),
+          rows: e.failedOutcomes.map(item => formatFailedOutcome(item, t, formatAmount, i18n.language)).join('\n'),
         }), { module: 'wallet' });
       } else {
         showError(t('importReview.confirmFailed'), { module: 'wallet' });
@@ -493,7 +526,7 @@ const ImportReview = () => {
     } finally {
       setConfirming(false);
     }
-  }, [payload, decisions, summary, navigate, t, user, activeBusinessProfileId, formatAmount]);
+  }, [payload, decisions, summary, navigate, t, user, activeBusinessProfileId, formatAmount, i18n.language]);
 
   const updateAuto = useCallback((idx: number, value: boolean) => {
     setDecisions(prev => (prev ? setAutoMerge(prev, idx, value) : prev));
@@ -608,9 +641,7 @@ const ImportReview = () => {
     return <RawLineDisclosure rawLine={tx.bankRawLine} source={tx.bankRawLineSource ?? null} />;
   };
 
-  const fmtDate = (iso: string) => {
-    try { return new Date(iso).toLocaleDateString(); } catch { return iso; }
-  };
+  const fmtDate = (iso: string) => formatDateUi(iso, i18n.language);
 
   const targets = payload.availableTargets ?? [];
 
@@ -663,13 +694,13 @@ const ImportReview = () => {
             <span className="text-[10px] uppercase tracking-wide text-muted-foreground block">{t('importReview.lateMatch.manualSide')}</span>
             <span className="text-xs text-muted-foreground block">{fmtDate(cand.date)}</span>
             <span className="text-sm block truncate">{cand.merchantName || cand.description || '—'}</span>
-            <span className="font-mono text-sm block">{formatAmount(cand.amount)}</span>
+            <AmountCell amount={cand.amount} type={cand.type} formatAmount={formatAmount} />
           </div>
           <div className="min-w-0 rounded-md border border-border/40 p-2">
             <span className="text-[10px] uppercase tracking-wide text-muted-foreground block">{t('importReview.lateMatch.bankSide')}</span>
             <span className="text-xs text-muted-foreground block">{fmtDate(row.date)}</span>
             <span className="text-sm block truncate">{row.merchantName || row.description || '—'}</span>
-            <span className="font-mono text-sm block">{formatAmount(row.amount)}</span>
+            <AmountCell amount={row.amount} type={row.type} formatAmount={formatAmount} />
             {renderRawLine(row.index)}
           </div>
         </div>
@@ -1007,7 +1038,7 @@ const ImportReview = () => {
                       <div className="flex-1 min-w-0 space-y-1">
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-xs text-muted-foreground">{fmtDate(row.date)}</span>
-                          <span className="font-mono font-semibold text-sm">{formatAmount(row.amount)}</span>
+                          <AmountCell amount={row.amount} type={row.type} formatAmount={formatAmount} />
                         </div>
                         <p className="text-sm">
                           <span className="text-muted-foreground">{t('importReview.bank')}: </span>
@@ -1091,7 +1122,7 @@ const ImportReview = () => {
                     <div className="flex-1 min-w-0 space-y-1">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs text-muted-foreground">{fmtDate(row.date)}</span>
-                        <span className="font-mono font-semibold text-sm">{formatAmount(row.amount)}</span>
+                        <AmountCell amount={row.amount} type={row.type} formatAmount={formatAmount} />
                       </div>
                       <p className="text-sm">
                         <span className="text-muted-foreground">{t('importReview.bank')}: </span>
@@ -1148,7 +1179,7 @@ const ImportReview = () => {
                   )}>
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs text-muted-foreground">{fmtDate(row.date)}</span>
-                      <span className="font-mono font-semibold text-sm">{formatAmount(row.amount)}</span>
+                      <AmountCell amount={row.amount} type={row.type} formatAmount={formatAmount} />
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5">
                       <Badge variant="outline" className="text-[10px]">{t(reasonKey)}</Badge>
@@ -1237,7 +1268,7 @@ const ImportReview = () => {
                       <div className="flex-1 min-w-0 space-y-1">
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-xs text-muted-foreground">{fmtDate(row.date)}</span>
-                          <span className="font-mono font-semibold text-sm">{formatAmount(row.amount)}</span>
+                          <AmountCell amount={row.amount} type={row.type} formatAmount={formatAmount} />
                         </div>
                         <p className="text-sm truncate">
                           <span className="font-medium">{row.merchantName || '—'}</span>
@@ -1363,7 +1394,7 @@ async function enqueueReconciliationForBatch(
       .select('id')
       .eq('import_batch_id', batchId)
       .maybeSingle();
-    statementId = (data as any)?.id ?? null;
+    statementId = data?.id ?? null;
   } catch { /* noop — banner iz TUR 2 se neće znati vratiti, ali dijalog radi */ }
 
   const fallbackAsOfIso = new Date().toISOString();
