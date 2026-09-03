@@ -228,6 +228,48 @@ export const usePDFParser = () => {
     return token;
   };
 
+  /**
+   * BRANA NA DATUM STAVKE — korisnik mora čuti razlog razumljivom rečenicom.
+   * Ispravak (zamijenjeni dan i mjesec) je obavijest, zaustavljanje je
+   * upozorenje: te stavke NISU ušle u knjige.
+   */
+  const reportDateGuard = (result: PDFParseResult) => {
+    const guard = result.date_guard;
+    if (!guard?.period) return;
+    if (guard.corrected.length > 0) {
+      showWarning(
+        t('import.dateGuard.corrected', {
+          count: guard.corrected.length,
+          from: guard.period.from,
+          to: guard.period.to,
+          defaultValue:
+            'Ispravljen je datum na {{count}} stavci — dan i mjesec bili su zamijenjeni. Razdoblje izvatka: {{from}} – {{to}}.',
+        }),
+        { module: 'wallet' },
+      );
+    }
+    if (guard.blocked.length > 0) {
+      showError(
+        t('import.dateGuard.blocked', {
+          count: guard.blocked.length,
+          from: guard.period.from,
+          to: guard.period.to,
+          defaultValue:
+            'Zaustavljeno je {{count}} stavaka jer im datum ne pripada razdoblju izvatka ({{from}} – {{to}}). Te stavke nisu uvezene.',
+        }),
+        { module: 'wallet' },
+      );
+    }
+    logDiagnostic('statement_date_guard_reported', {
+      corrected: guard.corrected.length,
+      blocked: guard.blocked.length,
+      period_from: guard.period.from,
+      period_to: guard.period.to,
+    });
+  };
+
+
+
   const startPDFParseJob = async (
     base64Data: string,
     bankType?: string,
