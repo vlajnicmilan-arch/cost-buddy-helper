@@ -641,9 +641,7 @@ const ImportReview = () => {
     return <RawLineDisclosure rawLine={tx.bankRawLine} source={tx.bankRawLineSource ?? null} />;
   };
 
-  const fmtDate = (iso: string) => {
-    try { return new Date(iso).toLocaleDateString(); } catch { return iso; }
-  };
+  const fmtDate = (iso: string) => formatDateUi(iso, i18n.language);
 
   const targets = payload.availableTargets ?? [];
 
