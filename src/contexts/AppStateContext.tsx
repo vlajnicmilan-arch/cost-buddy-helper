@@ -53,6 +53,7 @@ const USER_SCOPED_KEYS = [
   'krug_mode_enabled',
   'user_display_name',
   'onboarding_completed',
+  'pending_terms_acceptance',
 ] as const;
 
 const AppStateContext = createContext<AppStateContextValue | null>(null);
