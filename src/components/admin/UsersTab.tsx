@@ -455,6 +455,53 @@ export const UsersTab = ({
                     );
                   })()}
 
+                  {/* Stanje računa: prazan (može se obrisati) ili ima podataka + razlog */}
+                  {(() => {
+                    const state = emptiness[u.id];
+                    if (!state) return null;
+                    const canDelete =
+                      state.empty && !state.is_self && !state.is_admin && u.id !== currentUserId;
+                    return (
+                      <div className="rounded-lg border bg-muted/30 p-2.5 space-y-2">
+                        <div className="flex items-start gap-2">
+                          <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-muted-foreground" />
+                          <div className="text-xs">
+                            <p className="font-medium">
+                              {state.empty
+                                ? t('admin.emptyAccount.stateEmpty')
+                                : t('admin.emptyAccount.stateHasData')}
+                            </p>
+                            {!state.empty && (
+                              <p className="text-muted-foreground">
+                                {formatBlockerReason(state.blockers, t as never)}
+                              </p>
+                            )}
+                            {state.empty && state.is_self && (
+                              <p className="text-muted-foreground">
+                                {t('admin.emptyAccount.blockedSelf')}
+                              </p>
+                            )}
+                            {state.empty && state.is_admin && !state.is_self && (
+                              <p className="text-muted-foreground">
+                                {t('admin.emptyAccount.blockedAdmin')}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        {canDelete && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => setEmptyDeleteTarget({ id: u.id, email: u.email ?? '' })}
+                          >
+                            <Trash2 className="w-3.5 h-3.5 mr-1" />
+                            {t('admin.emptyAccount.deleteCta')}
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                   {u.id !== currentUserId && (
                     <div className="flex flex-wrap gap-2 pt-1">
                       {isBanned(u) ? (
@@ -490,6 +537,7 @@ export const UsersTab = ({
                       ) : null}
                     </div>
                   )}
+
                 </div>
               )}
             </div>
