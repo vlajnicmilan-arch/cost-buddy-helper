@@ -4,6 +4,8 @@
 
 export interface EmptinessBlocker {
   table: string;
+  /** The user-referencing column that produced the rows (e.g. `deleted_by`). */
+  column?: string;
   count: number;
   kind?: string;
 }

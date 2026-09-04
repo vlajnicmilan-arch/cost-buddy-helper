@@ -8,6 +8,8 @@
 
 export interface EmptinessBlocker {
   table: string;
+  /** The user-referencing column that produced the rows (e.g. `deleted_by`). */
+  column?: string;
   count: number;
   kind?: string;
 }
@@ -51,13 +53,36 @@ export function formatBlocker(blocker: EmptinessBlocker, t: TFn): string {
   }
   const key = LABEL_KEYS[blocker.table];
   if (key) return t(key, { count: blocker.count });
-  return `${blocker.count} × ${blocker.table}`;
+  const where = blocker.column ? `${blocker.table}.${blocker.column}` : blocker.table;
+  return `${blocker.count} × ${where}`;
+}
+
+/**
+ * The server reports one blocker per user-referencing COLUMN, so the same table
+ * can appear several times (e.g. `expenses.user_id` and `expenses.deleted_by`).
+ * Labelled tables are merged into a single reason; unlabelled ones stay
+ * per-column so the raw name still points at the exact place.
+ */
+export function mergeBlockers(blockers: EmptinessBlocker[]): EmptinessBlocker[] {
+  const merged = new Map<string, EmptinessBlocker>();
+  for (const b of blockers) {
+    const groupKey = b.kind
+      ? `kind:${b.kind}`
+      : LABEL_KEYS[b.table]
+        ? `table:${b.table}`
+        : `col:${b.table}.${b.column ?? ''}`;
+    const existing = merged.get(groupKey);
+    if (existing) existing.count += b.count;
+    else merged.set(groupKey, { ...b });
+  }
+  return [...merged.values()];
 }
 
 export function formatBlockerReason(blockers: EmptinessBlocker[], t: TFn, limit = 3): string {
   if (blockers.length === 0) return '';
-  const shown = topBlockers(blockers, limit).map((b) => formatBlocker(b, t));
-  const rest = blockers.length - shown.length;
+  const grouped = mergeBlockers(blockers);
+  const shown = topBlockers(grouped, limit).map((b) => formatBlocker(b, t));
+  const rest = grouped.length - shown.length;
   const base = shown.join(', ');
   return rest > 0 ? t('admin.emptyAccount.reasonMore', { reason: base, count: rest }) : base;
 }

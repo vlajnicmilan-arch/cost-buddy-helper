@@ -88,3 +88,34 @@ describe('blocker formatting', () => {
     ).toContain('paidSubscription');
   });
 });
+
+describe('column-level blockers', () => {
+  const t = (key: string, opts?: Record<string, unknown>) =>
+    `${key}:${opts?.count ?? ''}${opts?.reason ? `|${opts.reason}` : ''}`;
+
+  it('merges several columns of the same labelled table into one reason', () => {
+    const out = formatBlockerReason(
+      [
+        { table: 'expenses', column: 'user_id', count: 300 },
+        { table: 'expenses', column: 'deleted_by', count: 15 },
+      ],
+      t,
+    );
+    expect(out).toBe('admin.emptyAccount.entity.expenses:315');
+  });
+
+  it('names table AND column for unlabelled tables', () => {
+    expect(
+      formatBlockerReason([{ table: 'project_activity_log', column: 'user_id', count: 76 }], t),
+    ).toBe('76 × project_activity_log.user_id');
+  });
+
+  it('a non-user_id column alone blocks deletion', () => {
+    const report = {
+      ...base,
+      empty: false,
+      blockers: [{ table: 'project_invitations', column: 'invited_user_id', count: 1 }],
+    };
+    expect(evaluateDeletionGuards(report, 'delete').error).toBe('account_not_empty');
+  });
+});
