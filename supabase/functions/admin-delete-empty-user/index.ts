@@ -19,29 +19,14 @@
 // a refusal.
 
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { evaluateDeletionGuards } from "./guards.ts";
+import type { EmptinessReport } from "./guards.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
-
-interface Blocker {
-  table: string;
-  count: number;
-  kind?: string;
-}
-
-interface EmptinessReport {
-  user_id: string;
-  empty: boolean;
-  blockers: Blocker[];
-  is_admin: boolean;
-  is_self: boolean;
-  checked_tables: string[];
-  checked_count: number;
-  checked_at: string;
-}
 
 const json = (body: unknown, status: number) =>
   new Response(JSON.stringify(body), {
@@ -97,14 +82,11 @@ Deno.serve(async (req) => {
   }
   const report = reportRaw as unknown as EmptinessReport;
 
-  // --- Locks 3 & 4
-  if (report.is_self) return json({ error: "cannot_delete_self", report }, 403);
-  if (report.is_admin) return json({ error: "cannot_delete_admin", report }, 403);
+  // --- Locks 3, 4 & 5
+  const guard = evaluateDeletionGuards(report, mode);
+  if (!guard.allowed) return json({ error: guard.error, report }, guard.status);
 
   if (mode === "check") return json({ status: "checked", report }, 200);
-
-  // --- Lock 5
-  if (!report.empty) return json({ error: "account_not_empty", report }, 409);
 
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
   if (!email) return json({ error: "invalid_body" }, 400);
