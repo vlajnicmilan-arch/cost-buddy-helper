@@ -78,12 +78,21 @@ export interface ClickDescriptor {
  * a copy change never silently renames the measured target of an experiment.
  */
 export const describeAnchorClick = (
-  anchor: { href: string; className: string; text: string; telemetryTarget?: string | null } | null,
+  anchor: {
+    href: string;
+    className: string;
+    text: string;
+    telemetryTarget?: string | null;
+    telemetryCta?: boolean | string | null;
+  } | null,
 ): ClickDescriptor | null => {
   if (!anchor) return null;
   const href = (anchor.href || '').slice(0, 300);
   const classes = anchor.className || '';
-  const isCta = /\bbtn\b/.test(classes);
+  const isCta =
+    /\bbtn\b/.test(classes) ||
+    anchor.telemetryCta === true ||
+    anchor.telemetryCta === 'true';
   const explicit = (anchor.telemetryTarget || '').trim().slice(0, 60);
   const label = explicit || slugifyTarget(anchor.text || '') || slugifyTarget(href) || 'unknown';
   return {

@@ -40,6 +40,35 @@ describe('describeAnchorClick', () => {
     const d = describeAnchorClick({ href: '/x', className: 'buttonish', text: 'X' });
     expect(d?.eventType).toBe('link_click');
   });
+  it('classifies explicit data-telemetry-cta="true" as CTA even without btn class', () => {
+    const d = describeAnchorClick({
+      href: '/auth?mode=signup',
+      className: 'cta',
+      text: 'Isprobaj projekte',
+      telemetryTarget: 'hero_cta',
+      telemetryCta: 'true',
+    });
+    expect(d).toEqual({ eventType: 'cta_click', target: 'hero_cta', href: '/auth?mode=signup' });
+  });
+  it('keeps final_signin as link_click because it has no btn and no telemetry-cta', () => {
+    const d = describeAnchorClick({
+      href: '/auth',
+      className: 'signin',
+      text: 'Već imaš račun? Prijavi se',
+      telemetryTarget: 'final_signin',
+    });
+    expect(d?.eventType).toBe('link_click');
+    expect(d?.target).toBe('final_signin');
+  });
+  it('falls back to link_click when neither btn nor telemetry-cta is present', () => {
+    const d = describeAnchorClick({
+      href: '/privacy-policy',
+      className: '',
+      text: 'Politika privatnosti',
+    });
+    expect(d?.eventType).toBe('link_click');
+    expect(d?.target).toBe('politika-privatnosti');
+  });
 });
 
 describe('scrollThreshold', () => {
