@@ -45,6 +45,8 @@ vi.mock('@/hooks/useAccountEmptiness', () => ({
 }));
 
 import { UsersTab } from '@/components/admin/UsersTab';
+import { BackButtonProvider } from '@/contexts/BackButtonContext';
+import { MemoryRouter } from 'react-router-dom';
 
 const mkUser = (id: string, email: string): AppUser => ({
   id,
@@ -66,6 +68,8 @@ const users = [mkUser('u-empty', 'prazan@test.local'), mkUser('u-full', 'pun@tes
 
 const renderTab = (expandedUserId: string) =>
   render(
+    <MemoryRouter>
+    <BackButtonProvider>
     <UsersTab
       users={users}
       usersLoading={false}
@@ -78,7 +82,9 @@ const renderTab = (expandedUserId: string) =>
       onRefresh={() => {}}
       onLoadMore={() => {}}
       onManageUser={() => {}}
-    />,
+    />
+    </BackButtonProvider>
+    </MemoryRouter>,
   );
 
 describe('UsersTab account emptiness', () => {
