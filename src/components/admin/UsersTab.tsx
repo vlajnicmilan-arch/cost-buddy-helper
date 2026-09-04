@@ -83,6 +83,13 @@ export const UsersTab = ({
   const [grants, setGrants] = useState<ActiveGrantLike[]>([]);
   const [activeContext, setActiveContext] = useState<DrilldownIntent | null>(null);
   const [hardDeleteTarget, setHardDeleteTarget] = useState<{ id: string; email: string } | null>(null);
+  const [emptyDeleteTarget, setEmptyDeleteTarget] = useState<{ id: string; email: string } | null>(null);
+
+  // Server-computed emptiness for the loaded page of users.
+  const userIds = useMemo(() => users.map((u) => u.id), [users]);
+  const { emptiness, reload: reloadEmptiness } = useAccountEmptiness(userIds);
+
+
 
   // Wrapper: ručna promjena filtera briše drill-down kontekst.
   const setFilter = useCallback((k: FilterKey) => {
