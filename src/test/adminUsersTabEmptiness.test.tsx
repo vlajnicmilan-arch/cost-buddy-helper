@@ -9,21 +9,30 @@ import type { AppUser } from '@/components/admin/types';
 
 vi.mock('react-i18next', async () => (await import('@/test/mocks/reactI18next')).createReactI18nextMock());
 
-vi.mock('@/integrations/supabase/client', () => ({
-  supabase: {
-    from: () => ({
-      select: () => ({ is: () => ({ or: () => Promise.resolve({ data: [] }) }) }),
-    }),
-    rpc: () => Promise.resolve({ data: null, error: null }),
-    auth: {
-      getUser: () => Promise.resolve({ data: { user: null } }),
-      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+vi.mock('@/integrations/supabase/client', () => {
+  const builder: any = new Proxy(
+    {},
+    {
+      get: (_t, prop) => {
+        if (prop === 'then') return (res: (v: unknown) => unknown) => Promise.resolve({ data: [], error: null }).then(res);
+        return () => builder;
+      },
     },
-    channel: () => ({ on: () => ({ subscribe: () => ({}) }), subscribe: () => ({}) }),
-    removeChannel: () => {},
-    functions: { invoke: () => Promise.resolve({ data: null, error: null }) },
-  },
-}));
+  );
+  return {
+    supabase: {
+      from: () => builder,
+      rpc: () => Promise.resolve({ data: null, error: null }),
+      auth: {
+        getUser: () => Promise.resolve({ data: { user: null } }),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+      },
+      channel: () => ({ on: () => ({ subscribe: () => ({}) }), subscribe: () => ({}) }),
+      removeChannel: () => {},
+      functions: { invoke: () => Promise.resolve({ data: null, error: null }) },
+    },
+  };
+});
 
 vi.mock('@/hooks/useAccountEmptiness', () => ({
   useAccountEmptiness: () => ({
