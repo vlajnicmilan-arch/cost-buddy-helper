@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import type { AppUser } from '@/components/admin/types';
 
-vi.mock('react-i18next', async () => (await import('./mocks/reactI18next')).default);
+vi.mock('react-i18next', async () => (await import('@/test/mocks/reactI18next')).createReactI18nextMock());
 
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
