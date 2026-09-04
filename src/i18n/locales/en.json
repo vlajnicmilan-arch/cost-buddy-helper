@@ -5326,6 +5326,35 @@
       "active24hHint": "Distinct users with a login in the last 24 hours",
       "active7d": "Active 7 days",
       "active7dHint": "Distinct users with a login in the last 7 days"
+    },
+    "emptyAccount": {
+      "stateEmpty": "Empty — can be deleted",
+      "stateHasData": "Has data",
+      "deleteCta": "Delete empty account",
+      "dialogTitle": "Delete empty account",
+      "dialogWarning": "This permanently deletes the account {{email}}. The account is empty — nothing but the account itself is removed. This cannot be undone.",
+      "confirmInputLabel": "Type the exact account email to confirm",
+      "confirmCta": "Delete account",
+      "successToast": "Empty account deleted",
+      "notEmptyToast": "Account is no longer empty — deletion refused",
+      "errorToast": "Deletion failed",
+      "blockedSelf": "You cannot delete your own account.",
+      "blockedAdmin": "An administrator account cannot be deleted.",
+      "reasonMore": "{{reason}} and {{count}} more",
+      "entity": {
+        "expenses": "{{count}} transactions",
+        "projects": "{{count}} projects",
+        "budgets": "{{count}} budgets",
+        "paymentSources": "{{count}} wallets",
+        "invoices": "{{count}} invoices",
+        "statements": "{{count}} statements",
+        "savingsGoals": "{{count}} savings goals",
+        "krug": "{{count}} circle memberships",
+        "businessProfiles": "{{count}} business profiles",
+        "clients": "{{count}} clients",
+        "people": "{{count}} people",
+        "paidSubscription": "active paid subscription"
+      }
     }
   },
   "adminRetention": {

@@ -5338,6 +5338,35 @@
       "active24hHint": "Različiti korisnici s prijavom u zadnja 24 sata",
       "active7d": "Aktivni 7 dana",
       "active7dHint": "Različiti korisnici s prijavom u zadnjih 7 dana"
+    },
+    "emptyAccount": {
+      "stateEmpty": "Prazan — može se obrisati",
+      "stateHasData": "Ima podataka",
+      "deleteCta": "Obriši prazan račun",
+      "dialogTitle": "Obriši prazan račun",
+      "dialogWarning": "Trajno se briše račun {{email}}. Račun je prazan — nijedan podatak se ne briše osim samog računa. Radnja je nepovratna.",
+      "confirmInputLabel": "Za potvrdu upiši točan email računa",
+      "confirmCta": "Obriši račun",
+      "successToast": "Prazan račun obrisan",
+      "notEmptyToast": "Račun više nije prazan — brisanje odbijeno",
+      "errorToast": "Brisanje nije uspjelo",
+      "blockedSelf": "Vlastiti račun se ne može obrisati.",
+      "blockedAdmin": "Administratorski račun se ne može obrisati.",
+      "reasonMore": "{{reason}} i još {{count}}",
+      "entity": {
+        "expenses": "{{count}} transakcija",
+        "projects": "{{count}} projekata",
+        "budgets": "{{count}} proračuna",
+        "paymentSources": "{{count}} novčanika",
+        "invoices": "{{count}} računa",
+        "statements": "{{count}} izvoda",
+        "savingsGoals": "{{count}} ciljeva štednje",
+        "krug": "{{count}} članstava u krugu",
+        "businessProfiles": "{{count}} poslovnih profila",
+        "clients": "{{count}} klijenata",
+        "people": "{{count}} osoba",
+        "paidSubscription": "aktivna plaćena pretplata"
+      }
     }
   },
   "adminRetention": {

@@ -5326,6 +5326,35 @@
       "active24hHint": "Verschiedene Nutzer mit Anmeldung in den letzten 24 Stunden",
       "active7d": "Aktiv 7 Tage",
       "active7dHint": "Verschiedene Nutzer mit Anmeldung in den letzten 7 Tagen"
+    },
+    "emptyAccount": {
+      "stateEmpty": "Leer — kann gelöscht werden",
+      "stateHasData": "Enthält Daten",
+      "deleteCta": "Leeres Konto löschen",
+      "dialogTitle": "Leeres Konto löschen",
+      "dialogWarning": "Das Konto {{email}} wird endgültig gelöscht. Das Konto ist leer — es werden keine Daten außer dem Konto selbst entfernt. Nicht umkehrbar.",
+      "confirmInputLabel": "Zur Bestätigung die genaue E-Mail des Kontos eingeben",
+      "confirmCta": "Konto löschen",
+      "successToast": "Leeres Konto gelöscht",
+      "notEmptyToast": "Konto ist nicht mehr leer — Löschen abgelehnt",
+      "errorToast": "Löschen fehlgeschlagen",
+      "blockedSelf": "Das eigene Konto kann nicht gelöscht werden.",
+      "blockedAdmin": "Ein Administratorkonto kann nicht gelöscht werden.",
+      "reasonMore": "{{reason}} und {{count}} weitere",
+      "entity": {
+        "expenses": "{{count}} Transaktionen",
+        "projects": "{{count}} Projekte",
+        "budgets": "{{count}} Budgets",
+        "paymentSources": "{{count}} Geldbörsen",
+        "invoices": "{{count}} Rechnungen",
+        "statements": "{{count}} Kontoauszüge",
+        "savingsGoals": "{{count}} Sparziele",
+        "krug": "{{count}} Kreis-Mitgliedschaften",
+        "businessProfiles": "{{count}} Geschäftsprofile",
+        "clients": "{{count}} Kunden",
+        "people": "{{count}} Personen",
+        "paidSubscription": "aktives kostenpflichtiges Abo"
+      }
     }
   },
   "adminRetention": {
