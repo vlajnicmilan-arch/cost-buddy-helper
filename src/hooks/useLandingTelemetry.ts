@@ -170,6 +170,7 @@ export const useLandingTelemetry = (
         className: anchor.getAttribute('class') || '',
         text: anchor.textContent || '',
         telemetryTarget: anchor.getAttribute('data-telemetry-target'),
+        telemetryCta: anchor.getAttribute('data-telemetry-cta'),
       });
       if (d) {
         logLandingClick(d);
