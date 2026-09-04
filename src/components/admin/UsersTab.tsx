@@ -567,6 +567,17 @@ export const UsersTab = ({
           onDeleted={() => { setHardDeleteTarget(null); onRefresh(); }}
         />
       )}
+
+      {emptyDeleteTarget && (
+        <DeleteEmptyAccountDialog
+          open={!!emptyDeleteTarget}
+          onOpenChange={(o) => { if (!o) setEmptyDeleteTarget(null); }}
+          userId={emptyDeleteTarget.id}
+          email={emptyDeleteTarget.email}
+          onDeleted={() => { setEmptyDeleteTarget(null); onRefresh(); void reloadEmptiness(); }}
+        />
+      )}
+
     </div>
   );
 };
