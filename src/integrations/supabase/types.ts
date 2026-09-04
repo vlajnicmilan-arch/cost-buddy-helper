@@ -19,6 +19,7 @@ export type Database = {
           cancelled_at: string | null
           completed_at: string | null
           created_at: string
+          deleted_by: string | null
           error_message: string | null
           id: string
           reason: string | null
@@ -34,6 +35,7 @@ export type Database = {
           cancelled_at?: string | null
           completed_at?: string | null
           created_at?: string
+          deleted_by?: string | null
           error_message?: string | null
           id?: string
           reason?: string | null
@@ -49,6 +51,7 @@ export type Database = {
           cancelled_at?: string | null
           completed_at?: string | null
           created_at?: string
+          deleted_by?: string | null
           error_message?: string | null
           id?: string
           reason?: string | null
@@ -7201,6 +7204,11 @@ export type Database = {
       }
       _require_admin: { Args: never; Returns: undefined }
       activate_module_trial: { Args: { _module: string }; Returns: Json }
+      admin_account_emptiness: { Args: { p_user_id: string }; Returns: Json }
+      admin_accounts_emptiness: {
+        Args: { p_user_ids: string[] }
+        Returns: Json
+      }
       admin_get_activation_by_cohort: {
         Args: never
         Returns: {
