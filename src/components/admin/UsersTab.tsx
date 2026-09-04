@@ -2,10 +2,14 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Loader2, RefreshCw, User, Mail, Clock, Smartphone, Ban, UserCheck,
-  ShieldCheck, ShieldOff, Search, X, Filter, Trash2,
+  ShieldCheck, ShieldOff, Search, X, Filter, Trash2, Info,
 } from 'lucide-react';
 import { HardDeleteUserDialog, isEmailHardDeletable } from './HardDeleteUserDialog';
+import { DeleteEmptyAccountDialog } from './DeleteEmptyAccountDialog';
+import { useAccountEmptiness } from '@/hooks/useAccountEmptiness';
+import { formatBlockerReason } from '@/lib/adminEmptyAccount';
 import { format } from 'date-fns';
+
 import { hr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -79,6 +83,13 @@ export const UsersTab = ({
   const [grants, setGrants] = useState<ActiveGrantLike[]>([]);
   const [activeContext, setActiveContext] = useState<DrilldownIntent | null>(null);
   const [hardDeleteTarget, setHardDeleteTarget] = useState<{ id: string; email: string } | null>(null);
+  const [emptyDeleteTarget, setEmptyDeleteTarget] = useState<{ id: string; email: string } | null>(null);
+
+  // Server-computed emptiness for the loaded page of users.
+  const userIds = useMemo(() => users.map((u) => u.id), [users]);
+  const { emptiness, reload: reloadEmptiness } = useAccountEmptiness(userIds);
+
+
 
   // Wrapper: ručna promjena filtera briše drill-down kontekst.
   const setFilter = useCallback((k: FilterKey) => {
@@ -444,6 +455,53 @@ export const UsersTab = ({
                     );
                   })()}
 
+                  {/* Stanje računa: prazan (može se obrisati) ili ima podataka + razlog */}
+                  {(() => {
+                    const state = emptiness[u.id];
+                    if (!state) return null;
+                    const canDelete =
+                      state.empty && !state.is_self && !state.is_admin && u.id !== currentUserId;
+                    return (
+                      <div className="rounded-lg border bg-muted/30 p-2.5 space-y-2">
+                        <div className="flex items-start gap-2">
+                          <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-muted-foreground" />
+                          <div className="text-xs">
+                            <p className="font-medium">
+                              {state.empty
+                                ? t('admin.emptyAccount.stateEmpty')
+                                : t('admin.emptyAccount.stateHasData')}
+                            </p>
+                            {!state.empty && (
+                              <p className="text-muted-foreground">
+                                {formatBlockerReason(state.blockers, t as never)}
+                              </p>
+                            )}
+                            {state.empty && state.is_self && (
+                              <p className="text-muted-foreground">
+                                {t('admin.emptyAccount.blockedSelf')}
+                              </p>
+                            )}
+                            {state.empty && state.is_admin && !state.is_self && (
+                              <p className="text-muted-foreground">
+                                {t('admin.emptyAccount.blockedAdmin')}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        {canDelete && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => setEmptyDeleteTarget({ id: u.id, email: u.email ?? '' })}
+                          >
+                            <Trash2 className="w-3.5 h-3.5 mr-1" />
+                            {t('admin.emptyAccount.deleteCta')}
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                   {u.id !== currentUserId && (
                     <div className="flex flex-wrap gap-2 pt-1">
                       {isBanned(u) ? (
@@ -479,6 +537,7 @@ export const UsersTab = ({
                       ) : null}
                     </div>
                   )}
+
                 </div>
               )}
             </div>
@@ -508,6 +567,17 @@ export const UsersTab = ({
           onDeleted={() => { setHardDeleteTarget(null); onRefresh(); }}
         />
       )}
+
+      {emptyDeleteTarget && (
+        <DeleteEmptyAccountDialog
+          open={!!emptyDeleteTarget}
+          onOpenChange={(o) => { if (!o) setEmptyDeleteTarget(null); }}
+          userId={emptyDeleteTarget.id}
+          email={emptyDeleteTarget.email}
+          onDeleted={() => { setEmptyDeleteTarget(null); onRefresh(); void reloadEmptiness(); }}
+        />
+      )}
+
     </div>
   );
 };
