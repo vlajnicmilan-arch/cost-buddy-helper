@@ -15,6 +15,12 @@ vi.mock('@/integrations/supabase/client', () => ({
       select: () => ({ is: () => ({ or: () => Promise.resolve({ data: [] }) }) }),
     }),
     rpc: () => Promise.resolve({ data: null, error: null }),
+    auth: {
+      getUser: () => Promise.resolve({ data: { user: null } }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+    },
+    channel: () => ({ on: () => ({ subscribe: () => ({}) }), subscribe: () => ({}) }),
+    removeChannel: () => {},
     functions: { invoke: () => Promise.resolve({ data: null, error: null }) },
   },
 }));
