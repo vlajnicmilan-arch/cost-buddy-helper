@@ -45,7 +45,7 @@ describe('termsAcceptance', () => {
     mocks.existingRowsMock.mockReset();
     mocks.existingRowsMock.mockReturnValue([]);
     mocks.diagnosticMock.mockReset();
-    sessionStorage.clear();
+    localStorage.clear();
   });
 
   it('gradi payload s verzijom, doslovnim tekstom, jezikom i izvorom', () => {

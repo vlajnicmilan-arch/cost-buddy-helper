@@ -5,7 +5,7 @@
  * - Prihvat je činjenica u trenutku: redak se NIKAD ne mijenja ni ne briše.
  *   Nova verzija = NOVI redak.
  * - Ako registracija zahtijeva potvrdu maila (nema sesije), namjera se čuva u
- *   sessionStorage i upisuje pri prvoj autentificiranoj sesiji.
+ *   localStorage i upisuje pri prvoj autentificiranoj sesiji.
  */
 import { supabase } from '@/integrations/supabase/client';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
@@ -69,7 +69,7 @@ export function composeTermsNoticeText(
 
 export function stashPendingTermsAcceptance(payload: TermsAcceptancePayload): void {
   try {
-    sessionStorage.setItem(PENDING_KEY, JSON.stringify(payload));
+    localStorage.setItem(PENDING_KEY, JSON.stringify(payload));
   } catch {
     // ignore quota
   }
@@ -77,7 +77,7 @@ export function stashPendingTermsAcceptance(payload: TermsAcceptancePayload): vo
 
 export function readPendingTermsAcceptance(): TermsAcceptancePayload | null {
   try {
-    const raw = sessionStorage.getItem(PENDING_KEY);
+    const raw = localStorage.getItem(PENDING_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as TermsAcceptancePayload;
     if (!parsed?.tosVersion || !parsed?.acceptedText) return null;
@@ -89,7 +89,7 @@ export function readPendingTermsAcceptance(): TermsAcceptancePayload | null {
 
 export function clearPendingTermsAcceptance(): void {
   try {
-    sessionStorage.removeItem(PENDING_KEY);
+    localStorage.removeItem(PENDING_KEY);
   } catch {
     // ignore
   }
