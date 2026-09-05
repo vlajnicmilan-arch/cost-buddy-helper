@@ -251,15 +251,16 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
         return;
       }
 
-      // POŠTENA GREŠKA: kad je pao DB (reason 'baza'), poruka nosi STVARNI
-      // razlog s baze — nikad samo „javi podršci".
+      // POŠTENA GREŠKA, ALI NA KORISNIKOVOM JEZIKU: kad padne baza (reason
+      // 'baza'), sirova engleska poruka ostaje u zapisu i dijagnostici — na
+      // ekranu je razumljiva rečenica sa savjetom što dalje.
       const base = t(
         `mailReview.error.${failure.reason}`,
         t('mailReview.confirmFailed', 'Spremanje nije uspjelo'),
       );
 
       showError(
-        failure.detail
+        failure.detail && failure.reason !== 'baza'
           ? t('mailReview.errorDetail', '{{base}} ({{reason}})', { base, reason: failure.detail })
           : base,
       );
