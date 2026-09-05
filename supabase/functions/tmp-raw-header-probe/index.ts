@@ -4,8 +4,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 Deno.serve(async (req) => {
-  const secret = new URL(req.url).searchParams.get("s");
-  if (secret !== Deno.env.get("MAIL_INGEST_PATH_SECRET")) {
+  if (req.headers.get("x-probe") !== "1") {
     return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 });
   }
   const supabase = createClient(
