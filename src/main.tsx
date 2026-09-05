@@ -185,6 +185,91 @@ if (!isFastLanding) idle(() => {
   }
 })();
 
+// Recover from stale Vite chunks after a deploy. If the user kept an old
+// page open while a new build shipped, the hashed asset names no longer
+// exist; Vite fires `vite:preloadError`. We reload once to fetch the fresh
+// index.html. A sessionStorage guard prevents an infinite loop if the new
+// build is also broken or if the network stays down.
+const PRELOAD_RELOAD_KEY = 'vm_preload_reload';
+const PRELOAD_RELOAD_WINDOW_MS = 30_000;
+
+const readPreloadReloadAt = (storage: Storage | null = null): number | null => {
+  try {
+    const raw = (storage ?? sessionStorage).getItem(PRELOAD_RELOAD_KEY);
+    if (!raw) return null;
+    const ts = Number(raw);
+    return Number.isFinite(ts) ? ts : null;
+  } catch {
+    return null;
+  }
+};
+
+const setPreloadReloadAt = (at: number, storage: Storage | null = null) => {
+  try {
+    (storage ?? sessionStorage).setItem(PRELOAD_RELOAD_KEY, String(at));
+  } catch {
+    /* ignore */
+  }
+};
+
+const clearPreloadReloadMarker = (storage: Storage | null = null) => {
+  try {
+    (storage ?? sessionStorage).removeItem(PRELOAD_RELOAD_KEY);
+  } catch {
+    /* ignore */
+  }
+};
+
+export const registerVitePreloadErrorRecovery = (
+  target: Window & typeof globalThis = window
+) => {
+  target.addEventListener('vite:preloadError', (event: Event) => {
+    try {
+      event.preventDefault();
+    } catch {
+      /* ignore */
+    }
+
+    const payload = (event as any).payload;
+    const fileName = typeof payload === 'string' ? payload : 'unknown';
+
+    const now = Date.now();
+    const lastReloadAt = readPreloadReloadAt(target.sessionStorage);
+    if (lastReloadAt && now - lastReloadAt < PRELOAD_RELOAD_WINDOW_MS) {
+      // Already reloaded recently — do not loop. Let the normal error path
+      // (and Sentry) surface the real failure.
+      return;
+    }
+
+    setPreloadReloadAt(now, target.sessionStorage);
+
+    // Log to Sentry before reloading so we can measure how often stale assets
+    // hit real users. Sentry is normally loaded lazily; initialize it now and
+    // flush so the message actually leaves before the tab navigates away.
+    Promise.all([
+      import('./lib/sentry'),
+      import('@sentry/react'),
+    ])
+      .then(([{ initSentry }, Sentry]) => {
+        initSentry();
+        Sentry.captureMessage('Stale preload asset after deploy', {
+          level: 'info',
+          extra: { file: fileName, href: target.location.href },
+          tags: { source: 'vite_preload_error' },
+        });
+        return Sentry.flush(2000);
+      })
+      .catch(() => {
+        /* Sentry is best-effort; never block reload */
+      })
+      .finally(() => {
+        target.location.reload();
+      });
+  });
+};
+
+registerVitePreloadErrorRecovery();
+
 // Boot diagnostics — these always log so we can see them in `chrome://inspect`
 // when the APK is connected. Helps confirm which bundle/route is active.
 try {
@@ -196,6 +281,7 @@ try {
     ua: navigator.userAgent,
   });
 } catch {}
+
 
 // Boot watchdog — detects if the previous boot died before reaching React
 // mount. The flag lives in `sessionStorage` (per tab), an orderly exit clears
@@ -268,6 +354,7 @@ const markBootCompleted = () => {
   if (bootCompletedOnce) return;
   bootCompletedOnce = true;
   clearBootFlag();
+  clearPreloadReloadMarker();
   idle(() => {
     import('./lib/diagnosticLogger')
       .then(({ logDiagnostic }) => logDiagnostic('boot_completed', {
