@@ -8,6 +8,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
+import { extractBulkHeaders } from "../_shared/mailImport/bulkMailSignals.ts";
   ATTACHMENT_TOO_LARGE,
   sanitizeStorageSegment,
 } from "../_shared/mailImport/storageKey.ts";
@@ -305,6 +306,14 @@ Deno.serve(async (req) => {
     }
 
 
+    // OZNAKE MASOVNE POŠTE — spremaju se pri PRIJEMU, jer se poslije više ne
+    // mogu rekonstruirati bez sirovog payloada (vidi bulkMailSignals.ts).
+    const bulk = extractBulkHeaders(
+      Object.fromEntries(
+        Array.from(form.entries()).filter(([, v]) => typeof v === "string"),
+      ) as Record<string, unknown>,
+    );
+
     // Transakcijski outbox: poruka + privitci + posao ili NIŠTA.
     const { data: stored, error: rpcErr } = await supabase.rpc("mail_ingest_store_message", {
       p_owner_user_id: aliasRow.user_id,
@@ -322,6 +331,10 @@ Deno.serve(async (req) => {
       p_size_bytes: totalBytes,
       p_attachments: attachments,
       p_dam_reason: damReason,
+      p_list_unsubscribe: bulk.listUnsubscribe,
+      p_list_id: bulk.listId,
+      p_precedence: bulk.precedence,
+      p_auto_submitted: bulk.autoSubmitted,
     });
 
     if (rpcErr) {
