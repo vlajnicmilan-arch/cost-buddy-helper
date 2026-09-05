@@ -77,7 +77,7 @@ describe('registerVitePreloadErrorRecovery', () => {
     win.dispatchEvent(event);
 
     expect(event.defaultPrevented).toBe(true);
-    expect(win.location.reload).toHaveBeenCalledOnce();
+    await vi.waitFor(() => expect(win.location.reload).toHaveBeenCalledOnce());
 
     const { initSentry } = await import('@/lib/sentry');
     const { captureMessage, flush } = await import('@sentry/react');
