@@ -225,10 +225,29 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
       }
 
 
-      const failure = result as { reason: string; existing?: Record<string, unknown>; detail?: string };
+      const failure = result as {
+        reason: string;
+        existing?: Record<string, unknown>;
+        detail?: string;
+        missing?: string[];
+      };
 
       if (failure.reason === 'mozda_vec_postoji') {
         setCollision({ item, existing: failure.existing ?? {} });
+        return;
+      }
+
+      // PORUKA IMENUJE SAMO ONO ŠTO STVARNO NEDOSTAJE — nikad popis polja koja
+      // su možda uredna. Ista polja se osvjetljavaju u obrascu.
+      const missing = failure.missing ?? [];
+      setMissingFields((s) => ({ ...s, [item.id]: missing }));
+      if (failure.reason === 'nedostaju_polja' && missing.length > 0) {
+        showError(
+          t('mailReview.error.missingFields', 'Nedostaje: {{fields}}', {
+            fields: missing.map(fieldLabel).join(', '),
+          }),
+        );
+        console.warn('[MailReviewList] confirm failed: nedostaju_polja', missing.join(','));
         return;
       }
 
@@ -238,6 +257,7 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
         `mailReview.error.${failure.reason}`,
         t('mailReview.confirmFailed', 'Spremanje nije uspjelo'),
       );
+
       showError(
         failure.detail
           ? t('mailReview.errorDetail', '{{base}} ({{reason}})', { base, reason: failure.detail })
