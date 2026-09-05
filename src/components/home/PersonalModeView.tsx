@@ -40,7 +40,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { BusinessDebtTracker } from '@/components/business/BusinessDebtTracker';
 import { UnpaidInvoicesWidget } from '@/components/business/UnpaidInvoicesWidget';
 import { IncomingInvoicesWidget } from '@/components/business/eracun/IncomingInvoicesWidget';
-import { DocumentsPendingCard } from '@/components/mail/DocumentsPendingCard';
 import { DocumentsRow } from '@/components/home/DocumentsRow';
 import { useMailImportAccess } from '@/hooks/useMailImportAccess';
 import { useMailPendingCount } from '@/hooks/useMailPendingCount';
@@ -486,11 +485,6 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
               <p className="text-sm font-bold text-destructive">{formatAmount(totalPayable)}</p>
             </button>
           </div>
-        )}
-
-        {/* Dokumenti na pregled — samo uz pravo `mail_uvoz` i kad ima što čekati */}
-        {hasMailAccess && mailPendingCount > 0 && (
-          <DocumentsPendingCard count={mailPendingCount} />
         )}
 
         {/* Unpaid invoices widget — business chip only */}

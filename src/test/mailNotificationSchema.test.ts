@@ -1,12 +1,13 @@
 /**
  * ČUVAR — mail obavijesti.
  *
- * 1) SHEMA: payload koji `mail-process` upisuje u `notifications` mora koristiti
- *    ISKLJUČIVO stupce koji stvarno postoje (types.ts). Kvar iz kolovoza 2026:
- *    worker je slao `title_key`/`body_key`/`dedup_ref` → INSERT je tiho pucao i
- *    nijedna mail obavijest nikad nije nastala.
- * 2) VIDLJIVOST: greška upisa se ne smije gutati.
- * 3) PUSH: ide kroz postojeći sustav (sendPushNotification + kategorija).
+ * 1) UKINUTO PONAVLJANJE (5.9.2026): `mail-process` više NE upisuje obavijest
+ *    tipa `mail_document_pending`. Istu činjenicu stalno nosi red „Dokumenti"
+ *    na početnom ekranu. Push pri dolasku ostaje.
+ * 2) SHEMA: preostali upisi u `notifications` moraju koristiti ISKLJUČIVO
+ *    stupce koji stvarno postoje (types.ts). Kvar iz kolovoza 2026: worker je
+ *    slao `title_key`/`body_key`/`dedup_ref` → INSERT je tiho pucao.
+ * 3) VIDLJIVOST: greška upisa se ne smije gutati.
  */
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
@@ -21,16 +22,12 @@ const src = fs.readFileSync(WORKER, 'utf8');
 
 type NotificationInsert = Database['public']['Tables']['notifications']['Insert'];
 
-const insertBlock = (() => {
-  const start = src.indexOf('.from("notifications").insert({');
-  expect(start).toBeGreaterThan(-1);
-  return src.slice(start, start + 500);
-})();
+const insertBlocks = [...src.matchAll(/\.from\("notifications"\)\.insert\(\{/g)].map((m) =>
+  src.slice(m.index ?? 0, (m.index ?? 0) + 700),
+);
 
 describe('mail-process → notifications insert', () => {
   it('koristi samo stupce koji postoje u shemi', () => {
-    const keys = [...insertBlock.matchAll(/^\s{4}([a-z_]+):/gm)].map((m) => m[1]);
-    expect(keys.length).toBeGreaterThan(0);
     const allowed: Array<keyof NotificationInsert> = [
       'user_id',
       'type',
@@ -42,8 +39,12 @@ describe('mail-process → notifications insert', () => {
       'dedup_key',
       'severity',
     ];
-    for (const key of keys) {
-      expect(allowed).toContain(key as keyof NotificationInsert);
+    expect(insertBlocks.length).toBeGreaterThan(0);
+    for (const block of insertBlocks) {
+      const keys = [...block.matchAll(/^\s{4}([a-z_]+):/gm)].map((m) => m[1]);
+      for (const key of keys) {
+        expect(allowed).toContain(key as keyof NotificationInsert);
+      }
     }
   });
 
@@ -53,27 +54,21 @@ describe('mail-process → notifications insert', () => {
     expect(src).not.toMatch(/(^|[^_\w])dedup_ref:/m);
   });
 
-
-  it('nosi i18n ključeve i rutu na /dokumenti', () => {
-    expect(insertBlock).toContain('notifications.mail.pending.title');
-    expect(insertBlock).toContain('notifications.mail.pending.body');
-    expect(src).toContain('"/dokumenti"');
-    expect(src).toContain('mail_document_pending');
+  it('obavijest mail_document_pending se više ne upisuje', () => {
+    for (const block of insertBlocks) {
+      expect(block).not.toContain('type: "mail_document_pending"');
+    }
+    expect(src).not.toContain('dedup_key: `mail_document_pending:${itemId}`');
   });
 
   it('greška upisa obavijesti se logira vidljivo', () => {
-    expect(src).toMatch(/if \(notifError[\s\S]{0,80}\) \{[\s\S]{0,200}console\.error/);
+    expect(src).toMatch(/if \(error[\s\S]{0,80}\) \{[\s\S]{0,200}console\.error/);
   });
 
-  it('nosi dedup oznaku vezanu uz stavku (samogašenje + bez duplikata)', () => {
-    // Upis je jedan zajednički pomoćnik (notifyPending) — oznaka je vezana uz
-    // stavku preko njegova parametra, ne uz ime pozivateljeve varijable.
-    expect(insertBlock).toContain('dedup_key: `mail_document_pending:${itemId}`');
-  });
-
-  it('push ide kroz postojeći sendPushNotification uz kategoriju', () => {
+  it('push pri dolasku ostaje, s rutom na /dokumenti', () => {
     expect(src).toContain('sendPushNotification({');
     expect(src).toContain('category: "pending"');
     expect(src).toContain('source: "mail-process"');
+    expect(src).toContain('"/dokumenti"');
   });
 });

@@ -86,10 +86,16 @@ export const ActiveIssuesSection = ({ enabled, projects, allExpenses }: Props) =
     window.dispatchEvent(new CustomEvent("ai-assistant:ask", { detail: { prompt: msg } }));
   }, [navigate, requestModule, t]);
 
-  if (!enabled) return null;
-  if (!loading && issues.length === 0) return null;
+  // „Za pažnju" je površina za ono što traži radnju: samo warning i critical.
+  // `info` obavijesti i dalje žive u zvonu — samo ne troše početni ekran.
+  const actionable = issues.filter(
+    (i) => i.severity === "warning" || i.severity === "critical",
+  );
 
-  const visible = issues.slice(0, HARD_CAP);
+  if (!enabled) return null;
+  if (!loading && actionable.length === 0) return null;
+
+  const visible = actionable.slice(0, HARD_CAP);
 
   return (
     <section className="mb-4">
@@ -97,7 +103,7 @@ export const ActiveIssuesSection = ({ enabled, projects, allExpenses }: Props) =
         <AlertCircle className="w-4 h-4 text-module-muted" />
         <h2 className="text-sm font-semibold text-module-muted">{t("attention.title")}</h2>
       </div>
-      {loading && issues.length === 0 ? (
+      {loading && actionable.length === 0 ? (
         <div className="space-y-1.5">
           {[0, 1].map(i => (
             <div key={i} className="h-12 rounded-xl bg-muted/40 animate-pulse border border-border/30" />

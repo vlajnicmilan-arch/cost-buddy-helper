@@ -1,16 +1,11 @@
 /**
- * ČUVAR — životni vijek obavijesti `mail_document_pending`.
+ * ČUVAR — „dokument čeka pregled" bez in-app obavijesti.
  *
- * Kvar (kolovoz 2026): obavijest je ostala „active" i nepročitana i nakon što
- * je dokument uvezen (stavka `povezan`), pa je „Za pažnju" tvrdila da nešto
- * čeka na pregled dok na pregledu nije bilo ničega — uz to duplirajući
- * jantarnu karticu u /dokumenti.
- *
- * Tri pravila koja ovaj čuvar drži:
- * 1. Obavijest nosi dedup oznaku vezanu uz stavku (bez duplikata pri reprocessu).
- * 2. Okidač u bazi gasi obavijest čim stavka napusti `na_pregledu`, uz
- *    jednokratni backfill visećih obavijesti.
- * 3. „Za pažnju" (useActiveIssues) NE prikazuje taj tip — kartica JE obavijest.
+ * Povijest: obavijest `mail_document_pending` je znala visjeti u „Za pažnju"
+ * i nakon što je dokument uvezen, uz to duplirajući jantarnu karticu.
+ * Od 5.9.2026 obavijest se VIŠE NE STVARA — istu činjenicu stalno nosi red
+ * „Dokumenti" na početnom ekranu. Postojeći retci u bazi se ne diraju, a
+ * okidač koji ih gasi ostaje na mjestu.
  */
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
@@ -24,35 +19,25 @@ const migrationSql = fs
   .map((f) => fs.readFileSync(path.join(migrationsDir, f), 'utf8'))
   .join('\n');
 
-describe('mail_document_pending — samogašenje', () => {
-  it('worker upisuje dedup oznaku vezanu uz stavku', () => {
+describe('mail_document_pending — ukinuta in-app obavijest', () => {
+  it('worker više ne upisuje tu obavijest', () => {
     const worker = read('supabase/functions/mail-process/index.ts');
-    expect(worker).toContain('dedup_key: `mail_document_pending:${itemId}`');
-    // Duplikat (23505) nije kvar nego dedup — ne smije se logirati kao greška.
-    expect(worker).toContain('notifError.code !== "23505"');
+    expect(worker).not.toContain('type: "mail_document_pending",\n    title:');
+    expect(worker).not.toContain('dedup_key: `mail_document_pending:${itemId}`');
   });
 
-  it('baza ima okidač koji gasi obavijest kad stavka napusti na_pregledu', () => {
+  it('okidač koji gasi zatečene obavijesti ostaje u bazi', () => {
     expect(migrationSql).toContain('mail_resolve_pending_notification');
     expect(migrationSql).toContain('AFTER UPDATE OF status ON public.document_ingest_items');
-    expect(migrationSql).toMatch(/NEW\.status IS DISTINCT FROM 'na_pregledu'/);
-    expect(migrationSql).toMatch(/status = 'resolved'/);
   });
 
-  it('migracija sadrži backfill visećih obavijesti', () => {
-    expect(migrationSql).toMatch(
-      /UPDATE public\.notifications[\s\S]{0,600}NOT EXISTS[\s\S]{0,300}document_ingest_items[\s\S]{0,200}na_pregledu/,
-    );
-  });
-
-  it('„Za pažnju" izuzima mail_document_pending', () => {
+  it('„Za pažnju" i dalje izuzima mail_document_pending', () => {
     const hook = read('src/hooks/useActiveIssues.ts');
     expect(hook).toContain('.neq("type", "mail_document_pending")');
   });
 
-  it('signal dolaska ostaje (zvono + push)', () => {
+  it('signal dolaska ostaje kroz push', () => {
     const worker = read('supabase/functions/mail-process/index.ts');
     expect(worker).toContain('sendPushNotification({');
-    expect(worker).toContain('.from("notifications").insert({');
   });
 });
