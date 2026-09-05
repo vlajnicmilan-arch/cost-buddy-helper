@@ -435,7 +435,7 @@ async function processMessage(
       links = extractLinks(html || plain);
     }
   }
-  if (bulkHeaders === EMPTY_BULK_HEADERS) bulkHeaders = { ...EMPTY_BULK_HEADERS };
+  
 
   const { byOib, oibs } = await knownCounterparties(supabase, ownerId);
   const ownProfiles = await ownProfilesFor(supabase, ownerId);
