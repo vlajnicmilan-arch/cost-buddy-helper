@@ -6635,7 +6635,7 @@
       "nije_dopusteno": "Nemaš pravo na ovu stavku.",
       "stavka_ne_postoji": "Stavka više ne postoji.",
       "nije_prijavljen": "Sesija je istekla — prijavi se ponovno.",
-      "baza": "Baza je odbila spremanje.",
+      "baza": "Spremanje nije uspjelo. Pokušaj ponovno — ako se ponovi, javi nam se, greška je zabilježena.",
       "nedostaje_oib": "Izdavatelj nema OIB — potvrdi kvačicom da ga svejedno želiš unijeti.",
       "nedostaje_naziv": "Bez OIB-a je naziv dobavljača obavezan.",
       "missingFields": "Nedostaje: {{fields}}"

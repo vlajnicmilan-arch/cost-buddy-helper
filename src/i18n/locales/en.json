@@ -6622,7 +6622,7 @@
       "nije_dopusteno": "You are not allowed to act on this item.",
       "stavka_ne_postoji": "This item no longer exists.",
       "nije_prijavljen": "Your session expired — please sign in again.",
-      "baza": "The database rejected the save.",
+      "baza": "Saving failed. Try again — if it repeats, contact us; the error has been logged.",
       "nedostaje_oib": "The issuer has no OIB — tick the box to record it anyway.",
       "nedostaje_naziv": "Without an OIB the supplier name is required.",
       "missingFields": "Missing: {{fields}}"
