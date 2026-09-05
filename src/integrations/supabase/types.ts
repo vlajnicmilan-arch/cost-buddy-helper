@@ -2584,7 +2584,7 @@ export type Database = {
           iban: string | null
           id: string
           import_batch_id: string | null
-          invoice_number: string
+          invoice_number: string | null
           issue_date: string | null
           items: Json
           note: string | null
@@ -2614,7 +2614,7 @@ export type Database = {
           iban?: string | null
           id?: string
           import_batch_id?: string | null
-          invoice_number: string
+          invoice_number?: string | null
           issue_date?: string | null
           items?: Json
           note?: string | null
@@ -2644,7 +2644,7 @@ export type Database = {
           iban?: string | null
           id?: string
           import_batch_id?: string | null
-          invoice_number?: string
+          invoice_number?: string | null
           issue_date?: string | null
           items?: Json
           note?: string | null
