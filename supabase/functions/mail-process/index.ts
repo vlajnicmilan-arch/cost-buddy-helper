@@ -844,6 +844,38 @@ async function processMessage(
     // Ništa se ne briše — korisnik stavku može vratiti u red.
     let finalStatus = status;
     let mutedReason: string | null = null;
+
+    // PRIVREMENO PRAVILO 3 — stavka bez privitka, klasificirana kao ponuda ili
+    // račun, bez iznosa I bez broja računa nije dokument. Korisnikova vlastita
+    // klasifikacija je jača od pravila.
+    const emptyDocReason = userClassification
+      ? null
+      : noAmountNoNumberRule({
+          hasAttachment: unit.attachmentId !== null,
+          classification: result.classification,
+          totalAmount: extraction.total_amount,
+          invoiceNumber: extraction.invoice_number,
+        });
+    if (emptyDocReason && finalStatus === "na_pregledu") {
+      finalStatus = "nije_za_nas";
+      mutedReason = emptyDocReason;
+      warnings.push(emptyDocReason);
+      await supabase.from("app_diagnostics_logs").insert({
+        event: "mail_bulk_rejected",
+        user_id: ownerId,
+        session_id: "mail-process",
+        severity: "info",
+        details: {
+          message_id: messageId,
+          rule: emptyDocReason,
+          markers: markersFound(bulkHeaders),
+          from_header: msg.from_header ?? null,
+          has_attachment: unit.attachmentId !== null,
+          classification: result.classification,
+        },
+      });
+    }
+
     if (status === "na_pregledu") {
       const { data: muted, error: mutedErr } = await supabase.rpc("mail_reject_muted", {
         p_user_id: ownerId,
