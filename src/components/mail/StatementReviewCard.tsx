@@ -30,6 +30,12 @@ import { AccountIdentityMismatchDialog } from '@/components/import/AccountIdenti
 import { useAuth } from '@/hooks/useAuth';
 import type { MailReviewItem } from '@/hooks/useMailReviewQueue';
 import type { ExistingStatement } from '@/lib/statementFingerprint';
+import {
+  EXISTING_IMPORT_REASON_KEY,
+  linkExistingImport,
+  probeExistingImport,
+  type ExistingImportProbe,
+} from '@/lib/mail/existingImportLink';
 
 /**
  * KARTICA IZVODA u redu „Na pregled".
