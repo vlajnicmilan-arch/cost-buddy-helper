@@ -220,25 +220,12 @@ export function senderEmail(fromHeader: string | null | undefined): string {
  * samogašenje kroz DB okidač). Koriste je i dokumenti i karantena-kartica.
  */
 async function notifyPending(supabase: Supa, ownerId: string, itemId: string, priority: boolean) {
-  const { error: notifError } = await supabase.from("notifications").insert({
-    user_id: ownerId,
-    type: "mail_document_pending",
-    title: "notifications.mail.pending.title",
-    message: "notifications.mail.pending.body",
-    data: {
-      item_id: itemId,
-      priority,
-      route: "/dokumenti",
-      fallback_route: "/dokumenti",
-      title_vars: {},
-      message_vars: {},
-    },
-    dedup_key: `mail_document_pending:${itemId}`,
-  });
-  // 23505 = već postoji živa obavijest za istu stavku (dedup), nije kvar.
-  if (notifError && notifError.code !== "23505") {
-    console.error("[mail-process] upis obavijesti nije uspio", notifError.message, notifError);
-  }
+  // OBAVIJEST `mail_document_pending` SE VIŠE NE STVARA (5.9.2026).
+  // Istu činjenicu stalno nosi red „Dokumenti" na početnom ekranu, pa je zapis
+  // u `notifications` bio čisto ponavljanje. Postojeći retci se NE diraju.
+  // Push pri dolasku ostaje — to je jedini signal izvan aplikacije.
+  void supabase;
+  void priority;
 
   try {
     await sendPushNotification({

@@ -103,7 +103,7 @@ export const ActiveIssuesSection = ({ enabled, projects, allExpenses }: Props) =
         <AlertCircle className="w-4 h-4 text-module-muted" />
         <h2 className="text-sm font-semibold text-module-muted">{t("attention.title")}</h2>
       </div>
-      {loading && issues.length === 0 ? (
+      {loading && actionable.length === 0 ? (
         <div className="space-y-1.5">
           {[0, 1].map(i => (
             <div key={i} className="h-12 rounded-xl bg-muted/40 animate-pulse border border-border/30" />
