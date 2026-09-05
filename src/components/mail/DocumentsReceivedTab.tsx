@@ -34,6 +34,12 @@ export const DocumentsReceivedTab = ({
   const { messages, loading, refetch } = useMailInbox(active);
   const { items: discarded, loading: discardedLoading, working, restoreItem } =
     useMailDiscardedItems(active);
+  const {
+    items: stuck,
+    loading: stuckLoading,
+    working: stuckWorking,
+    releaseItem,
+  } = useMailStuckLinkedItems(active);
   const [retrying, setRetrying] = useState<string | null>(null);
 
   const handleRetry = async (messageId: string) => {
