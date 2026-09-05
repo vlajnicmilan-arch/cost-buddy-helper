@@ -8050,6 +8050,11 @@ export type Database = {
         Returns: Json
       }
       mail_item_discard: { Args: { p_item_id: string }; Returns: Json }
+      mail_item_existing_import: { Args: { p_item_id: string }; Returns: Json }
+      mail_item_link_existing_import: {
+        Args: { p_item_id: string }
+        Returns: Json
+      }
       mail_item_mark_linked: { Args: { p_item_id: string }; Returns: Json }
       mail_item_release_linked: { Args: { p_item_id: string }; Returns: Json }
       mail_item_reprocess: {
