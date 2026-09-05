@@ -732,6 +732,26 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
               </label>
             )}
 
+            {missingNumber && (
+              <label
+                data-testid="missing-number-ack"
+                className="flex items-start gap-2 rounded-md border border-document-pending bg-document-pending-surface p-2 text-xs cursor-pointer"
+              >
+                <Checkbox
+                  className="mt-0.5"
+                  checked={noNumberAcked}
+                  onCheckedChange={(v) => setNoNumberAck((s) => ({ ...s, [item.id]: v === true }))}
+                />
+                <span>
+                  {t(
+                    'mailReview.missingNumber',
+                    'Ovaj dokument nema broj (račun iz aplikacije, blagajnički isječak) — svejedno unesi. Zaštita od dvostrukog unosa tada radi po dobavljaču, datumu i iznosu.',
+                  )}
+                </span>
+              </label>
+            )}
+
+
             {offerRemember && (
               <label
                 data-testid="remember-issuer"
