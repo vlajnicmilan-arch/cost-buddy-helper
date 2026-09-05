@@ -1,8 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-vi.mock('@/lib/sentry', () => ({
-  initSentry: vi.fn(),
-}));
+vi.mock('@/lib/sentry', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/sentry')>();
+  return {
+    ...actual,
+    initSentry: vi.fn(),
+  };
+});
 
 vi.mock('@sentry/react', () => ({
   captureMessage: vi.fn(() => 'event-id'),
