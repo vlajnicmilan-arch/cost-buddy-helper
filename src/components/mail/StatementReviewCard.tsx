@@ -463,6 +463,8 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
         </div>
       )}
 
+      {linkExistingBlock}
+
       <div className="flex flex-wrap gap-2 pt-1">
         <Button
           size="sm"
