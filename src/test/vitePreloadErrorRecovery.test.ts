@@ -97,7 +97,7 @@ describe('registerVitePreloadErrorRecovery', () => {
     expect(flush).toHaveBeenCalledWith(2000);
   });
 
-  it('does not reload twice within 30 seconds', () => {
+  it('does not reload twice within 30 seconds', async () => {
     const win = createMockWindow();
     registerVitePreloadErrorRecovery(win);
 
@@ -105,12 +105,14 @@ describe('registerVitePreloadErrorRecovery', () => {
     (first as any).payload = '/assets/ProjektiLanding-AqD-Fu5l.css';
     win.dispatchEvent(first);
 
-    expect(win.location.reload).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => expect(win.location.reload).toHaveBeenCalledTimes(1));
 
     const second = new Event('vite:preloadError', { cancelable: true });
     (second as any).payload = '/assets/react-vendor-D__4iQON.js';
     win.dispatchEvent(second);
 
+    // Give any async work a tick, then confirm no second reload happened.
+    await new Promise((r) => setTimeout(r, 10));
     expect(win.location.reload).toHaveBeenCalledTimes(1);
   });
 
