@@ -216,8 +216,8 @@ export function senderEmail(fromHeader: string | null | undefined): string {
 }
 
 /**
- * OBAVIJEST „dokument čeka pregled" — JEDNO mjesto istine (dedup po stavci,
- * samogašenje kroz DB okidač). Koriste je i dokumenti i karantena-kartica.
+ * SIGNAL „dokument čeka pregled" — samo push. In-app obavijest je ukinuta
+ * (5.9.2026) jer red „Dokumenti" na početnom ekranu nosi istu činjenicu.
  */
 async function notifyPending(supabase: Supa, ownerId: string, itemId: string, priority: boolean) {
   // OBAVIJEST `mail_document_pending` SE VIŠE NE STVARA (5.9.2026).
