@@ -6813,6 +6813,13 @@
     "quota": {
       "status": "Importe diesen Monat: {{used}}/{{limit}} · {{left}} übrig",
       "exhausted": "Das monatliche Importkontingent ist aufgebraucht ({{used}}/{{limit}}). Es wird am {{date}} erneuert."
+    },
+    "stuck": {
+      "title": "Als bearbeitet markiert, ohne Import",
+      "hint": "Diese Dokumente gelten als bearbeitet, es existiert aber kein Import dazu. Setze sie zur Prüfung zurück, um sie zu bearbeiten oder abzulehnen.",
+      "release": "Zur Prüfung zurück",
+      "released": "Dokument wurde zur Prüfung zurückgesetzt",
+      "hasImport": "Zu diesem Dokument existiert ein Import — es kann nicht zurückgesetzt werden."
     }
   },
   "issuers": {
