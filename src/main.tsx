@@ -359,7 +359,6 @@ const markBootCompleted = () => {
   if (bootCompletedOnce) return;
   bootCompletedOnce = true;
   clearBootFlag();
-  clearPreloadReloadMarker();
   idle(() => {
     import('./lib/diagnosticLogger')
       .then(({ logDiagnostic }) => logDiagnostic('boot_completed', {
