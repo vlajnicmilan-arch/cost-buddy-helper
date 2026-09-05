@@ -48,6 +48,11 @@ describe('registerVitePreloadErrorRecovery', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    try {
+      sessionStorage.clear();
+    } catch {
+      /* ignore */
+    }
 
     (globalThis as any).IntersectionObserver = class {
       observe = vi.fn();
