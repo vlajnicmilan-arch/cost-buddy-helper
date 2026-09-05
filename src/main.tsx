@@ -187,36 +187,47 @@ if (!isFastLanding) idle(() => {
 
 // Recover from stale Vite chunks after a deploy. If the user kept an old
 // page open while a new build shipped, the hashed asset names no longer
-// exist; Vite fires `vite:preloadError`. We reload once to fetch the fresh
-// index.html. A sessionStorage guard prevents an infinite loop if the new
-// build is also broken or if the network stays down.
+// exist; Vite fires `vite:preloadError`. We reload to fetch the fresh
+// index.html. A per-tab attempt COUNTER (never cleared on successful boot)
+// caps this at 2 reloads, so a genuinely missing asset cannot loop forever.
 const PRELOAD_RELOAD_KEY = 'vm_preload_reload';
-const PRELOAD_RELOAD_WINDOW_MS = 30_000;
+const PRELOAD_RELOAD_MAX = 2;
 
-const readPreloadReloadAt = (storage: Storage | null = null): number | null => {
+const readPreloadReloadCount = (storage: Storage | null = null): number => {
   try {
     const raw = (storage ?? sessionStorage).getItem(PRELOAD_RELOAD_KEY);
-    if (!raw) return null;
-    const ts = Number(raw);
-    return Number.isFinite(ts) ? ts : null;
+    if (!raw) return 0;
+    const n = Number(raw);
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
   } catch {
-    return null;
+    return 0;
   }
 };
 
-const setPreloadReloadAt = (at: number, storage: Storage | null = null) => {
+const setPreloadReloadCount = (count: number, storage: Storage | null = null) => {
   try {
-    (storage ?? sessionStorage).setItem(PRELOAD_RELOAD_KEY, String(at));
+    (storage ?? sessionStorage).setItem(PRELOAD_RELOAD_KEY, String(count));
   } catch {
     /* ignore */
   }
 };
 
-const clearPreloadReloadMarker = (storage: Storage | null = null) => {
+// Vite's preloadHelper dispatches `vite:preloadError` with `payload` set to the
+// rejection reason — an Error, e.g. `Unable to preload CSS for /assets/x.css`
+// or a failed dynamic import. Pull a usable file name out of whatever we get.
+const extractPreloadFileName = (payload: unknown): string => {
+  if (typeof payload === 'string') return payload;
+  const message =
+    payload && typeof payload === 'object' && typeof (payload as any).message === 'string'
+      ? (payload as any).message
+      : '';
+  const match = message.match(/((?:https?:\/\/|\/)[^\s'"()]+\.[a-z0-9]+)/i);
+  if (match) return match[1];
+  if (message) return message;
   try {
-    (storage ?? sessionStorage).removeItem(PRELOAD_RELOAD_KEY);
+    return String(payload ?? 'unknown');
   } catch {
-    /* ignore */
+    return 'unknown';
   }
 };
 
@@ -230,41 +241,35 @@ export const registerVitePreloadErrorRecovery = (
       /* ignore */
     }
 
-    const payload = (event as any).payload;
-    const fileName = typeof payload === 'string' ? payload : 'unknown';
+    const fileName = extractPreloadFileName((event as any).payload);
+    const attempts = readPreloadReloadCount(target.sessionStorage);
 
-    const now = Date.now();
-    const lastReloadAt = readPreloadReloadAt(target.sessionStorage);
-    if (lastReloadAt && now - lastReloadAt < PRELOAD_RELOAD_WINDOW_MS) {
-      // Already reloaded recently — do not loop. Let the normal error path
-      // (and Sentry) surface the real failure.
+    const report = (level: 'info' | 'warning', message: string, attempt: number) =>
+      Promise.all([import('./lib/sentry'), import('@sentry/react')])
+        .then(([{ initSentry }, Sentry]) => {
+          initSentry();
+          Sentry.captureMessage(message, {
+            level,
+            extra: { file: fileName, href: target.location.href, attempt },
+            tags: { source: 'vite_preload_error' },
+          });
+          return Sentry.flush(2000);
+        })
+        .catch(() => {
+          /* Sentry is best-effort; never block */
+        });
+
+    if (attempts >= PRELOAD_RELOAD_MAX) {
+      // Reloading did not help — stop looping and let the app's normal error
+      // surface show. Report it so we can see who is actually stuck.
+      report('warning', 'Preload asset still missing after reloads', attempts);
       return;
     }
 
-    setPreloadReloadAt(now, target.sessionStorage);
-
-    // Log to Sentry before reloading so we can measure how often stale assets
-    // hit real users. Sentry is normally loaded lazily; initialize it now and
-    // flush so the message actually leaves before the tab navigates away.
-    Promise.all([
-      import('./lib/sentry'),
-      import('@sentry/react'),
-    ])
-      .then(([{ initSentry }, Sentry]) => {
-        initSentry();
-        Sentry.captureMessage('Stale preload asset after deploy', {
-          level: 'info',
-          extra: { file: fileName, href: target.location.href },
-          tags: { source: 'vite_preload_error' },
-        });
-        return Sentry.flush(2000);
-      })
-      .catch(() => {
-        /* Sentry is best-effort; never block reload */
-      })
-      .finally(() => {
-        target.location.reload();
-      });
+    setPreloadReloadCount(attempts + 1, target.sessionStorage);
+    report('info', 'Stale preload asset after deploy', attempts + 1).finally(() => {
+      target.location.reload();
+    });
   });
 };
 
