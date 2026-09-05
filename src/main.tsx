@@ -220,49 +220,55 @@ const clearPreloadReloadMarker = () => {
   }
 };
 
-window.addEventListener('vite:preloadError', (event: Event) => {
-  try {
-    event.preventDefault();
-  } catch {
-    /* ignore */
-  }
+export const registerVitePreloadErrorRecovery = (
+  target: Window & typeof globalThis = window
+) => {
+  target.addEventListener('vite:preloadError', (event: Event) => {
+    try {
+      event.preventDefault();
+    } catch {
+      /* ignore */
+    }
 
-  const payload = (event as any).payload;
-  const fileName = typeof payload === 'string' ? payload : 'unknown';
+    const payload = (event as any).payload;
+    const fileName = typeof payload === 'string' ? payload : 'unknown';
 
-  const now = Date.now();
-  const lastReloadAt = readPreloadReloadAt();
-  if (lastReloadAt && now - lastReloadAt < PRELOAD_RELOAD_WINDOW_MS) {
-    // Already reloaded recently — do not loop. Let the normal error path
-    // (and Sentry) surface the real failure.
-    return;
-  }
+    const now = Date.now();
+    const lastReloadAt = readPreloadReloadAt();
+    if (lastReloadAt && now - lastReloadAt < PRELOAD_RELOAD_WINDOW_MS) {
+      // Already reloaded recently — do not loop. Let the normal error path
+      // (and Sentry) surface the real failure.
+      return;
+    }
 
-  setPreloadReloadAt(now);
+    setPreloadReloadAt(now);
 
-  // Log to Sentry before reloading so we can measure how often stale assets
-  // hit real users. Sentry is normally loaded lazily; initialize it now and
-  // flush so the message actually leaves before the tab navigates away.
-  Promise.all([
-    import('./lib/sentry'),
-    import('@sentry/react'),
-  ])
-    .then(([{ initSentry }, Sentry]) => {
-      initSentry();
-      Sentry.captureMessage('Stale preload asset after deploy', {
-        level: 'info',
-        extra: { file: fileName, href: window.location.href },
-        tags: { source: 'vite_preload_error' },
+    // Log to Sentry before reloading so we can measure how often stale assets
+    // hit real users. Sentry is normally loaded lazily; initialize it now and
+    // flush so the message actually leaves before the tab navigates away.
+    Promise.all([
+      import('./lib/sentry'),
+      import('@sentry/react'),
+    ])
+      .then(([{ initSentry }, Sentry]) => {
+        initSentry();
+        Sentry.captureMessage('Stale preload asset after deploy', {
+          level: 'info',
+          extra: { file: fileName, href: target.location.href },
+          tags: { source: 'vite_preload_error' },
+        });
+        return Sentry.flush(2000);
+      })
+      .catch(() => {
+        /* Sentry is best-effort; never block reload */
+      })
+      .finally(() => {
+        target.location.reload();
       });
-      return Sentry.flush(2000);
-    })
-    .catch(() => {
-      /* Sentry is best-effort; never block reload */
-    })
-    .finally(() => {
-      window.location.reload();
-    });
-});
+  });
+};
+
+registerVitePreloadErrorRecovery();
 
 // Boot diagnostics — these always log so we can see them in `chrome://inspect`
 // when the APK is connected. Helps confirm which bundle/route is active.
