@@ -57,37 +57,11 @@ interface Props {
   onCountChange?: () => void;
 }
 
-type FieldDef = {
-  key: string;
-  labelKey: string;
-  fallback: string;
-  kind: MailFieldKind;
-  dateContext?: DateContext;
-};
+// Popis polja, prikaz vrijednosti i obrazac stavke žive u `MailInvoiceFields`.
+// Ponovni izvoz čuva postojeće uvoze ove datoteke.
+export { displayFieldValue };
+export type { FieldDef };
 
-const FIELDS: FieldDef[] = [
-  { key: 'supplier_name', labelKey: 'mailReview.field.supplierName', fallback: 'Dobavljač', kind: 'text' },
-  { key: 'supplier_oib', labelKey: 'mailReview.field.supplierOib', fallback: 'OIB', kind: 'text' },
-  { key: 'invoice_number', labelKey: 'mailReview.field.invoiceNumber', fallback: 'Broj dokumenta', kind: 'text' },
-  { key: 'issue_date', labelKey: 'mailReview.field.issueDate', fallback: 'Datum izdavanja', kind: 'date', dateContext: 'expense' },
-  { key: 'due_date', labelKey: 'mailReview.field.dueDate', fallback: 'Datum dospijeća', kind: 'date', dateContext: 'debt' },
-  { key: 'total_amount', labelKey: 'mailReview.field.totalAmount', fallback: 'Ukupno', kind: 'amount' },
-  { key: 'iban', labelKey: 'mailReview.field.iban', fallback: 'IBAN', kind: 'text' },
-  // Oznaka mjesta (npr. „Split"/„Solin") — pamćenje je predlaže, korisnik je
-  // smije prepisati PRIJE potvrde; potvrda je uči po šifri obračunskog mjesta.
-  { key: 'place_label', labelKey: 'mailReview.field.placeLabel', fallback: 'Oznaka mjesta', kind: 'text' },
-  // Tip dokumenta: vidljiv i promjenjiv PRIJE potvrde (default 380, vidi docType.ts).
-  { key: 'doc_type', labelKey: 'mailReview.field.docType', fallback: 'Tip dokumenta', kind: 'docType' },
-
-];
-
-/** Prikaz: ISO → dd.mm.gggg., broj → 1.660,36. Baza ostaje ISO/decimalna točka. */
-export const displayFieldValue = (field: FieldDef, raw: unknown): string => {
-  if (raw === null || raw === undefined || raw === '') return '—';
-  if (field.kind === 'date') return formatDateHr(String(raw)) || String(raw);
-  if (field.kind === 'amount') return formatHrAmount(raw as string | number) || String(raw);
-  return String(raw);
-};
 
 const trustVariant = (level: string | null): 'default' | 'secondary' | 'destructive' | 'outline' => {
   if (level === 'T1' || level === 'T2') return 'secondary';
