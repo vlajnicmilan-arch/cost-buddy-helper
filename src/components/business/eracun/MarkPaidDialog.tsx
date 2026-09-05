@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import type { IncomingInvoice } from '@/hooks/useIncomingInvoices';
+import { invoiceNumberLabel } from '@/lib/eracun/invoiceLabel';
 
 export interface MarkPaidResult {
   paymentDate: Date;
@@ -62,7 +63,7 @@ export const MarkPaidDialog = ({ invoice, onOpenChange, paymentSources, saving, 
                 {invoice.supplier_name || invoice.supplier_oib}
               </p>
               <p className="text-[11px] text-muted-foreground">
-                {invoice.invoice_number} · {formatAmount(Number(invoice.total_amount))}
+                {invoiceNumberLabel(invoice.invoice_number)} · {formatAmount(Number(invoice.total_amount))}
               </p>
             </div>
 

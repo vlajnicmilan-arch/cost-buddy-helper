@@ -5,6 +5,7 @@ import { hr } from 'date-fns/locale';
 import { AlertTriangle, CheckCircle2, Link2, Loader2, MapPin, Trash2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { invoiceDescriptor, invoiceNumberLabel } from '@/lib/eracun/invoiceLabel';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -192,7 +193,7 @@ export const IncomingInvoicesPanel = ({ initialFilter = 'unpaid', initialHighlig
         const created: any = await addExpense({
           expense: {
             amount: Math.abs(amount),
-            description: t('eracun.paid.expenseDescription', 'Ulazni račun {{number}}', { number: payTarget.invoice_number }),
+            description: t('eracun.paid.expenseDescription', 'Ulazni račun {{number}}', { number: invoiceDescriptor(payTarget) }),
             category: 'other',
             type: amount < 0 ? 'income' : 'expense',
             date: paymentDate,
@@ -412,7 +413,7 @@ export const IncomingInvoicesPanel = ({ initialFilter = 'unpaid', initialHighlig
                     {inv.counterparty_name || inv.supplier_name || inv.counterparty_oib || inv.supplier_oib}
                   </p>
                   <p className="text-[11px] text-muted-foreground truncate">
-                    {inv.invoice_number}
+                    {invoiceNumberLabel(inv.invoice_number)}
                     {inv.issue_date ? ` · ${t('eracun.list.issued', 'izdan')} ${format(new Date(inv.issue_date), 'd. MMM yyyy', { locale: hr })}` : ''}
                     {inv.due_date ? ` · ${t('eracun.list.due', 'dospijeće')} ${format(new Date(inv.due_date), 'd. MMM yyyy', { locale: hr })}` : ''}
                   </p>
@@ -586,7 +587,7 @@ export const IncomingInvoicesPanel = ({ initialFilter = 'unpaid', initialHighlig
           <DialogHeader>
             <DialogTitle>{t('eracun.list.placeEdit', 'Uredi oznaku mjesta')}</DialogTitle>
             <DialogDescription>
-              {placeTarget?.supplier_name || placeTarget?.counterparty_name || placeTarget?.invoice_number}
+              {placeTarget ? invoiceDescriptor(placeTarget) : ''}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">

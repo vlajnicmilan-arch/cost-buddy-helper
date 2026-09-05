@@ -22,6 +22,7 @@ import { describeDbError } from '@/lib/eracun/dbError';
 import type { IncomingInvoice } from '@/hooks/useIncomingInvoices';
 import { useEracunPaymentMatch } from '@/hooks/useEracunPaymentMatch';
 import type { MatchCandidate, MatchTransaction } from '@/lib/eracun/matchPayments';
+import { invoiceNumberLabel } from '@/lib/eracun/invoiceLabel';
 
 interface Props {
   open: boolean;
@@ -63,7 +64,7 @@ export const PaymentMatchReview = ({ open, onOpenChange, invoices, onDone }: Pro
       .map((id) => {
         const inv = invById.get(id);
         if (!inv) return id;
-        return `${inv.invoice_number} · ${formatAmount(Number(candidate.allocation[id] ?? 0))}`;
+        return `${invoiceNumberLabel(inv.invoice_number)} · ${formatAmount(Number(candidate.allocation[id] ?? 0))}`;
       })
       .join(' + ');
 
@@ -165,7 +166,7 @@ export const PaymentMatchReview = ({ open, onOpenChange, invoices, onDone }: Pro
                             className="h-7 text-[11px]"
                             onClick={() => setChoice((prev) => ({ ...prev, [s.transactionId]: i }))}
                           >
-                            {c.invoiceIds.map((id) => invById.get(id)?.invoice_number ?? id).join(' + ')}
+                            {c.invoiceIds.map((id) => invoiceNumberLabel(invById.get(id)?.invoice_number) || id).join(' + ')}
                           </Button>
                         ))}
                       </div>

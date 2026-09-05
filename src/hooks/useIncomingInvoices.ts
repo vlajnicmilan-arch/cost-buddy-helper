@@ -24,7 +24,8 @@ export interface IncomingInvoice {
   supplier_oib: string;
   counterparty_name: string | null;
   counterparty_oib: string | null;
-  invoice_number: string;
+  /** Aplikacijski računi i isječci dolaze bez broja — prikaz koristi `invoiceNumberLabel`. */
+  invoice_number: string | null;
   issue_date: string | null;
   due_date: string | null;
   total_amount: number;

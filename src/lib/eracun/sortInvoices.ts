@@ -10,7 +10,8 @@
  */
 
 export interface SortableIncomingInvoice {
-  readonly invoice_number: string;
+  /** Dokument bez broja je dopušten — poredak ga gura na kraj (nullsLast). */
+  readonly invoice_number: string | null;
   readonly issue_date: string | null;
   readonly due_date: string | null;
   readonly paid_at: string | null;

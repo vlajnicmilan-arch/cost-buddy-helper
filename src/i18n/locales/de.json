@@ -6622,7 +6622,7 @@
       "nije_dopusteno": "Du darfst diesen Eintrag nicht bearbeiten.",
       "stavka_ne_postoji": "Der Eintrag existiert nicht mehr.",
       "nije_prijavljen": "Sitzung abgelaufen — bitte erneut anmelden.",
-      "baza": "Die Datenbank hat das Speichern abgelehnt.",
+      "baza": "Speichern fehlgeschlagen. Versuche es erneut — wenn es erneut auftritt, melde dich bei uns; der Fehler wurde protokolliert.",
       "nedostaje_oib": "Der Aussteller hat keine OIB — bestätige das Häkchen, um trotzdem zu erfassen.",
       "nedostaje_naziv": "Ohne OIB ist der Lieferantenname Pflicht.",
       "missingFields": "Fehlt: {{fields}}"
