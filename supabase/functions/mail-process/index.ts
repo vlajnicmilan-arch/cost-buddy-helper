@@ -399,6 +399,15 @@ async function processMessage(
     dmarc: msg.dmarc_result as string | null,
     originalAuthResults: null as string | null,
   };
+  // OZNAKE MASOVNE POŠTE — spremaju se pri prijemu (nova pošta), a za staru
+  // poštu se čitaju iz sirovog payloada. Zapisano polje uvijek ima prednost.
+  const storedBulk: BulkMailHeaders = {
+    listUnsubscribe: (msg as Record<string, unknown>).list_unsubscribe as string | null ?? null,
+    listId: (msg as Record<string, unknown>).list_id as string | null ?? null,
+    precedence: (msg as Record<string, unknown>).precedence as string | null ?? null,
+    autoSubmitted: (msg as Record<string, unknown>).auto_submitted as string | null ?? null,
+  };
+  let bulkHeaders: BulkMailHeaders = { ...storedBulk };
   if (msg.body_storage_path) {
     const { data: blob } = await supabase.storage
       .from("inbound-mail")
@@ -413,12 +422,20 @@ async function processMessage(
         dmarc: (msg.dmarc_result as string | null) ?? signals.dmarc,
         originalAuthResults: signals.originalAuthResults,
       };
+      const fromRaw = extractBulkHeaders(raw);
+      bulkHeaders = {
+        listUnsubscribe: storedBulk.listUnsubscribe ?? fromRaw.listUnsubscribe,
+        listId: storedBulk.listId ?? fromRaw.listId,
+        precedence: storedBulk.precedence ?? fromRaw.precedence,
+        autoSubmitted: storedBulk.autoSubmitted ?? fromRaw.autoSubmitted,
+      };
       const html = raw["body-html"] ?? raw["stripped-html"] ?? "";
       const plain = raw["body-plain"] ?? raw["stripped-text"] ?? "";
       bodyText = plain || htmlToText(html);
       links = extractLinks(html || plain);
     }
   }
+  if (bulkHeaders === EMPTY_BULK_HEADERS) bulkHeaders = { ...EMPTY_BULK_HEADERS };
 
   const { byOib, oibs } = await knownCounterparties(supabase, ownerId);
   const ownProfiles = await ownProfilesFor(supabase, ownerId);
