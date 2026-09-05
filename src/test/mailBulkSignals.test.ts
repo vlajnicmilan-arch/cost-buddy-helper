@@ -6,7 +6,7 @@ import {
   noAmountNoNumberRule,
   markersFound,
   EMPTY_BULK_HEADERS,
-} from '../mailImport/bulkMailSignals.ts';
+} from '../../supabase/functions/_shared/mailImport/bulkMailSignals.ts';
 
 describe('extractBulkHeaders', () => {
   it('čita ravna Mailgun polja', () => {
