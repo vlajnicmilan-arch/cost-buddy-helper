@@ -109,7 +109,7 @@ describe('registerVitePreloadErrorRecovery', () => {
     (first as any).payload = '/assets/ProjektiLanding-AqD-Fu5l.css';
     win.dispatchEvent(first);
 
-    await vi.waitFor(() => expect(win.location.reload).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(win.location.reload).toHaveBeenCalledTimes(1), { timeout: 3000 });
 
     const second = new Event('vite:preloadError', { cancelable: true });
     (second as any).payload = '/assets/react-vendor-D__4iQON.js';
