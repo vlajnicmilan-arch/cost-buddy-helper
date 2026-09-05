@@ -16,6 +16,14 @@ import { inspectXml } from "../_shared/mailImport/xmlSafety.ts";
 import { htmlToText, extractLinks } from "../_shared/mailImport/htmlToText.ts";
 import { evaluateTrust, isAuthenticatedGoogle } from "../_shared/mailImport/trustLevel.ts";
 import { extractAuthSignals } from "../_shared/mailImport/mailHeaders.ts";
+import {
+  extractBulkHeaders,
+  bulkMailRule,
+  noAmountNoNumberRule,
+  markersFound,
+  EMPTY_BULK_HEADERS,
+  type BulkMailHeaders,
+} from "../_shared/mailImport/bulkMailSignals.ts";
 import { checkIbanAgainstHistory } from "../_shared/mailImport/ibanCheck.ts";
 import {
   classifyDocument,
@@ -391,6 +399,15 @@ async function processMessage(
     dmarc: msg.dmarc_result as string | null,
     originalAuthResults: null as string | null,
   };
+  // OZNAKE MASOVNE POŠTE — spremaju se pri prijemu (nova pošta), a za staru
+  // poštu se čitaju iz sirovog payloada. Zapisano polje uvijek ima prednost.
+  const storedBulk: BulkMailHeaders = {
+    listUnsubscribe: (msg as Record<string, unknown>).list_unsubscribe as string | null ?? null,
+    listId: (msg as Record<string, unknown>).list_id as string | null ?? null,
+    precedence: (msg as Record<string, unknown>).precedence as string | null ?? null,
+    autoSubmitted: (msg as Record<string, unknown>).auto_submitted as string | null ?? null,
+  };
+  let bulkHeaders: BulkMailHeaders = { ...storedBulk };
   if (msg.body_storage_path) {
     const { data: blob } = await supabase.storage
       .from("inbound-mail")
@@ -405,12 +422,20 @@ async function processMessage(
         dmarc: (msg.dmarc_result as string | null) ?? signals.dmarc,
         originalAuthResults: signals.originalAuthResults,
       };
+      const fromRaw = extractBulkHeaders(raw);
+      bulkHeaders = {
+        listUnsubscribe: storedBulk.listUnsubscribe ?? fromRaw.listUnsubscribe,
+        listId: storedBulk.listId ?? fromRaw.listId,
+        precedence: storedBulk.precedence ?? fromRaw.precedence,
+        autoSubmitted: storedBulk.autoSubmitted ?? fromRaw.autoSubmitted,
+      };
       const html = raw["body-html"] ?? raw["stripped-html"] ?? "";
       const plain = raw["body-plain"] ?? raw["stripped-text"] ?? "";
       bodyText = plain || htmlToText(html);
       links = extractLinks(html || plain);
     }
   }
+  
 
   const { byOib, oibs } = await knownCounterparties(supabase, ownerId);
   const ownProfiles = await ownProfilesFor(supabase, ownerId);
@@ -424,6 +449,44 @@ async function processMessage(
     .from("inbound_attachments")
     .select("*")
     .eq("message_id", messageId);
+
+  // OGRADA MASOVNE POŠTE (pravilo 2) — prije klasifikacije i prije AI-ja.
+  // Masovna pošta bez ijednog privitka nije dokument: ne stvara se stavka,
+  // ne troši se kvota. Korisnikova odluka o postojećoj stavci je jača.
+  const hasAnyAttachment = ((atts ?? []) as unknown[]).length > 0;
+  const bulkReason = bulkMailRule({ headers: bulkHeaders, hasAttachment: hasAnyAttachment });
+  if (bulkReason) {
+    const { data: decided } = await supabase
+      .from("document_ingest_items")
+      .select("id, status, classification_set_by_user")
+      .eq("message_id", messageId);
+    const userDecided = ((decided ?? []) as Array<Record<string, unknown>>).some(
+      (row) =>
+        row.classification_set_by_user === true ||
+        ["povezan", "potvrdjen", "odbacio_korisnik"].includes(String(row.status ?? "")),
+    );
+    if (!userDecided) {
+      await supabase.from("app_diagnostics_logs").insert({
+        event: "mail_bulk_rejected",
+        user_id: ownerId,
+        session_id: "mail-process",
+        severity: "info",
+        details: {
+          message_id: messageId,
+          rule: "masovna_posta",
+          markers: markersFound(bulkHeaders),
+          from_header: msg.from_header ?? null,
+          has_attachment: false,
+        },
+      });
+      await supabase
+        .from("inbound_messages")
+        .update({ status: "zavrsena", processed_at: new Date().toISOString(), last_error: null })
+        .eq("id", messageId);
+      return;
+    }
+  }
+
 
   const units: Array<{ attachmentId: string | null; bytes: Uint8Array | null; att: Record<string, unknown> | null }> =
     [];
@@ -781,7 +844,39 @@ async function processMessage(
     // Ništa se ne briše — korisnik stavku može vratiti u red.
     let finalStatus = status;
     let mutedReason: string | null = null;
-    if (status === "na_pregledu") {
+
+    // PRIVREMENO PRAVILO 3 — stavka bez privitka, klasificirana kao ponuda ili
+    // račun, bez iznosa I bez broja računa nije dokument. Korisnikova vlastita
+    // klasifikacija je jača od pravila.
+    const emptyDocReason = userClassification
+      ? null
+      : noAmountNoNumberRule({
+          hasAttachment: unit.attachmentId !== null,
+          classification: result.classification,
+          totalAmount: extraction.total_amount,
+          invoiceNumber: extraction.invoice_number,
+        });
+    if (emptyDocReason && finalStatus === "na_pregledu") {
+      finalStatus = "nije_za_nas";
+      mutedReason = emptyDocReason;
+      warnings.push(emptyDocReason);
+      await supabase.from("app_diagnostics_logs").insert({
+        event: "mail_bulk_rejected",
+        user_id: ownerId,
+        session_id: "mail-process",
+        severity: "info",
+        details: {
+          message_id: messageId,
+          rule: emptyDocReason,
+          markers: markersFound(bulkHeaders),
+          from_header: msg.from_header ?? null,
+          has_attachment: unit.attachmentId !== null,
+          classification: result.classification,
+        },
+      });
+    }
+
+    if (status === "na_pregledu" && finalStatus === "na_pregledu") {
       const { data: muted, error: mutedErr } = await supabase.rpc("mail_reject_muted", {
         p_user_id: ownerId,
         p_from_header: (msg.from_header as string | null) ?? "",

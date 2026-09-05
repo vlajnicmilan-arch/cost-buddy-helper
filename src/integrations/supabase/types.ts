@@ -2376,6 +2376,7 @@ export type Database = {
         Row: {
           alias_id: string
           arc_result: string | null
+          auto_submitted: string | null
           body_storage_path: string | null
           created_at: string
           dkim_result: string | null
@@ -2383,7 +2384,10 @@ export type Database = {
           from_header: string | null
           id: string
           last_error: string | null
+          list_id: string | null
+          list_unsubscribe: string | null
           owner_user_id: string
+          precedence: string | null
           processed_at: string | null
           provider: string
           provider_event_id: string
@@ -2398,6 +2402,7 @@ export type Database = {
         Insert: {
           alias_id: string
           arc_result?: string | null
+          auto_submitted?: string | null
           body_storage_path?: string | null
           created_at?: string
           dkim_result?: string | null
@@ -2405,7 +2410,10 @@ export type Database = {
           from_header?: string | null
           id?: string
           last_error?: string | null
+          list_id?: string | null
+          list_unsubscribe?: string | null
           owner_user_id: string
+          precedence?: string | null
           processed_at?: string | null
           provider: string
           provider_event_id: string
@@ -2420,6 +2428,7 @@ export type Database = {
         Update: {
           alias_id?: string
           arc_result?: string | null
+          auto_submitted?: string | null
           body_storage_path?: string | null
           created_at?: string
           dkim_result?: string | null
@@ -2427,7 +2436,10 @@ export type Database = {
           from_header?: string | null
           id?: string
           last_error?: string | null
+          list_id?: string | null
+          list_unsubscribe?: string | null
           owner_user_id?: string
+          precedence?: string | null
           processed_at?: string | null
           provider?: string
           provider_event_id?: string
@@ -8008,12 +8020,16 @@ export type Database = {
           p_alias_id: string
           p_arc_result: string
           p_attachments?: Json
+          p_auto_submitted?: string
           p_body_storage_path: string
           p_dam_reason?: string
           p_dkim_result: string
           p_dmarc_result: string
           p_from_header: string
+          p_list_id?: string
+          p_list_unsubscribe?: string
           p_owner_user_id: string
+          p_precedence?: string
           p_provider: string
           p_provider_event_id: string
           p_received_at: string
