@@ -6894,7 +6894,21 @@
     "choiceInvoice": "Ovo je račun",
     "choiceKeep": "Nešto drugo — zadrži",
     "invoiceQueued": "Dokument je vraćen u obradu kao račun",
-    "keptInInbox": "Dokument ostaje u Primljeno"
+    "keptInInbox": "Dokument ostaje u Primljeno",
+    "linkExisting": {
+      "notice": "Ovaj izvod je već uvezen {{date}}.",
+      "action": "Poveži s postojećim uvozom",
+      "hint": "Ništa se ne uvozi ponovno. Samo se bilježi da ovaj papir pripada tom uvozu.",
+      "success": "Dokument je povezan s uvozom od {{date}}.",
+      "error": {
+        "notFound": "Dokument nije pronađen.",
+        "state": "Dokument više nije u redu „Za pregled\".",
+        "noFingerprint": "Privitak nema otisak pa se veza ne može provjeriti.",
+        "noImport": "Ne postoji raniji uvoz s istim otiskom.",
+        "takenByOther": "Taj je uvoz već povezan s drugim dokumentom.",
+        "db": "Baza je odbila upis veze. Zapisali smo razlog."
+      }
+    }
   },
   "rawLine": {
     "toggle": "Kako piše na izvodu",

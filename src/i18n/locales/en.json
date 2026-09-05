@@ -6879,7 +6879,21 @@
     "choiceInvoice": "This is a bill",
     "choiceKeep": "Something else — keep it",
     "invoiceQueued": "Document was sent back for processing as a bill",
-    "keptInInbox": "Document stays in Received"
+    "keptInInbox": "Document stays in Received",
+    "linkExisting": {
+      "notice": "This statement was already imported on {{date}}.",
+      "action": "Link to existing import",
+      "hint": "Nothing is imported again. We only record that this document belongs to that import.",
+      "success": "Document linked to the import from {{date}}.",
+      "error": {
+        "notFound": "Document not found.",
+        "state": "The document is no longer in the review queue.",
+        "noFingerprint": "The attachment has no fingerprint, so the link cannot be verified.",
+        "noImport": "There is no earlier import with the same fingerprint.",
+        "takenByOther": "That import is already linked to another document.",
+        "db": "The database refused to record the link. The reason was logged."
+      }
+    }
   },
   "rawLine": {
     "toggle": "As printed on the statement",
