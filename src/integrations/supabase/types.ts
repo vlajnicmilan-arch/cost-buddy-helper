@@ -7985,6 +7985,17 @@ export type Database = {
           id: string
         }[]
       }
+      mail_confirm_log_reject: {
+        Args: {
+          p_allow_missing_number: boolean
+          p_allow_missing_oib: boolean
+          p_item_id: string
+          p_missing: string[]
+          p_reason: string
+          p_uid: string
+        }
+        Returns: undefined
+      }
       mail_from_domain: { Args: { p_from: string }; Returns: string }
       mail_import_consume_quota: {
         Args: { p_count?: number; p_user_id: string }

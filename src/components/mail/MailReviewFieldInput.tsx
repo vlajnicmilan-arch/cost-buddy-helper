@@ -28,6 +28,10 @@ interface Props {
   kind: MailFieldKind;
   value: string;
   dateContext?: DateContext;
+  /** Polje bez kojeg dokument nema ključ — vidljivo PRIJE potvrde. */
+  required?: boolean;
+  /** Baza je javila da baš ovo polje nedostaje — osvijetli ga. */
+  highlight?: boolean;
   onChange: (next: string) => void;
 }
 
@@ -38,11 +42,20 @@ export const isMailFieldInvalid = (kind: MailFieldKind, value: string): boolean 
   return false;
 };
 
-export const MailReviewFieldInput = ({ label, kind, value, dateContext, onChange }: Props) => {
+export const MailReviewFieldInput = ({
+  label,
+  kind,
+  value,
+  dateContext,
+  required,
+  highlight,
+  onChange,
+}: Props) => {
   const { t } = useTranslation();
   const [calendarOpen, setCalendarOpen] = useState(false);
   const invalid = isMailFieldInvalid(kind, value);
   const range = getDateRange(dateContext ?? 'expense');
+
 
   // Tip dokumenta je zatvoren skup — bira se, ne tipka (i uvijek ima vrijednost).
   if (kind === 'docType') {
@@ -67,15 +80,20 @@ export const MailReviewFieldInput = ({ label, kind, value, dateContext, onChange
 
   return (
     <div className="space-y-1">
-      <Label className="text-xs">{label}</Label>
+      <Label className="text-xs">
+        {label}
+        {required && <span className="ml-0.5 text-destructive">*</span>}
+      </Label>
       <div className="flex gap-2">
         <Input
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="h-11"
+          className={highlight ? 'h-11 border-destructive' : 'h-11'}
           inputMode={kind === 'amount' ? 'decimal' : undefined}
-          aria-invalid={invalid}
+          aria-required={required || undefined}
+          aria-invalid={invalid || highlight || undefined}
         />
+
         {kind === 'date' && (
           <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
             <PopoverTrigger asChild>

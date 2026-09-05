@@ -19,14 +19,16 @@ import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
 import { MailDestinationRow } from '@/components/mail/MailDestinationRow';
 import { describeDbError } from '@/lib/eracun/dbError';
 import {
-  MailReviewFieldInput,
-  isMailFieldInvalid,
-  type MailFieldKind,
-} from '@/components/mail/MailReviewFieldInput';
-import type { DateContext } from '@/lib/dateValidation';
+  FIELDS,
+  MailInvoiceFields,
+  displayFieldValue,
+  draftHasFieldError,
+  type FieldDef,
+} from '@/components/mail/MailInvoiceFields';
 import { formatDateHr, parseHrDate } from '@/lib/dateFormat';
 import { formatHrAmount, parseHrAmount } from '@/lib/money';
-import { docTypeLabelKey, resolveConfirmDocType } from '@/lib/mail/docType';
+import { resolveConfirmDocType } from '@/lib/mail/docType';
+
 import { normalizeExtractionDates } from '@/lib/mail/dateNormalize';
 import { StatementReviewCard } from '@/components/mail/StatementReviewCard';
 import { VerificationReviewCard } from '@/components/mail/VerificationReviewCard';
@@ -55,37 +57,11 @@ interface Props {
   onCountChange?: () => void;
 }
 
-type FieldDef = {
-  key: string;
-  labelKey: string;
-  fallback: string;
-  kind: MailFieldKind;
-  dateContext?: DateContext;
-};
+// Popis polja, prikaz vrijednosti i obrazac stavke žive u `MailInvoiceFields`.
+// Ponovni izvoz čuva postojeće uvoze ove datoteke.
+export { displayFieldValue };
+export type { FieldDef };
 
-const FIELDS: FieldDef[] = [
-  { key: 'supplier_name', labelKey: 'mailReview.field.supplierName', fallback: 'Dobavljač', kind: 'text' },
-  { key: 'supplier_oib', labelKey: 'mailReview.field.supplierOib', fallback: 'OIB', kind: 'text' },
-  { key: 'invoice_number', labelKey: 'mailReview.field.invoiceNumber', fallback: 'Broj dokumenta', kind: 'text' },
-  { key: 'issue_date', labelKey: 'mailReview.field.issueDate', fallback: 'Datum izdavanja', kind: 'date', dateContext: 'expense' },
-  { key: 'due_date', labelKey: 'mailReview.field.dueDate', fallback: 'Datum dospijeća', kind: 'date', dateContext: 'debt' },
-  { key: 'total_amount', labelKey: 'mailReview.field.totalAmount', fallback: 'Ukupno', kind: 'amount' },
-  { key: 'iban', labelKey: 'mailReview.field.iban', fallback: 'IBAN', kind: 'text' },
-  // Oznaka mjesta (npr. „Split"/„Solin") — pamćenje je predlaže, korisnik je
-  // smije prepisati PRIJE potvrde; potvrda je uči po šifri obračunskog mjesta.
-  { key: 'place_label', labelKey: 'mailReview.field.placeLabel', fallback: 'Oznaka mjesta', kind: 'text' },
-  // Tip dokumenta: vidljiv i promjenjiv PRIJE potvrde (default 380, vidi docType.ts).
-  { key: 'doc_type', labelKey: 'mailReview.field.docType', fallback: 'Tip dokumenta', kind: 'docType' },
-
-];
-
-/** Prikaz: ISO → dd.mm.gggg., broj → 1.660,36. Baza ostaje ISO/decimalna točka. */
-export const displayFieldValue = (field: FieldDef, raw: unknown): string => {
-  if (raw === null || raw === undefined || raw === '') return '—';
-  if (field.kind === 'date') return formatDateHr(String(raw)) || String(raw);
-  if (field.kind === 'amount') return formatHrAmount(raw as string | number) || String(raw);
-  return String(raw);
-};
 
 const trustVariant = (level: string | null): 'default' | 'secondary' | 'destructive' | 'outline' => {
   if (level === 'T1' || level === 'T2') return 'secondary';
@@ -131,7 +107,12 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
   const [dupAck, setDupAck] = useState<Record<string, boolean>>({});
   // STRANI IZDAVATELJ BEZ OIB-a: unos prolazi SAMO uz svjesnu potvrdu.
   const [noOibAck, setNoOibAck] = useState<Record<string, boolean>>({});
+  // DOKUMENT BEZ BROJA (aplikacijski račun, isječak): isti obrazac kao za OIB.
+  const [noNumberAck, setNoNumberAck] = useState<Record<string, boolean>>({});
+  // Polja koja je baza prijavila kao nedostajuća — po stavci, za osvjetljavanje.
+  const [missingFields, setMissingFields] = useState<Record<string, string[]>>({});
   const duplicateCandidates = useMailDuplicateCandidates(items);
+
   // Račun + potvrda plaćanja iz iste poruke = jedna obveza (vidi siblingDocuments.ts).
   const siblings = useMemo(
     () =>
@@ -166,7 +147,7 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
     setEditingId(item.id);
   };
 
-  const draftHasError = FIELDS.some((f) => isMailFieldInvalid(f.kind, draft[f.key] ?? ''));
+  const draftHasError = draftHasFieldError(draft);
 
   /** Normalizacija PRIJE slanja: datum → ISO, iznos → decimalna točka. */
   const payloadFor = (item: MailReviewItem): Record<string, unknown> => {
@@ -199,8 +180,17 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
     base.remember_issuer = rememberOff[item.id] !== true;
     // STRANI IZDAVATELJ: nedostatak OIB-a nije brana, nego svjesna potvrda.
     base.allow_missing_oib = noOibAck[item.id] === true;
+    // DOKUMENT BEZ BROJA: isti obrazac — svjesna potvrda, ne tiho propuštanje.
+    base.allow_missing_number = noNumberAck[item.id] === true;
     return normalizeExtractionDates(base);
   };
+
+  /** Ime polja za korisnika — nikad šifra iz baze. */
+  const fieldLabel = (key: string): string => {
+    const def = FIELDS.find((f) => f.key === key);
+    return def ? t(def.labelKey, def.fallback) : key;
+  };
+
 
 
   const handleConfirm = async (item: MailReviewItem, replaceExistingId?: string) => {
@@ -210,6 +200,8 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
       if (result.ok) {
         setCollision(null);
         setEditingId(null);
+        setMissingFields((s) => ({ ...s, [item.id]: [] }));
+
         // Potvrda iz iste poruke nosi datum plaćanja — upisuje se SAMO ako je
         // korisnik to izričito zatražio kvačicom.
         const paired = receiptsByInvoiceId.get(item.id);
@@ -233,10 +225,29 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
       }
 
 
-      const failure = result as { reason: string; existing?: Record<string, unknown>; detail?: string };
+      const failure = result as {
+        reason: string;
+        existing?: Record<string, unknown>;
+        detail?: string;
+        missing?: string[];
+      };
 
       if (failure.reason === 'mozda_vec_postoji') {
         setCollision({ item, existing: failure.existing ?? {} });
+        return;
+      }
+
+      // PORUKA IMENUJE SAMO ONO ŠTO STVARNO NEDOSTAJE — nikad popis polja koja
+      // su možda uredna. Ista polja se osvjetljavaju u obrascu.
+      const missing = failure.missing ?? [];
+      setMissingFields((s) => ({ ...s, [item.id]: missing }));
+      if (failure.reason === 'nedostaju_polja' && missing.length > 0) {
+        showError(
+          t('mailReview.error.missingFields', 'Nedostaje: {{fields}}', {
+            fields: missing.map(fieldLabel).join(', '),
+          }),
+        );
+        console.warn('[MailReviewList] confirm failed: nedostaju_polja', missing.join(','));
         return;
       }
 
@@ -246,6 +257,7 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
         `mailReview.error.${failure.reason}`,
         t('mailReview.confirmFailed', 'Spremanje nije uspjelo'),
       );
+
       showError(
         failure.detail
           ? t('mailReview.errorDetail', '{{base}} ({{reason}})', { base, reason: failure.detail })
@@ -505,6 +517,13 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
         // MEKA BRANA: kandidat duplikata (isti OIB + broj/iznos+datum).
         const missingOib = supplierOib === '';
         const noOibAcked = noOibAck[item.id] === true;
+        // BROJ DOKUMENTA je obavezan i PRIJE klika — u uređivanju gleda nacrt.
+        const currentNumber = (
+          isEditing ? (draft.invoice_number ?? '') : String(extraction.invoice_number ?? '')
+        ).trim();
+        const missingNumber = currentNumber === '';
+        const noNumberAcked = noNumberAck[item.id] === true;
+
         const sibling = siblings.get(item.id);
         const dupMatch = duplicateCandidates.get(item.id);
         const dupAcked = dupAck[item.id] === true;
@@ -618,36 +637,16 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
             )}
 
 
-            {isEditing ? (
-              <div className="grid gap-2 sm:grid-cols-2">
-                {FIELDS.map((f) => (
-                  <MailReviewFieldInput
-                    key={f.key}
-                    label={t(f.labelKey, f.fallback)}
-                    kind={f.kind}
-                    dateContext={f.dateContext}
-                    value={draft[f.key] ?? ''}
-                    onChange={(next) => setDraft((d) => ({ ...d, [f.key]: next }))}
-                  />
-                ))}
-              </div>
-            ) : (
-              <dl className="grid gap-x-4 gap-y-1 text-xs sm:grid-cols-2">
-                {FIELDS.map((f) => (
-                  <div key={f.key} className="flex justify-between gap-2">
-                    <dt className="text-muted-foreground">{t(f.labelKey, f.fallback)}</dt>
-                    <dd className={mediumConfidence ? 'text-document-pending' : ''}>
-                      {f.kind === 'docType'
-                        ? `${resolveConfirmDocType(item.doc_type)} · ${t(
-                            docTypeLabelKey(resolveConfirmDocType(item.doc_type)),
-                            resolveConfirmDocType(item.doc_type),
-                          )}`
-                        : displayFieldValue(f, extraction[f.key])}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            )}
+            <MailInvoiceFields
+              editing={isEditing}
+              draft={draft}
+              extraction={extraction}
+              docType={item.doc_type}
+              mediumConfidence={mediumConfidence}
+              missing={missingFields[item.id] ?? []}
+              onChange={(key, next) => setDraft((d) => ({ ...d, [key]: next }))}
+            />
+
 
             {sibling && (
               <div
@@ -733,6 +732,26 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
               </label>
             )}
 
+            {missingNumber && (
+              <label
+                data-testid="missing-number-ack"
+                className="flex items-start gap-2 rounded-md border border-document-pending bg-document-pending-surface p-2 text-xs cursor-pointer"
+              >
+                <Checkbox
+                  className="mt-0.5"
+                  checked={noNumberAcked}
+                  onCheckedChange={(v) => setNoNumberAck((s) => ({ ...s, [item.id]: v === true }))}
+                />
+                <span>
+                  {t(
+                    'mailReview.missingNumber',
+                    'Ovaj dokument nema broj (račun iz aplikacije, blagajnički isječak) — svejedno unesi. Zaštita od dvostrukog unosa tada radi po dobavljaču, datumu i iznosu.',
+                  )}
+                </span>
+              </label>
+            )}
+
+
             {offerRemember && (
               <label
                 data-testid="remember-issuer"
@@ -764,7 +783,9 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
                   working ||
                   (isEditing && draftHasError) ||
                   (dupMatch !== undefined && !dupAcked) ||
-                  (missingOib && !noOibAcked)
+                  (missingOib && !noOibAcked) ||
+                  (missingNumber && !noNumberAcked)
+
                 }
                 onClick={() => handleConfirm(item)}
               >

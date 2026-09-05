@@ -14,6 +14,8 @@ import {
 } from '@/lib/mail/docType';
 
 const listSrc = readFileSync('src/components/mail/MailReviewList.tsx', 'utf8');
+// Obrazac polja je od rujna 2026 izdvojen u zasebnu cjelinu.
+const fieldsSrc = readFileSync('src/components/mail/MailInvoiceFields.tsx', 'utf8');
 const inputSrc = readFileSync('src/components/mail/MailReviewFieldInput.tsx', 'utf8');
 const softDupSrc = readFileSync(
   'supabase/functions/_shared/mailImport/softDuplicate.ts',
@@ -47,7 +49,7 @@ describe('resolveConfirmDocType', () => {
 
 describe('pregled stavke', () => {
   it('ima vidljivo polje „Tip dokumenta" kao select', () => {
-    expect(listSrc).toMatch(/key: 'doc_type'[\s\S]*?kind: 'docType'/);
+    expect(fieldsSrc).toMatch(/key: 'doc_type'[\s\S]*?kind: 'docType'/);
     expect(inputSrc).toContain("kind === 'docType'");
     expect(inputSrc).toContain('KNOWN_DOC_TYPES');
   });

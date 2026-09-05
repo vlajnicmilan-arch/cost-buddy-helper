@@ -6629,7 +6629,7 @@
     "discardFailed": "Odbacivanje nije uspjelo",
     "alreadySaved": "Dokument je već bio spremljen",
     "error": {
-      "nedostaju_polja": "Nedostaju obavezni podaci — OIB dobavljača i broj dokumenta.",
+      "nedostaju_polja": "Nedostaju obavezni podaci.",
       "stanje_ne_dopusta": "Stavka više nije na pregledu (netko ju je već obradio).",
       "mozda_vec_postoji": "Već postoji zapis s istim brojem i dobavljačem.",
       "nije_dopusteno": "Nemaš pravo na ovu stavku.",
@@ -6637,7 +6637,8 @@
       "nije_prijavljen": "Sesija je istekla — prijavi se ponovno.",
       "baza": "Baza je odbila spremanje.",
       "nedostaje_oib": "Izdavatelj nema OIB — potvrdi kvačicom da ga svejedno želiš unijeti.",
-      "nedostaje_naziv": "Bez OIB-a je naziv dobavljača obavezan."
+      "nedostaje_naziv": "Bez OIB-a je naziv dobavljača obavezan.",
+      "missingFields": "Nedostaje: {{fields}}"
     },
     "classification": {
       "racun": "Račun",
@@ -6761,7 +6762,8 @@
     "sibling": {
       "receipt": "Ovo je potvrda plaćanja za račun {{number}} iz iste poruke — potvrdom se veže na taj račun, novi se ne stvara.",
       "invoice": "Iz iste poruke stigla je i potvrda plaćanja za račun {{number}} — riječ je o jednoj obvezi, ne o dva računa."
-    }
+    },
+    "missingNumber": "Ovaj dokument nema broj (račun iz aplikacije, blagajnički isječak) — svejedno unesi. Zaštita od dvostrukog unosa tada radi po dobavljaču, datumu i iznosu."
   },
   "documents": {
     "title": "Dokumenti",

@@ -6616,7 +6616,7 @@
     "discardFailed": "Verwerfen fehlgeschlagen",
     "alreadySaved": "Dokument war bereits gespeichert",
     "error": {
-      "nedostaju_polja": "Pflichtangaben fehlen — USt-IdNr. des Lieferanten und Belegnummer.",
+      "nedostaju_polja": "Pflichtangaben fehlen.",
       "stanje_ne_dopusta": "Der Eintrag ist nicht mehr zur Prüfung (bereits bearbeitet).",
       "mozda_vec_postoji": "Ein Eintrag mit gleicher Nummer und gleichem Lieferanten existiert bereits.",
       "nije_dopusteno": "Du darfst diesen Eintrag nicht bearbeiten.",
@@ -6624,7 +6624,8 @@
       "nije_prijavljen": "Sitzung abgelaufen — bitte erneut anmelden.",
       "baza": "Die Datenbank hat das Speichern abgelehnt.",
       "nedostaje_oib": "Der Aussteller hat keine OIB — bestätige das Häkchen, um trotzdem zu erfassen.",
-      "nedostaje_naziv": "Ohne OIB ist der Lieferantenname Pflicht."
+      "nedostaje_naziv": "Ohne OIB ist der Lieferantenname Pflicht.",
+      "missingFields": "Fehlt: {{fields}}"
     },
     "classification": {
       "racun": "Rechnung",
@@ -6748,7 +6749,8 @@
     "sibling": {
       "receipt": "Das ist die Zahlungsbestätigung zur Rechnung {{number}} aus derselben E-Mail — die Bestätigung verknüpft sie, es entsteht keine neue Rechnung.",
       "invoice": "Dieselbe E-Mail enthielt auch eine Zahlungsbestätigung zur Rechnung {{number}} — eine Verpflichtung, nicht zwei Rechnungen."
-    }
+    },
+    "missingNumber": "Dieses Dokument hat keine Nummer (App-Rechnung, Kassenbon) — trotzdem erfassen. Der Doppelerfassungsschutz arbeitet dann über Lieferant, Datum und Betrag."
   },
   "documents": {
     "title": "Dokumente",
