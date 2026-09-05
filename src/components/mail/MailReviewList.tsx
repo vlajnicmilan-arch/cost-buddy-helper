@@ -147,7 +147,7 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
     setEditingId(item.id);
   };
 
-  const draftHasError = FIELDS.some((f) => isMailFieldInvalid(f.kind, draft[f.key] ?? ''));
+  const draftHasError = draftHasFieldError(draft);
 
   /** Normalizacija PRIJE slanja: datum → ISO, iznos → decimalna točka. */
   const payloadFor = (item: MailReviewItem): Record<string, unknown> => {
