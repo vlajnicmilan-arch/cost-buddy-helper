@@ -234,14 +234,14 @@ export const registerVitePreloadErrorRecovery = (
     const fileName = typeof payload === 'string' ? payload : 'unknown';
 
     const now = Date.now();
-    const lastReloadAt = readPreloadReloadAt();
+    const lastReloadAt = readPreloadReloadAt(target.sessionStorage);
     if (lastReloadAt && now - lastReloadAt < PRELOAD_RELOAD_WINDOW_MS) {
       // Already reloaded recently — do not loop. Let the normal error path
       // (and Sentry) surface the real failure.
       return;
     }
 
-    setPreloadReloadAt(now);
+    setPreloadReloadAt(now, target.sessionStorage);
 
     // Log to Sentry before reloading so we can measure how often stale assets
     // hit real users. Sentry is normally loaded lazily; initialize it now and
