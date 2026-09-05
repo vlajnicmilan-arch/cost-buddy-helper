@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { useMailInbox } from '@/hooks/useMailInbox';
 import { useMailDiscardedItems } from '@/hooks/useMailDiscardedItems';
+import { useMailStuckLinkedItems } from '@/hooks/useMailStuckLinkedItems';
 import { formatHrAmount } from '@/lib/money';
 import { describeDiscardedItem } from '@/lib/mail/discardedDescription';
 
@@ -33,6 +34,12 @@ export const DocumentsReceivedTab = ({
   const { messages, loading, refetch } = useMailInbox(active);
   const { items: discarded, loading: discardedLoading, working, restoreItem } =
     useMailDiscardedItems(active);
+  const {
+    items: stuck,
+    loading: stuckLoading,
+    working: stuckWorking,
+    releaseItem,
+  } = useMailStuckLinkedItems(active);
   const [retrying, setRetrying] = useState<string | null>(null);
 
   const handleRetry = async (messageId: string) => {
@@ -73,8 +80,78 @@ export const DocumentsReceivedTab = ({
     }
   };
 
+  const handleRelease = async (itemId: string) => {
+    const res = await releaseItem(itemId);
+    if (res.ok) {
+      onCountChange?.();
+      showSuccess(t('documents.stuck.released', 'Dokument je vraćen na pregled'));
+      return;
+    }
+    if (res.reason === 'uvoz_postoji') {
+      showError(
+        t('documents.stuck.hasImport', 'Uvoz iz ovog dokumenta postoji — ne može se vratiti.'),
+      );
+      return;
+    }
+    showError(t('documents.restoreFailed', 'Vraćanje nije uspjelo'));
+  };
+
   return (
     <div className="space-y-6">
+      {(stuckLoading || stuck.length > 0) && (
+        <section className="space-y-2">
+          <h2 className="text-sm font-medium">
+            {t('documents.stuck.title', 'Označeno obrađenim bez uvoza')}
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            {t(
+              'documents.stuck.hint',
+              'Ovi dokumenti stoje kao obrađeni, ali iza njih nema nijednog uvoza. Vrati ih na pregled da ih možeš obraditi ili odbiti.',
+            )}
+          </p>
+          {stuckLoading ? (
+            <p className="text-xs text-muted-foreground">{t('common.loading', 'Učitavanje...')}</p>
+          ) : (
+            <ul className="divide-y rounded-lg border">
+              {stuck.map((item) => {
+                const e = (item.extraction ?? {}) as Record<string, unknown>;
+                return (
+                  <li
+                    key={item.id}
+                    data-testid="stuck-linked-item"
+                    className="flex flex-wrap items-center gap-2 p-3 text-xs"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium break-all">
+                        {String(
+                          e.bank_name ??
+                            e.supplier_name ??
+                            item.subject ??
+                            t('mailImport.noSubject', '(bez naslova)'),
+                        )}
+                      </div>
+                      <div className="text-muted-foreground break-all">
+                        {new Date(item.updated_at).toLocaleString()}
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="min-h-[44px]"
+                      disabled={stuckWorking}
+                      onClick={() => handleRelease(item.id)}
+                    >
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      {t('documents.stuck.release', 'Vrati u obradu')}
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      )}
+
       <section className="space-y-2">
         <h2 className="text-sm font-medium">
           {t('documents.discarded.title', 'Odbačeno (zadnjih 30 dana)')}

@@ -54,7 +54,9 @@ export const DOCUMENT_TRANSITIONS: Record<DocumentState, readonly DocumentState[
   // 'na_pregledu' -> 'povezan' legitiman; 'potvrdjen' ostaje za dvokoračne tokove.
   na_pregledu: ['potvrdjen', 'povezan', 'odbacio_korisnik', 'odbaceno'],
   potvrdjen: ['povezan'],
-  povezan: [],
+  // Oslobađanje lažno povezanog dokumenta: dopušteno SAMO kad uvoz ne postoji
+  // (provjera je serverska, `mail_item_release_linked`).
+  povezan: ['na_pregledu'],
   nije_za_nas: [],
   odbaceno: [],
   odbacio_korisnik: [],

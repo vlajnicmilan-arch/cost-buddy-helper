@@ -64,6 +64,11 @@ describe('ingest state machines — DOKUMENT', () => {
   });
   it('preskakanje koraka nije dopušteno', () => {
     expect(() => transitionDocument('klasificiran', 'povezan')).toThrow(IngestTransitionError);
-    expect(() => transitionDocument('povezan', 'na_pregledu')).toThrow(IngestTransitionError);
+    expect(() => transitionDocument('povezan', 'potvrdjen')).toThrow(IngestTransitionError);
+  });
+  // Oslobađanje lažno povezanog dokumenta (uvoz ne postoji) — serverska brana
+  // je u `mail_item_release_linked`, stroj stanja samo dopušta prijelaz.
+  it('povezan se smije vratiti na pregled', () => {
+    expect(transitionDocument('povezan', 'na_pregledu')).toBe('na_pregledu');
   });
 });

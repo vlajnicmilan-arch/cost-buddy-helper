@@ -48,8 +48,11 @@ describe('most prema postojećem uvozu izvoda', () => {
     expect(hash).toBeLessThan(start);
   });
 
-  it('uspješan uvoz označava stavku kao povezan', () => {
-    expect(bridge).toContain("status: 'povezan'");
+  it('uspješan uvoz označava stavku kao povezan kroz serversku provjeru', () => {
+    // Klijent više ne piše status izravno: RPC odbija oznaku ako uvoz ne
+    // postoji, pa dokument ne može ostati mrtav u stanju „povezan".
+    expect(bridge).toContain('mail_item_mark_linked');
+    expect(bridge).not.toContain("update({ status: 'povezan' })");
   });
 
   it('nosi izvornu mail-stavku do serverskog zapisa kao SHA fallback', () => {

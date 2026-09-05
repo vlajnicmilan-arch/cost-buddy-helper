@@ -6828,6 +6828,13 @@
     "quota": {
       "status": "Uvozi ovaj mjesec: {{used}}/{{limit}} · preostalo {{left}}",
       "exhausted": "Mjesečna kvota uvoza je iskorištena ({{used}}/{{limit}}). Obnavlja se {{date}}."
+    },
+    "stuck": {
+      "title": "Označeno obrađenim bez uvoza",
+      "hint": "Ovi dokumenti stoje kao obrađeni, ali iza njih nema nijednog uvoza. Vrati ih na pregled da ih možeš obraditi ili odbiti.",
+      "release": "Vrati u obradu",
+      "released": "Dokument je vraćen na pregled",
+      "hasImport": "Uvoz iz ovog dokumenta postoji — ne može se vratiti."
     }
   },
   "issuers": {

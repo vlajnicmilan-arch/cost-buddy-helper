@@ -6813,6 +6813,13 @@
     "quota": {
       "status": "Imports this month: {{used}}/{{limit}} · {{left}} left",
       "exhausted": "Your monthly import quota is used up ({{used}}/{{limit}}). It renews on {{date}}."
+    },
+    "stuck": {
+      "title": "Marked as processed without an import",
+      "hint": "These documents are marked as processed, but no import exists behind them. Send them back to review so you can process or reject them.",
+      "release": "Send back to review",
+      "released": "Document sent back to review",
+      "hasImport": "An import from this document exists — it cannot be sent back."
     }
   },
   "issuers": {
