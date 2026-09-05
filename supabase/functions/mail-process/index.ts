@@ -450,6 +450,44 @@ async function processMessage(
     .select("*")
     .eq("message_id", messageId);
 
+  // OGRADA MASOVNE POŠTE (pravilo 2) — prije klasifikacije i prije AI-ja.
+  // Masovna pošta bez ijednog privitka nije dokument: ne stvara se stavka,
+  // ne troši se kvota. Korisnikova odluka o postojećoj stavci je jača.
+  const hasAnyAttachment = ((atts ?? []) as unknown[]).length > 0;
+  const bulkReason = bulkMailRule({ headers: bulkHeaders, hasAttachment: hasAnyAttachment });
+  if (bulkReason) {
+    const { data: decided } = await supabase
+      .from("document_ingest_items")
+      .select("id, status, classification_set_by_user")
+      .eq("message_id", messageId);
+    const userDecided = ((decided ?? []) as Array<Record<string, unknown>>).some(
+      (row) =>
+        row.classification_set_by_user === true ||
+        ["povezan", "potvrdjen", "odbacio_korisnik"].includes(String(row.status ?? "")),
+    );
+    if (!userDecided) {
+      await supabase.from("app_diagnostics_logs").insert({
+        event: "mail_bulk_rejected",
+        user_id: ownerId,
+        session_id: "mail-process",
+        severity: "info",
+        details: {
+          message_id: messageId,
+          rule: "masovna_posta",
+          markers: markersFound(bulkHeaders),
+          from_header: msg.from_header ?? null,
+          has_attachment: false,
+        },
+      });
+      await supabase
+        .from("inbound_messages")
+        .update({ status: "zavrsena", processed_at: new Date().toISOString(), last_error: null })
+        .eq("id", messageId);
+      return;
+    }
+  }
+
+
   const units: Array<{ attachmentId: string | null; bytes: Uint8Array | null; att: Record<string, unknown> | null }> =
     [];
   for (const att of (atts ?? []) as Array<Record<string, unknown>>) {
