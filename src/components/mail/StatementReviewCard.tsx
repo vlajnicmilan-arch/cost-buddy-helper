@@ -167,7 +167,7 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
     setLinking(true);
     try {
       const result = await linkExistingImport(item.id);
-      if (!result.ok) {
+      if (result.ok === false) {
         showError(t(EXISTING_IMPORT_REASON_KEY[result.reason]));
         return;
       }
