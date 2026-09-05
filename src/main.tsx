@@ -193,9 +193,9 @@ if (!isFastLanding) idle(() => {
 const PRELOAD_RELOAD_KEY = 'vm_preload_reload';
 const PRELOAD_RELOAD_WINDOW_MS = 30_000;
 
-const readPreloadReloadAt = (): number | null => {
+const readPreloadReloadAt = (storage: Storage | null = null): number | null => {
   try {
-    const raw = sessionStorage.getItem(PRELOAD_RELOAD_KEY);
+    const raw = (storage ?? sessionStorage).getItem(PRELOAD_RELOAD_KEY);
     if (!raw) return null;
     const ts = Number(raw);
     return Number.isFinite(ts) ? ts : null;
@@ -204,17 +204,17 @@ const readPreloadReloadAt = (): number | null => {
   }
 };
 
-const setPreloadReloadAt = (at: number) => {
+const setPreloadReloadAt = (at: number, storage: Storage | null = null) => {
   try {
-    sessionStorage.setItem(PRELOAD_RELOAD_KEY, String(at));
+    (storage ?? sessionStorage).setItem(PRELOAD_RELOAD_KEY, String(at));
   } catch {
     /* ignore */
   }
 };
 
-const clearPreloadReloadMarker = () => {
+const clearPreloadReloadMarker = (storage: Storage | null = null) => {
   try {
-    sessionStorage.removeItem(PRELOAD_RELOAD_KEY);
+    (storage ?? sessionStorage).removeItem(PRELOAD_RELOAD_KEY);
   } catch {
     /* ignore */
   }
