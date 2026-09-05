@@ -13,9 +13,31 @@ vi.mock('@sentry/react', () => ({
   flush: vi.fn(() => Promise.resolve(true)),
 }));
 
-const createMockWindow = () => {
+const createMockWindow = (opts: { storageThrows?: boolean } = {}) => {
   const listeners: Record<string, EventListener[]> = {};
   const storage: Record<string, string> = {};
+
+  const sessionStorage = opts.storageThrows
+    ? {
+        getItem: vi.fn(() => {
+          throw new Error('denied');
+        }),
+        setItem: vi.fn(() => {
+          throw new Error('denied');
+        }),
+        removeItem: vi.fn(() => {
+          throw new Error('denied');
+        }),
+      }
+    : {
+        getItem: vi.fn((k: string) => storage[k] ?? null),
+        setItem: vi.fn((k: string, v: string) => {
+          storage[k] = v;
+        }),
+        removeItem: vi.fn((k: string) => {
+          delete storage[k];
+        }),
+      };
 
   return {
     addEventListener: vi.fn((name: string, fn: EventListener) => {
@@ -31,16 +53,14 @@ const createMockWindow = () => {
       href: 'https://vmbalance.com/projekti',
       reload: vi.fn(),
     },
-    sessionStorage: {
-      getItem: vi.fn((k: string) => storage[k] ?? null),
-      setItem: vi.fn((k: string, v: string) => {
-        storage[k] = v;
-      }),
-      removeItem: vi.fn((k: string) => {
-        delete storage[k];
-      }),
-    },
+    sessionStorage,
   } as unknown as Window & typeof globalThis;
+};
+
+const preloadEvent = (payload?: unknown) => {
+  const event = new Event('vite:preloadError', { cancelable: true });
+  if (payload !== undefined) (event as any).payload = payload;
+  return event;
 };
 
 describe('registerVitePreloadErrorRecovery', () => {
@@ -75,14 +95,13 @@ describe('registerVitePreloadErrorRecovery', () => {
     vi.clearAllMocks();
   });
 
-
-  it('prevents default, logs to Sentry, and reloads once', async () => {
+  it('prevents default, logs to Sentry with the failed file, and reloads', async () => {
     const win = createMockWindow();
     registerVitePreloadErrorRecovery(win);
 
-    const event = new Event('vite:preloadError', { cancelable: true });
-    (event as any).payload = '/assets/ProjektiLanding-AqD-Fu5l.css';
-
+    const event = preloadEvent(
+      new Error('Unable to preload CSS for /assets/ProjektiLanding-AqD-Fu5l.css')
+    );
     win.dispatchEvent(event);
 
     expect(event.defaultPrevented).toBe(true);
@@ -91,7 +110,7 @@ describe('registerVitePreloadErrorRecovery', () => {
     const { initSentry } = await import('@/lib/sentry');
     const { captureMessage, flush } = await import('@sentry/react');
 
-    expect(initSentry).toHaveBeenCalledOnce();
+    expect(initSentry).toHaveBeenCalled();
     expect(captureMessage).toHaveBeenCalledWith(
       'Stale preload asset after deploy',
       expect.objectContaining({
@@ -99,6 +118,7 @@ describe('registerVitePreloadErrorRecovery', () => {
         extra: expect.objectContaining({
           file: '/assets/ProjektiLanding-AqD-Fu5l.css',
           href: 'https://vmbalance.com/projekti',
+          attempt: 1,
         }),
         tags: { source: 'vite_preload_error' },
       })
@@ -106,31 +126,37 @@ describe('registerVitePreloadErrorRecovery', () => {
     expect(flush).toHaveBeenCalledWith(2000);
   });
 
-  it('does not reload twice within 30 seconds', async () => {
+  it('reloads at most twice per tab and then reports a warning', async () => {
     const win = createMockWindow();
     registerVitePreloadErrorRecovery(win);
 
-    const first = new Event('vite:preloadError', { cancelable: true });
-    (first as any).payload = '/assets/ProjektiLanding-AqD-Fu5l.css';
-    win.dispatchEvent(first);
-
+    win.dispatchEvent(preloadEvent(new Error('Unable to preload CSS for /assets/a.css')));
     await vi.waitFor(() => expect(win.location.reload).toHaveBeenCalledTimes(1), { timeout: 15000 });
 
-    const second = new Event('vite:preloadError', { cancelable: true });
-    (second as any).payload = '/assets/react-vendor-D__4iQON.js';
-    win.dispatchEvent(second);
+    win.dispatchEvent(preloadEvent(new Error('Unable to preload CSS for /assets/a.css')));
+    await vi.waitFor(() => expect(win.location.reload).toHaveBeenCalledTimes(2), { timeout: 15000 });
 
-    // Give any async work a tick, then confirm no second reload happened.
-    await new Promise((r) => setTimeout(r, 10));
-    expect(win.location.reload).toHaveBeenCalledTimes(1);
+    const third = preloadEvent(new Error('Unable to preload CSS for /assets/a.css'));
+    win.dispatchEvent(third);
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(win.location.reload).toHaveBeenCalledTimes(2);
+
+    const { captureMessage } = await import('@sentry/react');
+    expect(captureMessage).toHaveBeenLastCalledWith(
+      'Preload asset still missing after reloads',
+      expect.objectContaining({
+        level: 'warning',
+        extra: expect.objectContaining({ attempt: 2 }),
+      })
+    );
   });
 
-  it('falls back to unknown file name when payload is missing', async () => {
+  it('falls back to a readable name when payload has no file path', async () => {
     const win = createMockWindow();
     registerVitePreloadErrorRecovery(win);
 
-    const event = new Event('vite:preloadError', { cancelable: true });
-    win.dispatchEvent(event);
+    win.dispatchEvent(preloadEvent());
 
     await vi.waitFor(() => expect(win.location.reload).toHaveBeenCalledOnce(), { timeout: 15000 });
 
@@ -141,5 +167,14 @@ describe('registerVitePreloadErrorRecovery', () => {
         extra: expect.objectContaining({ file: 'unknown' }),
       })
     );
+  });
+
+  it('still reloads when sessionStorage is unavailable', async () => {
+    const win = createMockWindow({ storageThrows: true });
+    registerVitePreloadErrorRecovery(win);
+
+    win.dispatchEvent(preloadEvent(new Error('Unable to preload CSS for /assets/a.css')));
+
+    await vi.waitFor(() => expect(win.location.reload).toHaveBeenCalledOnce(), { timeout: 15000 });
   });
 });
