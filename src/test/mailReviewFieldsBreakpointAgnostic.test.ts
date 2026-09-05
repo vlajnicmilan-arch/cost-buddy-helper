@@ -10,7 +10,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const SRC = readFileSync(resolve(__dirname, '../components/mail/MailReviewList.tsx'), 'utf8');
+const SRC = readFileSync(resolve(__dirname, '../components/mail/MailInvoiceFields.tsx'), 'utf8');
 
 const fieldKeys = [...SRC.matchAll(/\{\s*key:\s*'([a-z_]+)'/g)].map((m) => m[1]);
 

@@ -13,7 +13,7 @@ import {
   resolveConfirmDocType,
 } from '@/lib/mail/docType';
 
-const listSrc = readFileSync('src/components/mail/MailReviewList.tsx', 'utf8');
+const listSrc = readFileSync('src/components/mail/MailInvoiceFields.tsx', 'utf8');
 const inputSrc = readFileSync('src/components/mail/MailReviewFieldInput.tsx', 'utf8');
 const softDupSrc = readFileSync(
   'supabase/functions/_shared/mailImport/softDuplicate.ts',
