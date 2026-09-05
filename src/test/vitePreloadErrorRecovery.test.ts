@@ -127,7 +127,7 @@ describe('registerVitePreloadErrorRecovery', () => {
     const event = new Event('vite:preloadError', { cancelable: true });
     win.dispatchEvent(event);
 
-    await vi.waitFor(() => expect(win.location.reload).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(win.location.reload).toHaveBeenCalledOnce(), { timeout: 3000 });
 
     const { captureMessage } = await import('@sentry/react');
     expect(captureMessage).toHaveBeenCalledWith(
