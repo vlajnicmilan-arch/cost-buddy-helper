@@ -876,7 +876,7 @@ async function processMessage(
       });
     }
 
-    if (status === "na_pregledu") {
+    if (status === "na_pregledu" && finalStatus === "na_pregledu") {
       const { data: muted, error: mutedErr } = await supabase.rpc("mail_reject_muted", {
         p_user_id: ownerId,
         p_from_header: (msg.from_header as string | null) ?? "",
