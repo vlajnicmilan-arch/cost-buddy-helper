@@ -6,6 +6,8 @@
 
 @layer base {
   :root {
+    color-scheme: light;
+
     --background: 165 20% 98%;
     --foreground: 175 30% 10%;
 
@@ -359,6 +361,8 @@
 
 
   .dark {
+    color-scheme: dark;
+
     /* Deep near-black background (~5% L, subtle cool tint).
        Not pure #000 — shadows and depth need a floor above black. */
     --background: 220 14% 5%;
