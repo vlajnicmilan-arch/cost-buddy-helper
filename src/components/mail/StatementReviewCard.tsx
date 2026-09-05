@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Landmark, Download, Loader2, Plus, X } from 'lucide-react';
+import { Landmark, Download, Link2, Loader2, Plus, X } from 'lucide-react';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { formatDateHr } from '@/lib/dateFormat';
 import { formatHrAmount } from '@/lib/money';
@@ -30,6 +30,12 @@ import { AccountIdentityMismatchDialog } from '@/components/import/AccountIdenti
 import { useAuth } from '@/hooks/useAuth';
 import type { MailReviewItem } from '@/hooks/useMailReviewQueue';
 import type { ExistingStatement } from '@/lib/statementFingerprint';
+import {
+  EXISTING_IMPORT_REASON_KEY,
+  linkExistingImport,
+  probeExistingImport,
+  type ExistingImportProbe,
+} from '@/lib/mail/existingImportLink';
 
 /**
  * KARTICA IZVODA u redu „Na pregled".
@@ -75,6 +81,9 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
   // Prvi uvoz nudi da IBAN ostane zapisan NA NOVČANIKU (ne samo kao pravilo).
   const [saveToWallet, setSaveToWallet] = useState(true);
   const [duplicate, setDuplicate] = useState<ExistingStatement | null>(null);
+  // Isti papir je možda već uvezen RUČNO — tada nudimo upis veze, ne uvoz.
+  const [existingImport, setExistingImport] = useState<ExistingImportProbe | null>(null);
+  const [linking, setLinking] = useState(false);
   const [awaitingImport, setAwaitingImport] = useState(false);
   const [identityAsk, setIdentityAsk] = useState<
     { statement: string; wallet: string; name: string; force: boolean } | null
@@ -140,6 +149,72 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
     }
   };
 
+
+  // Postoji li uvoz s istim otiskom? Provjera je čitanje — ništa ne mijenja.
+  useEffect(() => {
+    let cancelled = false;
+    if (!item.attachment_id) return;
+    void probeExistingImport(item.id).then((probe) => {
+      if (!cancelled) setExistingImport(probe);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [item.attachment_id, item.id]);
+
+  const linkToExisting = async () => {
+    if (linking) return;
+    setLinking(true);
+    try {
+      const result = await linkExistingImport(item.id);
+      if (result.ok === false) {
+        showError(t(EXISTING_IMPORT_REASON_KEY[result.reason]));
+        return;
+      }
+      showSuccess(
+        t('statements.linkExisting.success', 'Dokument je povezan s uvozom od {{date}}.', {
+          date: formatDateHr(result.importedAt ?? '') || '—',
+        }),
+      );
+      onLinked();
+    } finally {
+      setLinking(false);
+    }
+  };
+
+  const linkExistingBlock = existingImport?.found ? (
+    <div
+      data-testid="statement-link-existing"
+      className="rounded-md border border-document-pending bg-document-pending-surface/40 p-2 text-xs space-y-2"
+    >
+      <p>
+        {t('statements.linkExisting.notice', 'Ovaj izvod je već uvezen {{date}}.', {
+          date: formatDateHr(existingImport.importedAt ?? '') || '—',
+        })}
+      </p>
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        className="min-h-[44px] w-full"
+        disabled={disabled || linking}
+        onClick={() => void linkToExisting()}
+      >
+        {linking ? (
+          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+        ) : (
+          <Link2 className="h-4 w-4 mr-2" />
+        )}
+        {t('statements.linkExisting.action', 'Poveži s postojećim uvozom')}
+      </Button>
+      <p className="text-[11px] text-muted-foreground">
+        {t(
+          'statements.linkExisting.hint',
+          'Ništa se ne uvozi ponovno. Samo se bilježi da ovaj papir pripada tom uvozu.',
+        )}
+      </p>
+    </div>
+  ) : null;
 
   // Uvoz je stvarno zapisan — globalni razrješitelj je stavku već označio.
   useEffect(() => {
@@ -387,6 +462,8 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
           })}
         </div>
       )}
+
+      {linkExistingBlock}
 
       <div className="flex flex-wrap gap-2 pt-1">
         <Button

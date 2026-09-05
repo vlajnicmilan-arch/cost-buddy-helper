@@ -6879,7 +6879,21 @@
     "choiceInvoice": "Das ist eine Rechnung",
     "choiceKeep": "Etwas anderes — behalten",
     "invoiceQueued": "Dokument wurde als Rechnung erneut verarbeitet",
-    "keptInInbox": "Dokument bleibt in Empfangen"
+    "keptInInbox": "Dokument bleibt in Empfangen",
+    "linkExisting": {
+      "notice": "Dieser Auszug wurde bereits am {{date}} importiert.",
+      "action": "Mit vorhandenem Import verknüpfen",
+      "hint": "Es wird nichts erneut importiert. Es wird nur vermerkt, dass dieses Dokument zu diesem Import gehört.",
+      "success": "Dokument mit dem Import vom {{date}} verknüpft.",
+      "error": {
+        "notFound": "Dokument nicht gefunden.",
+        "state": "Das Dokument ist nicht mehr in der Prüfliste.",
+        "noFingerprint": "Der Anhang hat keinen Fingerabdruck, die Verknüpfung kann nicht geprüft werden.",
+        "noImport": "Es gibt keinen früheren Import mit demselben Fingerabdruck.",
+        "takenByOther": "Dieser Import ist bereits mit einem anderen Dokument verknüpft.",
+        "db": "Die Datenbank hat die Verknüpfung abgelehnt. Der Grund wurde protokolliert."
+      }
+    }
   },
   "rawLine": {
     "toggle": "So steht es im Kontoauszug",
