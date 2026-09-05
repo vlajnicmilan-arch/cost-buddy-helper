@@ -517,6 +517,13 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
         // MEKA BRANA: kandidat duplikata (isti OIB + broj/iznos+datum).
         const missingOib = supplierOib === '';
         const noOibAcked = noOibAck[item.id] === true;
+        // BROJ DOKUMENTA je obavezan i PRIJE klika — u uređivanju gleda nacrt.
+        const currentNumber = (
+          isEditing ? (draft.invoice_number ?? '') : String(extraction.invoice_number ?? '')
+        ).trim();
+        const missingNumber = currentNumber === '';
+        const noNumberAcked = noNumberAck[item.id] === true;
+
         const sibling = siblings.get(item.id);
         const dupMatch = duplicateCandidates.get(item.id);
         const dupAcked = dupAck[item.id] === true;
