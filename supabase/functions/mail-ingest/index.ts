@@ -8,10 +8,10 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
-import { extractBulkHeaders } from "../_shared/mailImport/bulkMailSignals.ts";
   ATTACHMENT_TOO_LARGE,
   sanitizeStorageSegment,
 } from "../_shared/mailImport/storageKey.ts";
+import { extractBulkHeaders } from "../_shared/mailImport/bulkMailSignals.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
