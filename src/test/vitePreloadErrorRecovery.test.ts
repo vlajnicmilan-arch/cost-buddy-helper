@@ -43,6 +43,15 @@ describe('registerVitePreloadErrorRecovery', () => {
   let registerVitePreloadErrorRecovery: typeof import('@/main').registerVitePreloadErrorRecovery;
 
   beforeEach(async () => {
+    vi.clearAllMocks();
+
+    (globalThis as any).IntersectionObserver = class {
+      observe = vi.fn();
+      unobserve = vi.fn();
+      disconnect = vi.fn();
+      takeRecords = vi.fn(() => []);
+    };
+
     const root = document.createElement('div');
     root.id = 'root';
     document.body.appendChild(root);
@@ -50,6 +59,13 @@ describe('registerVitePreloadErrorRecovery', () => {
     const mod = await import('@/main');
     registerVitePreloadErrorRecovery = mod.registerVitePreloadErrorRecovery;
   });
+
+  afterEach(() => {
+    delete (globalThis as any).IntersectionObserver;
+    document.body.innerHTML = '';
+    vi.clearAllMocks();
+  });
+
 
   it('prevents default, logs to Sentry, and reloads once', async () => {
     const win = createMockWindow();
