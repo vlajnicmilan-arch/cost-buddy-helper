@@ -6616,7 +6616,7 @@
     "discardFailed": "Discarding failed",
     "alreadySaved": "Document was already saved",
     "error": {
-      "nedostaju_polja": "Required data is missing — supplier VAT ID and document number.",
+      "nedostaju_polja": "Required data is missing.",
       "stanje_ne_dopusta": "This item is no longer under review (it was already processed).",
       "mozda_vec_postoji": "A record with the same number and supplier already exists.",
       "nije_dopusteno": "You are not allowed to act on this item.",
@@ -6624,7 +6624,8 @@
       "nije_prijavljen": "Your session expired — please sign in again.",
       "baza": "The database rejected the save.",
       "nedostaje_oib": "The issuer has no OIB — tick the box to record it anyway.",
-      "nedostaje_naziv": "Without an OIB the supplier name is required."
+      "nedostaje_naziv": "Without an OIB the supplier name is required.",
+      "missingFields": "Missing: {{fields}}"
     },
     "classification": {
       "racun": "Invoice",
@@ -6748,7 +6749,8 @@
     "sibling": {
       "receipt": "This is the payment receipt for invoice {{number}} from the same email — confirming links it to that invoice, no new one is created.",
       "invoice": "The same email also carried a payment receipt for invoice {{number}} — this is one obligation, not two invoices."
-    }
+    },
+    "missingNumber": "This document has no number (in-app invoice, till receipt) — enter it anyway. Duplicate protection then works by supplier, date and amount."
   },
   "documents": {
     "title": "Documents",

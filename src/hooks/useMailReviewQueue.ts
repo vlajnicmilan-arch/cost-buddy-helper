@@ -53,7 +53,7 @@ export interface ConfirmCollision {
 export type ConfirmResult =
   | { ok: true; invoiceId: string | null; already: boolean }
   | { ok: false; reason: 'mozda_vec_postoji'; existing: Record<string, unknown>; detail?: string }
-  | { ok: false; reason: string; existing?: undefined; detail?: string };
+  | { ok: false; reason: string; existing?: undefined; detail?: string; missing?: string[] };
 
 const asWarnings = (value: unknown): string[] =>
   Array.isArray(value) ? value.map((v) => String(v)) : [];
@@ -161,7 +161,11 @@ export function useMailReviewQueue(enabled: boolean) {
           };
         }
         if (result?.ok === false) {
-          return { ok: false, reason: String(result.reason ?? 'baza') };
+          // POPIS POLJA: sučelje smije imenovati SAMO ono što stvarno nedostaje.
+          const missing = Array.isArray(result.missing)
+            ? result.missing.map((m) => String(m))
+            : undefined;
+          return { ok: false, reason: String(result.reason ?? 'baza'), missing };
         }
         await fetchItems();
         return {
