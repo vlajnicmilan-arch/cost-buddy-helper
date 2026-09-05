@@ -86,10 +86,16 @@ export const ActiveIssuesSection = ({ enabled, projects, allExpenses }: Props) =
     window.dispatchEvent(new CustomEvent("ai-assistant:ask", { detail: { prompt: msg } }));
   }, [navigate, requestModule, t]);
 
-  if (!enabled) return null;
-  if (!loading && issues.length === 0) return null;
+  // „Za pažnju" je površina za ono što traži radnju: samo warning i critical.
+  // `info` obavijesti i dalje žive u zvonu — samo ne troše početni ekran.
+  const actionable = issues.filter(
+    (i) => i.severity === "warning" || i.severity === "critical",
+  );
 
-  const visible = issues.slice(0, HARD_CAP);
+  if (!enabled) return null;
+  if (!loading && actionable.length === 0) return null;
+
+  const visible = actionable.slice(0, HARD_CAP);
 
   return (
     <section className="mb-4">
