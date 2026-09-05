@@ -10,6 +10,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import type { IncomingInvoice } from '@/hooks/useIncomingInvoices';
+import { invoiceNumberLabel } from '@/lib/eracun/invoiceLabel';
 
 export interface MarkCollectedResult {
   collectedDate: Date;
@@ -55,7 +56,7 @@ export const MarkCollectedDialog = ({ invoice, onOpenChange, saving, onConfirm }
                 {invoice.counterparty_name || invoice.counterparty_oib || invoice.supplier_name}
               </p>
               <p className="text-[11px] text-muted-foreground">
-                {invoice.invoice_number} · {formatAmount(Number(invoice.total_amount))}
+                {invoiceNumberLabel(invoice.invoice_number)} · {formatAmount(Number(invoice.total_amount))}
               </p>
             </div>
 

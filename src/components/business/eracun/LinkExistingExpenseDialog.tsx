@@ -27,6 +27,7 @@ import type { IncomingInvoice } from '@/hooks/useIncomingInvoices';
 import type { MatchConfidence, MatchTransaction } from '@/lib/eracun/matchPayments';
 import type { RankedLinkCandidate } from '@/lib/eracun/linkCandidates';
 import type { LinkedExpenseRow } from '@/hooks/useEracunExpenseMatch';
+import { invoiceNumberLabel } from '@/lib/eracun/invoiceLabel';
 
 export interface LinkSuggestionRow {
   readonly transaction: MatchTransaction;
@@ -155,7 +156,7 @@ export const LinkExistingExpenseDialog = ({
 
         {invoice && (
           <p className="text-xs text-muted-foreground">
-            {invoice.invoice_number} · {formatAmount(Number(invoice.total_amount))}
+            {invoiceNumberLabel(invoice.invoice_number)} · {formatAmount(Number(invoice.total_amount))}
             {/* DATUMI NA EKRANU: bez njih se dva ista iznosa ne razlikuju. */}
             {invoice.issue_date && (
               <> · {t('eracun.linkExpense.issued', 'izdan')} {fmtDate(invoice.issue_date)}</>

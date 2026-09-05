@@ -34,7 +34,8 @@ const MAX_GROUP_SIZE = 4;
 export interface MatchInvoice {
   readonly id: string;
   readonly direction: 'in' | 'out';
-  readonly invoiceNumber: string;
+  /** Dokument bez broja je dopušten. */
+  readonly invoiceNumber: string | null;
   readonly counterpartyName: string | null;
   readonly counterpartyOib: string | null;
   /** Poziv na broj s računa (`HR00 345-3-1`). */
@@ -196,7 +197,7 @@ const byOldest = (a: MatchInvoice, b: MatchInvoice): number => {
   const da = a.issueDate ? new Date(a.issueDate).getTime() : Number.MAX_SAFE_INTEGER;
   const db = b.issueDate ? new Date(b.issueDate).getTime() : Number.MAX_SAFE_INTEGER;
   if (da !== db) return da - db;
-  return a.invoiceNumber.localeCompare(b.invoiceNumber);
+  return (a.invoiceNumber ?? '').localeCompare(b.invoiceNumber ?? '');
 };
 
 const singleCandidate = (
