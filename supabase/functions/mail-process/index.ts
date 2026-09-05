@@ -16,6 +16,14 @@ import { inspectXml } from "../_shared/mailImport/xmlSafety.ts";
 import { htmlToText, extractLinks } from "../_shared/mailImport/htmlToText.ts";
 import { evaluateTrust, isAuthenticatedGoogle } from "../_shared/mailImport/trustLevel.ts";
 import { extractAuthSignals } from "../_shared/mailImport/mailHeaders.ts";
+import {
+  extractBulkHeaders,
+  bulkMailRule,
+  noAmountNoNumberRule,
+  markersFound,
+  EMPTY_BULK_HEADERS,
+  type BulkMailHeaders,
+} from "../_shared/mailImport/bulkMailSignals.ts";
 import { checkIbanAgainstHistory } from "../_shared/mailImport/ibanCheck.ts";
 import {
   classifyDocument,
