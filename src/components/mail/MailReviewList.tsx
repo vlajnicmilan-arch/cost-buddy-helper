@@ -200,6 +200,8 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
       if (result.ok) {
         setCollision(null);
         setEditingId(null);
+        setMissingFields((s) => ({ ...s, [item.id]: [] }));
+
         // Potvrda iz iste poruke nosi datum plaćanja — upisuje se SAMO ako je
         // korisnik to izričito zatražio kvačicom.
         const paired = receiptsByInvoiceId.get(item.id);
