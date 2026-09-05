@@ -783,7 +783,9 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
                   working ||
                   (isEditing && draftHasError) ||
                   (dupMatch !== undefined && !dupAcked) ||
-                  (missingOib && !noOibAcked)
+                  (missingOib && !noOibAcked) ||
+                  (missingNumber && !noNumberAcked)
+
                 }
                 onClick={() => handleConfirm(item)}
               >
