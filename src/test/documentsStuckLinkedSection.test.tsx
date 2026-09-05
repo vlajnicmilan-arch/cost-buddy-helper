@@ -95,9 +95,9 @@ describe('Primljeno → dokumenti bez uvoza', () => {
     const row = await screen.findByTestId('stuck-linked-item');
     expect(row.textContent).toContain('Erste');
 
-    fireEvent.click(screen.getByText('documents.stuck.release'));
+    fireEvent.click(screen.getByText('Vrati u obradu'));
     await waitFor(() => expect(feedback.length).toBeGreaterThan(0));
-    expect(feedback[0]).toEqual({ kind: 'success', text: 'documents.stuck.released' });
+    expect(feedback[0]).toEqual({ kind: 'success', text: 'Dokument je vraćen na pregled' });
     expect(rpcCalls.some((c) => c.fn === 'mail_item_release_linked')).toBe(true);
   });
 
@@ -106,8 +106,11 @@ describe('Primljeno → dokumenti bez uvoza', () => {
     render(<DocumentsReceivedTab active />);
 
     await screen.findByTestId('stuck-linked-item');
-    fireEvent.click(screen.getByText('documents.stuck.release'));
+    fireEvent.click(screen.getByText('Vrati u obradu'));
     await waitFor(() => expect(feedback.length).toBeGreaterThan(0));
-    expect(feedback[0]).toEqual({ kind: 'error', text: 'documents.stuck.hasImport' });
+    expect(feedback[0]).toEqual({
+      kind: 'error',
+      text: 'Uvoz iz ovog dokumenta postoji — ne može se vratiti.',
+    });
   });
 });
