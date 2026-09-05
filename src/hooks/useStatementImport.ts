@@ -97,14 +97,26 @@ export function useStatementImport() {
   return { busy, startImport };
 }
 
-/** Stavka reda pregleda je uvezena kao izvod — više ne čeka odluku. */
+/**
+ * Stavka reda pregleda je uvezena kao izvod — više ne čeka odluku.
+ *
+ * PRAVILO: status `povezan` smije nastati SAMO ako u `imported_statements`
+ * postoji redak koji pokazuje na ovu stavku. Zato se piše kroz RPC
+ * `mail_item_mark_linked`, koji tu provjeru radi na poslužitelju. Izravni
+ * `update` sa strane klijenta bio je uzrok „mrtvih" dokumenata koji tvrde da
+ * su obrađeni iako uvoz nikad nije nastao.
+ */
 export async function markIngestItemLinked(itemId: string): Promise<boolean> {
-  const { error } = await supabase
-    .from('document_ingest_items')
-    .update({ status: 'povezan' })
-    .eq('id', itemId);
+  const { data, error } = await supabase.rpc('mail_item_mark_linked' as never, {
+    p_item_id: itemId,
+  } as never);
   if (error) {
     console.warn('[markIngestItemLinked] failed:', error.message);
+    return false;
+  }
+  const result = (data ?? {}) as { ok?: boolean; reason?: string };
+  if (result.ok === false) {
+    console.warn('[markIngestItemLinked] refused:', result.reason);
     return false;
   }
   return true;
