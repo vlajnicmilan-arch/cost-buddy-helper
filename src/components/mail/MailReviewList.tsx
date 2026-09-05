@@ -630,36 +630,16 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
             )}
 
 
-            {isEditing ? (
-              <div className="grid gap-2 sm:grid-cols-2">
-                {FIELDS.map((f) => (
-                  <MailReviewFieldInput
-                    key={f.key}
-                    label={t(f.labelKey, f.fallback)}
-                    kind={f.kind}
-                    dateContext={f.dateContext}
-                    value={draft[f.key] ?? ''}
-                    onChange={(next) => setDraft((d) => ({ ...d, [f.key]: next }))}
-                  />
-                ))}
-              </div>
-            ) : (
-              <dl className="grid gap-x-4 gap-y-1 text-xs sm:grid-cols-2">
-                {FIELDS.map((f) => (
-                  <div key={f.key} className="flex justify-between gap-2">
-                    <dt className="text-muted-foreground">{t(f.labelKey, f.fallback)}</dt>
-                    <dd className={mediumConfidence ? 'text-document-pending' : ''}>
-                      {f.kind === 'docType'
-                        ? `${resolveConfirmDocType(item.doc_type)} · ${t(
-                            docTypeLabelKey(resolveConfirmDocType(item.doc_type)),
-                            resolveConfirmDocType(item.doc_type),
-                          )}`
-                        : displayFieldValue(f, extraction[f.key])}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            )}
+            <MailInvoiceFields
+              editing={isEditing}
+              draft={draft}
+              extraction={extraction}
+              docType={item.doc_type}
+              mediumConfidence={mediumConfidence}
+              missing={missingFields[item.id] ?? []}
+              onChange={(key, next) => setDraft((d) => ({ ...d, [key]: next }))}
+            />
+
 
             {sibling && (
               <div
