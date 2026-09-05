@@ -27,8 +27,13 @@ const EMPTY: RawAuthSignals = {
   originalAuthResults: null,
 };
 
-/** Popis [ime, vrijednost] iz `message-headers` (Mailgun) ili iz ravnih polja. */
-function headerPairs(raw: Record<string, unknown>): Array<[string, string]> {
+/**
+ * Popis [ime, vrijednost] iz `message-headers` (Mailgun) ili iz ravnih polja.
+ *
+ * IZDVOJENO (rujan 2026) bez promjene ponašanja: isti popis treba i ograda
+ * masovne pošte (`bulkMailSignals.ts`).
+ */
+export function headerPairs(raw: Record<string, unknown>): Array<[string, string]> {
   const pairs: Array<[string, string]> = [];
   for (const [k, v] of Object.entries(raw ?? {})) {
     if (typeof v === 'string') pairs.push([k.toLowerCase(), v]);
