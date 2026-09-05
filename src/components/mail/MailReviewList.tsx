@@ -107,7 +107,12 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
   const [dupAck, setDupAck] = useState<Record<string, boolean>>({});
   // STRANI IZDAVATELJ BEZ OIB-a: unos prolazi SAMO uz svjesnu potvrdu.
   const [noOibAck, setNoOibAck] = useState<Record<string, boolean>>({});
+  // DOKUMENT BEZ BROJA (aplikacijski račun, isječak): isti obrazac kao za OIB.
+  const [noNumberAck, setNoNumberAck] = useState<Record<string, boolean>>({});
+  // Polja koja je baza prijavila kao nedostajuća — po stavci, za osvjetljavanje.
+  const [missingFields, setMissingFields] = useState<Record<string, string[]>>({});
   const duplicateCandidates = useMailDuplicateCandidates(items);
+
   // Račun + potvrda plaćanja iz iste poruke = jedna obveza (vidi siblingDocuments.ts).
   const siblings = useMemo(
     () =>
