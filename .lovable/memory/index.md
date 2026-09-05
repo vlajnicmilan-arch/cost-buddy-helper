@@ -15,3 +15,4 @@
 - [Plaćanje suradnika](mem://features/collaborator-payments) — pravi registar plaćanja, storno, legacy_paid_amount
 - [Prekidači modula ukinuti](mem://constraints/module-toggles-removed) — nav uvijek pun, pristup kroz pretplatu
 - [Ograda masovne pošte](mem://features/mail-bulk-mail-gate) — List-Unsubscribe zaglavlja, pravilo 2 i privremeno pravilo 3
+- [Broj računa nije obavezan](mem://features/invoice-number-optional) — invoice_number nullable, prikaz „—" kroz invoiceLabel.ts
