@@ -80,15 +80,20 @@ export const MailReviewFieldInput = ({
 
   return (
     <div className="space-y-1">
-      <Label className="text-xs">{label}</Label>
+      <Label className="text-xs">
+        {label}
+        {required && <span className="ml-0.5 text-destructive">*</span>}
+      </Label>
       <div className="flex gap-2">
         <Input
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="h-11"
+          className={highlight ? 'h-11 border-destructive' : 'h-11'}
           inputMode={kind === 'amount' ? 'decimal' : undefined}
-          aria-invalid={invalid}
+          aria-required={required || undefined}
+          aria-invalid={invalid || highlight || undefined}
         />
+
         {kind === 'date' && (
           <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
             <PopoverTrigger asChild>
