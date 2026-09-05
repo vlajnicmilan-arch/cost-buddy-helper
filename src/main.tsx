@@ -206,7 +206,7 @@ const readPreloadReloadAt = (): number | null => {
 
 const setPreloadReloadAt = (at: number) => {
   try {
-    sessionStorage.setItem(PERLOAD_RELOAD_KEY, String(at));
+    sessionStorage.setItem(PRELOAD_RELOAD_KEY, String(at));
   } catch {
     /* ignore */
   }
