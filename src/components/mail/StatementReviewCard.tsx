@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Landmark, Download, Loader2, Plus, X } from 'lucide-react';
+import { Landmark, Download, Link2, Loader2, Plus, X } from 'lucide-react';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { formatDateHr } from '@/lib/dateFormat';
 import { formatHrAmount } from '@/lib/money';
