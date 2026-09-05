@@ -180,8 +180,17 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
     base.remember_issuer = rememberOff[item.id] !== true;
     // STRANI IZDAVATELJ: nedostatak OIB-a nije brana, nego svjesna potvrda.
     base.allow_missing_oib = noOibAck[item.id] === true;
+    // DOKUMENT BEZ BROJA: isti obrazac — svjesna potvrda, ne tiho propuštanje.
+    base.allow_missing_number = noNumberAck[item.id] === true;
     return normalizeExtractionDates(base);
   };
+
+  /** Ime polja za korisnika — nikad šifra iz baze. */
+  const fieldLabel = (key: string): string => {
+    const def = FIELDS.find((f) => f.key === key);
+    return def ? t(def.labelKey, def.fallback) : key;
+  };
+
 
 
   const handleConfirm = async (item: MailReviewItem, replaceExistingId?: string) => {
