@@ -8050,6 +8050,8 @@ export type Database = {
         Returns: Json
       }
       mail_item_discard: { Args: { p_item_id: string }; Returns: Json }
+      mail_item_mark_linked: { Args: { p_item_id: string }; Returns: Json }
+      mail_item_release_linked: { Args: { p_item_id: string }; Returns: Json }
       mail_item_reprocess: {
         Args: { p_classification?: string; p_item_id: string }
         Returns: Json
@@ -8058,6 +8060,16 @@ export type Database = {
       mail_item_set_scope: {
         Args: { p_item_id: string; p_scope_id: string; p_scope_type: string }
         Returns: Json
+      }
+      mail_items_stuck_linked: {
+        Args: never
+        Returns: {
+          classification: string
+          extraction: Json
+          id: string
+          subject: string
+          updated_at: string
+        }[]
       }
       mail_norm_date: { Args: { p_value: string }; Returns: string }
       mail_norm_supplier_name: { Args: { p_name: string }; Returns: string }
