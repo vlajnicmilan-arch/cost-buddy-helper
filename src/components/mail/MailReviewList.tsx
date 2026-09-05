@@ -19,14 +19,16 @@ import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
 import { MailDestinationRow } from '@/components/mail/MailDestinationRow';
 import { describeDbError } from '@/lib/eracun/dbError';
 import {
-  MailReviewFieldInput,
-  isMailFieldInvalid,
-  type MailFieldKind,
-} from '@/components/mail/MailReviewFieldInput';
-import type { DateContext } from '@/lib/dateValidation';
+  FIELDS,
+  MailInvoiceFields,
+  displayFieldValue,
+  draftHasFieldError,
+  type FieldDef,
+} from '@/components/mail/MailInvoiceFields';
 import { formatDateHr, parseHrDate } from '@/lib/dateFormat';
 import { formatHrAmount, parseHrAmount } from '@/lib/money';
-import { docTypeLabelKey, resolveConfirmDocType } from '@/lib/mail/docType';
+import { resolveConfirmDocType } from '@/lib/mail/docType';
+
 import { normalizeExtractionDates } from '@/lib/mail/dateNormalize';
 import { StatementReviewCard } from '@/components/mail/StatementReviewCard';
 import { VerificationReviewCard } from '@/components/mail/VerificationReviewCard';
