@@ -29,7 +29,13 @@ export const resolveRenderMode = (
     return clean.length > 1 && clean.endsWith('/') ? clean.slice(0, -1) : clean;
   };
   if (!marker.path) return 'spa';
-  return normalize(marker.path) === normalize(pathname) ? 'baked' : 'spa';
+  const bakedPath = normalize(marker.path);
+  const current = normalize(pathname);
+  if (bakedPath === current) return 'baked';
+  // The document baked for "/" is the same file served at "/landing" — the
+  // markup there is baked too.
+  if (bakedPath === '/' && current === '/landing') return 'baked';
+  return 'spa';
 };
 
 /** Read the marker from the live document. Never throws. */

@@ -33,25 +33,74 @@ const CENTAR_FONTS = `    <link rel="preconnect" href="https://fonts.googleapis.
  *     shown — it is dropped before first paint, restoring today's behaviour.
  *  2. On "/" itself, keep the baked first paint on the visitor's stored theme.
  */
-const HOME_BOOT = `<script>(function(){try{var p=location.pathname.replace(/\\/$/,'')||'/';if(p!=='/'&&p!=='/landing'){var r=document.getElementById('root');if(r)r.innerHTML='';document.body.classList.remove('centar-landing-body');var m=document.querySelector('meta[name="landing-render"]');if(m)m.setAttribute('content','spa');return;}var t=localStorage.getItem('centar-theme');if(t!=='light'&&t!=='dark')t='dark';var el=document.querySelector('.centar-landing');if(el)el.setAttribute('data-theme',t);document.body.setAttribute('data-centar-theme',t);}catch(e){}})();</script>`;
+/**
+ * The condition itself is NEVER re-written here: it is lifted verbatim out of
+ * `src/lib/fastLanding.js` (the same module `src/main.tsx` imports), with only
+ * the `export ` keywords stripped so it can run inside an inline <script>.
+ */
+export const FAST_LANDING_START = '/* FAST_LANDING:START */';
+export const FAST_LANDING_END = '/* FAST_LANDING:END */';
+
+export const extractFastLandingSource = (moduleSource) => {
+  const start = moduleSource.indexOf(FAST_LANDING_START);
+  const end = moduleSource.indexOf(FAST_LANDING_END);
+  if (start === -1 || end === -1 || end < start) {
+    throw new Error('bake-public-landing: FAST_LANDING region not found in src/lib/fastLanding.js');
+  }
+  return moduleSource
+    .slice(start + FAST_LANDING_START.length, end)
+    .replace(/^\s*export\s+/gm, '')
+    .trim();
+};
+
+const DROP_BAKED = `var r=document.getElementById('root');if(r)r.innerHTML='';document.body.classList.remove('centar-landing-body');var m=document.querySelector('meta[name="landing-render"]');if(m)m.setAttribute('content','spa');`;
+
+export const buildHomeBoot = (fastLandingSource) =>
+  `<script>(function(){var keep=false;try{${fastLandingSource}\nkeep=isFastLanding();}catch(e){keep=false;}try{if(!keep){${DROP_BAKED}return;}var t=localStorage.getItem('centar-theme');if(t!=='light'&&t!=='dark')t='dark';var el=document.querySelector('.centar-landing');if(el)el.setAttribute('data-theme',t);document.body.setAttribute('data-centar-theme',t);}catch(e2){try{${DROP_BAKED}}catch(e3){}}})();</script>`;
 
 const escapeAttr = (s) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 
 /** Replace a `<meta name|property="x" content="...">` value in the head. */
-const setMeta = (html, attr, name, value) => {
-  const re = new RegExp(`(<meta\\s+${attr}="${name}"\\s+content=")[^"]*(")`, 'i');
-  return re.test(html) ? html.replace(re, `$1${escapeAttr(value)}$2`) : html;
+/** Every setter below MUST hit — a silent no-op would ship a wrong <head>. */
+const replaceOrThrow = (html, re, replacement, what) => {
+  if (!re.test(html)) throw new Error(`bake-public-landing: ${what} not found in template`);
+  return html.replace(re, replacement);
 };
 
-const setTitle = (html, value) => html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${value}</title>`);
+const setMeta = (html, attr, name, value) =>
+  replaceOrThrow(
+    html,
+    new RegExp(`(<meta\\s+${attr}="${name}"\\s+content=")[^"]*(")`, 'i'),
+    `$1${escapeAttr(value)}$2`,
+    `meta ${attr}="${name}"`,
+  );
+
+const setTitle = (html, value) =>
+  replaceOrThrow(html, /<title>[\s\S]*?<\/title>/i, `<title>${value}</title>`, '<title>');
 
 const setCanonical = (html, url) =>
-  html.replace(/(<link\s+rel="canonical"\s+href=")[^"]*(")/i, `$1${url}$2`);
+  replaceOrThrow(html, /(<link\s+rel="canonical"\s+href=")[^"]*(")/i, `$1${url}$2`, 'canonical link');
+
+const setJsonLd = (html, data) =>
+  replaceOrThrow(
+    html,
+    /<script type="application\/ld\+json">[\s\S]*?<\/script>/i,
+    `<script type="application/ld+json">\n${JSON.stringify(data, null, 6)}\n    </script>`,
+    'JSON-LD block',
+  );
+
+/** Inline <script> blocks in the page bodies never ran under React
+ * (`dangerouslySetInnerHTML` does not execute them). Baked into the document
+ * they WOULD run — on every SPA-fallback path too. Strip them. */
+export const stripScripts = (html) => html.replace(/<script\b[\s\S]*?<\/script>/gi, '');
 
 const injectHead = (html, extra) => html.replace('</head>', `${extra}\n  </head>`);
 
-const setRoot = (html, inner) =>
-  html.replace('<div id="root"></div>', `<div id="root">${inner}</div>`);
+const setRoot = (html, inner) => {
+  if (!html.includes('<div id="root"></div>'))
+    throw new Error('bake-public-landing: empty <div id="root"></div> not found (already baked?)');
+  return html.replace('<div id="root"></div>', `<div id="root">${inner}</div>`);
+};
 
 const addBodyClass = (html, cls) =>
   html.replace(/<body(\s[^>]*)?>/i, (m, attrs = '') =>
@@ -85,22 +134,34 @@ export function bakeLandingPlugin() {
       if (!fs.existsSync(templatePath)) return;
       const template = fs.readFileSync(templatePath, 'utf8');
 
+      // Idempotency guard: a second pass over a non-clean `dist/` would read an
+      // already-baked index.html as its template — `#root` is no longer empty
+      // and /projekti would inherit the home page body. Fail loudly instead.
+      if (template.includes('name="landing-render"') || !template.includes('<div id="root"></div>')) {
+        throw new Error(
+          'bake-public-landing: dist/index.html is already baked. Clean dist/ before rebuilding.',
+        );
+      }
+
+      const fastLandingSource = extractFastLandingSource(readSrc('src/lib/fastLanding.js'));
+      const homeBoot = buildHomeBoot(fastLandingSource);
+
       /* ---------------- / — CentarLanding (hr) ---------------- */
       // CentarLanding.css is part of the entry stylesheet (already a blocking
       // <link> in index.html), so the baked first screen is styled without any
       // extra inline CSS.
-      const centarBody = readSrc('src/pages/CentarLanding.body.html');
+      const centarBody = stripScripts(readSrc('src/pages/CentarLanding.body.html'));
       let home = template;
       home = injectHead(home, `${marker('/')}\n${CENTAR_FONTS}`);
       home = addBodyClass(home, 'centar-landing-body');
       home = setRoot(
         home,
-        `<div class="centar-landing" data-theme="dark"><div>${centarBody}</div></div>${HOME_BOOT}`,
+        `<div class="centar-landing" data-theme="dark"><div>${centarBody}</div></div>${homeBoot}`,
       );
       fs.writeFileSync(templatePath, home);
 
       /* ------------- /projekti — ProjektiLanding (hr) ------------- */
-      let projektiBody = readSrc('src/pages/ProjektiLanding.body.html');
+      let projektiBody = stripScripts(readSrc('src/pages/ProjektiLanding.body.html'));
       const images = {
         __ODLUKA__: 'src/assets/landing/odluka.png',
         __SEKCIJE__: 'src/assets/landing/sekcije.png',
@@ -140,6 +201,18 @@ export function bakeLandingPlugin() {
       projekti = setMeta(projekti, 'name', 'twitter:title', title);
       projekti = setMeta(projekti, 'name', 'twitter:description', description);
       projekti = setCanonical(projekti, url);
+      projekti = setJsonLd(projekti, {
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        name: title,
+        description,
+        url,
+        isPartOf: {
+          '@type': 'WebSite',
+          name: 'Centar',
+          url: 'https://vmbalance.com/',
+        },
+      });
       projekti = injectHead(
         projekti,
         `${marker('/projekti')}\n    <style>${projektiCss}</style>`,
