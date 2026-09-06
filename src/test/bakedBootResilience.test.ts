@@ -103,10 +103,8 @@ describe('RISE_BOOT reveals the content below the first screen', () => {
   });
 
   it('falls back to revealing everything when IntersectionObserver is missing', () => {
-    // @ts-expect-error removing the API on purpose
-    delete globalThis.IntersectionObserver;
-    // @ts-expect-error removing the API on purpose
-    delete window.IntersectionObserver;
+    delete (globalThis as Record<string, unknown>).IntersectionObserver;
+    delete (window as unknown as Record<string, unknown>).IntersectionObserver;
 
     run(unwrap(RISE_BOOT));
 
