@@ -130,6 +130,22 @@ const getOrCreateSessionId = (): string => {
 };
 
 /**
+ * Insert errors must never be swallowed: a name missing from the DB CHECK
+ * constraint fails with 23514 and would otherwise be invisible forever.
+ * 23505 = unique violation → legitimate duplicate, stays silent.
+ * Never throws — tracking must not block or break any flow.
+ */
+const warnOnInsertError = (
+  eventName: string,
+  error: { code?: string; message?: string } | null,
+): void => {
+  if (!error || error.code === '23505') return;
+  if (typeof console !== 'undefined') {
+    console.warn('[funnel] insert rejected', eventName, error.code, error.message);
+  }
+};
+
+/**
  * Log a funnel event. Best-effort, never throws.
  * For 'install', user_id is omitted and session_id is used (anonymous).
  * For all other events, the current authenticated user is used.
