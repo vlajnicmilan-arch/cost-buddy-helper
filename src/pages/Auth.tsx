@@ -21,6 +21,7 @@ import { Sparkles } from 'lucide-react';
 
 import i18n from '@/i18n';
 import { readAuthEntry, sanitizeAuthError, resolveInitialAuthTab } from '@/lib/authFunnel';
+import { detectEmbeddedBrowser } from '@/lib/embeddedBrowser';
 import { buildConsentPayload, recordNewsletterConsent, stashPendingConsent } from '@/lib/newsletterConsent';
 import { buildTermsAcceptancePayload, composeTermsNoticeText, recordTermsAcceptance, resolveAppLocale, stashPendingTermsAcceptance } from '@/lib/termsAcceptance';
 import { TOS_VERSION } from '@/lib/legalVersions';
@@ -91,7 +92,13 @@ const Auth = () => {
       window.location.search,
       (location.state as any)?.mode ?? null,
     );
-    track('auth_page_viewed', { tab, ...readAuthEntry() });
+    const env = detectEmbeddedBrowser();
+    track('auth_page_viewed', {
+      tab,
+      embedded_browser: env.embedded,
+      browser_hint: env.hint,
+      ...readAuthEntry(),
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
