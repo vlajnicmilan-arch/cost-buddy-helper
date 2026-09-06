@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import bodyHtml from './ProjektiLanding.body.html?raw';
 import { useLandingTelemetry } from '@/hooks/useLandingTelemetry';
 import { MODULE_HSL } from '@/lib/moduleColors';
-import odluka from '@/assets/landing/odluka.png';
-import sekcije from '@/assets/landing/sekcije.png';
-import projekt from '@/assets/landing/projekt-kartica.png';
-import budzet from '@/assets/landing/budzet.png';
-import dnevnik from '@/assets/landing/dnevnik.png';
-import trosak from '@/assets/landing/trosak.png';
+import odluka from '@/assets/landing/odluka.webp';
+import sekcije from '@/assets/landing/sekcije.webp';
+import projekt from '@/assets/landing/projekt-kartica.webp';
+import budzet from '@/assets/landing/budzet.webp';
+import dnevnik from '@/assets/landing/dnevnik.webp';
+import trosak from '@/assets/landing/trosak.webp';
 import './ProjektiLanding.css';
 
 /** Trenutni raspored prodajne stranice /projekti. Sluzi za usporedbu A/B u analitici. */
