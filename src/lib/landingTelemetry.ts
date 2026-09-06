@@ -121,14 +121,14 @@ const buffer: LandingRow[] = [];
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 let firstBatchScheduled = false;
 let exitFlushed = false;
-let context: { lang: string; theme: string } = { lang: 'hr', theme: 'dark' };
+let context: { lang: string; theme: string; layout?: string } = { lang: 'hr', theme: 'dark' };
 
 /** First batch leaves almost immediately so bouncing visitors are counted. */
 export const FIRST_FLUSH_DELAY_MS = 300;
 export const FLUSH_DELAY_MS = 2500;
 
-export const setLandingContext = (lang: string, theme: string) => {
-  context = { lang, theme };
+export const setLandingContext = (lang: string, theme: string, layout?: string) => {
+  context = { lang, theme, layout };
 };
 
 const detectPlatform = (): string => {
@@ -247,7 +247,10 @@ const enqueue = (
       theme: context.theme,
       platform: detectPlatform(),
       path: (typeof window !== 'undefined' ? window.location.pathname : '/').slice(0, 200),
-      metadata,
+      metadata: {
+        ...(context.layout ? { layout: context.layout } : {}),
+        ...metadata,
+      },
       occurred_at: new Date().toISOString(),
     });
     scheduleFlush();
