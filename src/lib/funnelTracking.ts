@@ -51,6 +51,13 @@ export type FunnelEventName =
   // OAuth button telemetry (anonymous — no user_id, session_id only)
   | 'oauth_started'
   | 'oauth_failed'
+  // Email verification waiting screen (anonymous — user not signed in yet)
+  | 'verify_screen_viewed'
+  | 'verify_resend_clicked'
+  | 'verify_already_confirmed_clicked'
+  | 'verify_restart_registration'
+  // Import flow
+  | 'import_undone'
   // Invitation path (invite_opened / invite_failed may be anonymous)
   | 'invite_opened'
   | 'invite_accepted'
@@ -73,6 +80,10 @@ export const ANONYMOUS_FUNNEL_EVENTS: ReadonlySet<string> = new Set([
   'invite_failed',
   'oauth_started',
   'oauth_failed',
+  'verify_screen_viewed',
+  'verify_resend_clicked',
+  'verify_already_confirmed_clicked',
+  'verify_restart_registration',
 ]);
 
 
