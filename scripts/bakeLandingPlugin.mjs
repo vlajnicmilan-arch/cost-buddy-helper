@@ -55,8 +55,27 @@ export const extractFastLandingSource = (moduleSource) => {
 
 const DROP_BAKED = `var r=document.getElementById('root');if(r)r.innerHTML='';document.body.classList.remove('centar-landing-body');var m=document.querySelector('meta[name="landing-render"]');if(m)m.setAttribute('content','spa');`;
 
+/**
+ * Dropping the baked markup is bound to ONE case only: `keep === false`.
+ * A failing `localStorage` read (private mode, embedded browsers with storage
+ * blocked — 94% of our traffic arrives through the Facebook in-app browser)
+ * must never wipe the page; the baked default theme simply stays.
+ */
 export const buildHomeBoot = (fastLandingSource) =>
-  `<script>(function(){var keep=false;try{${fastLandingSource}\nkeep=isFastLanding();}catch(e){keep=false;}try{if(!keep){${DROP_BAKED}return;}var t=localStorage.getItem('centar-theme');if(t!=='light'&&t!=='dark')t='dark';var el=document.querySelector('.centar-landing');if(el)el.setAttribute('data-theme',t);document.body.setAttribute('data-centar-theme',t);}catch(e2){try{${DROP_BAKED}}catch(e3){}}})();</script>`;
+  `<script>(function(){var keep=false;try{${fastLandingSource}\nkeep=isFastLanding();}catch(e){keep=false;}if(!keep){try{${DROP_BAKED}}catch(e3){}return;}try{var t=localStorage.getItem('centar-theme');if(t!=='light'&&t!=='dark')t='dark';var el=document.querySelector('.centar-landing');if(el)el.setAttribute('data-theme',t);document.body.setAttribute('data-centar-theme',t);}catch(e2){}})();</script>`;
+
+/**
+ * The `.rise` reveal, and nothing else. `CentarLanding.css` starts every
+ * `.rise` block at `opacity:0`; without this the whole page below the first
+ * screen stays invisible until the bundle mounts. The React observer in
+ * `CentarLanding.tsx` re-attaches later — `classList.add('in')` on an element
+ * that already has it is a no-op, so there is no second reveal and no flicker.
+ *
+ * On SPA-fallback paths `HOME_BOOT` has already emptied `#root`, so the query
+ * matches nothing and this does exactly nothing (and never touches network).
+ */
+export const RISE_BOOT = `<script>(function(){function all(){var n=document.querySelectorAll('.centar-landing .rise');for(var i=0;i<n.length;i++)n[i].classList.add('in');}try{var els=document.querySelectorAll('.centar-landing .rise');if(!els.length)return;var reduce=false;try{reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;}catch(e1){}if(reduce||typeof IntersectionObserver==='undefined'){all();return;}var io=new IntersectionObserver(function(entries){for(var j=0;j<entries.length;j++){if(entries[j].isIntersecting){entries[j].target.classList.add('in');io.unobserve(entries[j].target);}}},{threshold:0.12,rootMargin:'0px 0px -40px 0px'});for(var k=0;k<els.length;k++)io.observe(els[k]);}catch(e2){try{all();}catch(e3){}}})();</script>`;
+
 
 const escapeAttr = (s) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 
