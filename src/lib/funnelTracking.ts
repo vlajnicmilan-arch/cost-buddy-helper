@@ -48,6 +48,9 @@ export type FunnelEventName =
   | 'login_failed'
   | 'apk_download_started'
   | 'apk_download_failed'
+  // OAuth button telemetry (anonymous — no user_id, session_id only)
+  | 'oauth_started'
+  | 'oauth_failed'
   // Invitation path (invite_opened / invite_failed may be anonymous)
   | 'invite_opened'
   | 'invite_accepted'
