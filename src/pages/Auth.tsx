@@ -21,6 +21,7 @@ import { Sparkles } from 'lucide-react';
 
 import i18n from '@/i18n';
 import { readAuthEntry, sanitizeAuthError, resolveInitialAuthTab } from '@/lib/authFunnel';
+import { detectEmbeddedBrowser } from '@/lib/embeddedBrowser';
 import { buildConsentPayload, recordNewsletterConsent, stashPendingConsent } from '@/lib/newsletterConsent';
 import { buildTermsAcceptancePayload, composeTermsNoticeText, recordTermsAcceptance, resolveAppLocale, stashPendingTermsAcceptance } from '@/lib/termsAcceptance';
 import { TOS_VERSION } from '@/lib/legalVersions';
@@ -91,7 +92,13 @@ const Auth = () => {
       window.location.search,
       (location.state as any)?.mode ?? null,
     );
-    track('auth_page_viewed', { tab, ...readAuthEntry() });
+    const env = detectEmbeddedBrowser();
+    track('auth_page_viewed', {
+      tab,
+      embedded_browser: env.embedded,
+      browser_hint: env.hint,
+      ...readAuthEntry(),
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -598,6 +605,13 @@ const Auth = () => {
               // Identitet je poznat tek po povratku — namjeru spremamo prije
               // preusmjeravanja, AuthContext je upisuje čim sesija postoji.
               stashPendingTermsAcceptance(buildTermsPayload());
+              const env = detectEmbeddedBrowser();
+              track('oauth_started', {
+                provider: 'google',
+                embedded_browser: env.embedded,
+                browser_hint: env.hint,
+                ...readAuthEntry(),
+              });
               try {
                 if (!storageMode) {
                   setStorageMode('cloud');
@@ -606,6 +620,11 @@ const Auth = () => {
                 if (isNative) {
                   const { error } = await signInWithOAuthNative('google');
                   if (error) {
+                    track('oauth_failed', {
+                      provider: 'google',
+                      embedded_browser: env.embedded,
+                      ...sanitizeAuthError(error as any),
+                    });
                     showError(t('errors.auth.googleSignInFailed', 'Greška pri Google prijavi'));
                     console.error('Google native OAuth error:', error);
                   }
@@ -615,11 +634,21 @@ const Auth = () => {
                     extraParams: { prompt: "select_account" },
                   });
                   if (error) {
+                    track('oauth_failed', {
+                      provider: 'google',
+                      embedded_browser: env.embedded,
+                      ...sanitizeAuthError(error as any),
+                    });
                     showError(t('errors.auth.googleSignInFailed', 'Greška pri Google prijavi'));
                     console.error('Google OAuth error:', error);
                   }
                 }
               } catch (err) {
+                track('oauth_failed', {
+                  provider: 'google',
+                  embedded_browser: env.embedded,
+                  ...sanitizeAuthError(err as any),
+                });
                 showError(t('errors.auth.googleSignInFailed', 'Greška pri Google prijavi'));
                 console.error('Google OAuth error:', err);
               } finally {
@@ -647,6 +676,13 @@ const Auth = () => {
               // Identitet je poznat tek po povratku — namjeru spremamo prije
               // preusmjeravanja, AuthContext je upisuje čim sesija postoji.
               stashPendingTermsAcceptance(buildTermsPayload());
+              const env = detectEmbeddedBrowser();
+              track('oauth_started', {
+                provider: 'apple',
+                embedded_browser: env.embedded,
+                browser_hint: env.hint,
+                ...readAuthEntry(),
+              });
               try {
                 if (!storageMode) {
                   setStorageMode('cloud');
@@ -655,6 +691,11 @@ const Auth = () => {
                 if (isNative) {
                   const { error } = await signInWithOAuthNative('apple');
                   if (error) {
+                    track('oauth_failed', {
+                      provider: 'apple',
+                      embedded_browser: env.embedded,
+                      ...sanitizeAuthError(error as any),
+                    });
                     showError(t('errors.auth.appleSignInFailed', 'Greška pri Apple prijavi'));
                     console.error('Apple native OAuth error:', error);
                   }
@@ -663,11 +704,21 @@ const Auth = () => {
                     redirect_uri: `${window.location.origin}/app`,
                   });
                   if (error) {
+                    track('oauth_failed', {
+                      provider: 'apple',
+                      embedded_browser: env.embedded,
+                      ...sanitizeAuthError(error as any),
+                    });
                     showError(t('errors.auth.appleSignInFailed', 'Greška pri Apple prijavi'));
                     console.error('Apple OAuth error:', error);
                   }
                 }
               } catch (err) {
+                track('oauth_failed', {
+                  provider: 'apple',
+                  embedded_browser: env.embedded,
+                  ...sanitizeAuthError(err as any),
+                });
                 showError(t('errors.auth.appleSignInFailed', 'Greška pri Apple prijavi'));
                 console.error('Apple OAuth error:', err);
               } finally {
