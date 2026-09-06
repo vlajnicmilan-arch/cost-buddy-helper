@@ -71,6 +71,8 @@ export const ANONYMOUS_FUNNEL_EVENTS: ReadonlySet<string> = new Set([
   'apk_download_failed',
   'invite_opened',
   'invite_failed',
+  'oauth_started',
+  'oauth_failed',
 ]);
 
 
