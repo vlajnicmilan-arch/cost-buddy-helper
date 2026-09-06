@@ -163,16 +163,26 @@ const WORKER = readFileSync('supabase/functions/mail-process/index.ts', 'utf8');
 const migrationsWith = (needle: string): string[] => {
   const dir = 'supabase/migrations';
   return readdirSync(dir)
+    .sort()
     .map((f) => readFileSync(join(dir, f), 'utf8'))
     .filter((sql) => sql.includes(needle));
 };
 
-const claimSql = migrationsWith('FUNCTION public.mail_ingest_claim_jobs').slice(-1)[0] ?? '';
+// Zadnja DEFINICIJA funkcije u migracijskoj povijesti. Migracije koje funkciju
+// samo spominju (npr. REVOKE/GRANT nad njom) ne smiju se uhvatiti kao "zadnja".
+const lastDefinitionOf = (fnName: string): string => {
+  const definitionRe = new RegExp(`CREATE (OR REPLACE )?FUNCTION public\\.${fnName}\\s*\\(`);
+  return migrationsWith(`FUNCTION public.${fnName}`)
+    .filter((sql) => definitionRe.test(sql))
+    .slice(-1)[0] ?? '';
+};
+
+const claimSql = lastDefinitionOf('mail_ingest_claim_jobs');
 // finish_job i reaper zive u vlastitim (ranijim) migracijama — claim se od tada
-// mijenjao neovisno, pa se svaka tvrdnja gleda u ZADNJOJ migraciji te funkcije.
-const finishSql = migrationsWith('CREATE OR REPLACE FUNCTION public.mail_ingest_finish_job').slice(-1)[0] ?? '';
-const reaperSql = migrationsWith('CREATE OR REPLACE FUNCTION public.mail_ingest_reap_stuck_jobs').slice(-1)[0] ?? '';
-const confirmSql = migrationsWith('FUNCTION public.mail_item_confirm').slice(-1)[0] ?? '';
+// mijenjao neovisno, pa se svaka tvrdnja gleda u ZADNJOJ definiciji te funkcije.
+const finishSql = lastDefinitionOf('mail_ingest_finish_job');
+const reaperSql = lastDefinitionOf('mail_ingest_reap_stuck_jobs');
+const confirmSql = lastDefinitionOf('mail_item_confirm');
 
 describe('KVAR 1 — posao uvijek završi u terminalnom stanju', () => {
   it('worker zatvara posao i u finally grani (nikad ne ostaje u_obradi)', () => {
