@@ -175,7 +175,7 @@ export function bakeLandingPlugin() {
       home = addBodyClass(home, 'centar-landing-body');
       home = setRoot(
         home,
-        `<div class="centar-landing" data-theme="dark"><div>${centarBody}</div></div>${homeBoot}`,
+        `<div class="centar-landing" data-theme="dark"><div>${centarBody}</div></div>${homeBoot}${RISE_BOOT}`,
       );
       fs.writeFileSync(templatePath, home);
 
