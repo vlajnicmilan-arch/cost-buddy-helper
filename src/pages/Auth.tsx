@@ -605,6 +605,13 @@ const Auth = () => {
               // Identitet je poznat tek po povratku — namjeru spremamo prije
               // preusmjeravanja, AuthContext je upisuje čim sesija postoji.
               stashPendingTermsAcceptance(buildTermsPayload());
+              const env = detectEmbeddedBrowser();
+              track('oauth_started', {
+                provider: 'google',
+                embedded_browser: env.embedded,
+                browser_hint: env.hint,
+                ...readAuthEntry(),
+              });
               try {
                 if (!storageMode) {
                   setStorageMode('cloud');
@@ -613,6 +620,11 @@ const Auth = () => {
                 if (isNative) {
                   const { error } = await signInWithOAuthNative('google');
                   if (error) {
+                    track('oauth_failed', {
+                      provider: 'google',
+                      embedded_browser: env.embedded,
+                      ...sanitizeAuthError(error as any),
+                    });
                     showError(t('errors.auth.googleSignInFailed', 'Greška pri Google prijavi'));
                     console.error('Google native OAuth error:', error);
                   }
@@ -622,11 +634,21 @@ const Auth = () => {
                     extraParams: { prompt: "select_account" },
                   });
                   if (error) {
+                    track('oauth_failed', {
+                      provider: 'google',
+                      embedded_browser: env.embedded,
+                      ...sanitizeAuthError(error as any),
+                    });
                     showError(t('errors.auth.googleSignInFailed', 'Greška pri Google prijavi'));
                     console.error('Google OAuth error:', error);
                   }
                 }
               } catch (err) {
+                track('oauth_failed', {
+                  provider: 'google',
+                  embedded_browser: env.embedded,
+                  ...sanitizeAuthError(err as any),
+                });
                 showError(t('errors.auth.googleSignInFailed', 'Greška pri Google prijavi'));
                 console.error('Google OAuth error:', err);
               } finally {
