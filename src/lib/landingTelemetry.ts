@@ -7,7 +7,8 @@
  *  - section_view  (dedup per session per section)
  *  - cta_click     (primary/ghost buttons)
  *  - link_click    (any other anchor)
- *  - scroll_depth  (one per threshold 25/50/75/100 per session)
+ *  - scroll_depth  (one per threshold 10/25/50/75/100 per session per path)
+ *  - first_scroll  (ms from mount to first movement, once per session per path)
  *  - lang_change / theme_change
  *  - time_on_page  (seconds, flushed on pagehide)
  *
@@ -37,7 +38,8 @@ export type LandingEventType =
   | 'lang_change'
   | 'theme_change'
   | 'time_on_page'
-  | 'page_ready';
+  | 'page_ready'
+  | 'first_scroll';
 
 export interface LandingRow {
   session_id: string;
@@ -104,11 +106,12 @@ export const describeAnchorClick = (
 
 
 /** Highest crossed threshold for a scroll percentage, or null. */
-export const scrollThreshold = (pct: number): 25 | 50 | 75 | 100 | null => {
+export const scrollThreshold = (pct: number): 10 | 25 | 50 | 75 | 100 | null => {
   if (pct >= 100) return 100;
   if (pct >= 75) return 75;
   if (pct >= 50) return 50;
   if (pct >= 25) return 25;
+  if (pct >= 10) return 10;
   return null;
 };
 
@@ -282,8 +285,12 @@ export const logLandingPageView = (metadata: Record<string, unknown> = {}) => {
   enqueue('page_view', path, null, { ...visitAttribution(), ...metadata });
 };
 
+/** Current landing path — part of every per-page dedup key. */
+const currentPath = (): string =>
+  typeof window !== 'undefined' ? window.location.pathname : '/';
+
 export const logLandingSectionView = (section: string) => {
-  if (!firstTime(`sv:${section}`)) return;
+  if (!firstTime(`sv:${currentPath()}:${section}`)) return;
   enqueue('section_view', section);
 };
 
@@ -291,10 +298,18 @@ export const logLandingClick = (d: ClickDescriptor) => {
   enqueue(d.eventType, d.target, null, { href: d.href });
 };
 
-export const logLandingScroll = (pct: 25 | 50 | 75 | 100) => {
-  if (!firstTime(`sd:${pct}`)) return;
+export const logLandingScroll = (pct: 10 | 25 | 50 | 75 | 100) => {
+  if (!firstTime(`sd:${currentPath()}:${pct}`)) return;
   enqueue('scroll_depth', 'landing', pct);
 };
+
+/** First movement of the page: once per session per path, value in ms. */
+export const logLandingFirstScroll = (ms: number) => {
+  if (!firstTime(`fs:${currentPath()}`)) return;
+  enqueue('first_scroll', 'landing', Math.max(0, Math.min(Math.round(ms), 3600000)));
+};
+
+
 
 export const logLandingLangChange = (lang: string) => {
   enqueue('lang_change', lang);

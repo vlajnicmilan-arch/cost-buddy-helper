@@ -1,0 +1,2 @@
+ALTER TABLE public.landing_events DROP CONSTRAINT landing_events_event_type_check;
+ALTER TABLE public.landing_events ADD CONSTRAINT landing_events_event_type_check CHECK (event_type = ANY (ARRAY['page_view'::text, 'section_view'::text, 'cta_click'::text, 'link_click'::text, 'scroll_depth'::text, 'lang_change'::text, 'theme_change'::text, 'time_on_page'::text, 'page_ready'::text, 'first_scroll'::text]));
