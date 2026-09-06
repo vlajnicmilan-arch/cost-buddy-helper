@@ -1,0 +1,10 @@
+ALTER TABLE public.funnel_events DROP CONSTRAINT IF EXISTS funnel_events_name_check;
+ALTER TABLE public.funnel_events ADD CONSTRAINT funnel_events_name_check CHECK (event_name = ANY (ARRAY['install'::text, 'signup'::text, 'onboarding_complete'::text, 'first_transaction'::text, 'day7_active'::text, 'paid_conversion'::text, 'manual_merge_used'::text, 'onboarding_started'::text, 'onboarding_step_viewed'::text, 'onboarding_step_completed'::text, 'onboarding_step_skipped'::text, 'onboarding_abandoned'::text, 'checklist_viewed'::text, 'checklist_step_clicked'::text, 'checklist_dismissed'::text, 'checklist_completed'::text, 'import_undone'::text, 'auth_page_viewed'::text, 'signup_form_started'::text, 'signup_submitted'::text, 'signup_failed'::text, 'login_attempted'::text, 'login_failed'::text, 'apk_download_started'::text, 'apk_download_failed'::text, 'invite_opened'::text, 'invite_accepted'::text, 'invite_failed'::text, 'oauth_started'::text, 'oauth_failed'::text, 'guided_home_entered'::text, 'guided_home_exited'::text, 'worker_payout_attributed'::text, 'verify_screen_viewed'::text, 'verify_resend_clicked'::text, 'verify_already_confirmed_clicked'::text, 'verify_restart_registration'::text]));
+
+DROP POLICY IF EXISTS "Anyone can insert funnel events" ON public.funnel_events;
+CREATE POLICY "Anyone can insert funnel events" ON public.funnel_events
+FOR INSERT
+WITH CHECK (
+  ((user_id IS NULL) AND (event_name = ANY (ARRAY['install'::text, 'auth_page_viewed'::text, 'signup_form_started'::text, 'signup_submitted'::text, 'signup_failed'::text, 'login_attempted'::text, 'login_failed'::text, 'apk_download_started'::text, 'apk_download_failed'::text, 'invite_opened'::text, 'invite_failed'::text, 'oauth_started'::text, 'oauth_failed'::text, 'verify_screen_viewed'::text, 'verify_resend_clicked'::text, 'verify_already_confirmed_clicked'::text, 'verify_restart_registration'::text])))
+  OR ((user_id IS NOT NULL) AND (user_id = auth.uid()))
+);

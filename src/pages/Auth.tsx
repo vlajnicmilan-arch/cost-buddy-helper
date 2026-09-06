@@ -49,6 +49,8 @@ const Auth = () => {
   const [resetLoading, setResetLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [awaitingVerification, setAwaitingVerification] = useState(false);
+  /** How the user reached the verification screen — telemetry only. */
+  const [verifyEntry, setVerifyEntry] = useState<'signup' | 'login_unconfirmed' | null>(null);
   const [registeredEmail, setRegisteredEmail] = useState('');
   const [showWelcome, setShowWelcome] = useState(false);
   const [newUserName, setNewUserName] = useState('');
@@ -200,6 +202,7 @@ const Auth = () => {
             );
           } else if (error.message.includes('Email not confirmed')) {
             showError(t('toasts.emailNotConfirmed'));
+            setVerifyEntry('login_unconfirmed');
             setAwaitingVerification(true);
             setRegisteredEmail(email.trim());
           } else {
@@ -253,6 +256,7 @@ const Auth = () => {
 
         if (needsEmailConfirmation) {
           if (!storageMode) setStorageMode('cloud');
+          setVerifyEntry('signup');
           setAwaitingVerification(true);
           setRegisteredEmail(email.trim());
           showSuccess(t('toasts.registrationSuccess'));
@@ -284,6 +288,7 @@ const Auth = () => {
     setResendLoading(true);
     try {
       const { error } = await resendVerificationEmail(registeredEmail);
+      track('verify_resend_clicked', { entry: verifyEntry, result: error ? 'error' : 'ok' });
       if (error) {
         showError(t('toasts.emailSendError'));
       } else {
@@ -295,11 +300,21 @@ const Auth = () => {
   };
 
   const resetToLogin = () => {
+    if (awaitingVerification) {
+      track('verify_already_confirmed_clicked', { entry: verifyEntry });
+    }
     setAwaitingVerification(false);
     setIsLogin(true);
     setEmail(registeredEmail);
     setPassword('');
   };
+
+  // Verification screen impression — exactly once per entry to the screen.
+  useEffect(() => {
+    if (!awaitingVerification) return;
+    track('verify_screen_viewed', { entry: verifyEntry });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [awaitingVerification]);
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -426,6 +441,7 @@ const Auth = () => {
               <button
                 type="button"
                 onClick={() => {
+                  track('verify_restart_registration', { entry: verifyEntry });
                   setAwaitingVerification(false);
                   setIsLogin(false);
                   setEmail('');
