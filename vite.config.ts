@@ -4,6 +4,7 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { visualizer } from "rollup-plugin-visualizer";
 import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/supabase/vite";
+import { bakeLandingPlugin } from "./scripts/bakeLandingPlugin.mjs";
 import fs from "fs";
 
 // Read version from version.json
@@ -49,6 +50,9 @@ export default defineConfig(({ mode }) => ({
     },
     react(),
     mcpPlugin(),
+    // Prerender the two public sales pages ("/" and "/projekti") into real
+    // HTML in dist/. Never writes into public/.
+    bakeLandingPlugin(),
     mode === "development" && componentTagger(),
     // Bundle analyzer — generates dist/stats.html after `vite build`.
     // Only runs when ANALYZE=true to avoid slowing down normal builds.
