@@ -74,7 +74,9 @@ describe('describeAnchorClick', () => {
 describe('scrollThreshold', () => {
   it('maps percentages to thresholds', () => {
     expect(scrollThreshold(0)).toBeNull();
-    expect(scrollThreshold(24)).toBeNull();
+    expect(scrollThreshold(9)).toBeNull();
+    expect(scrollThreshold(10)).toBe(10);
+    expect(scrollThreshold(24)).toBe(10);
     expect(scrollThreshold(25)).toBe(25);
     expect(scrollThreshold(60)).toBe(50);
     expect(scrollThreshold(99)).toBe(75);

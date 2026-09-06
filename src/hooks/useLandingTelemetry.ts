@@ -7,6 +7,7 @@ import {
   describeAnchorClick,
   flushLandingTelemetryOnExit,
   logLandingClick,
+  logLandingFirstScroll,
   logLandingPageView,
   logLandingScroll,
   logLandingSectionView,
@@ -81,20 +82,54 @@ export const useLandingTelemetry = (
     const readyTimer = setTimeout(reportPageReady, 4000);
 
     let ticking = false;
-    const onScroll = () => {
+    let firstScrollLogged = false;
+
+    /**
+     * Read scroll progress without assuming the window is the scroller.
+     * The document is the usual case, but a page whose body is clipped can
+     * scroll an inner container instead; we take whichever moved.
+     */
+    const readProgress = (): number | null => {
+      const doc = document.documentElement;
+      const candidates: Array<{ top: number; total: number }> = [
+        {
+          top: window.scrollY || doc.scrollTop || document.body.scrollTop || 0,
+          total: Math.max(doc.scrollHeight, document.body.scrollHeight) - window.innerHeight,
+        },
+      ];
+      const inner = rootRef.current;
+      if (inner) {
+        candidates.push({
+          top: inner.scrollTop,
+          total: inner.scrollHeight - inner.clientHeight,
+        });
+      }
+      let best: number | null = null;
+      for (const c of candidates) {
+        if (c.total <= 0) continue;
+        const pct = Math.min(100, Math.round((c.top / c.total) * 100));
+        if (best == null || pct > best) best = pct;
+      }
+      return best;
+    };
+
+    const onScroll = (fromEvent = true) => {
       if (ticking) return;
       ticking = true;
       requestAnimationFrame(() => {
         ticking = false;
-        const doc = document.documentElement;
-        const total = doc.scrollHeight - window.innerHeight;
-        if (total <= 0) return;
-        const pct = Math.min(100, Math.round(((window.scrollY || doc.scrollTop) / total) * 100));
+        const pct = readProgress();
+        if (pct == null) return;
+        if (fromEvent && !firstScrollLogged && pct > 0) {
+          firstScrollLogged = true;
+          logLandingFirstScroll(Date.now() - startedAt);
+        }
         if (pct > exitState.maxScrollPct) exitState.maxScrollPct = pct;
         const th = scrollThreshold(pct);
         if (th) logLandingScroll(th);
       });
     };
+    const onScrollEvent = () => onScroll(true);
 
     const onHide = () => {
       logLandingTimeOnPage(Math.round((Date.now() - startedAt) / 1000), {
@@ -109,15 +144,18 @@ export const useLandingTelemetry = (
       else armLandingExitFlush();
     };
 
-    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('scroll', onScrollEvent, { passive: true });
+    // Capture phase so a scrolling inner container is measured too.
+    document.addEventListener('scroll', onScrollEvent, { passive: true, capture: true });
     window.addEventListener('pagehide', onHide);
     document.addEventListener('visibilitychange', onVisibility);
-    onScroll();
+    onScroll(false);
 
     return () => {
       clearTimeout(readyTimer);
       try { lcpObserver?.disconnect(); } catch { /* noop */ }
-      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('scroll', onScrollEvent);
+      document.removeEventListener('scroll', onScrollEvent, true);
       window.removeEventListener('pagehide', onHide);
       document.removeEventListener('visibilitychange', onVisibility);
       onHide();
