@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.mail_item_confirm(uuid, jsonb, uuid) FROM PUBLIC;
