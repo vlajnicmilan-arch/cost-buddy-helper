@@ -130,6 +130,22 @@ const getOrCreateSessionId = (): string => {
 };
 
 /**
+ * Insert errors must never be swallowed: a name missing from the DB CHECK
+ * constraint fails with 23514 and would otherwise be invisible forever.
+ * 23505 = unique violation → legitimate duplicate, stays silent.
+ * Never throws — tracking must not block or break any flow.
+ */
+const warnOnInsertError = (
+  eventName: string,
+  error: { code?: string; message?: string } | null,
+): void => {
+  if (!error || error.code === '23505') return;
+  if (typeof console !== 'undefined') {
+    console.warn('[funnel] insert rejected', eventName, error.code, error.message);
+  }
+};
+
+/**
  * Log a funnel event. Best-effort, never throws.
  * For 'install', user_id is omitted and session_id is used (anonymous).
  * For all other events, the current authenticated user is used.
@@ -163,13 +179,14 @@ export const logFunnelEvent = async (
 
     if (ANONYMOUS_FUNNEL_EVENTS.has(eventName)) {
       // Pre-auth: anonymous row keyed by session only. Never carries PII.
-      await supabase.from('funnel_events').insert({
+      const { error } = await supabase.from('funnel_events').insert({
         user_id: null,
         session_id: sessionId,
         event_name: eventName,
         platform,
         metadata: enrichedMetadata as any,
       });
+      warnOnInsertError(eventName, error);
       return;
     }
 
@@ -177,14 +194,14 @@ export const logFunnelEvent = async (
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    await supabase.from('funnel_events').insert({
+    const { error } = await supabase.from('funnel_events').insert({
       user_id: user.id,
       session_id: sessionId,
       event_name: eventName,
       platform,
       metadata: enrichedMetadata as any,
     });
-    // Ignore duplicate-key errors silently — these events are idempotent per user.
+    warnOnInsertError(eventName, error);
   } catch (e) {
     // Never block on tracking failures
     if (typeof console !== 'undefined') {
