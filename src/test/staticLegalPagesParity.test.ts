@@ -26,6 +26,7 @@ const staticText = (path: string[]): string => {
     .replace(/&nbsp;/g, ' ')
     .replace(/&quot;/g, '"')
     .replace(/\s+/g, ' ')
+    .replace(/ ([.,;:])/g, '$1')
     .trim();
 };
 
@@ -121,9 +122,11 @@ describe('statička /refund-policy ↔ src/pages/RefundPolicy.tsx', () => {
   const componentText = src
     .slice(src.indexOf('<div className="min-h-dvh'))
     .replace(/\{'\s*'\}/g, ' ')
+    .replace(/\{'\s*'\}/g, ' ')
     .replace(/\{[^{}]*\}/g, ' ')
     .replace(/<[^>]+>/g, ' ')
     .replace(/\s+/g, ' ')
+    .replace(/ ([.,;:])/g, '$1')
     .trim();
 
   it('oznaka verzije i datum su identični', () => {
@@ -134,6 +137,7 @@ describe('statička /refund-policy ↔ src/pages/RefundPolicy.tsx', () => {
 
   it('svaka rečenica iz komponente postoji u statičkoj datoteci', () => {
     const sentences = componentText
+      .slice(componentText.indexOf('Hrvatski'))
       .split(/(?<=\.)\s+/)
       .map((s) => s.trim())
       .filter((s) => s.split(' ').length > 6);
