@@ -182,12 +182,12 @@ export function bakeLandingPlugin() {
       /* ------------- /projekti — ProjektiLanding (hr) ------------- */
       let projektiBody = stripScripts(readSrc('src/pages/ProjektiLanding.body.html'));
       const images = {
-        __ODLUKA__: 'src/assets/landing/odluka.png',
-        __SEKCIJE__: 'src/assets/landing/sekcije.png',
-        __PROJEKT__: 'src/assets/landing/projekt-kartica.png',
-        __BUDZET__: 'src/assets/landing/budzet.png',
-        __DNEVNIK__: 'src/assets/landing/dnevnik.png',
-        __TROSAK__: 'src/assets/landing/trosak.png',
+        __ODLUKA__: 'src/assets/landing/odluka.webp',
+        __SEKCIJE__: 'src/assets/landing/sekcije.webp',
+        __PROJEKT__: 'src/assets/landing/projekt-kartica.webp',
+        __BUDZET__: 'src/assets/landing/budzet.webp',
+        __DNEVNIK__: 'src/assets/landing/dnevnik.webp',
+        __TROSAK__: 'src/assets/landing/trosak.webp',
       };
       for (const [token, source] of Object.entries(images)) {
         const resolved = assetMap.get(source);
