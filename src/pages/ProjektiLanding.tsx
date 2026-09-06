@@ -10,6 +10,9 @@ import dnevnik from '@/assets/landing/dnevnik.png';
 import trosak from '@/assets/landing/trosak.png';
 import './ProjektiLanding.css';
 
+/** Trenutni raspored prodajne stranice /projekti. Sluzi za usporedbu A/B u analitici. */
+export const LANDING_LAYOUT = 'B' as const;
+
 /**
  * ProjektiLanding — prodajna stranica modula Projekti na `/projekti`.
  *
@@ -37,7 +40,8 @@ export default function ProjektiLanding() {
 
   // Telemetrija: page_view, section_view, scroll_depth, cta_click,
   // time_on_page, page_ready. Jezik je fiksno hr; tema se prati na <html>.
-  useLandingTelemetry(containerRef, 'hr', theme);
+  // Layout se salje u metapodatke svakog zapisa radi A/B usporedbe.
+  useLandingTelemetry(containerRef, 'hr', theme, LANDING_LAYOUT);
 
   useEffect(() => {
     const html = document.documentElement;

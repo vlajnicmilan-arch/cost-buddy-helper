@@ -36,11 +36,12 @@ export const useLandingTelemetry = (
   rootRef: React.RefObject<HTMLElement>,
   lang: string,
   theme: string,
+  layout?: string,
 ) => {
-  // Keep lang/theme on every emitted row.
+  // Keep lang/theme/layout on every emitted row.
   useEffect(() => {
-    setLandingContext(lang, theme);
-  }, [lang, theme]);
+    setLandingContext(lang, theme, layout);
+  }, [lang, theme, layout]);
 
   // page_view + scroll depth + time on page (mount-scoped)
   useEffect(() => {
