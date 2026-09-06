@@ -7,6 +7,8 @@ describe('resolveRenderMode', () => {
   it('reports baked only when the marker matches the current path', () => {
     expect(resolveRenderMode({ content: 'baked', path: '/projekti' }, '/projekti')).toBe('baked');
     expect(resolveRenderMode({ content: 'baked', path: '/' }, '/')).toBe('baked');
+    // /landing is served from the same baked document as /
+    expect(resolveRenderMode({ content: 'baked', path: '/' }, '/landing')).toBe('baked');
   });
 
   it('reports spa after a client-side navigation away from the baked path', () => {
