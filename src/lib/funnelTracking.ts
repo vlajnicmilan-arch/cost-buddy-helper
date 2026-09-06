@@ -163,13 +163,14 @@ export const logFunnelEvent = async (
 
     if (ANONYMOUS_FUNNEL_EVENTS.has(eventName)) {
       // Pre-auth: anonymous row keyed by session only. Never carries PII.
-      await supabase.from('funnel_events').insert({
+      const { error } = await supabase.from('funnel_events').insert({
         user_id: null,
         session_id: sessionId,
         event_name: eventName,
         platform,
         metadata: enrichedMetadata as any,
       });
+      warnOnInsertError(eventName, error);
       return;
     }
 
@@ -177,14 +178,14 @@ export const logFunnelEvent = async (
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    await supabase.from('funnel_events').insert({
+    const { error } = await supabase.from('funnel_events').insert({
       user_id: user.id,
       session_id: sessionId,
       event_name: eventName,
       platform,
       metadata: enrichedMetadata as any,
     });
-    // Ignore duplicate-key errors silently — these events are idempotent per user.
+    warnOnInsertError(eventName, error);
   } catch (e) {
     // Never block on tracking failures
     if (typeof console !== 'undefined') {
