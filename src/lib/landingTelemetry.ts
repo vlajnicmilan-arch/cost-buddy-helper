@@ -25,6 +25,7 @@ import {
   hasAttributionMarkers,
   readFirstTouchAttribution,
 } from '@/lib/attributionTags';
+import { detectRenderMode } from '@/lib/landingRenderMode';
 
 const SESSION_KEY = 'funnel_session_id';
 const SEEN_KEY = 'landing_tel_seen_v1';
@@ -238,6 +239,7 @@ const enqueue = (
   metadata: Record<string, unknown> = {},
 ) => {
   try {
+    const renderMode = typeof document !== 'undefined' ? detectRenderMode() : null;
     buffer.push({
       session_id: getSessionId(),
       event_type,
@@ -249,6 +251,9 @@ const enqueue = (
       path: (typeof window !== 'undefined' ? window.location.pathname : '/').slice(0, 200),
       metadata: {
         ...(context.layout ? { layout: context.layout } : {}),
+        // Was this document prerendered at build time or served as the SPA
+        // shell? Same pattern as `layout`: stamped before caller metadata.
+        ...(renderMode ? { render: renderMode } : {}),
         ...metadata,
       },
       occurred_at: new Date().toISOString(),
