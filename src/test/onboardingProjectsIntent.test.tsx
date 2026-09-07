@@ -16,6 +16,7 @@ const state = vi.hoisted(() => ({
   userMetadata: {} as Record<string, unknown>,
   funnel: vi.fn(),
   checkSubscription: vi.fn(),
+  setOnboardingCompleted: vi.fn(),
 }));
 
 vi.mock('react-i18next', async () => ({
@@ -57,7 +58,7 @@ vi.mock('@/contexts/SubscriptionContext', () => ({
 
 vi.mock('@/contexts/AppStateContext', () => ({
   useAppState: () => ({
-    setOnboardingCompleted: vi.fn(),
+    setOnboardingCompleted: state.setOnboardingCompleted,
     setDisplayName: vi.fn(),
     setUsageProfile: vi.fn(),
   }),
