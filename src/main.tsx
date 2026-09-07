@@ -6,6 +6,7 @@ import Landing from "./pages/CentarLanding";
 // imports it, and the build step inlines the very same source into the baked
 // `dist/index.html` boot script. See `src/lib/fastLanding.js`.
 import { isFastLanding as isFastLandingCondition, isInstalledApp } from "./lib/fastLanding";
+import { isProdAppHost } from "@/lib/appOrigin";
 
 // Defer Sentry init + boot diagnostics until the browser is idle. These are
 // observability tools — they MUST NOT block first paint or LCP. They run
@@ -251,7 +252,6 @@ try {
 // it, our own reloads are stamped in advance, and `critical` is reserved for a
 // stuck flag with a real error signal next to it. See `lib/bootWatchdog.ts`.
 import {
-import { isProdAppHost } from "@/lib/appOrigin";
   clearBootFlag,
   consumeIntentionalReload,
   evaluatePreviousBoot,
