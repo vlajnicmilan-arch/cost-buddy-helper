@@ -7,8 +7,8 @@ import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
 import { sendPushNotification } from '../_shared/sendPushNotification.ts'
-import {
 import { getAppUrl } from '../_shared/appUrl.ts';
+import {
   buildSignupMessage,
   buildSignupPushBody,
   buildSummaryMessage,

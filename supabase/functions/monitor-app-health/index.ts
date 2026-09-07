@@ -5,8 +5,8 @@
 // Also sends EMAIL alert (in addition to push) so admins notice crashes
 // even if push delivery fails.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
-import {
 import { getAppUrl } from '../_shared/appUrl.ts';
+import {
   enqueueCrashAlertEmail,
   getAdminEmails,
   type CrashAlertPayload,

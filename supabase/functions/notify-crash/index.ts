@@ -8,8 +8,8 @@
  */
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from 'npm:@supabase/supabase-js@2'
-import {
 import { getAppUrl } from '../_shared/appUrl.ts';
+import {
   enqueueCrashAlertEmail,
   getAdminEmails,
   type CrashAlertPayload,
