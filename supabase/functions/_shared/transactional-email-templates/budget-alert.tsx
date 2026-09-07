@@ -5,6 +5,7 @@ import {
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 import { getLogoUrl } from '../brandAssets.ts'
+import { joinAppUrl } from '../appUrl.ts'
 
 const SITE_NAME = 'Centar'
 const LOGO_URL = getLogoUrl()
@@ -13,9 +14,10 @@ interface BudgetAlertProps {
   spentPercent?: string
   spentAmount?: string
   totalAmount?: string
+  appBaseUrl?: string
 }
 
-const BudgetAlertEmail = ({ budgetName, spentPercent, spentAmount, totalAmount }: BudgetAlertProps) => (
+const BudgetAlertEmail = ({ budgetName, spentPercent, spentAmount, totalAmount, appBaseUrl }: BudgetAlertProps) => (
   <Html lang="hr" dir="ltr">
     <Head />
     <Preview>⚠️ Budžet "{budgetName || 'Nepoznat'}" se približava limitu</Preview>
@@ -33,7 +35,7 @@ const BudgetAlertEmail = ({ budgetName, spentPercent, spentAmount, totalAmount }
         <Text style={text}>
           Preporučujemo pregled troškova i prilagodbu plana kako biste ostali unutar budžeta.
         </Text>
-        <Button style={button} href="https://vmbalance.com/app">
+        <Button style={button} href={joinAppUrl(appBaseUrl, '/app')}>
           Otvori Centar
         </Button>
         <Text style={footer}>— Tim {SITE_NAME}</Text>

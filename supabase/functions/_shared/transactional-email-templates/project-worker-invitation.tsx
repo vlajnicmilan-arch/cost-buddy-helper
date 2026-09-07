@@ -5,6 +5,7 @@ import {
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 import { getLogoUrl } from '../brandAssets.ts'
+import { joinAppUrl } from '../appUrl.ts'
 
 const SITE_NAME = 'Centar'
 const LOGO_URL = getLogoUrl()
@@ -14,6 +15,7 @@ interface ProjectWorkerInvitationProps {
   workerName?: string
   inviteUrl?: string
   isNewUser?: boolean
+  appBaseUrl?: string
 }
 
 const ProjectWorkerInvitationEmail = ({
@@ -22,12 +24,13 @@ const ProjectWorkerInvitationEmail = ({
   workerName,
   inviteUrl,
   isNewUser,
+  appBaseUrl,
 }: ProjectWorkerInvitationProps) => {
   const inviter = inviterName || 'Voditelj projekta'
   const project = projectName || 'projekt'
   const greeting = workerName ? `Pozdrav, ${workerName}!` : 'Pozdrav!'
   const cta = isNewUser ? 'Kreiraj račun i pridruži se' : 'Prihvati poziv'
-  const url = inviteUrl || 'https://vmbalance.com/app'
+  const url = inviteUrl || joinAppUrl(appBaseUrl, '/app')
 
   return (
     <Html lang="hr" dir="ltr">
@@ -72,7 +75,7 @@ export const template = {
     inviterName: 'Marko Marić',
     projectName: 'Kuća Novakovi',
     workerName: 'Ivan',
-    inviteUrl: 'https://vmbalance.com/join-project/abc-123',
+    inviteUrl: joinAppUrl(undefined, '/join-project/abc-123'),
     isNewUser: false,
   },
 } satisfies TemplateEntry

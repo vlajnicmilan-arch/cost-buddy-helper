@@ -5,12 +5,14 @@ import {
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 import { getLogoUrl } from '../brandAssets.ts'
+import { joinAppUrl } from '../appUrl.ts'
 
 const SITE_NAME = 'Centar'
 const LOGO_URL = getLogoUrl()
 const SUPPORT_EMAIL = 'support@vmbalance.com'
 
 interface Props {
+  appBaseUrl?: string
   name?: string
   subject?: string
   message?: string
@@ -75,7 +77,7 @@ const t = (lang: string) => {
   return dict[lang] || dict.hr
 }
 
-const SupportAutoResponderEmail = ({ name, subject, message, ticketId, language = 'hr' }: Props) => {
+const SupportAutoResponderEmail = ({ name, subject, message, ticketId, language = 'hr', appBaseUrl }: Props) => {
   const L = t(language)
   return (
     <Html lang={language} dir="ltr">
@@ -111,7 +113,7 @@ const SupportAutoResponderEmail = ({ name, subject, message, ticketId, language 
           <Section style={tipBox}>
             <Text style={tipTitle}>{L.tipTitle}</Text>
             <Text style={tipText}>{L.tipBody}</Text>
-            <Button style={button} href="https://vmbalance.com/help">
+            <Button style={button} href={joinAppUrl(appBaseUrl, '/help')}>
               {L.cta}
             </Button>
           </Section>

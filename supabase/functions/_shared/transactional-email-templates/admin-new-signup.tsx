@@ -3,6 +3,7 @@ import {
   Body, Container, Head, Heading, Html, Preview, Section, Text, Hr, Link,
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
+import { joinAppUrl } from '../appUrl.ts'
 
 const SITE_NAME = 'Centar'
 
@@ -60,7 +61,7 @@ export const template: TemplateEntry = {
     userEmail: 'marko@example.com',
     source: 'Facebook, plaćeni oglas',
     occurredAt: new Date().toISOString(),
-    adminUrl: 'https://vmbalance.com/admin',
+    adminUrl: joinAppUrl(undefined, '/admin'),
   },
 }
 

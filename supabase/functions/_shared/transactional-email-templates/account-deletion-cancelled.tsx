@@ -5,10 +5,11 @@ import {
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 import { getLogoUrl } from '../brandAssets.ts'
+import { joinAppUrl } from '../appUrl.ts'
 
 const SITE_NAME = 'Centar'
 const LOGO_URL = getLogoUrl()
-const AccountDeletionCancelledEmail = () => (
+const AccountDeletionCancelledEmail = ({ appBaseUrl }: { appBaseUrl?: string }) => (
   <Html lang="hr" dir="ltr">
     <Head />
     <Preview>Brisanje vašeg računa je otkazano — dobrodošli natrag!</Preview>
@@ -25,7 +26,7 @@ const AccountDeletionCancelledEmail = () => (
         <Text style={text}>
           Možete nastaviti koristiti aplikaciju kao i prije. Drago nam je što ste se predomislili.
         </Text>
-        <Button style={button} href="https://vmbalance.com/app">
+        <Button style={button} href={joinAppUrl(appBaseUrl, '/app')}>
           Otvori aplikaciju
         </Button>
         <Text style={footer}>
