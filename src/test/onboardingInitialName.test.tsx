@@ -14,7 +14,13 @@ const state = vi.hoisted(() => ({
 
 vi.mock('react-i18next', async () => ({
   ...(await import('@/test/mocks/reactI18next')).createReactI18nextMock(),
-  useTranslation: () => ({ t: (_k: string, f?: string) => f ?? _k, i18n: { language: 'hr' } }),
+  useTranslation: () => ({
+    t: (_k: string, f?: unknown) =>
+      typeof f === 'string' ? f
+        : f && typeof f === 'object' && 'defaultValue' in f ? String((f as { defaultValue: unknown }).defaultValue)
+          : _k,
+    i18n: { language: 'hr' },
+  }),
 }));
 
 vi.mock('react-router-dom', () => ({
