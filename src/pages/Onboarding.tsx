@@ -62,10 +62,15 @@ const Onboarding = () => {
   const [step] = useState(1);
   const [saving, setSaving] = useState(false);
 
-  const initialName = useMemo(
-    () => (localStorage.getItem('user_display_name') || '').trim(),
-    [],
-  );
+  const initialName = useMemo(() => {
+    const stored = (localStorage.getItem('user_display_name') || '').trim();
+    if (stored) return stored;
+    // Rezerva: ime upisano pri registraciji preživjelo je potvrdu maila
+    // u user metadata (sesije tada još nema, pa ne stigne u profiles).
+    const meta = (user?.user_metadata as { display_name?: unknown } | undefined)?.display_name;
+    return typeof meta === 'string' ? meta.trim() : '';
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [displayName, setDisplayName] = useState(initialName);
 
   // --- Telemetry ---
@@ -165,13 +170,15 @@ const Onboarding = () => {
         setContextDisplayName(trimmedName);
       }
       setUsageProfile(profile);
-      setOnboardingCompleted(true);
 
       // Namjera s prodajne stranice /projekti — račun (user metadata) ili
       // atribucija ulaza u istom tabu (Google/Apple).
       const intent = resolveSignupIntent(user, readAuthEntry());
       let trialAutostarted = false;
       if (intent === 'projects') {
+        // VAŽNO redoslijed: proba i osvježavanje pretplate PRIJE
+        // setOnboardingCompleted(true) — inače /onboarding ruta odmah
+        // preusmjeri na /home i nakratko se montira pogrešan ekran.
         try {
           const payload = await activateModuleTrial('projekti');
           trialAutostarted = !!payload.activated && !payload.already_used;
@@ -195,9 +202,13 @@ const Onboarding = () => {
 
       successVibration().catch(() => {});
       showSuccess(t('onboardingV3.doneToast', 'Aplikacija je spremna!'));
+      // setOnboardingCompleted i navigacija u ISTOM sinkronom koraku — bez
+      // awaita između, da se /home nikad ne montira za 'projects' namjeru.
       if (intent === 'projects') {
+        setOnboardingCompleted(true);
         navigate('/projects', { state: { openNewProject: true }, replace: true });
       } else {
+        setOnboardingCompleted(true);
         navigate('/home', { replace: true });
       }
     } catch (err) {

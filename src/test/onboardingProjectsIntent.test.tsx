@@ -16,6 +16,7 @@ const state = vi.hoisted(() => ({
   userMetadata: {} as Record<string, unknown>,
   funnel: vi.fn(),
   checkSubscription: vi.fn(),
+  setOnboardingCompleted: vi.fn(),
 }));
 
 vi.mock('react-i18next', async () => ({
@@ -57,7 +58,7 @@ vi.mock('@/contexts/SubscriptionContext', () => ({
 
 vi.mock('@/contexts/AppStateContext', () => ({
   useAppState: () => ({
-    setOnboardingCompleted: vi.fn(),
+    setOnboardingCompleted: state.setOnboardingCompleted,
     setDisplayName: vi.fn(),
     setUsageProfile: vi.fn(),
   }),
@@ -103,6 +104,28 @@ describe('Onboarding — signup intent routing', () => {
     });
     const complete = state.funnel.mock.calls.find((c) => c[0] === 'onboarding_complete');
     expect(complete?.[1]).toMatchObject({ intent: 'projects', trial_autostarted: true });
+  });
+
+  it('projects: NIKAD ne navigira na /home — nema montiranja pogrešnog ekrana', async () => {
+    state.userMetadata = { signup_intent: 'projects' };
+    await submit();
+
+    await waitFor(() => expect(state.navigate).toHaveBeenCalled());
+    const homeCalls = state.navigate.mock.calls.filter((c) => c[0] === '/home');
+    expect(homeCalls).toEqual([]);
+  });
+
+  it('projects: setOnboardingCompleted tek NAKON activateModuleTrial', async () => {
+    state.userMetadata = { signup_intent: 'projects' };
+    await submit();
+
+    await waitFor(() => expect(state.setOnboardingCompleted).toHaveBeenCalledWith(true));
+    const trialOrder = state.activateTrial.mock.invocationCallOrder[0];
+    const completedOrder = state.setOnboardingCompleted.mock.invocationCallOrder[0];
+    expect(trialOrder).toBeLessThan(completedOrder);
+    // i navigacija dolazi nakon označavanja gotovim (isti sinkroni korak)
+    const navOrder = state.navigate.mock.invocationCallOrder[0];
+    expect(completedOrder).toBeLessThan(navOrder);
   });
 
   it('projects preko entry_path (Google/Apple u istom tabu)', async () => {
