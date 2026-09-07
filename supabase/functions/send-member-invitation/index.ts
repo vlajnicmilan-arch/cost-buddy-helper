@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendPushNotification } from "../_shared/sendPushNotification.ts";
 import { translate } from "../_shared/i18n/index.ts";
 import { isValidInvitationEmail } from "../_shared/invitationOutcome.ts";
+import { appUrl } from '../_shared/appUrl.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -345,7 +346,7 @@ serve(async (req) => {
     let emailSent = false;
     if (sendEmail || !invitedUser) {
       try {
-        const inviteUrl = `https://vmbalance.com/join-project/${(invitation as any).token}`;
+        const inviteUrl = appUrl(`/join-project/${(invitation as any).token}`);
         const { error: emailError } = await adminClient.functions.invoke('send-transactional-email', {
           body: {
             templateName: 'project-worker-invitation',

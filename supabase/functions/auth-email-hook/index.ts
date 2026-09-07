@@ -9,6 +9,7 @@ import { MagicLinkEmail } from '../_shared/email-templates/magic-link.tsx'
 import { RecoveryEmail } from '../_shared/email-templates/recovery.tsx'
 import { EmailChangeEmail } from '../_shared/email-templates/email-change.tsx'
 import { ReauthenticationEmail } from '../_shared/email-templates/reauthentication.tsx'
+import { getAppUrl } from "../_shared/appUrl.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -38,7 +39,6 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 // Configuration
 const SITE_NAME = "Centar"
 const SENDER_DOMAIN = "notify.vmbalance.com"
-const ROOT_DOMAIN = "vmbalance.com"
 const FROM_DOMAIN = "vmbalance.com" // Domain shown in From address (may be root or sender subdomain)
 
 // Sample data for preview mode ONLY (not used in actual email sending).
@@ -220,7 +220,7 @@ async function handleWebhook(req: Request): Promise<Response> {
   // Build template props from payload.data (HookData structure)
   const templateProps = {
     siteName: SITE_NAME,
-    siteUrl: `https://${ROOT_DOMAIN}`,
+    siteUrl: getAppUrl(),
     recipient: payload.data.email,
     confirmationUrl: payload.data.url,
     token: payload.data.token,
