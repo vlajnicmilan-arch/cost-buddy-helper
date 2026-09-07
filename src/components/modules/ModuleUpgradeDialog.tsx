@@ -19,6 +19,7 @@ import { useSubscription } from '@/contexts/SubscriptionContext';
 import { usePaddlePrices, type PaywallPlan } from '@/hooks/usePaddlePrices';
 import { STICKER_PRICES } from '@/lib/pricing';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+import { activateModuleTrial } from '@/lib/activateModuleTrial';
 
 export type UpgradeModule = 'smjer' | 'krug' | 'projects' | 'business';
 
@@ -149,9 +150,7 @@ export const ModuleUpgradeDialog = ({ open, onOpenChange, module }: Props) => {
     if (!meta.trialModule) return;
     setActivating(true);
     try {
-      const { data, error } = await supabase.rpc('activate_module_trial', { _module: meta.trialModule });
-      if (error) throw error;
-      const payload = (data ?? {}) as { activated?: boolean; already_used?: boolean; period_end?: string };
+      const payload = await activateModuleTrial(meta.trialModule);
       const until = payload.period_end ?? null;
       // Osvježi subscription stanje (isti mehanizam kao checkout success) — modul se otključa bez odjave.
       await checkSubscription();
