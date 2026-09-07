@@ -158,11 +158,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp: AuthContextValue['signUp'] = async (email, password, displayName, metadata) => {
     const redirectUrl = `${window.location.origin}/`;
+    // Ime ide u user metadata već pri registraciji — tako preživi potvrdu
+    // maila (tada sesija ne postoji odmah, pa upis u profiles kasni).
+    const mergedData: Record<string, unknown> = { ...(metadata ?? {}) };
+    if (displayName?.trim()) mergedData.display_name = displayName.trim();
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: metadata && Object.keys(metadata).length > 0
-        ? { emailRedirectTo: redirectUrl, data: metadata }
+      options: Object.keys(mergedData).length > 0
+        ? { emailRedirectTo: redirectUrl, data: mergedData }
         : { emailRedirectTo: redirectUrl },
     });
 
