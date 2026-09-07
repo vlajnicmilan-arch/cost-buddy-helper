@@ -21,6 +21,7 @@ import { Sparkles } from 'lucide-react';
 
 import i18n from '@/i18n';
 import { readAuthEntry, sanitizeAuthError, resolveInitialAuthTab } from '@/lib/authFunnel';
+import { resolveSignupIntent } from '@/lib/signupIntent';
 import { detectEmbeddedBrowser } from '@/lib/embeddedBrowser';
 import { buildConsentPayload, recordNewsletterConsent, stashPendingConsent } from '@/lib/newsletterConsent';
 import { buildTermsAcceptancePayload, composeTermsNoticeText, recordTermsAcceptance, resolveAppLocale, stashPendingTermsAcceptance } from '@/lib/termsAcceptance';
@@ -221,7 +222,12 @@ const Auth = () => {
         showSuccess(t('toasts.welcomeBack'));
         // Routing is handled centrally by App.tsx — no navigate needed here
       } else {
-        const { data, error, needsEmailConfirmation } = await signUp(email.trim(), password, displayName.trim() || undefined);
+        // Namjera s prodajne stranice /projekti veže se uz RAČUN (user metadata),
+        // ne uz tab — preživi potvrdu maila i drugi uređaj.
+        const signupMetadata = resolveSignupIntent(null, attribution) === 'projects'
+          ? { signup_intent: 'projects' }
+          : undefined;
+        const { data, error, needsEmailConfirmation } = await signUp(email.trim(), password, displayName.trim() || undefined, signupMetadata);
         if (error) {
           track('signup_failed', { stage: 'server', ...sanitizeAuthError(error as any), ...attribution });
           if (error.message.includes('already registered')) {
