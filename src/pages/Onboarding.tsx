@@ -11,6 +11,10 @@ import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { supabase } from '@/integrations/supabase/client';
 import { useHaptics } from '@/hooks/useHaptics';
 import { logFunnelEvent } from '@/lib/funnelTracking';
+import { readAuthEntry } from '@/lib/authFunnel';
+import { resolveSignupIntent } from '@/lib/signupIntent';
+import { activateModuleTrial } from '@/lib/activateModuleTrial';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 
 import { StepGreeting } from '@/components/onboarding/steps/StepGreeting';
 
@@ -53,6 +57,7 @@ const Onboarding = () => {
   const { user } = useAuth();
   const { setOnboardingCompleted, setDisplayName: setContextDisplayName, setUsageProfile } = useAppState();
   const { lightTap, successVibration } = useHaptics();
+  const { checkSubscription } = useSubscription();
 
   const [step] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -162,6 +167,20 @@ const Onboarding = () => {
       setUsageProfile(profile);
       setOnboardingCompleted(true);
 
+      // Namjera s prodajne stranice /projekti — račun (user metadata) ili
+      // atribucija ulaza u istom tabu (Google/Apple).
+      const intent = resolveSignupIntent(user, readAuthEntry());
+      let trialAutostarted = false;
+      if (intent === 'projects') {
+        try {
+          const payload = await activateModuleTrial('projekti');
+          trialAutostarted = !!payload.activated && !payload.already_used;
+          await checkSubscription();
+        } catch (e) {
+          console.warn('[Onboarding] projekti trial activation failed', e);
+        }
+      }
+
       outcomeRef.current = 'completed';
       logStepCompleted(currentStepRef.current);
       logFunnelEvent('onboarding_complete', {
@@ -169,12 +188,18 @@ const Onboarding = () => {
         usage_profile: profile,
         has_income: false,
         expense_categories: 0,
+        intent,
+        trial_autostarted: trialAutostarted,
         total_duration_ms: Math.round(performance.now() - mountTimeRef.current),
       }).catch(() => {});
 
       successVibration().catch(() => {});
       showSuccess(t('onboardingV3.doneToast', 'Aplikacija je spremna!'));
-      navigate('/home', { replace: true });
+      if (intent === 'projects') {
+        navigate('/projects', { state: { openNewProject: true }, replace: true });
+      } else {
+        navigate('/home', { replace: true });
+      }
     } catch (err) {
       console.error('Onboarding completion error:', err);
       showError(t('errors.generic', 'Došlo je do greške'));
