@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { isProdAppHost } from '@/lib/appOrigin';
 
 export const useDeepLinks = () => {
   const navigate = useNavigate();
@@ -50,7 +51,7 @@ export const useDeepLinks = () => {
             }
 
             // Generic: navigate to any path from our domain
-            if (url.hostname === 'vmbalance.com' || url.hostname === 'www.vmbalance.com') {
+            if (isProdAppHost(url.hostname)) {
               if (path && path !== '/') {
                 navigate(path);
               }

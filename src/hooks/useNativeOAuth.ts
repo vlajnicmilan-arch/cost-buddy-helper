@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { appUrl } from '@/lib/appOrigin';
 
 const NATIVE_CALLBACK = 'app.lovable.costbuddy://auth/callback';
-const HTTPS_BRIDGE = 'https://vmbalance.com/native-oauth/callback';
+const HTTPS_BRIDGE = appUrl('/native-oauth/callback');
 
 /**
  * Native OAuth flow for the Capacitor APK.

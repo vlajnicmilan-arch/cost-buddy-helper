@@ -125,9 +125,7 @@ if (!isFastLanding) idle(() => {
   const isPreviewHost =
     window.location.hostname.includes("id-preview--") ||
     window.location.hostname.includes("lovableproject.com");
-  const isProdHost =
-    window.location.hostname === "vmbalance.com" ||
-    window.location.hostname === "www.vmbalance.com";
+  const isProdHost = isProdAppHost(window.location.hostname);
 
   const shouldKillSW =
     isCapacitor || isAndroidWebView || isInIframe || isPreviewHost || isProdHost;
@@ -253,6 +251,7 @@ try {
 // it, our own reloads are stamped in advance, and `critical` is reserved for a
 // stuck flag with a real error signal next to it. See `lib/bootWatchdog.ts`.
 import {
+import { isProdAppHost } from "@/lib/appOrigin";
   clearBootFlag,
   consumeIntentionalReload,
   evaluatePreviousBoot,

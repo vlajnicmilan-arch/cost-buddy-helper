@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { APP_ORIGIN } from '@/lib/appOrigin';
 
 export const useNativeShare = () => {
   const isNative = Capacitor.isNativePlatform();
@@ -53,7 +54,7 @@ export const useNativeShare = () => {
     return share({
       title: 'Centar',
       text: 'Isprobaj Centar - aplikaciju za praćenje financija!',
-      url: `https://vmbalance.com?ref=${userId}`,
+      url: `${APP_ORIGIN}?ref=${userId}`,
       dialogTitle: 'Podijeli aplikaciju',
     });
   }, [share]);
