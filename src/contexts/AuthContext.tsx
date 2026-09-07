@@ -11,7 +11,7 @@ interface AuthContextValue {
   session: Session | null;
   loading: boolean;
   authReady: boolean;
-  signUp: (email: string, password: string, displayName?: string) => Promise<{ data: any; error: any; needsEmailConfirmation: boolean | null }>;
+  signUp: (email: string, password: string, displayName?: string, metadata?: Record<string, unknown>) => Promise<{ data: any; error: any; needsEmailConfirmation: boolean | null }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<{ error: any }>;
   resendVerificationEmail: (email: string) => Promise<{ error: any }>;
@@ -156,12 +156,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp: AuthContextValue['signUp'] = async (email, password, displayName) => {
+  const signUp: AuthContextValue['signUp'] = async (email, password, displayName, metadata) => {
     const redirectUrl = `${window.location.origin}/`;
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: redirectUrl },
+      options: metadata && Object.keys(metadata).length > 0
+        ? { emailRedirectTo: redirectUrl, data: metadata }
+        : { emailRedirectTo: redirectUrl },
     });
 
     const needsEmailConfirmation = data?.user && !data?.session;
