@@ -168,7 +168,7 @@ Deno.serve(async (req) => {
   // function are transactional (posljedica korisnikove radnje). Suppression
   // list is still honored above (fail-closed).
   // Every template renders app links from one configured origin.
-  const renderData = { appBaseUrl: getAppUrl(), ...templateData }
+  const renderData = { ...templateData, appBaseUrl: getAppUrl() }
 
   const html = await renderAsync(
     React.createElement(template.component, renderData)
