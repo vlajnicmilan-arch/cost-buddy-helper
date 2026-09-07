@@ -22,6 +22,7 @@
 import * as Sentry from '@sentry/react';
 import { APP_VERSION } from '@/lib/version';
 import { isChunkLoadError } from '@/lib/chunkLoadError';
+import { isProdAppHost } from '@/lib/appOrigin';
 
 const DSN = 'https://e71c65a2c4b6da7f654257df9b5fa8f0@o4511302417973248.ingest.de.sentry.io/4511302422167632';
 
@@ -34,7 +35,7 @@ const detectEnvironment = (): string => {
     const host = window.location.hostname;
     const cap = (window as any).Capacitor?.isNativePlatform?.();
     if (cap) return 'native';
-    if (host === 'vmbalance.com' || host === 'www.vmbalance.com') return 'production';
+    if (isProdAppHost(host)) return 'production';
     if (host.includes('id-preview--') || host.includes('lovableproject.com')) return 'preview';
     if (host === 'localhost' || host === '127.0.0.1') return 'development';
     return 'production';

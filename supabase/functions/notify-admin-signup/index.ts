@@ -7,6 +7,7 @@ import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
 import { sendPushNotification } from '../_shared/sendPushNotification.ts'
+import { getAppUrl } from '../_shared/appUrl.ts';
 import {
   buildSignupMessage,
   buildSignupPushBody,
@@ -29,7 +30,7 @@ const corsHeaders = {
 
 const ADMIN_EMAIL =
   Deno.env.get('SIGNUP_ADMIN_EMAIL') || Deno.env.get('FEEDBACK_ADMIN_EMAIL') || 'support@vmbalance.com'
-const PUBLIC_BASE_URL = Deno.env.get('PUBLIC_APP_URL') || 'https://vmbalance.com'
+const PUBLIC_BASE_URL = getAppUrl()
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {

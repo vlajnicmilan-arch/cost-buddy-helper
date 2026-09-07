@@ -3,6 +3,7 @@ import {
   Body, Container, Head, Heading, Html, Preview, Section, Text, Hr, Link,
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
+import { joinAppUrl } from '../appUrl.ts'
 
 const SITE_NAME = 'Centar'
 
@@ -138,7 +139,7 @@ export const template = {
     platform: 'android',
     signature: 'react_error_boundary|/app|typeerror',
     errorCount: 1,
-    adminUrl: 'https://vmbalance.com/admin?tab=pulse',
+    adminUrl: joinAppUrl(undefined, '/admin?tab=pulse'),
   },
 } satisfies TemplateEntry
 

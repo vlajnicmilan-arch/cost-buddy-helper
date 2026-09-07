@@ -1,10 +1,11 @@
 import { Capacitor } from '@capacitor/core';
 import { APP_VERSION } from '@/lib/version';
+import { APP_ORIGIN } from '@/lib/appOrigin';
 
 export const AUTO_UPDATE_KEY = 'pwa-auto-update';
 
 export const FALLBACK_ORIGINS = [
-  'https://vmbalance.com',
+  APP_ORIGIN,
   'https://cost-buddy-helper.lovable.app',
 ] as const;
 

@@ -5,15 +5,17 @@ import {
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 import { getLogoUrl } from '../brandAssets.ts'
+import { joinAppUrl } from '../appUrl.ts'
 
 const SITE_NAME = 'Centar'
 const LOGO_URL = getLogoUrl()
 interface Props {
   scheduledDate?: string
   graceDays?: number
+  appBaseUrl?: string
 }
 
-const AccountDeletionScheduledEmail = ({ scheduledDate, graceDays = 30 }: Props) => (
+const AccountDeletionScheduledEmail = ({ scheduledDate, graceDays = 30, appBaseUrl }: Props) => (
   <Html lang="hr" dir="ltr">
     <Head />
     <Preview>Zaprimili smo zahtjev za brisanje vašeg Centar računa</Preview>
@@ -35,7 +37,7 @@ const AccountDeletionScheduledEmail = ({ scheduledDate, graceDays = 30 }: Props)
           Nakon isteka roka, brišu se trajno: sve transakcije, projekti, proračuni, računi, dokumenti i postavke.
           Ova radnja je nepovratna.
         </Text>
-        <Button style={button} href="https://vmbalance.com/auth">
+        <Button style={button} href={joinAppUrl(appBaseUrl, '/auth')}>
           Otkaži brisanje (prijavi se)
         </Button>
         <Text style={footer}>

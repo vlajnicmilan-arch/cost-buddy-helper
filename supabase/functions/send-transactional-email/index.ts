@@ -2,6 +2,7 @@ import * as React from 'npm:react@18.3.1'
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
+import { getAppUrl } from '../_shared/appUrl.ts'
 
 // Configuration baked in at scaffold time — do NOT change these manually.
 // To update, re-run the email domain setup flow.
@@ -166,11 +167,14 @@ Deno.serve(async (req) => {
   // Note: Unsubscribe footer intentionally omitted — all templates in this
   // function are transactional (posljedica korisnikove radnje). Suppression
   // list is still honored above (fail-closed).
+  // Every template renders app links from one configured origin.
+  const renderData = { appBaseUrl: getAppUrl(), ...templateData }
+
   const html = await renderAsync(
-    React.createElement(template.component, templateData)
+    React.createElement(template.component, renderData)
   )
   const plainText = await renderAsync(
-    React.createElement(template.component, templateData),
+    React.createElement(template.component, renderData),
     { plainText: true }
   )
 

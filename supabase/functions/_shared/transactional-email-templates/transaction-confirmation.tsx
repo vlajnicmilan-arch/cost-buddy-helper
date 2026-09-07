@@ -5,6 +5,7 @@ import {
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 import { getLogoUrl } from '../brandAssets.ts'
+import { joinAppUrl } from '../appUrl.ts'
 
 const SITE_NAME = 'Centar'
 const LOGO_URL = getLogoUrl()
@@ -13,9 +14,10 @@ interface TransactionConfirmationProps {
   amount?: string
   category?: string
   date?: string
+  appBaseUrl?: string
 }
 
-const TransactionConfirmationEmail = ({ description, amount, category, date }: TransactionConfirmationProps) => (
+const TransactionConfirmationEmail = ({ description, amount, category, date, appBaseUrl }: TransactionConfirmationProps) => (
   <Html lang="hr" dir="ltr">
     <Head />
     <Preview>Transakcija zabilježena: {description || 'Nova transakcija'}</Preview>
@@ -33,7 +35,7 @@ const TransactionConfirmationEmail = ({ description, amount, category, date }: T
           📂 Kategorija: {category || 'Ostalo'}<br />
           📅 Datum: {date || 'Danas'}
         </Text>
-        <Button style={button} href="https://vmbalance.com/app">
+        <Button style={button} href={joinAppUrl(appBaseUrl, '/app')}>
           Pogledaj detalje
         </Button>
         <Text style={footer}>— Tim {SITE_NAME}</Text>

@@ -8,6 +8,7 @@
  */
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { getAppUrl } from '../_shared/appUrl.ts';
 import {
   enqueueCrashAlertEmail,
   getAdminEmails,
@@ -19,7 +20,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const PUBLIC_BASE_URL = Deno.env.get('PUBLIC_APP_URL') || 'https://vmbalance.com'
+const PUBLIC_BASE_URL = getAppUrl()
 const DEDUP_MIN = 60
 const MAX_PAYLOAD_BYTES = 32_768
 const RATE_LIMIT_WINDOW_MS = 3_600_000

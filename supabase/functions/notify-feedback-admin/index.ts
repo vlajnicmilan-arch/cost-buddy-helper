@@ -2,6 +2,7 @@ import * as React from 'npm:react@18.3.1'
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
+import { getAppUrl } from '../_shared/appUrl.ts';
 
 const SITE_NAME = 'Centar'
 const SENDER_DOMAIN = 'notify.vmbalance.com'
@@ -14,7 +15,7 @@ const corsHeaders = {
 
 const ADMIN_EMAIL = Deno.env.get('FEEDBACK_ADMIN_EMAIL') || 'support@vmbalance.com'
 const WEBHOOK_URL = Deno.env.get('FEEDBACK_WEBHOOK_URL') || ''
-const PUBLIC_BASE_URL = Deno.env.get('PUBLIC_APP_URL') || 'https://vmbalance.com'
+const PUBLIC_BASE_URL = getAppUrl()
 
 interface NotifyBody {
   feedbackId: string

@@ -5,6 +5,7 @@
 // Also sends EMAIL alert (in addition to push) so admins notice crashes
 // even if push delivery fails.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
+import { getAppUrl } from '../_shared/appUrl.ts';
 import {
   enqueueCrashAlertEmail,
   getAdminEmails,
@@ -19,7 +20,7 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const PUBLIC_BASE_URL = Deno.env.get("PUBLIC_APP_URL") || "https://vmbalance.com";
+const PUBLIC_BASE_URL = getAppUrl();
 
 // thresholds
 const WINDOW_MIN = 5;

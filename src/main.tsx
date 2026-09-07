@@ -6,6 +6,7 @@ import Landing from "./pages/CentarLanding";
 // imports it, and the build step inlines the very same source into the baked
 // `dist/index.html` boot script. See `src/lib/fastLanding.js`.
 import { isFastLanding as isFastLandingCondition, isInstalledApp } from "./lib/fastLanding";
+import { isProdAppHost } from "@/lib/appOrigin";
 
 // Defer Sentry init + boot diagnostics until the browser is idle. These are
 // observability tools — they MUST NOT block first paint or LCP. They run
@@ -125,9 +126,7 @@ if (!isFastLanding) idle(() => {
   const isPreviewHost =
     window.location.hostname.includes("id-preview--") ||
     window.location.hostname.includes("lovableproject.com");
-  const isProdHost =
-    window.location.hostname === "vmbalance.com" ||
-    window.location.hostname === "www.vmbalance.com";
+  const isProdHost = isProdAppHost(window.location.hostname);
 
   const shouldKillSW =
     isCapacitor || isAndroidWebView || isInIframe || isPreviewHost || isProdHost;
