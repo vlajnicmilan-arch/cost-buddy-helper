@@ -93,4 +93,19 @@ describe('AppStateContext — promjena korisnika', () => {
     expect(localStorage.getItem('user_display_name')).toBe('Milan');
     expect(screen.getByTestId('probe').textContent).toBe('ready:Milan');
   });
+
+  it('(d) drugi korisnik — pending_terms_acceptance ostaje netaknut', async () => {
+    const pending = JSON.stringify({ acceptedAt: '2026-09-08T06:00:00Z', version: '1.2' });
+    localStorage.setItem('last_resolved_user_id', 'u1');
+    localStorage.setItem('user_display_name', 'Milan');
+    localStorage.setItem('pending_terms_acceptance', pending);
+    state.userId = 'u2';
+
+    await renderProvider();
+
+    expect(localStorage.getItem('user_display_name')).toBeNull();
+    expect(localStorage.getItem('pending_terms_acceptance')).toBe(pending);
+    expect(localStorage.getItem('last_resolved_user_id')).toBe('u2');
+    expect(screen.getByTestId('probe').textContent).toBe('ready:');
+  });
 });

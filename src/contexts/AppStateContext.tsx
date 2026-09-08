@@ -57,6 +57,16 @@ const USER_SCOPED_KEYS = [
 ] as const;
 
 /**
+ * Ključevi koji se NE brišu prilikom promjene korisnika bez SIGNED_OUT:
+ * pravni dokaz prihvaćanja Uvjeta (i eventualno privole za newsletter) može
+ * biti zapisan PRIJE nego je identitet poznat, pa mora preživjeti switch
+ * i biti dostupan flushPendingTermsAcceptance u AuthContextu.
+ */
+const PENDING_CONSENT_KEYS = [
+  'pending_terms_acceptance',
+] as const;
+
+/**
  * Ključ UREĐAJA (namjerno NE u USER_SCOPED_KEYS): zadnji korisnik za kojeg je
  * onboarding razriješen na ovom pregledniku. Služi za otkrivanje promjene
  * računa bez SIGNED_OUT događaja (npr. link za potvrdu maila zamijeni sesiju).
@@ -136,6 +146,7 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
         const rememberedUserId = localStorage.getItem(LAST_RESOLVED_USER_KEY);
         if (rememberedUserId && rememberedUserId !== session.user.id) {
           USER_SCOPED_KEYS.forEach((key) => {
+            if ((PENDING_CONSENT_KEYS as readonly string[]).includes(key)) return;
             try { localStorage.removeItem(key); } catch { /* noop */ }
           });
           setDisplayNameState('');
