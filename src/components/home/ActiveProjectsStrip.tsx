@@ -104,9 +104,11 @@ export const ActiveProjectsStrip = React.memo(({
     return active.slice(0, MAX_VISIBLE).map(p => {
       const entry = summary.get(p.id);
       const spent = entry?.spent ?? 0;
+      const income = entry?.income ?? 0;
       // Dashboard ne učitava faze, pa je osnovica ovdje ugovorena vrijednost
       // (getCostBaseline sam pada na `contract` kad planiranog troška nema).
       const summaryData = getBaselineSummary(p, spent);
+      const financials = getProjectFinancials({ project: p, spent, received: income });
 
       return {
         project: p,
@@ -115,6 +117,8 @@ export const ActiveProjectsStrip = React.memo(({
         remainderRatio: summaryData.remainderPct === null ? null : summaryData.remainderPct / 100,
         hasBaseline: summaryData.hasBaseline,
         level: summaryData.level,
+        contracted: financials.contracted,
+        contractedIsEstimate: financials.contractedIsEstimate,
       };
     });
   }, [projects, summary]);
