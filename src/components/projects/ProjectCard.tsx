@@ -16,7 +16,8 @@ import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { motion } from 'framer-motion';
-import { calculateProjectHealth, getHealthBgClass } from '@/lib/projectHealthScore';
+import { calculateProjectHealth, getHealthBgClass, canShowHealthBadge } from '@/lib/projectHealthScore';
+import { getProjectFinancials } from '@/lib/projectFinancials';
 import { useMemo, useState } from 'react';
 import { clickableProps } from '@/lib/a11y';
 import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
@@ -72,9 +73,14 @@ export const ProjectCard = ({
 
   const projectColor = project.color || '#3b82f6';
   const projectIcon = project.icon || '📁';
-  const budget = project.total_budget || 0;
-  const budgetUsed = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
-  const remaining = budget - spent;
+  // Jedan izvor brojki — isti helper koji koriste Pregled, Budžet i početna.
+  const financials = useMemo(
+    () => getProjectFinancials({ project, spent, received: income }),
+    [project, spent, income]
+  );
+  const budget = financials.budget;
+  const budgetUsed = financials.pctSpent === null ? 0 : Math.min(financials.pctSpent, 100);
+  const remaining = financials.remainingBudget ?? 0;
   const netBalance = income - spent;
 
   const health = useMemo(() => calculateProjectHealth({
@@ -85,6 +91,12 @@ export const ProjectCard = ({
     endDate: project.end_date,
     milestones: milestones as any,
   }), [spent, budget, project.contract_value, project.start_date, project.end_date, milestones]);
+
+  const showHealthBadge = canShowHealthBadge({
+    startDate: project.start_date,
+    endDate: project.end_date,
+    milestones,
+  });
 
   const healthLabel = t(`projects.health.${health.level}`,
     health.level === 'on_track' ? 'Na vrijeme' :
@@ -190,7 +202,7 @@ export const ProjectCard = ({
             <Badge variant={getStatusBadgeVariant(project.status)} className="text-xs">
               {t(`projectStatus.${project.status}`, PROJECT_STATUS_LABELS[project.status])}
             </Badge>
-            {health.level !== 'unknown' && (
+            {showHealthBadge && health.level !== 'unknown' && (
               <Badge
                 variant="outline"
                 className={cn("text-[10px] gap-1 h-5 border", getHealthBgClass(health.level))}

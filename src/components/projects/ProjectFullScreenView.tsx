@@ -62,6 +62,8 @@ import { ProjectReadOnlyBanner } from './ProjectReadOnlyBanner';
 import { isProjectsReadonlyError } from '@/lib/softDelete';
 import { ProjectHeaderMenu } from './ProjectHeaderMenu';
 import { ProjectBudgetTab } from './ProjectBudgetTab';
+import { ProjectOverviewFinancials } from './ProjectOverviewFinancials';
+import { getProjectFinancials } from '@/lib/projectFinancials';
 import { getBaselineSummary } from '@/lib/projectCostBaseline';
 import { computeProjectPlannedMargin, computeContractPhaseNote } from '@/lib/projectPlannedMargin';
 import { getRemainderLabels, getRemainderStatusLabel } from '@/lib/projectMetricLabels';
@@ -377,6 +379,14 @@ export const ProjectFullScreenView = ({
 
   // Planirana marža (samo faze koje imaju OBA iznosa) i napomena o
   // nerazvrstanom iznosu. Ugovoreno i zbroj faza se nikad ne zbrajaju.
+  // Jedan izvor brojki za sve ekrane projekta.
+  const financials = getProjectFinancials({
+    project,
+    milestones,
+    spent: totalSpent,
+    received: totalReceived,
+  });
+
   const plannedMargin = computeProjectPlannedMargin(milestones);
   const contractPhaseNote = computeContractPhaseNote(effectiveContract, milestones);
 
@@ -758,6 +768,13 @@ export const ProjectFullScreenView = ({
 
                   {/* #4 Overview hierarchy — KPIs first, progress next, meta last */}
 
+                  {/* Brojke Pregleda — isti helper kao popis, početna, Budžet i Financiranje. */}
+                  <ProjectOverviewFinancials
+                    financials={financials}
+                    endDate={project.end_date}
+                    showMargin={!isInvestorViewer}
+                  />
+
                   {/* 1. P&L Card — primary financial KPI (business view). NIKAD investoru. */}
                   {canAccessBusinessTabs && (
                     <ProjectProfitLossCard projectId={project.id} projectName={project.name} />
@@ -838,6 +855,8 @@ export const ProjectFullScreenView = ({
                     remainderStatusLabel={remainderStatusLabel}
                     plannedMargin={plannedMargin}
                     contractPhaseNote={contractPhaseNote}
+                    contractedIsEstimate={financials.contractedIsEstimate}
+                    phaseBudgetCoverage={financials.phaseBudgetCoverage}
                     showBudgetAlarm={showBudgetAlarm}
                     showCollectionAlarm={showCollectionAlarm}
                     canAccessBusinessTabs={canAccessBusinessTabs}

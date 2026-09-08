@@ -36,6 +36,10 @@ interface ProjectBudgetTabProps {
   remainderStatusLabel: string;
   plannedMargin: PlannedMarginResult | null;
   contractPhaseNote: ContractPhaseNote | null;
+  /** True kad je „Ugovoreno" zapravo budžet — tada nema marže. */
+  contractedIsEstimate?: boolean;
+  /** Faze pokrivaju samo dio budžeta; napomena se ne skriva. */
+  phaseBudgetCoverage?: { phasesTotal: number; budget: number } | null;
   showBudgetAlarm: boolean;
   showCollectionAlarm: boolean;
   canAccessBusinessTabs: boolean;
@@ -66,6 +70,8 @@ export const ProjectBudgetTab = ({
   remainderStatusLabel,
   plannedMargin,
   contractPhaseNote,
+  contractedIsEstimate = false,
+  phaseBudgetCoverage = null,
   showBudgetAlarm,
   showCollectionAlarm,
   canAccessBusinessTabs,
@@ -147,6 +153,11 @@ export const ProjectBudgetTab = ({
           <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
             {t('projects.contracted', 'Ugovoreno')}
           </p>
+          {contractedIsEstimate && (
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              {t('projects.contractedFromBudget', 'procjena iz budžeta')}
+            </p>
+          )}
           <ContractAmendmentsBadge projectId={project.id} />
         </div>
         <div className="p-2 sm:p-3 rounded-lg bg-income/10 text-center">
@@ -185,6 +196,16 @@ export const ProjectBudgetTab = ({
           </div>
         </div>
       </div>
+
+      {/* Faze ne pokrivaju cijeli budžet — činjenica se ne skriva. */}
+      {phaseBudgetCoverage && (
+        <p className="text-[11px] text-muted-foreground">
+          {t('projects.phaseBudgetCoverage', 'Faze pokrivaju {{phases}} od {{budget}}', {
+            phases: formatAmount(phaseBudgetCoverage.phasesTotal),
+            budget: formatAmount(phaseBudgetCoverage.budget),
+          })}
+        </p>
+      )}
 
       {/* Planirana marža — zbroj po fazama, samo faze s OBA iznosa */}
       {plannedMargin && (

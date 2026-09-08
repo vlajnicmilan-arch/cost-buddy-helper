@@ -17,7 +17,7 @@
 import { calculateContractValue, type RawProjectForContract } from './projectCalculations';
 import { sumPlannedCost, type PlannedMarginMilestone } from './projectPlannedMargin';
 
-export type CostBaselineSource = 'planned_cost' | 'contract' | 'none';
+export type CostBaselineSource = 'project_budget' | 'planned_cost' | 'contract' | 'none';
 
 export interface CostBaseline {
   /** Iznos osnovice; 0 kad je `source === 'none'`. */
@@ -31,6 +31,13 @@ export function getCostBaseline(
   project: RawProjectForContract | null | undefined,
   milestones?: PlannedMarginMilestone[] | null,
 ): CostBaseline {
+  // Odluka (rujan 2026): budžet projekta ima prednost pred zbrojem faza.
+  // Korisnik je upisao 40.000 — nijedan ekran ne smije računati protiv 4.000
+  // (nepopunjene faze) ili protiv ugovorenog iznosa.
+  const totalBudget = Number(project?.total_budget || 0);
+  if (Number.isFinite(totalBudget) && totalBudget > 0) {
+    return { value: totalBudget, source: 'project_budget' };
+  }
   const plannedCost = sumPlannedCost(milestones);
   if (plannedCost !== null && plannedCost > 0) {
     return { value: plannedCost, source: 'planned_cost' };
@@ -78,7 +85,7 @@ export function getHealthLevel(
   const used = getBaselineUsedPct(spent, baseline);
   if (used === null) return 'neutral';
 
-  if (baseline.source === 'planned_cost') {
+  if (baseline.source === 'planned_cost' || baseline.source === 'project_budget') {
     if (used < 80) return 'healthy';
     if (used <= 100) return 'attention';
     return 'critical';

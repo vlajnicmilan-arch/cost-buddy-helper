@@ -213,3 +213,18 @@ export const getHealthBgClass = (level: HealthLevel): string => {
     default: return 'bg-muted text-muted-foreground border-border';
   }
 };
+
+/**
+ * Značka „Na vrijeme · N" smije se prikazati SAMO kad postoji iz čega ocijeniti:
+ * oba datuma projekta i barem jedna završena faza. Formula ocjene se ne mijenja —
+ * mijenja se samo kada je uopće smijemo pokazati.
+ */
+export const canShowHealthBadge = (input: {
+  startDate?: string | null;
+  endDate?: string | null;
+  milestones?: Array<{ status?: string | null }> | null;
+}): boolean => {
+  if (!input.startDate || !input.endDate) return false;
+  const list = Array.isArray(input.milestones) ? input.milestones : [];
+  return list.some(m => m?.status === 'completed');
+};

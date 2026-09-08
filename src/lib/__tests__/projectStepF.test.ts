@@ -223,7 +223,14 @@ describe('pokriće cijena po fazama — tvrdnja o nerazvrstanom samo kad je sve 
 });
 
 describe('osnovica za pragove', () => {
-  it('planirani trošak faza ima prednost pred ugovorenim', () => {
+  it('budžet projekta ima prednost pred fazama i ugovorenim (odluka rujan 2026)', () => {
+    const baseline = getCostBaseline({ contract_value: 50000, total_budget: 40000 }, [
+      { budget: 4000, investor_price: null },
+    ]);
+    expect(baseline).toEqual({ value: 40000, source: 'project_budget' });
+  });
+
+  it('planirani trošak faza ima prednost pred ugovorenim kad budžeta nema', () => {
     const baseline = getCostBaseline({ contract_value: 42333.52 }, [
       { budget: 10000, investor_price: 15000 },
       { budget: 5000, investor_price: null },
@@ -231,12 +238,12 @@ describe('osnovica za pragove', () => {
     expect(baseline).toEqual({ value: 15000, source: 'planned_cost' });
   });
 
-  it('Duje: bez planiranog troška osnovica je ugovoreno 42.333,52', () => {
+  it('Duje: osnovica je budžet projekta 30.000 (prije koraka: ugovoreno 42.333,52)', () => {
     const baseline = getCostBaseline(DUJE.project, DUJE.milestones);
-    expect(baseline.source).toBe('contract');
-    expect(baseline.value).toBeCloseTo(42333.52, 2);
-    // Ne total_budget (30.000) i ne zbroj faza.
-    expect(baseline.value).not.toBe(30000);
+    expect(baseline.source).toBe('project_budget');
+    expect(baseline.value).toBe(30000);
+    // Ni ugovoreno ni zbroj cijena faza.
+    expect(baseline.value).not.toBeCloseTo(42333.52, 2);
     expect(baseline.value).not.toBeCloseTo(DUJE_PRICE_SUM, 2);
   });
 
@@ -248,14 +255,21 @@ describe('osnovica za pragove', () => {
     expect(summary.level).toBe('neutral');
   });
 
-  it('Eda Zg: fallback na total_budget preko calculateContractValue', () => {
+  it('Eda Zg: budžet projekta 1.000 je osnovica', () => {
     const baseline = getCostBaseline(EDA.project, EDA.milestones);
-    expect(baseline).toEqual({ value: 1000, source: 'contract' });
+    expect(baseline).toEqual({ value: 1000, source: 'project_budget' });
   });
 });
 
-describe('pragovi — 80/100 nad planiranim troškom, 30/10 nad ugovorenim', () => {
+describe('pragovi — 80/100 nad budžetom i planiranim troškom, 30/10 nad ugovorenim', () => {
   const planned = { value: 1000, source: 'planned_cost' as const };
+
+  it('budžet projekta koristi iste pragove kao planirani trošak', () => {
+    const projectBudget = { value: 1000, source: 'project_budget' as const };
+    expect(getHealthLevel(799, projectBudget)).toBe('healthy');
+    expect(getHealthLevel(800, projectBudget)).toBe('attention');
+    expect(getHealthLevel(1000.01, projectBudget)).toBe('critical');
+  });
 
   it('planirani trošak: <80 % zdravo, 80–100 % pažnja, >100 % kritično', () => {
     expect(getHealthLevel(799, planned)).toBe('healthy');
@@ -272,11 +286,12 @@ describe('pragovi — 80/100 nad planiranim troškom, 30/10 nad ugovorenim', () 
     expect(getHealthLevel(901, contract)).toBe('critical');
   });
 
-  it('Duje: potrošeno 29.348,77 od 42.333,52 → preostalo 30,7 %, zdravo', () => {
+  it('Duje: potrošeno 29.348,77 od budžeta 30.000 → preostalo 2,2 %, pažnja', () => {
     const summary = getBaselineSummary(DUJE.project, DUJE.spent, DUJE.milestones);
-    expect(summary.remainderPct).toBeCloseTo(30.67, 1);
-    expect(summary.remainderAmount).toBeCloseTo(12984.75, 2);
-    expect(summary.level).toBe('healthy');
+    expect(summary.baseline.source).toBe('project_budget');
+    expect(summary.remainderPct).toBeCloseTo(2.17, 1);
+    expect(summary.remainderAmount).toBeCloseTo(651.23, 2);
+    expect(summary.level).toBe('attention');
   });
 
   it('Lucija: potrošeno 10.660,14 od 29.700,00 → preostalo 64,1 %, zdravo', () => {

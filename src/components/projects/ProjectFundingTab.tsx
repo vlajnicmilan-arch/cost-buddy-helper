@@ -50,10 +50,12 @@ export const ProjectFundingTab = ({
 
   const completedMilestones = milestones.filter(m => m.status === 'completed');
   
-  // Pending milestones (in progress or pending)
-  const pendingMilestones = milestones.filter(m => m.status === 'in_progress' || m.status === 'pending');
+  // „Rezervirano za aktivne faze" znači faze KOJE SU U TIJEKU — ne i one koje
+  // još nisu započele. Prije se zbrajalo i `pending`, pa je projekt bez ijedne
+  // pokrenute faze pokazivao rezervaciju.
+  const activeMilestones = milestones.filter(m => m.status === 'in_progress');
   // Korak B: skriveni/neupisani iznosi (NULL) ne smiju se zbrajati kao 0.
-  const reservedForPending = sumVisibleAmounts(pendingMilestones.map((m) => m.budget));
+  const reservedForPending = sumVisibleAmounts(activeMilestones.map((m) => m.budget));
 
 
   const hasAnySource = funding.length > 0 || incomeSources.length > 0;
@@ -82,7 +84,7 @@ export const ProjectFundingTab = ({
           <p className="text-sm sm:text-base font-semibold tabular-nums truncate text-income">{formatAmount(totalIncome)}</p>
         </div>
         <div className="text-center">
-          <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5">{t('projects.funding.summaryRemaining', 'Preostalo')}</p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5">{t('projects.funding.summaryAwaitingPayment', 'Čeka uplatu')}</p>
           <p className={cn(
             "text-sm sm:text-base font-semibold tabular-nums truncate",
             remaining < 0 ? "text-destructive" : "text-foreground"
