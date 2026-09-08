@@ -5466,6 +5466,7 @@
       "title": "Bok!",
       "titleNamed": "Drago mi je, {{name}}!",
       "brevityHint": "Samo jedno pitanje pa krećemo.",
+      "prefilledHint": "Ako želiš, ispravi ime — pa krenimo.",
       "askName": "Kako da te zovem?",
       "namePlaceholder": "npr. Marko"
     },

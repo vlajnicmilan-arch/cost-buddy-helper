@@ -6,9 +6,12 @@ import { Sparkles } from 'lucide-react';
 interface Props {
   displayName: string;
   onChange: (v: string) => void;
+  /** Ime je bilo poznato već pri prvom prikazu (iz računa ili uređaja). */
+  prefilled?: boolean;
 }
 
-export const StepGreeting = ({ displayName, onChange }: Props) => {
+
+export const StepGreeting = ({ displayName, onChange, prefilled = false }: Props) => {
   const { t } = useTranslation();
   const name = displayName.trim();
 
@@ -36,12 +39,21 @@ export const StepGreeting = ({ displayName, onChange }: Props) => {
             : t('onboardingV3.greeting.title', 'Bok!')}
         </h1>
 
-        <p className="text-base text-muted-foreground leading-relaxed">
-          {t('onboardingV3.greeting.brevityHint', 'Samo jedno pitanje pa krećemo.')}
-        </p>
-        <p className="text-base font-medium">
-          {t('onboardingV3.greeting.askName', 'Kako da te zovem?')}
-        </p>
+        {prefilled ? (
+          <p className="text-base text-muted-foreground leading-relaxed">
+            {t('onboardingV3.greeting.prefilledHint', 'Ako želiš, ispravi ime — pa krenimo.')}
+          </p>
+        ) : (
+          <>
+            <p className="text-base text-muted-foreground leading-relaxed">
+              {t('onboardingV3.greeting.brevityHint', 'Samo jedno pitanje pa krećemo.')}
+            </p>
+            <p className="text-base font-medium">
+              {t('onboardingV3.greeting.askName', 'Kako da te zovem?')}
+            </p>
+          </>
+        )}
+
       </div>
 
       <div className="space-y-2">

@@ -63,14 +63,16 @@ const Onboarding = () => {
   const [saving, setSaving] = useState(false);
 
   const initialName = useMemo(() => {
-    const stored = (localStorage.getItem('user_display_name') || '').trim();
-    if (stored) return stored;
-    // Rezerva: ime upisano pri registraciji preživjelo je potvrdu maila
-    // u user metadata (sesije tada još nema, pa ne stigne u profiles).
+    // Račun ima prednost: ime iz user metadata (preživi potvrdu maila) je
+    // uvijek ime OVOG računa, dok localStorage može nositi ime prethodnog
+    // korisnika na istom uređaju.
     const meta = (user?.user_metadata as { display_name?: unknown } | undefined)?.display_name;
-    return typeof meta === 'string' ? meta.trim() : '';
+    const fromMeta = typeof meta === 'string' ? meta.trim() : '';
+    if (fromMeta) return fromMeta;
+    return (localStorage.getItem('user_display_name') || '').trim();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
   const [displayName, setDisplayName] = useState(initialName);
 
   // --- Telemetry ---
@@ -233,7 +235,7 @@ const Onboarding = () => {
       <div className="flex-1 flex flex-col items-center justify-center p-4 min-h-0">
         <AnimatePresence mode="wait">
           {step === 1 && (
-            <StepGreeting displayName={displayName} onChange={setDisplayName} />
+            <StepGreeting displayName={displayName} onChange={setDisplayName} prefilled={initialName !== ''} />
           )}
         </AnimatePresence>
       </div>
