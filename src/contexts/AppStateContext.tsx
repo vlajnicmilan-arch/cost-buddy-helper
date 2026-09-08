@@ -146,6 +146,7 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
         const rememberedUserId = localStorage.getItem(LAST_RESOLVED_USER_KEY);
         if (rememberedUserId && rememberedUserId !== session.user.id) {
           USER_SCOPED_KEYS.forEach((key) => {
+            if ((PENDING_CONSENT_KEYS as readonly string[]).includes(key)) return;
             try { localStorage.removeItem(key); } catch { /* noop */ }
           });
           setDisplayNameState('');
