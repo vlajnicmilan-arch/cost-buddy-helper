@@ -70,6 +70,7 @@ export const ProjectFundingTab = ({
 
   const totalIncome = incomeSources.reduce((sum, inc) => sum + inc.amount, 0);
   const remaining = totalAllocated - totalSpent;
+  const hasSources = totalAllocated > 0;
 
   return (
     <div className="space-y-6">
@@ -84,11 +85,16 @@ export const ProjectFundingTab = ({
           <p className="text-sm sm:text-base font-semibold tabular-nums truncate text-income">{formatAmount(totalIncome)}</p>
         </div>
         <div className="text-center">
-          <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5">{t('projects.funding.summaryAwaitingPayment', 'Čeka uplatu')}</p>
-          <p className={cn(
-            "text-sm sm:text-base font-semibold tabular-nums truncate",
-            remaining < 0 ? "text-destructive" : "text-foreground"
-          )}>{formatAmount(remaining)}</p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5">{t('projects.funding.summaryLeftFromSources', 'Preostalo od izvora')}</p>
+          <p
+            data-testid="left-from-sources-value"
+            className={cn(
+              "text-sm sm:text-base font-semibold tabular-nums truncate",
+              !hasSources ? "text-foreground" : remaining < 0 ? "text-destructive" : "text-foreground"
+            )}
+          >
+            {hasSources ? formatAmount(remaining) : '—'}
+          </p>
         </div>
       </div>
 
