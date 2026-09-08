@@ -17,12 +17,24 @@ vi.mock('@/contexts/CurrencyContext', () => ({
   useCurrency: () => ({ formatAmount }),
 }));
 
+vi.mock('@/contexts/AppStateContext', () => ({
+  useAppState: () => ({}),
+}));
+
 vi.mock('@/hooks/useProjectEstimates', () => ({
   useProjectEstimates: () => ({ estimates: [] }),
 }));
 
 vi.mock('@/hooks/useProjectInvoices', () => ({
   useProjectInvoices: () => ({ invoices: [] }),
+}));
+
+vi.mock('@/components/projects/ProjectEstimatesPanel', () => ({
+  ProjectEstimatesPanel: () => null,
+}));
+
+vi.mock('@/components/projects/ProjectInvoicesPanel', () => ({
+  ProjectInvoicesPanel: () => null,
 }));
 
 vi.mock('@/lib/milestoneAmounts', () => ({
