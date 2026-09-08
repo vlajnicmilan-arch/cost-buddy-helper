@@ -230,7 +230,7 @@ export const ActiveProjectsStrip = React.memo(({
         ariaLabel={t('nav.activeProjects', 'Aktivni projekti')}
       >
         {activeProjects.map((data, idx) => {
-          const { project, spent, baseline, remainderRatio, hasBaseline, level } = data;
+          const { project, spent, baseline, remainderRatio, hasBaseline, level, contracted, contractedIsEstimate } = data;
           const color = project.color || DEFAULT_PROJECT_COLORS[idx % DEFAULT_PROJECT_COLORS.length];
           const dotColor = HEALTH_DOT_COLOR[level];
           // Natpisi i prateći tekstovi dolaze iz istog pomoćnika — kartica ne
