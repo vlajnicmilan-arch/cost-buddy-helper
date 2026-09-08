@@ -12,6 +12,7 @@ import { useHaptics } from '@/hooks/useHaptics';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useActiveProjectsSummary } from '@/hooks/useActiveProjectsSummary';
 import { getBaselineSummary, type RemainderLevel } from '@/lib/projectCostBaseline';
+import { getProjectFinancials } from '@/lib/projectFinancials';
 import {
   getRemainderLabels,
   getRemainderTrafficLabel,
