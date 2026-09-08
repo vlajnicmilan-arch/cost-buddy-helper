@@ -31,6 +31,7 @@ import { resolveConfirmDocType } from '@/lib/mail/docType';
 
 import { normalizeExtractionDates } from '@/lib/mail/dateNormalize';
 import { StatementReviewCard } from '@/components/mail/StatementReviewCard';
+import { DocumentsEmptyState } from './DocumentsEmptyState';
 import { VerificationReviewCard } from '@/components/mail/VerificationReviewCard';
 import { useMailDuplicateCandidates } from '@/hooks/useMailDuplicateCandidates';
 import { PROBABLE_DUPLICATE_WARNING } from '@/lib/mail/invoiceNumberMatch';
@@ -362,11 +363,8 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
         </div>
       )}
 
-      {empty && (
-        <p className="text-sm text-muted-foreground">
-          {t('mailReview.empty', 'Nema dokumenata koji čekaju pregled.')}
-        </p>
-      )}
+      {empty && <DocumentsEmptyState />}
+
 
       {visible.map((item) => {
         // GMAILOVA POTVRDA PROSLJEĐIVANJA — nije dokument, ima svoju karticu.

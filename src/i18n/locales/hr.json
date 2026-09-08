@@ -6584,7 +6584,7 @@
   "mailImport": {
     "title": "Uvoz iz e-maila",
     "yourAddress": "Tvoja adresa za primanje",
-    "description": "Pošalji ili proslijedi poštu na ovu adresu. U ovom koraku poruke se samo primaju i prikazuju.",
+    "description": "Pošalji ili proslijedi poštu na ovu adresu.",
     "copy": "Kopiraj",
     "copied": "Adresa kopirana",
     "copyFailed": "Kopiranje nije uspjelo",
@@ -6844,6 +6844,10 @@
       "release": "Vrati u obradu",
       "released": "Dokument je vraćen na pregled",
       "hasImport": "Uvoz iz ovog dokumenta postoji — ne može se vratiti."
+    },
+    "empty": {
+      "intro": "Ovdje stižu računi, ponude i izvodi koje proslijediš na svoju Centar adresu. Proslijedi bilo koji mail s računom — Centar ga pročita i pripremi za tvoju potvrdu.",
+      "settingsLink": "Postavke uvoza"
     }
   },
   "issuers": {

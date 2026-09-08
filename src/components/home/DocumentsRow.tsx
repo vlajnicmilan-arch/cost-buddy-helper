@@ -26,10 +26,13 @@ export const DocumentsRow = ({ pendingCount }: DocumentsRowProps) => {
         <span className="block text-sm font-semibold sm:text-base">
           {t('documents.title', 'Dokumenti')}
         </span>
-        <span className="block text-xs font-normal text-muted-foreground">
+        <span className="block text-xs font-normal text-muted-foreground whitespace-normal">
           {pendingCount > 0
             ? t('documents.homeRow.pending', { count: pendingCount })
-            : t('documents.homeRow.clear', 'Nema dokumenata na čekanju')}
+            : t(
+                'documents.empty.intro',
+                'Ovdje stižu računi, ponude i izvodi koje proslijediš na svoju Centar adresu. Proslijedi bilo koji mail s računom — Centar ga pročita i pripremi za tvoju potvrdu.'
+              )}
         </span>
       </span>
       {pendingCount > 0 && (

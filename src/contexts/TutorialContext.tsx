@@ -100,90 +100,16 @@ export const TutorialProvider = ({ children }: { children: ReactNode }) => {
 
   const { user } = useAuth();
 
-  // Auto-start tutorial isključivo nakon potvrđene live guided ceremony-ja.
-  // Trigger je `home-ready-for-tutorial` CustomEvent koji `PersonalModeView`
-  // dispatcha SAMO ako je ovaj mount stvarno bio u guided fazi
-  // (`guidedSessionActiveRef`). Time postojeći korisnik kojem se transakcije
-  // async učitaju s 0 na ≥3 ne dobiva tutorial (Fix 1+4).
+  // AUTO-START UKINUT (Milanova odluka 8.9.2026.).
   //
-  // Mount fallback iz prethodne iteracije je uklonjen. Per-user "seen" key
-  // (`app_tutorial_seen:<uid>`) sprječava da isti browser s različitim
-  // računima dijeli "seen" status. Legacy globalni key se i dalje čita kao
-  // backward-compat tako da korisnici koji su tutorial već vidjeli ne dobiju
-  // ponovno auto-start.
-  useEffect(() => {
-    if (!user?.id) return;
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    let pollTimer: ReturnType<typeof setTimeout> | null = null;
-    let pollAttempts = 0;
-    let started = false;
+  // Vodič od 6 koraka se više NE pokreće sam — ni novom ni postojećem
+  // korisniku. Bio je četvrti sloj uputa u prvih pet minuta. Raniji okidač je
+  // bio `home-ready-for-tutorial` CustomEvent (dispatcha ga `PersonalModeView`
+  // nakon guided ceremony-ja) + localStorage gate; taj listener je uklonjen.
+  //
+  // Komponenta i sadržaj ostaju: vodič se pokreće ISKLJUČIVO ručno, iz
+  // Postavke → Pomoć („Pokreni vodič") preko `startTutorial()`.
 
-    const passesGate = () => {
-      const seenPerUser = localStorage.getItem(seenKeyFor(user.id));
-      if (seenPerUser) return false;
-      const seenLegacy = localStorage.getItem(TUTORIAL_SEEN_KEY_LEGACY);
-      if (seenLegacy) return false;
-      const onboardingCompleted = localStorage.getItem('onboarding_completed') === 'true';
-      if (!onboardingCompleted) return false;
-      const guidedExitedAt = localStorage.getItem(`guided_home_exited_at:${user.id}`);
-      if (!guidedExitedAt) return false;
-      return true;
-    };
-
-    const scheduleStart = (delayMs: number) => {
-      if (started || timer) return;
-      timer = setTimeout(() => {
-        started = true;
-        setIsActive(true);
-        localStorage.setItem(seenKeyFor(user.id), 'true');
-      }, delayMs);
-    };
-
-    // Bug 1: Ranija iteracija je zahtijevala parovanje dva eventa
-    // (home-ready + guided-exited). Ako bi jedan signal kasnio ili izostao
-    // (npr. exit RPC je upisao localStorage nakon ceremony dispatcha, ili je
-    // guided exit perzistiran u prethodnoj sjednici a ceremony se izvodi
-    // tek sada), tutorial se nikad ne bi pokrenuo.
-    //
-    // Stvarni precizni okidač je `home-ready-for-tutorial` jer ga
-    // `PersonalModeView` dispatcha SAMO ako je ovaj mount stvarno bio u
-    // guided fazi. Postojeći korisnici (status='standard' od starta) ga
-    // nikad ne dobiju, pa je sigurno koristiti ga kao samostalni okidač.
-    // Ako gate padne samo zbog `guided_home_exited_at` (RPC sporiji od
-    // ceremony-ja), kratko poll-aj localStorage (≤2s).
-    const onHomeReady = () => {
-      if (started) return;
-      if (passesGate()) {
-        scheduleStart(600);
-        return;
-      }
-      // Polling fallback za RPC race
-      if (pollTimer) return;
-      pollAttempts = 0;
-      const tick = () => {
-        pollAttempts += 1;
-        if (passesGate()) {
-          pollTimer = null;
-          scheduleStart(300);
-          return;
-        }
-        if (pollAttempts >= 10) {
-          pollTimer = null;
-          return;
-        }
-        pollTimer = setTimeout(tick, 200);
-      };
-      pollTimer = setTimeout(tick, 200);
-    };
-
-    window.addEventListener('home-ready-for-tutorial', onHomeReady);
-
-    return () => {
-      window.removeEventListener('home-ready-for-tutorial', onHomeReady);
-      if (timer) clearTimeout(timer);
-      if (pollTimer) clearTimeout(pollTimer);
-    };
-  }, [user?.id]);
 
 
 
