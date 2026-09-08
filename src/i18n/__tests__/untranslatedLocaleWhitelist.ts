@@ -5,6 +5,7 @@ export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, s
   en: {
     "mailReview.field.iban": "IBAN je međunarodna kratica — identična na svim jezicima",
     "mailImport.status": "Same word in EN",
+    "categories.catering": "Catering is the same word in EN",
     "subscription.badge.trial": "Same word in EN",
 
     "subscription.badge.admin": "Admin terminology",
@@ -121,6 +122,7 @@ export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, s
     "openBanking.throttle.durationM": "Numeric duration format identical across locales",
   },
   de: {
+    "categories.catering": "Catering is the same word in DE",
     "settings.categories.profile.title": "Profil is the same word in DE",
     "collaborators.project": "Projekt is the same word in DE",
     "collaboratorPayment.project": "Projekt is the same word in DE",

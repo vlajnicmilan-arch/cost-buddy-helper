@@ -11,6 +11,7 @@ import { Loader2, Plus, FolderKanban, PiggyBank, MapPin, X, Smartphone, ChevronD
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 import { Category, CATEGORIES, PaymentSource, PAYMENT_SOURCES, PAYMENT_SOURCE_GROUPS, ReceiptItem, TransactionType, IncomeCategory, INCOME_CATEGORIES } from '@/types/expense';
+import { getCategoriesForProjectType } from '@/lib/projectExpenseCategories';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { CustomCategory } from '@/types/customCategory';
 import { CustomIncomeCategory } from '@/types/customIncomeCategory';
@@ -61,7 +62,7 @@ interface ManualExpenseFormProps {
   firstPaymentDate: string;
   onFirstPaymentDateChange: (value: string) => void;
   // Project/Budget
-  projects: { id: string; name: string; color?: string | null; icon?: string | null }[];
+  projects: { id: string; name: string; color?: string | null; icon?: string | null; project_type?: string | null }[];
   budgets: { id: string; name: string; color?: string | null; icon?: string | null; is_active?: boolean | null }[];
   selectedProjectId: string | null;
   onSelectedProjectIdChange: (id: string | null) => void;
@@ -155,6 +156,12 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
   const { t } = useTranslation();
   const moduleStates = useModuleStates();
   const projectsModuleEnabled = isModuleActive('projects', moduleStates.projects);
+  // Kategorije slijede projekt: odabran projekt → popis njegove vrste, inače osobne.
+  const projectCategories = props.selectedProjectId
+    ? getCategoriesForProjectType(
+        props.projects.find((p) => p.id === props.selectedProjectId)?.project_type ?? null,
+      )
+    : null;
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   return (
@@ -625,6 +632,7 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
               <SelectValue placeholder={t('common.category')} />
             </SelectTrigger>
             <SelectContent className="bg-popover z-50 max-h-[300px]" scrollToTopOnOpen>
+              {!projectCategories && (
               <div className="border-b border-border mb-1 pb-1">
                 <SelectItem value="__add_new__" className="text-primary">
                   <span className="flex items-center gap-2">
@@ -633,7 +641,8 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
                   </span>
                 </SelectItem>
               </div>
-              {props.customCategories.length > 0 && (
+              )}
+              {!projectCategories && props.customCategories.length > 0 && (
                 <>
                   <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                     {t('transactions.customSources', 'Prilagođene')}
@@ -653,20 +662,22 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
                   ))}
                 </>
               )}
-              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                {t('paymentSources.standardSources', 'Standardne')}
-              </div>
-              {CATEGORIES.map((cat) => (
+              {!projectCategories && (
+                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  {t('paymentSources.standardSources', 'Standardne')}
+                </div>
+              )}
+              {(projectCategories ?? CATEGORIES).map((cat) => (
                 <SelectItem key={cat.id} value={cat.id}>
                   <span className="flex items-center gap-2">
                     <span>{cat.icon}</span>
-                    <span>{t(`categories.${cat.id}`)}</span>
+                    <span>{t(`categories.${cat.id}`, cat.name)}</span>
                   </span>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          {props.quickAddCategoryMode === 'expense' && (
+          {!projectCategories && props.quickAddCategoryMode === 'expense' && (
             <QuickAddCategoryInline
               mode="expense"
               existingNames={[

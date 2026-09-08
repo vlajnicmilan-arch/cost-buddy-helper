@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Check, RotateCcw, FolderKanban, PiggyBank, Smartphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Category, getCategoryInfo, CATEGORIES, PaymentSource } from '@/types/expense';
+import { getCategoriesForProjectType, nextCategoryAfterProjectChange } from '@/lib/projectExpenseCategories';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { CustomCategory } from '@/types/customCategory';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -55,7 +56,7 @@ interface ScannedDataPreviewProps {
   receiptImages: string[];
   customPaymentSources: CustomPaymentSource[];
   customCategories: CustomCategory[];
-  projects: { id: string; name: string; color?: string | null; icon?: string | null }[];
+  projects: { id: string; name: string; color?: string | null; icon?: string | null; project_type?: string | null }[];
   budgets: { id: string; name: string; color?: string | null; icon?: string | null; is_active?: boolean | null }[];
   selectedProjectId: string | null;
   onSelectedProjectIdChange: (id: string | null) => void;
@@ -166,6 +167,27 @@ export const ScannedDataPreview = ({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Kategorije slijede projekt: odabran projekt → popis njegove vrste.
+  const projectCategories = selectedProjectId
+    ? getCategoriesForProjectType(projects.find((p) => p.id === selectedProjectId)?.project_type ?? null)
+    : null;
+
+  const handleProjectChange = (nextId: string | null) => {
+    onSelectedProjectIdChange?.(nextId);
+    const nextType = nextId
+      ? (projects.find((p) => p.id === nextId)?.project_type ?? null)
+      : null;
+    const next = nextCategoryAfterProjectChange(
+      scannedData.category,
+      !!nextId,
+      nextType,
+      (c) => CATEGORIES.some((x) => x.id === c) || customCategories.some((x) => x.id === c),
+    );
+    if (next !== scannedData.category) {
+      onScannedDataChange({ ...scannedData, category: next as Category });
+    }
+  };;
 
   const categoryInfo = (() => {
     const custom = customCategories.find(c => c.id === scannedData.category || c.name === scannedData.category);
@@ -332,6 +354,33 @@ export const ScannedDataPreview = ({
           />
         </div>
 
+        {/* Attachment bar: Projekt / Smjer / Krug — parity s ManualExpenseForm.
+            Scan surface zadržava mutual-exclusion između projekta i smjera. */}
+        <AttachmentBar
+          showProject={(projects?.length ?? 0) > 0}
+          projects={projects}
+          selectedProjectId={selectedProjectId}
+          onSelectedProjectIdChange={handleProjectChange}
+          showBudget={(budgets?.length ?? 0) > 0}
+          budgets={budgets}
+          selectedBudgetId={selectedBudgetId}
+          onSelectedBudgetIdChange={onSelectedBudgetIdChange}
+          showKrug={!!(showKrugSelector && scannedData.transaction_type !== 'transfer' && onKrugChange)}
+          krugId={krugId}
+          krugPrivacy={krugPrivacy}
+          onKrugChange={onKrugChange}
+          mutuallyExclusiveProjectBudget
+        />
+
+        {/* Faza — u istom koraku kao projekt, preskočiva. */}
+        {onSelectedMilestoneIdChange && scannedData.transaction_type !== 'transfer' && (
+          <MilestoneSelectRow
+            projectId={selectedProjectId}
+            value={selectedMilestoneId}
+            onChange={onSelectedMilestoneIdChange}
+          />
+        )}
+
         {/* Editable Category */}
         <div className="space-y-1">
           <span className="text-muted-foreground text-sm">{t('common.category')}:</span>
@@ -345,7 +394,7 @@ export const ScannedDataPreview = ({
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {customCategories.length > 0 && (
+              {!projectCategories && customCategories.length > 0 && (
                 <>
                   <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
                     {t('categories.custom', 'Prilagođene')}
@@ -365,14 +414,16 @@ export const ScannedDataPreview = ({
                   ))}
                 </>
               )}
-              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                {t('paymentSources.standardSources', 'Standardne')}
-              </div>
-              {CATEGORIES.map((cat) => (
+              {!projectCategories && (
+                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                  {t('paymentSources.standardSources', 'Standardne')}
+                </div>
+              )}
+              {(projectCategories ?? CATEGORIES).map((cat) => (
                 <SelectItem key={cat.id} value={cat.id}>
                   <span className="flex items-center gap-2">
                     <span>{cat.icon}</span>
-                    <span>{t(`categories.${cat.id}`)}</span>
+                    <span>{t(`categories.${cat.id}`, cat.name)}</span>
                   </span>
                 </SelectItem>
               ))}
@@ -549,32 +600,6 @@ export const ScannedDataPreview = ({
           </div>
         )}
 
-        {/* Attachment bar: Projekt / Smjer / Krug — parity s ManualExpenseForm.
-            Scan surface zadržava mutual-exclusion između projekta i smjera. */}
-        <AttachmentBar
-          showProject={(projects?.length ?? 0) > 0}
-          projects={projects}
-          selectedProjectId={selectedProjectId}
-          onSelectedProjectIdChange={onSelectedProjectIdChange}
-          showBudget={(budgets?.length ?? 0) > 0}
-          budgets={budgets}
-          selectedBudgetId={selectedBudgetId}
-          onSelectedBudgetIdChange={onSelectedBudgetIdChange}
-          showKrug={!!(showKrugSelector && scannedData.transaction_type !== 'transfer' && onKrugChange)}
-          krugId={krugId}
-          krugPrivacy={krugPrivacy}
-          onKrugChange={onKrugChange}
-          mutuallyExclusiveProjectBudget
-        />
-
-        {/* Faza — u istom koraku kao projekt, preskočiva. */}
-        {onSelectedMilestoneIdChange && scannedData.transaction_type !== 'transfer' && (
-          <MilestoneSelectRow
-            projectId={selectedProjectId}
-            value={selectedMilestoneId}
-            onChange={onSelectedMilestoneIdChange}
-          />
-        )}
 
 
 

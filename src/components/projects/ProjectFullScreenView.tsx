@@ -1020,6 +1020,7 @@ export const ProjectFullScreenView = ({
                   <ProjectTransactionsTab
                     projectId={project.id}
                     projectName={project.name}
+                    projectType={project.project_type}
                     expenses={expenses}
                     milestones={milestones}
                     isManager={isManager}

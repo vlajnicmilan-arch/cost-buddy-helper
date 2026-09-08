@@ -1,3 +1,4 @@
+import { getProjectExpenseCategoryInfo } from '@/lib/projectExpenseCategories';
 export type Category = 
   | 'food'
   | 'transport'
@@ -308,8 +309,20 @@ export const getCategoryInfo = (category: Category | IncomeCategory | 'transfer'
   if (incomeCategory) {
     return incomeCategory;
   }
-  // Otherwise return expense category
-  return CATEGORIES.find(c => c.id === category) || CATEGORIES[CATEGORIES.length - 1];
+  const expenseCategory = CATEGORIES.find(c => c.id === category);
+  if (expenseCategory) {
+    return expenseCategory;
+  }
+  // Project expense categories (material, labor, …) — same text column, own registry.
+  const projectCategory = getProjectExpenseCategoryInfo(String(category ?? ''));
+  if (projectCategory) {
+    return projectCategory as CategoryInfo;
+  }
+  // Unknown key: show the raw key instead of silently relabelling it "Ostalo".
+  if (category) {
+    return { id: category as Category, name: String(category), icon: '📦', color: 'category-other' };
+  }
+  return CATEGORIES[CATEGORIES.length - 1];
 };
 
 export interface BankConnection {

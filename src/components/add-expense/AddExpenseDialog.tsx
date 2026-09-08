@@ -4,7 +4,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button';
 import { Plus, Save, ScanLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Category, Expense, PaymentSource, ReceiptItem, TransactionType, IncomeCategory } from '@/types/expense';
+import { Category, CATEGORIES, Expense, PaymentSource, ReceiptItem, TransactionType, IncomeCategory, INCOME_CATEGORIES } from '@/types/expense';
+import { getCategoriesForProjectType, nextCategoryAfterProjectChange } from '@/lib/projectExpenseCategories';
+import { pickPreselectedProject } from '@/lib/projectPreselect';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
@@ -175,6 +177,21 @@ export const AddExpenseDialog = ({
   const handleSelectedProjectIdChange = (id: string | null) => {
     setSelectedProjectId(id);
     setSelectedMilestoneId(null);
+    // Kategorije slijede projekt. Ako odabrana kategorija nije dopuštena
+    // u novom kontekstu, polje se tiho prazni (bez poruke).
+    setCategory((current) => {
+      const nextType = id
+        ? (projects.find((p) => p.id === id)?.project_type ?? null)
+        : null;
+      return nextCategoryAfterProjectChange(
+        current,
+        !!id,
+        nextType,
+        (c) => CATEGORIES.some((x) => x.id === c)
+          || INCOME_CATEGORIES.some((x) => x.id === c)
+          || customCategories.some((x) => x.id === c),
+      ) as Category;
+    });
   };
 
   const [selectedBudgetId, setSelectedBudgetId] = useState<string | null>(null);
@@ -397,12 +414,21 @@ export const AddExpenseDialog = ({
     return curr?.symbol || primaryCurrency.symbol;
   }, [selectedSourceCurrencyCode, primaryCurrency.symbol]);
 
+  // Dopušteni ključevi kategorije za AI — prati odabrani projekt.
+  const aiAllowedCategories = useMemo(() => {
+    if (!selectedProjectId) return undefined;
+    const type = projects.find((p) => p.id === selectedProjectId)?.project_type ?? null;
+    return getCategoriesForProjectType(type).map((c) => ({ id: c.id, name: c.name }));
+  }, [selectedProjectId, projects]);
+
   const handleMerchantChange = useCallback((value: string) => {
     setMerchantName(value);
     // Skip AI categorization for transfers — category is system-reserved
     if (value.trim().length >= 2 && type !== 'income' && type !== 'transfer') {
       const suggested = getSuggestedCategory(value);
-      if (suggested) {
+      const suggestedAllowed = !!suggested
+        && (!aiAllowedCategories || aiAllowedCategories.some((c) => c.id === suggested));
+      if (suggestedAllowed) {
         setCategory(suggested as Category);
         categoryOriginRef.current = 'habit';
         userManuallySetCategory.current = false;
@@ -414,17 +440,19 @@ export const AddExpenseDialog = ({
             categoryOriginRef.current = 'ai_suggested';
           }
           setAiSuggesting(false);
-        }, items.length > 0 ? items : undefined);
+        }, items.length > 0 ? items : undefined, aiAllowedCategories);
       }
     }
-  }, [type, getSuggestedCategory, aiCategorize, description]);
+  }, [type, getSuggestedCategory, aiCategorize, description, aiAllowedCategories]);
 
   const handleDescriptionChange = useCallback((value: string) => {
     setDescription(value);
     // Skip AI categorization for transfers — category is system-reserved
     if (value.trim().length >= 3 && type !== 'income' && type !== 'transfer' && !userManuallySetCategory.current) {
       const suggested = getSuggestedCategory(merchantName);
-      if (!suggested) {
+      const suggestedAllowed = !!suggested
+        && (!aiAllowedCategories || aiAllowedCategories.some((c) => c.id === suggested));
+      if (!suggestedAllowed) {
         setAiSuggesting(true);
         aiCategorize(value, merchantName, (cat) => {
           if (!userManuallySetCategory.current) {
@@ -432,10 +460,10 @@ export const AddExpenseDialog = ({
             categoryOriginRef.current = 'ai_suggested';
           }
           setAiSuggesting(false);
-        }, items.length > 0 ? items : undefined);
+        }, items.length > 0 ? items : undefined, aiAllowedCategories);
       }
     }
-  }, [type, getSuggestedCategory, aiCategorize, merchantName]);
+  }, [type, getSuggestedCategory, aiCategorize, merchantName, aiAllowedCategories]);
 
   useEffect(() => {
     if (open && customPaymentSources.length > 0 && paymentSource === 'cash') {
@@ -491,7 +519,7 @@ export const AddExpenseDialog = ({
       scanInProgressRef.current = true;
       setReceiptImage(base64);
       try {
-        const result = await scanReceipt(base64, customPaymentSources, customCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon })));
+        const result = await scanReceipt(base64, customPaymentSources, customCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon })), aiAllowedCategories);
         if (result) {
           applyScannedResult(result);
         }
@@ -669,6 +697,13 @@ export const AddExpenseDialog = ({
         });
       } catch {}
     }
+    // Pred-odabir projekta za sken: ako nije pokrenuto iz otvorenog projekta,
+    // a korisnik ima točno jedan AKTIVAN projekt — pred-odaberi ga (može se maknuti).
+    const preselected = pickPreselectedProject(projects, selectedProjectId);
+    if (preselected && preselected !== selectedProjectId) {
+      handleSelectedProjectIdChange(preselected);
+    }
+
     scannedPreviewActiveRef.current = true;
     setShowScannedPreview(true);
     try {

@@ -63,6 +63,8 @@ import type { ProjectExpense } from './project-transactions/types';
 interface ProjectTransactionsTabProps {
   projectId: string;
   projectName?: string;
+  /** Vrsta projekta — određuje popis kategorija troška u dijalozima. */
+  projectType?: string | null;
   expenses: ProjectExpense[];
   milestones: ProjectMilestone[];
   isManager: boolean;
@@ -76,6 +78,7 @@ interface ProjectTransactionsTabProps {
 export const ProjectTransactionsTab = ({
   projectId,
   projectName,
+  projectType,
   expenses,
   milestones,
   isManager,
@@ -714,6 +717,7 @@ export const ProjectTransactionsTab = ({
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
         projectId={projectId}
+        projectType={projectType}
         saving={saving}
         expenseType={expenseType}
         setExpenseType={setExpenseType}
@@ -771,6 +775,7 @@ export const ProjectTransactionsTab = ({
         onOpenChange={setEditDialogOpen}
         projectId={projectId}
         editingExpense={editingExpense}
+        projectType={projectType}
         saving={saving}
         editType={editType}
         setEditType={setEditType}

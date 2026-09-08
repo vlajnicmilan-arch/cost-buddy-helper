@@ -15,7 +15,7 @@ serve(async (req) => {
     const quota = await checkAiQuota(auth.supabase, auth.userId, "categorize-transaction");
     if (quota) return quota;
 
-    const { description, merchant_name, custom_categories, items } = await req.json();
+    const { description, merchant_name, custom_categories, items, allowed_categories } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
@@ -35,14 +35,47 @@ serve(async (req) => {
       "investments", "charity", "kids", "home", "car", "insurance", "taxes", "other"
     ];
 
-    const allCategories = [...defaultCategories, ...(custom_categories || [])];
+    // Kad klijent pošalje dopušteni popis (trošak vezan uz projekt),
+    // AI bira ISKLJUČIVO iz njega — osobne kategorije se ne nude.
+    const restricted = Array.isArray(allowed_categories) && allowed_categories.length > 0;
+    const allowedList: { id: string; name?: string }[] = restricted ? allowed_categories : [];
+    const allCategories = restricted
+      ? allowedList.map((c) => String(c.id))
+      : [...defaultCategories, ...(custom_categories || [])];
+    const categoryLines = restricted
+      ? allowedList.map((c) => `- ${c.id}${c.name ? ` → ${c.name}` : ""}`).join("\n")
+      : "";
 
     // Build items context if available
     const itemsContext = items && items.length > 0
       ? `\nReceipt items: ${items.map((i: any) => i.name).join(", ")}`
       : "";
 
-    const prompt = `You are a transaction categorizer. Given a transaction description, merchant name, and/or receipt items, return the single most appropriate category.
+    const prompt = restricted
+      ? `You are a transaction categorizer for a project expense.
+
+Choose exactly ONE category key from this list (Croatian names in parentheses):
+${categoryLines}
+
+Rules:
+- Building materials, supplies → material
+- Own/hired manual work, wages → labor
+- Invoices from another company doing part of the job → subcontractor
+- Tools, machines, rentals → equipment
+- Delivery, fuel, freight → transport
+- Permits, administrative fees → permits
+- Software licences, hosting, SaaS → licenses
+- Advertising spend → ads
+- Video/photo/print production → production
+- Venue rental → venue
+- Food and drinks for an event → catering
+- Lecturers, trainers → instructors
+- Demolition, waste removal → demolition
+- Furniture and fittings → furniture
+- If unsure → other
+
+Return ONLY the category key, nothing else.`
+      : `You are a transaction categorizer. Given a transaction description, merchant name, and/or receipt items, return the single most appropriate category.
 
 IMPORTANT: If receipt items are provided, prioritize them over the generic description to determine the category. For example, if the description says "Weekly shopping" but the items are all coffee/drinks, categorize as "food" not "shopping".
 
