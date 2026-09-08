@@ -12,7 +12,12 @@ export const useAICategorization = () => {
       description: string,
       merchantName: string,
       onResult: (category: string) => void,
-      items?: { name: string; quantity?: number; total_price?: number }[]
+      items?: { name: string; quantity?: number; total_price?: number }[],
+      /**
+       * Dopušteni ključevi kategorije (ključ + hrvatski naziv). Postavlja se kad
+       * je odabran projekt — AI tada bira ISKLJUČIVO iz kategorija te vrste projekta.
+       */
+      allowedCategories?: { id: string; name: string }[]
     ) => {
       // Clear previous debounce
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -32,6 +37,9 @@ export const useAICategorization = () => {
               merchant_name: merchantName,
               custom_categories: customCatNames,
               items: items?.map(i => ({ name: i.name })),
+              allowed_categories: allowedCategories && allowedCategories.length > 0
+                ? allowedCategories.map(c => ({ id: c.id, name: c.name }))
+                : undefined,
             },
           });
 

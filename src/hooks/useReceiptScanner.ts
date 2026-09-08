@@ -80,15 +80,18 @@ export const useReceiptScanner = () => {
   const scanReceipt = async (
     imageBase64: string, 
     customPaymentSources?: CustomPaymentSource[],
-    customCategories?: { id: string; name: string; icon: string }[]
+    customCategories?: { id: string; name: string; icon: string }[],
+    /** Dopuštene kategorije ciljnog projekta (ključ + naziv); prazno = osobne. */
+    allowedCategories?: { id: string; name: string }[]
   ): Promise<ParsedReceipt | null> => {
-    return scanMultipleReceipts([imageBase64], customPaymentSources, customCategories);
+    return scanMultipleReceipts([imageBase64], customPaymentSources, customCategories, allowedCategories);
   };
 
   const scanMultipleReceipts = async (
     imagesBase64: string[],
     customPaymentSources?: CustomPaymentSource[],
-    customCategories?: { id: string; name: string; icon: string }[]
+    customCategories?: { id: string; name: string; icon: string }[],
+    allowedCategories?: { id: string; name: string }[]
   ): Promise<ParsedReceipt | null> => {
     setScanning(true);
     setParsedData(null);
@@ -131,7 +134,8 @@ export const useReceiptScanner = () => {
         const payload = {
           imagesBase64: payloadImages,
           customPaymentSources: sourcesForApi,
-          customCategories: customCategories || []
+          customCategories: customCategories || [],
+          allowedCategories: allowedCategories && allowedCategories.length > 0 ? allowedCategories : undefined,
         };
 
         if (Capacitor.isNativePlatform()) {

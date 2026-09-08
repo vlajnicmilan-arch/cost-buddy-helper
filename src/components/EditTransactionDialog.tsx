@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Expense, Category, PaymentSource, CATEGORIES, PAYMENT_SOURCES, TransactionType, getPaymentSourceInfo, IncomeCategory, INCOME_CATEGORIES } from '@/types/expense';
+import { getCategoriesForProjectType, nextCategoryAfterProjectChange } from '@/lib/projectExpenseCategories';
 import { PaymentSourceOptions } from '@/components/add-expense/PaymentSourceOptions';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
@@ -74,6 +75,10 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
   const { projects } = useProjects();
   const moduleStates = useModuleStates();
   const projectsActive = isModuleActive('projects', moduleStates.projects);
+  // Kategorije slijede projekt: odabran projekt → popis njegove vrste.
+  const projectCategories = (type !== 'income' && selectedProjectId)
+    ? getCategoriesForProjectType(projects.find((p) => p.id === selectedProjectId)?.project_type ?? null)
+    : null;
   const { budgets } = useBudgets();
   const { milestones } = useProjectMilestones(selectedProjectId);
   const [incomeCategoryDialogOpen, setIncomeCategoryDialogOpen] = useState(false);
@@ -333,6 +338,60 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
             </div>
           </div>
 
+          {/* Project Assignment */}
+          {projectsActive && projects.length > 0 && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <FolderKanban className="w-4 h-4" />
+                {t('transactions.assignToProject')}
+              </Label>
+              <Select 
+                value={selectedProjectId || 'none'} 
+                onValueChange={(v) => {
+                  const nextId = v === 'none' ? null : v;
+                  setSelectedProjectId(nextId);
+                  setSelectedMilestoneId(null);
+                  // Kategorije slijede projekt — nevažeća se tiho prazni.
+                  setCategory((current) => {
+                    const nextType = nextId
+                      ? (projects.find((p) => p.id === nextId)?.project_type ?? null)
+                      : null;
+                    return nextCategoryAfterProjectChange(
+                      current,
+                      !!nextId,
+                      nextType,
+                      (c) => CATEGORIES.some((x) => x.id === c)
+                        || INCOME_CATEGORIES.some((x) => x.id === c)
+                        || customCategories.some((x) => x.id === c),
+                    ) as Category;
+                  });
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('transactions.noProject')} />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  <SelectItem value="none">
+                    <span className="text-muted-foreground">{t('transactions.noProject')}</span>
+                  </SelectItem>
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      <span className="flex items-center gap-2">
+                        <span 
+                          className="w-5 h-5 rounded flex items-center justify-center text-xs"
+                          style={{ backgroundColor: (project.color || '#3b82f6') + '20', color: project.color || '#3b82f6' }}
+                        >
+                          {project.icon || '📁'}
+                        </span>
+                        <span>{project.name}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Category - Different label and options for income */}
           <div className="space-y-2">
             <Label>{type === 'income' ? t('transactions.incomeCategory') : t('common.category')}</Label>
@@ -398,7 +457,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
                 ) : (
                   <>
                     {/* Custom expense categories first */}
-                    {customCategories.length > 0 && (
+                    {!projectCategories && customCategories.length > 0 && (
                       <>
                         <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                           {t('transactions.customSources', 'Prilagođene')}
@@ -419,14 +478,16 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
                       </>
                     )}
                     {/* Standard categories */}
-                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                      {t('paymentSources.standardSources', 'Standardne')}
-                    </div>
-                    {CATEGORIES.map((cat) => (
+                    {!projectCategories && (
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        {t('paymentSources.standardSources', 'Standardne')}
+                      </div>
+                    )}
+                    {(projectCategories ?? CATEGORIES).map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
                         <span className="flex items-center gap-2">
                           <span>{cat.icon}</span>
-                          <span>{t(`categories.${cat.id}`)}</span>
+                          <span>{t(`categories.${cat.id}`, cat.name)}</span>
                         </span>
                       </SelectItem>
                     ))}
@@ -519,45 +580,6 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
               </PopoverContent>
             </Popover>
           </div>
-
-          {/* Project Assignment */}
-          {projectsActive && projects.length > 0 && (
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <FolderKanban className="w-4 h-4" />
-                {t('transactions.assignToProject')}
-              </Label>
-              <Select 
-                value={selectedProjectId || 'none'} 
-                onValueChange={(v) => {
-                  setSelectedProjectId(v === 'none' ? null : v);
-                  setSelectedMilestoneId(null);
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t('transactions.noProject')} />
-                </SelectTrigger>
-                <SelectContent className="bg-popover z-50">
-                  <SelectItem value="none">
-                    <span className="text-muted-foreground">{t('transactions.noProject')}</span>
-                  </SelectItem>
-                  {projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      <span className="flex items-center gap-2">
-                        <span 
-                          className="w-5 h-5 rounded flex items-center justify-center text-xs"
-                          style={{ backgroundColor: (project.color || '#3b82f6') + '20', color: project.color || '#3b82f6' }}
-                        >
-                          {project.icon || '📁'}
-                        </span>
-                        <span>{project.name}</span>
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
 
           {/* Milestone Assignment - only when project is selected */}
           {projectsActive && selectedProjectId && milestones.length > 0 && (

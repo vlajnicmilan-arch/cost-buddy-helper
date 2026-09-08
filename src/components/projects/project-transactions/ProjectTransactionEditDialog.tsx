@@ -10,7 +10,8 @@ import { CalendarIcon, CreditCard, Loader2, Target, TrendingDown, TrendingUp } f
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
-import { CATEGORIES, type Category, type TransactionType } from '@/types/expense';
+import { type Category, type TransactionType } from '@/types/expense';
+import { getCategoriesForProjectType } from '@/lib/projectExpenseCategories';
 import { makeCalendarDisabled, type DateRange as DateLimits } from '@/lib/dateValidation';
 import { AdvanceLinkSection } from '@/components/add-expense/AdvanceLinkSection';
 import type { ProjectMilestone } from '@/types/project';
@@ -20,6 +21,8 @@ interface ProjectTransactionEditDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectId: string;
+  /** Vrsta projekta — određuje popis kategorija troška. */
+  projectType?: string | null;
   editingExpense: ProjectExpense | null;
   saving: boolean;
   // form state
@@ -60,6 +63,7 @@ export const ProjectTransactionEditDialog = ({
   onOpenChange,
   projectId,
   editingExpense,
+  projectType,
   saving,
   editType,
   setEditType,
@@ -174,11 +178,11 @@ export const ProjectTransactionEditDialog = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(CATEGORIES).map(([key, cat]) => (
-                  <SelectItem key={key} value={key}>
+                {getCategoriesForProjectType(projectType).map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
                     <span className="flex items-center gap-2">
                       <span>{cat.icon}</span>
-                      <span>{cat.name}</span>
+                      <span>{t(`categories.${cat.id}`, cat.name)}</span>
                     </span>
                   </SelectItem>
                 ))}

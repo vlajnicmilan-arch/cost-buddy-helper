@@ -17,7 +17,8 @@ import {
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
-import { CATEGORIES, type Category, type TransactionType } from '@/types/expense';
+import { type Category, type TransactionType } from '@/types/expense';
+import { getCategoriesForProjectType } from '@/lib/projectExpenseCategories';
 import { makeCalendarDisabled, type DateRange as DateLimits } from '@/lib/dateValidation';
 import { AdvanceLinkSection } from '@/components/add-expense/AdvanceLinkSection';
 import type { ProjectMilestone } from '@/types/project';
@@ -26,6 +27,8 @@ interface ProjectTransactionAddDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectId: string;
+  /** Vrsta projekta — određuje popis kategorija troška. */
+  projectType?: string | null;
   saving: boolean;
   // form state
   expenseType: TransactionType;
@@ -67,6 +70,7 @@ export const ProjectTransactionAddDialog = ({
   open,
   onOpenChange,
   projectId,
+  projectType,
   saving,
   expenseType,
   setExpenseType,
@@ -190,11 +194,11 @@ export const ProjectTransactionAddDialog = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {CATEGORIES.map((cat) => (
+                {getCategoriesForProjectType(projectType).map((cat) => (
                   <SelectItem key={cat.id} value={cat.id}>
                     <div className="flex items-center gap-2">
                       <span>{cat.icon}</span>
-                      <span>{cat.name}</span>
+                      <span>{t(`categories.${cat.id}`, cat.name)}</span>
                     </div>
                   </SelectItem>
                 ))}

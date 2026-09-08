@@ -189,7 +189,7 @@ serve(async (req) => {
       );
     }
     
-    const { imageBase64, imagesBase64, customPaymentSources, customCategories } = body;
+    const { imageBase64, imagesBase64, customPaymentSources, customCategories, allowedCategories } = body;
 
     // Support both single image (backward compat) and multiple images
     const images: string[] = imagesBase64 && imagesBase64.length > 0 
@@ -217,9 +217,43 @@ serve(async (req) => {
     
     console.log('Sending', imageParts.length, 'image(s) to AI gateway...');
     
+    // Popis kategorija: kad je trošak vezan uz projekt, klijent šalje
+    // dopuštene kategorije te vrste projekta i AI bira ISKLJUČIVO iz njih.
+    const restrictedCategories = Array.isArray(allowedCategories) && allowedCategories.length > 0;
+    const categoriesBlock = restrictedCategories
+      ? `KATEGORIJE (odaberi NAJSPECIFIČNIJU koja odgovara; koristi ISKLJUČIVO ove ključeve):\n`
+        + allowedCategories.map((c: any) => `- ${c.id} → ${c.name ?? c.id}`).join('\n')
+      : `KATEGORIJE (odaberi NAJSPECIFIČNIJU koja odgovara):
+- food → Restorani, fast food, kafići, pekare, gotova jela (NE supermarket kupovina!)
+- groceries → Supermarketi, dućani, namirnice (Konzum, Lidl, Kaufland, Spar, Plodine, Tommy, Studenac, Interspar, Eurospin)
+- transport → Javni prijevoz, taxi, Uber, Bolt, TRAJEKT, ferry, autobus, vlak, parking, cestarina, vinjeta, ENC
+- car → Gorivo, benzin, servis auta, registracija, automehaničar, autopraonica, INA, Petrol, Tifon, Crodux (OSIM ako je DOPUNA → transfer)
+- shopping → Općenita kupovina, elektronika, tehnika, namještaj, alati
+- clothing → Odjeća, obuća, modni dodaci
+- entertainment → Kino, koncerti, izlasci, noćni klubovi, bowling
+- subscriptions → Netflix, Spotify, HBO, streaming usluge, mjesečne pretplate
+- bills → Računi za telefon, internet, TV, komunalne usluge
+- utilities → Struja, voda, plin, grijanje, komunalije
+- rent → Najam stana, zakupnina
+- health → Ljekarna, liječnik, bolnica, laboratorij, vitamini
+- beauty → Frizerski salon, kozmetika, DM, Müller (kozmetički proizvodi)
+- sports → Teretana, sport, oprema za sport, članarine za sport
+- education → Knjige, tečajevi, školarine, edukacije
+- travel → Putovanja, hoteli, smještaj, avionske karte, turističke aktivnosti
+- home → Kućne potrepštine, popravci, vrtni centar, Bauhaus, Pevex
+- pets → Hrana za životinje, veterinar
+- gifts → Pokloni, cvjećarnica
+- kids → Dječje potrepštine, igračke, škola, vrtić
+- insurance → Osiguranje (životno, auto, zdravstveno)
+- taxes → Porezi, pristojbe, javni nameti
+- savings → Štednja
+- investments → Investicije
+- charity → Donacije, humanitarne uplate
+- other → Sve ostalo što ne pripada nijednoj kategoriji`;
+
     // Build custom categories context
     let customCategoriesContext = '';
-    if (customCategories && customCategories.length > 0) {
+    if (!restrictedCategories && customCategories && customCategories.length > 0) {
       const catList = customCategories.map((cat: any) => `- ${cat.id} → ${cat.icon} ${cat.name}`).join('\n');
       customCategoriesContext = `\n\nKORISNIKOVE PRILAGOĐENE KATEGORIJE (koristi ih ako odgovaraju sadržaju računa):\n${catList}\nAko nijedna prilagođena kategorija ne odgovara, koristi standardne kategorije.`;
     }
@@ -467,33 +501,7 @@ PRIMJER ZA RATE:
   "items": [{"name": "Laptop HP 15", "quantity": 1, "unit_price": null, "total_price": 600.00}]
 }
 
-KATEGORIJE (odaberi NAJSPECIFIČNIJU koja odgovara):
-- food → Restorani, fast food, kafići, pekare, gotova jela (NE supermarket kupovina!)
-- groceries → Supermarketi, dućani, namirnice (Konzum, Lidl, Kaufland, Spar, Plodine, Tommy, Studenac, Interspar, Eurospin)
-- transport → Javni prijevoz, taxi, Uber, Bolt, TRAJEKT, ferry, autobus, vlak, parking, cestarina, vinjeta, ENC
-- car → Gorivo, benzin, servis auta, registracija, automehaničar, autopraonica, INA, Petrol, Tifon, Crodux (OSIM ako je DOPUNA → transfer)
-- shopping → Općenita kupovina, elektronika, tehnika, namještaj, alati
-- clothing → Odjeća, obuća, modni dodaci
-- entertainment → Kino, koncerti, izlasci, noćni klubovi, bowling
-- subscriptions → Netflix, Spotify, HBO, streaming usluge, mjesečne pretplate
-- bills → Računi za telefon, internet, TV, komunalne usluge
-- utilities → Struja, voda, plin, grijanje, komunalije
-- rent → Najam stana, zakupnina
-- health → Ljekarna, liječnik, bolnica, laboratorij, vitamini
-- beauty → Frizerski salon, kozmetika, DM, Müller (kozmetički proizvodi)
-- sports → Teretana, sport, oprema za sport, članarine za sport
-- education → Knjige, tečajevi, školarine, edukacije
-- travel → Putovanja, hoteli, smještaj, avionske karte, turističke aktivnosti
-- home → Kućne potrepštine, popravci, vrtni centar, Bauhaus, Pevex
-- pets → Hrana za životinje, veterinar
-- gifts → Pokloni, cvjećarnica
-- kids → Dječje potrepštine, igračke, škola, vrtić
-- insurance → Osiguranje (životno, auto, zdravstveno)
-- taxes → Porezi, pristojbe, javni nameti
-- savings → Štednja
-- investments → Investicije
-- charity → Donacije, humanitarne uplate
-- other → Sve ostalo što ne pripada nijednoj kategoriji
+${categoriesBlock}
 
 VAŽNO ZA KATEGORIZACIJU:
 - "Trajekt", "ferry", "karta za brod" → UVIJEK "transport", NIKAD "food"!
