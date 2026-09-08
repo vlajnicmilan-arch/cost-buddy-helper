@@ -127,6 +127,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         });
       }
       setLoading(false);
+      setSubscriptionReady(true);
     } catch (err) {
       const errMsg = String((err as any)?.message || err);
       if (/jwt|token.*expir|unauthorized/i.test(errMsg)) {
@@ -134,8 +135,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       } else {
         console.error('Error checking subscription:', err);
       }
-    } finally {
-      // Prava su poznata (ili su pala) — gate smije odlučivati.
+      // I pri grešci: gate smije odlučivati, korisnik se ne smije zaglaviti.
       setSubscriptionReady(true);
     }
   }, [session?.access_token]);
