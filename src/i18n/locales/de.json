@@ -403,7 +403,7 @@
     "remainingBudget": "Budget übrig",
     "realizedMargin": "Marge",
     "projectDeadline": "Projektfrist",
-    "funding.summaryAwaitingPayment": "Zahlung ausstehend",
+    "funding.summaryLeftFromSources": "Rest aus Quellen",
     "funding.plannedCost": "Geplante Kosten",
     "team": "Team",
     "transactions": "Transaktionen",
