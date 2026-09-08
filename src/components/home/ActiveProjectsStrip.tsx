@@ -56,6 +56,8 @@ interface ProjectCardData {
   remainderRatio: number | null;
   hasBaseline: boolean;
   level: RemainderLevel;
+  contracted: number;
+  contractedIsEstimate: boolean;
 }
 
 const HEALTH_DOT_COLOR: Record<RemainderLevel, string> = {
