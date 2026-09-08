@@ -154,6 +154,8 @@ export const initSentry = (): void => {
           // Stale lazy-chunk after deploy — not an app bug, recovery handles it.
           if (isChunkLoadError(err) || isChunkLoadError(msg)) return null;
           if (isNoise(msg)) return null;
+          if (isInAppBrowserNoise(event, msg)) return null;
+
 
           // Strip query strings from URLs in case they contain tokens.
           if (event.request?.url) {
