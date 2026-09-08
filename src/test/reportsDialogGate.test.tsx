@@ -46,7 +46,9 @@ vi.mock('@/hooks/useStatusFeedback', () => ({
 const renderDialog = () =>
   render(
     <MemoryRouter>
-      <ReportsDialog expenses={[]} />
+      <BackButtonProvider>
+        <ReportsDialog expenses={[]} />
+      </BackButtonProvider>
     </MemoryRouter>,
   );
 
