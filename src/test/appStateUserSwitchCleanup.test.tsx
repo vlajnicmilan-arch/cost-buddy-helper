@@ -44,7 +44,14 @@ const renderProvider = async () => {
       <Probe />
     </AppStateProvider>,
   );
-  await waitFor(() => expect(screen.getByTestId('probe').textContent).toMatch(/^ready:/));
+  // Čekamo dokaz da je resolveOnboarding stvarno prošao kroz granu sa sesijom.
+  await waitFor(
+    () => expect(localStorage.getItem('last_resolved_user_id')).toBe(state.userId),
+    { timeout: 5000 },
+  );
+  await waitFor(() => expect(screen.getByTestId('probe').textContent).toMatch(/^ready:/), {
+    timeout: 5000,
+  });
 };
 
 describe('AppStateContext — promjena korisnika', () => {
