@@ -79,6 +79,32 @@ const isNoise = (msg: string | undefined): boolean => {
   return NOISE_PATTERNS.some((p) => msg.includes(p));
 };
 
+/**
+ * Facebook / Instagram in-app browser noise.
+ *
+ * Their injected measurement scripts throw after the page is torn down
+ * (e.g. `Error invoking postMessage`, `iabjs://` frames). This is not our
+ * code and the user sees nothing, so we drop it to save Sentry quota.
+ */
+export const isInAppBrowserNoise = (
+  event: Sentry.Event,
+  msg: string | undefined,
+): boolean => {
+  if (msg && msg.includes('Error invoking postMessage')) return true;
+
+  const values = event.exception?.values ?? [];
+  for (const exception of values) {
+    const frames = exception.stacktrace?.frames ?? [];
+    for (const frame of frames) {
+      const path = frame.abs_path ?? frame.filename;
+      if (path && path.startsWith('iabjs://')) return true;
+    }
+  }
+
+  return false;
+};
+
+
 export const initSentry = (): void => {
   if (initialized) return;
   if (typeof window === 'undefined') return;
