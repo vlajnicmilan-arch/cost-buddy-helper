@@ -23,6 +23,8 @@ import i18n from '@/i18n';
 import { readAuthEntry, sanitizeAuthError, resolveInitialAuthTab } from '@/lib/authFunnel';
 import { resolveSignupIntent } from '@/lib/signupIntent';
 import { detectEmbeddedBrowser } from '@/lib/embeddedBrowser';
+import { startVerificationAutoLogin } from '@/lib/verificationAutoLogin';
+
 import { buildConsentPayload, recordNewsletterConsent, stashPendingConsent } from '@/lib/newsletterConsent';
 import { buildTermsAcceptancePayload, composeTermsNoticeText, recordTermsAcceptance, resolveAppLocale, stashPendingTermsAcceptance } from '@/lib/termsAcceptance';
 import { TOS_VERSION } from '@/lib/legalVersions';
@@ -315,12 +317,37 @@ const Auth = () => {
     setPassword('');
   };
 
+  /**
+   * Tihi pokušaj prijave dok korisnik čeka potvrdu maila. Lozinka je još u
+   * stanju obrasca — provjera se radi pokušajem prijave, bez ijedne promjene
+   * na poslužitelju i bez telemetrije/toastova.
+   */
+  const credsRef = useRef({ email: '', password: '' });
+  credsRef.current = { email: registeredEmail || email, password };
+  const signInRef = useRef(signIn);
+  signInRef.current = signIn;
+
+  const autoLoginArmed =
+    awaitingVerification && verifyEntry === 'signup' && password.trim() !== '';
+
   // Verification screen impression — exactly once per entry to the screen.
   useEffect(() => {
     if (!awaitingVerification) return;
-    track('verify_screen_viewed', { entry: verifyEntry });
+    track('verify_screen_viewed', { entry: verifyEntry, auto_login: autoLoginArmed });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [awaitingVerification]);
+
+  useEffect(() => {
+    if (!awaitingVerification || verifyEntry !== 'signup') return;
+    if (!credsRef.current.password.trim()) return;
+    return startVerificationAutoLogin({
+      getCredentials: () => credsRef.current,
+      signIn: (mail, pwd) => signInRef.current(mail, pwd),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [awaitingVerification, verifyEntry]);
+
+
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
