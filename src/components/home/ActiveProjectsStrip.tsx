@@ -255,7 +255,7 @@ export const ActiveProjectsStrip = React.memo(({
             if (!hasBaseline) return null;
             const remainderAmount = baseline - spent;
             const lines = [
-              { label: t('projects.card.contracted', 'Ugovoreno'), value: baseline, signed: false },
+              { label: t('projects.card.contracted', 'Ugovoreno'), value: contracted, signed: false },
               { label: t('projects.card.spent', 'Trošak'), value: spent, signed: false },
               { label: t(labels.amount.key, labels.amount.fallback), value: remainderAmount, signed: true },
             ];
@@ -279,6 +279,13 @@ export const ActiveProjectsStrip = React.memo(({
                     </div>
                   );
                 })}
+                {contractedIsEstimate && (
+                  <div className="flex justify-end">
+                    <span className="text-[10px] text-muted-foreground">
+                      {t('projects.contractedFromBudget', 'procjena iz budžeta')}
+                    </span>
+                  </div>
+                )}
               </div>
             );
           };
