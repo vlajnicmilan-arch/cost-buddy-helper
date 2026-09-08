@@ -67,7 +67,11 @@ const baseProject: ProjectWithOwnership = {
 };
 
 const renderStrip = (projects: ProjectWithOwnership[]) =>
-  render(<ActiveProjectsStrip projects={projects} isLocalMode={false} isBusinessMode={false} />);
+  render(
+    <MemoryRouter>
+      <ActiveProjectsStrip projects={projects} isLocalMode={false} isBusinessMode={false} />
+    </MemoryRouter>
+  );
 
 describe('ActiveProjectsStrip — Ugovoreno na kartici', () => {
   beforeEach(() => {
