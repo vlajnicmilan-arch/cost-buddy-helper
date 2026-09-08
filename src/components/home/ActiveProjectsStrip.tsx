@@ -12,6 +12,7 @@ import { useHaptics } from '@/hooks/useHaptics';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useActiveProjectsSummary } from '@/hooks/useActiveProjectsSummary';
 import { getBaselineSummary, type RemainderLevel } from '@/lib/projectCostBaseline';
+import { getProjectFinancials } from '@/lib/projectFinancials';
 import {
   getRemainderLabels,
   getRemainderTrafficLabel,
@@ -55,6 +56,8 @@ interface ProjectCardData {
   remainderRatio: number | null;
   hasBaseline: boolean;
   level: RemainderLevel;
+  contracted: number;
+  contractedIsEstimate: boolean;
 }
 
 const HEALTH_DOT_COLOR: Record<RemainderLevel, string> = {
@@ -103,9 +106,11 @@ export const ActiveProjectsStrip = React.memo(({
     return active.slice(0, MAX_VISIBLE).map(p => {
       const entry = summary.get(p.id);
       const spent = entry?.spent ?? 0;
+      const income = entry?.income ?? 0;
       // Dashboard ne učitava faze, pa je osnovica ovdje ugovorena vrijednost
       // (getCostBaseline sam pada na `contract` kad planiranog troška nema).
       const summaryData = getBaselineSummary(p, spent);
+      const financials = getProjectFinancials({ project: p, spent, received: income });
 
       return {
         project: p,
@@ -114,6 +119,8 @@ export const ActiveProjectsStrip = React.memo(({
         remainderRatio: summaryData.remainderPct === null ? null : summaryData.remainderPct / 100,
         hasBaseline: summaryData.hasBaseline,
         level: summaryData.level,
+        contracted: financials.contracted,
+        contractedIsEstimate: financials.contractedIsEstimate,
       };
     });
   }, [projects, summary]);
@@ -223,7 +230,7 @@ export const ActiveProjectsStrip = React.memo(({
         ariaLabel={t('nav.activeProjects', 'Aktivni projekti')}
       >
         {activeProjects.map((data, idx) => {
-          const { project, spent, baseline, remainderRatio, hasBaseline, level } = data;
+          const { project, spent, baseline, remainderRatio, hasBaseline, level, contracted, contractedIsEstimate } = data;
           const color = project.color || DEFAULT_PROJECT_COLORS[idx % DEFAULT_PROJECT_COLORS.length];
           const dotColor = HEALTH_DOT_COLOR[level];
           // Natpisi i prateći tekstovi dolaze iz istog pomoćnika — kartica ne
@@ -248,7 +255,7 @@ export const ActiveProjectsStrip = React.memo(({
             if (!hasBaseline) return null;
             const remainderAmount = baseline - spent;
             const lines = [
-              { label: t('projects.card.contracted', 'Ugovoreno'), value: baseline, signed: false },
+              { label: t('projects.card.contracted', 'Ugovoreno'), value: contracted, signed: false },
               { label: t('projects.card.spent', 'Trošak'), value: spent, signed: false },
               { label: t(labels.amount.key, labels.amount.fallback), value: remainderAmount, signed: true },
             ];
@@ -272,6 +279,13 @@ export const ActiveProjectsStrip = React.memo(({
                     </div>
                   );
                 })}
+                {contractedIsEstimate && (
+                  <div className="flex justify-end">
+                    <span className="text-[10px] text-muted-foreground">
+                      {t('projects.contractedFromBudget', 'procjena iz budžeta')}
+                    </span>
+                  </div>
+                )}
               </div>
             );
           };

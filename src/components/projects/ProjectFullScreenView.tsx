@@ -741,6 +741,15 @@ export const ProjectFullScreenView = ({
 
 
                 <TabsContent value="overview" className="m-0 space-y-4">
+                  {/* #4 Overview hierarchy — KPIs first, progress next, meta last */}
+
+                  {/* Brojke Pregleda — isti helper kao popis, početna, Budžet i Financiranje. */}
+                  <ProjectOverviewFinancials
+                    financials={financials}
+                    endDate={project.end_date}
+                    showMargin={!isInvestorViewer}
+                  />
+
                   {/* Quick Start cards — prikazuju se dok god ima nedovršenih koraka.
                       Investor nema veze s internim setupom projekta → sakriveno. */}
                   {!isInvestorViewer && !quickStartDismissed && (() => {
@@ -765,15 +774,6 @@ export const ProjectFullScreenView = ({
                       />
                     );
                   })()}
-
-                  {/* #4 Overview hierarchy — KPIs first, progress next, meta last */}
-
-                  {/* Brojke Pregleda — isti helper kao popis, početna, Budžet i Financiranje. */}
-                  <ProjectOverviewFinancials
-                    financials={financials}
-                    endDate={project.end_date}
-                    showMargin={!isInvestorViewer}
-                  />
 
                   {/* 1. P&L Card — primary financial KPI (business view). NIKAD investoru. */}
                   {canAccessBusinessTabs && (
