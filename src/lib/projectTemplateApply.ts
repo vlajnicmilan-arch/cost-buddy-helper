@@ -24,7 +24,9 @@ export async function applyTemplateToProject(
   projectStartDate: string | null,
   options: ApplyOptions = {}
 ): Promise<void> {
-  const baseDate = projectStartDate ? new Date(projectStartDate) : new Date();
+  // Bez datuma početka faze NE dobivaju rok. Inače bi projekt bez ijednog
+  // unesenog datuma odmah imao faze koje kasne od danas.
+  const baseDate = projectStartDate ? new Date(projectStartDate) : null;
   const sorted = template.default_milestones
     ? [...template.default_milestones].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
     : [];
@@ -63,7 +65,9 @@ export async function applyTemplateToProject(
       status: 'pending',
       sort_order: sortIdx++,
       due_date:
-        m.days_offset != null ? format(addDays(baseDate, m.days_offset), 'yyyy-MM-dd') : null,
+        baseDate && m.days_offset != null
+          ? format(addDays(baseDate, m.days_offset), 'yyyy-MM-dd')
+          : null,
       color: template.color || '#3b82f6',
       is_contingency: false,
     });

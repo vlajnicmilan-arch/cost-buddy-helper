@@ -121,6 +121,26 @@ export const calculateContractValue = (project: RawProjectForContract | null | u
   return Number(project.total_budget || 0);
 };
 
+export interface ContractValueInfo {
+  value: number;
+  /**
+   * True kad ugovoreni iznos NIJE upisan pa je uzet budžet projekta.
+   * Tada UI uz brojku piše „procjena iz budžeta" i NE prikazuje maržu —
+   * ugovoreno = budžet, pa bi marža bila lažna.
+   */
+  isEstimateFromBudget: boolean;
+}
+
+export const getContractValueInfo = (
+  project: RawProjectForContract | null | undefined,
+): ContractValueInfo => {
+  if (!project) return { value: 0, isEstimateFromBudget: false };
+  const cv = Number(project.contract_value || 0);
+  if (cv > 0) return { value: cv, isEstimateFromBudget: false };
+  const tb = Number(project.total_budget || 0);
+  return { value: tb, isEstimateFromBudget: tb > 0 };
+};
+
 export const calculateExpectedProfit = (
   project: RawProjectForContract | null | undefined,
   expenses: RawProjectExpense[]
