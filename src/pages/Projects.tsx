@@ -131,7 +131,7 @@ const Projects = () => {
           <CollaboratorsTab />
         ) : view === 'people' ? (
           <PeopleTab />
-        ) : hasMemberships === null ? (
+        ) : (hasMemberships === null || !subscriptionReady) ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
