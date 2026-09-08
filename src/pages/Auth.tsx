@@ -315,12 +315,85 @@ const Auth = () => {
     setPassword('');
   };
 
+  /**
+   * Tihi pokušaj prijave dok korisnik čeka potvrdu maila. Lozinka je još u
+   * stanju obrasca — provjera se radi pokušajem prijave, bez ijedne promjene
+   * na poslužitelju i bez telemetrije/toastova.
+   */
+  const credsRef = useRef({ email: '', password: '' });
+  credsRef.current = { email: registeredEmail || email, password };
+  const signInRef = useRef(signIn);
+  signInRef.current = signIn;
+
+  const autoLoginArmed =
+    awaitingVerification && verifyEntry === 'signup' && password.trim() !== '';
+
   // Verification screen impression — exactly once per entry to the screen.
   useEffect(() => {
     if (!awaitingVerification) return;
-    track('verify_screen_viewed', { entry: verifyEntry });
+    track('verify_screen_viewed', { entry: verifyEntry, auto_login: autoLoginArmed });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [awaitingVerification]);
+
+  useEffect(() => {
+    if (!awaitingVerification || verifyEntry !== 'signup') return;
+    const { password: pwd } = credsRef.current;
+    if (!pwd.trim()) return;
+
+    const POLL_MS = 15_000; // rate limit prijava po IP-u — ne smanjivati
+    const MAX_MS = 10 * 60 * 1000;
+    const FOCUS_DEBOUNCE_MS = 5_000;
+    const startedAt = Date.now();
+    let stopped = false;
+    let inFlight = false;
+    let lastRun = 0;
+    let timer: ReturnType<typeof setInterval> | undefined;
+
+    const stop = () => {
+      stopped = true;
+      if (timer) clearInterval(timer);
+      timer = undefined;
+    };
+
+    const attempt = async () => {
+      if (stopped || inFlight) return;
+      if (Date.now() - startedAt > MAX_MS) { stop(); return; }
+      inFlight = true;
+      lastRun = Date.now();
+      try {
+        const { error } = await signInRef.current(
+          credsRef.current.email.trim(),
+          credsRef.current.password,
+        );
+        if (stopped) return;
+        if (!error) { stop(); return; }               // uspjeh — router preuzima
+        if (!error.message?.includes('Email not confirmed')) stop(); // druga greška — tiho stani
+      } catch {
+        stop();
+      } finally {
+        inFlight = false;
+      }
+    };
+
+    const onWake = () => {
+      if (stopped) return;
+      if (document.visibilityState === 'hidden') return;
+      if (Date.now() - lastRun < FOCUS_DEBOUNCE_MS) return;
+      void attempt();
+    };
+
+    timer = setInterval(() => { void attempt(); }, POLL_MS);
+    window.addEventListener('focus', onWake);
+    document.addEventListener('visibilitychange', onWake);
+
+    return () => {
+      stop();
+      window.removeEventListener('focus', onWake);
+      document.removeEventListener('visibilitychange', onWake);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [awaitingVerification, verifyEntry]);
+
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
