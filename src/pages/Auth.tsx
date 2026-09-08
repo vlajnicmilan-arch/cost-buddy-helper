@@ -23,6 +23,8 @@ import i18n from '@/i18n';
 import { readAuthEntry, sanitizeAuthError, resolveInitialAuthTab } from '@/lib/authFunnel';
 import { resolveSignupIntent } from '@/lib/signupIntent';
 import { detectEmbeddedBrowser } from '@/lib/embeddedBrowser';
+import { startVerificationAutoLogin } from '@/lib/verificationAutoLogin';
+
 import { buildConsentPayload, recordNewsletterConsent, stashPendingConsent } from '@/lib/newsletterConsent';
 import { buildTermsAcceptancePayload, composeTermsNoticeText, recordTermsAcceptance, resolveAppLocale, stashPendingTermsAcceptance } from '@/lib/termsAcceptance';
 import { TOS_VERSION } from '@/lib/legalVersions';
