@@ -24,6 +24,12 @@ interface SubscriptionState {
   tier: SubscriptionTier;
   subscribed: boolean;
   loading: boolean;
+  /**
+   * Postaje true nakon prvog dovršenog checkSubscription (i pri grešci), ili
+   * kad je auth razriješen bez sesije. Dok je false, prava se JOŠ NE ZNAJU —
+   * nijedan gate ne smije donositi odluku.
+   */
+  subscriptionReady: boolean;
   trialActive: boolean;
   trialDaysRemaining: number;
   subscriptionEnd: string | null;
@@ -37,6 +43,7 @@ const SubscriptionContext = createContext<SubscriptionState>({
   tier: 'free',
   subscribed: false,
   loading: true,
+  subscriptionReady: false,
   trialActive: false,
   trialDaysRemaining: 0,
   subscriptionEnd: null,
@@ -72,10 +79,11 @@ async function fetchEntitlementsMode(): Promise<EntitlementsMode> {
 
 
 export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { session } = useAuth();
+  const { session, loading: authLoading } = useAuth();
   const [tier, setTier] = useState<SubscriptionTier>('free');
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [subscriptionReady, setSubscriptionReady] = useState(false);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
   const [source, setSource] = useState<SubscriptionState['source']>(null);
   const [entitlements, setEntitlements] = useState<Record<EntitlementModule, ModuleEntitlement>>(EMPTY_ENTITLEMENTS);
@@ -126,8 +134,16 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       } else {
         console.error('Error checking subscription:', err);
       }
+    } finally {
+      // Prava su poznata (ili su pala) — gate smije odlučivati.
+      setSubscriptionReady(true);
     }
   }, [session?.access_token]);
+
+  // Bez sesije nema što čekati: gate ne smije visjeti u loaderu.
+  useEffect(() => {
+    if (!authLoading && !session) setSubscriptionReady(true);
+  }, [authLoading, session]);
 
   useEffect(() => {
     checkSubscription();
@@ -173,6 +189,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     tier,
     subscribed,
     loading,
+    subscriptionReady,
     trialActive,
     trialDaysRemaining,
     subscriptionEnd,
@@ -180,7 +197,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     entitlements,
     entitlementsMode,
     checkSubscription,
-  }), [tier, subscribed, loading, trialActive, trialDaysRemaining, subscriptionEnd, source, entitlements, entitlementsMode, checkSubscription]);
+  }), [tier, subscribed, loading, subscriptionReady, trialActive, trialDaysRemaining, subscriptionEnd, source, entitlements, entitlementsMode, checkSubscription]);
 
 
   return (
