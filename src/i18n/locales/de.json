@@ -5454,6 +5454,7 @@
       "title": "Hallo!",
       "titleNamed": "Schön, dich kennenzulernen, {{name}}!",
       "brevityHint": "Nur eine Frage, dann los.",
+      "prefilledHint": "Korrigiere den Namen, wenn du möchtest — dann legen wir los.",
       "askName": "Wie soll ich dich nennen?",
       "namePlaceholder": "z. B. Alex"
     },

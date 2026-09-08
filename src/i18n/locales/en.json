@@ -5454,6 +5454,7 @@
       "title": "Hi there!",
       "titleNamed": "Nice to meet you, {{name}}!",
       "brevityHint": "Just one question and we're off.",
+      "prefilledHint": "Fix the name if you like — then let's go.",
       "askName": "What should I call you?",
       "namePlaceholder": "e.g. Alex"
     },

@@ -95,14 +95,23 @@ describe('Onboarding — početno ime', () => {
     expect(screen.getByRole('button', { name: /Krenimo/i })).not.toBeDisabled();
   });
 
-  it('localStorage ima prednost nad user metadata', () => {
+  it('metadata ima prednost nad localStorage', () => {
     localStorage.setItem('user_display_name', 'Marko');
     state.userMetadata = { display_name: 'Ana' };
     render(<Onboarding />);
 
     const input = screen.getByPlaceholderText('npr. Marko') as HTMLInputElement;
+    expect(input.value).toBe('Ana');
+  });
+
+  it('localStorage kad metadata nema', () => {
+    localStorage.setItem('user_display_name', 'Marko');
+    render(<Onboarding />);
+
+    const input = screen.getByPlaceholderText('npr. Marko') as HTMLInputElement;
     expect(input.value).toBe('Marko');
   });
+
 
   it('oba izvora prazna — polje prazno, gumb onemogućen', () => {
     render(<Onboarding />);

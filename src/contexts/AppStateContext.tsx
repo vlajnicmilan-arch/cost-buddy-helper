@@ -56,6 +56,14 @@ const USER_SCOPED_KEYS = [
   'pending_terms_acceptance',
 ] as const;
 
+/**
+ * Ključ UREĐAJA (namjerno NE u USER_SCOPED_KEYS): zadnji korisnik za kojeg je
+ * onboarding razriješen na ovom pregledniku. Služi za otkrivanje promjene
+ * računa bez SIGNED_OUT događaja (npr. link za potvrdu maila zamijeni sesiju).
+ */
+const LAST_RESOLVED_USER_KEY = 'last_resolved_user_id';
+
+
 const AppStateContext = createContext<AppStateContextValue | null>(null);
 
 export const AppStateProvider = ({ children }: { children: ReactNode }) => {
@@ -120,6 +128,27 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
         setAppStateReady(true);
         return;
       }
+
+      // Promjena računa bez SIGNED_OUT (npr. otvaranje potvrdnog linka iz maila
+      // na uređaju gdje je bio prijavljen drugi račun): očisti korisničke
+      // ključeve PRIJE čitanja profila da novi korisnik ne naslijedi tuđe ime.
+      try {
+        const rememberedUserId = localStorage.getItem(LAST_RESOLVED_USER_KEY);
+        if (rememberedUserId && rememberedUserId !== session.user.id) {
+          USER_SCOPED_KEYS.forEach((key) => {
+            try { localStorage.removeItem(key); } catch { /* noop */ }
+          });
+          setDisplayNameState('');
+          setUsageProfileState(null);
+          setBusinessModeEnabledState(false);
+          setActiveBusinessProfileIdState(null);
+          setOnboardingCompletedState(false);
+        }
+        localStorage.setItem(LAST_RESOLVED_USER_KEY, session.user.id);
+      } catch {
+        /* noop */
+      }
+
 
       // User exists — restore cloud storage config if missing
       const hasStorageConfig = localStorage.getItem('finmate-storage-config');
@@ -224,6 +253,8 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
         USER_SCOPED_KEYS.forEach((key) => {
           try { localStorage.removeItem(key); } catch { /* noop */ }
         });
+        try { localStorage.removeItem(LAST_RESOLVED_USER_KEY); } catch { /* noop */ }
+
         setOnboardingCompletedState(false);
         setDisplayNameState('');
         setBusinessModeEnabledState(false);
