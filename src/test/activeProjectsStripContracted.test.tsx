@@ -41,6 +41,10 @@ vi.mock('@/hooks/useModuleGate', () => ({
   useModuleGate: () => ({ requestModule: vi.fn() }),
 }));
 
+vi.mock('@/components/TrialFeatureChip', () => ({
+  TrialFeatureChip: () => null,
+}));
+
 vi.mock('@/hooks/useActiveProjectsSummary', () => ({
   useActiveProjectsSummary: () => ({ summary, loading: false, refetch: vi.fn() }),
 }));
