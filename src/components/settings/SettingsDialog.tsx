@@ -72,17 +72,31 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const [showSupportDialog, setShowSupportDialog] = useState(false);
 
   // Open Help/FAQ when redirected from auto-responder email (?openHelp=1)
+  // and open a settings category directly (?openSettings=<categoryId>),
+  // koji koristi prazno stanje /dokumenti za „Postavke uvoza".
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
+    let consumed = false;
     if (params.get('openHelp') === '1') {
       setShowHelpDialog(true);
       params.delete('openHelp');
+      consumed = true;
+    }
+    const section = params.get('openSettings');
+    if (section && SETTINGS_CATEGORIES.some((c) => c.id === section)) {
+      setOpen(true);
+      setActiveCategoryId(section as SettingsCategoryId);
+      params.delete('openSettings');
+      consumed = true;
+    }
+    if (consumed) {
       const newSearch = params.toString();
       const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash;
       window.history.replaceState({}, '', newUrl);
     }
   }, []);
+
 
   const [showBugReport, setShowBugReport] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);

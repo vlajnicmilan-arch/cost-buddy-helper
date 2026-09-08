@@ -72,6 +72,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Ba
 import { useTranslation } from 'react-i18next';
 import { ItemsAnalysisTab } from './ItemsAnalysisTab';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { useSubscription } from '@/contexts/SubscriptionContext';
+import { useNavigate } from 'react-router-dom';
 import { ExportButton } from '@/components/ui/export-button';
 
 interface ReportsDialogProps {
@@ -175,6 +177,11 @@ const calculateStats = (expenseList: Expense[]) => {
 export const ReportsDialog = ({ expenses, triggerClassName, triggerLabel }: ReportsDialogProps) => {
   const { t } = useTranslation();
   const { hasAccess } = useFeatureAccess();
+  // Paywall skok smije se dogoditi TEK kad je pretplata stvarno provjerena.
+  // Prije toga `hasAccess('reports')` je lažno `false` (prazni entitlementi).
+  const { subscriptionReady } = useSubscription();
+  const navigateToPaywall = useNavigate();
+
   
   const { customIncomeCategories } = useCustomIncomeCategories();
   const { customCategories } = useCustomCategories();
@@ -625,11 +632,19 @@ export const ReportsDialog = ({ expenses, triggerClassName, triggerLabel }: Repo
             triggerClassName,
           )}
           onClick={(e) => {
+            // Dok pretplata nije provjerena, nema ni odluke o pravu:
+            // klik samo ne radi ništa (dijalog se ne otvara), umjesto da
+            // tvrdim reloadom baci korisnika na /paywall pa natrag na /home.
+            if (!subscriptionReady) {
+              e.preventDefault();
+              return;
+            }
             if (!hasAccess('reports')) {
               e.preventDefault();
-              window.location.href = '/paywall';
+              navigateToPaywall('/paywall');
             }
           }}
+
         >
           <FileText className="w-4 h-4" />
           {triggerLabel ?? t('bulk.reports')}

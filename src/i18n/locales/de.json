@@ -6571,7 +6571,7 @@
   "mailImport": {
     "title": "E-Mail-Import",
     "yourAddress": "Deine Empfangsadresse",
-    "description": "Sende oder leite E-Mails an diese Adresse weiter. In diesem Schritt werden Nachrichten nur empfangen und angezeigt.",
+    "description": "Sende oder leite E-Mails an diese Adresse weiter.",
     "copy": "Kopieren",
     "copied": "Adresse kopiert",
     "copyFailed": "Kopieren fehlgeschlagen",
@@ -6829,6 +6829,10 @@
       "release": "Zur Prüfung zurück",
       "released": "Dokument wurde zur Prüfung zurückgesetzt",
       "hasImport": "Zu diesem Dokument existiert ein Import — es kann nicht zurückgesetzt werden."
+    },
+    "empty": {
+      "intro": "Hier landen Rechnungen, Angebote und Auszüge, die du an deine Centar-Adresse weiterleitest. Leite eine beliebige E-Mail mit Rechnung weiter — Centar liest sie und bereitet sie zur Bestätigung vor.",
+      "settingsLink": "Import-Einstellungen"
     }
   },
   "issuers": {
