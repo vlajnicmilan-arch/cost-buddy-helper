@@ -26,7 +26,7 @@ vi.mock('@/hooks/useFeatureAccess', () => ({
 
 // Laki hookovi koje dijalog povlači, a ne utječu na gate.
 vi.mock('@/hooks/useCustomPaymentSources', () => ({
-  useCustomPaymentSources: () => ({ customSources: [], isLoading: false }),
+  useCustomPaymentSources: () => ({ customPaymentSources: [], isLoading: false }),
 }));
 vi.mock('@/hooks/useCustomIncomeCategories', () => ({
   useCustomIncomeCategories: () => ({ customIncomeCategories: [], isLoading: false }),
