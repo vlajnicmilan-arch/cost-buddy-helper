@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { ReadOnlyBanner } from '@/components/access/ReadOnlyBanner';
 import { useModuleGate } from '@/hooks/useModuleGate';
 import { cn } from '@/lib/utils';
@@ -28,6 +29,7 @@ const Projects = () => {
   const { refetch } = useExpenses();
   const { hasModuleAccess } = useFeatureAccess();
   const { requestModule } = useModuleGate();
+  const { subscriptionReady } = useSubscription();
   const hasProjectsAccess = hasModuleAccess('projekti');
 
 
@@ -46,21 +48,32 @@ const Projects = () => {
     const check = async () => {
       if (!user) { setHasMemberships(false); return; }
        if (hasProjectsAccess) { setHasMemberships(true); return; }
-      const { count } = await supabase
-        .from('project_members')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id);
-      setHasMemberships((count || 0) > 0);
+      // Vlasnik projekta NIJE u project_members — bez ove provjere bi mu se
+      // pri hladnom ulasku nudio paywall iako ima što vidjeti.
+      const [members, owned] = await Promise.all([
+        supabase
+          .from('project_members')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id),
+        supabase
+          .from('projects')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id),
+      ]);
+      setHasMemberships(((members.count || 0) + (owned.count || 0)) > 0);
     };
     check();
   }, [user, hasProjectsAccess]);
 
   const gatePromptedRef = useState<{ done: boolean }>({ done: false })[0];
   useEffect(() => {
+    // Dok se prava ne znaju (hladni start), NIJEDNA odluka — inače korisnik s
+    // aktivnom probom dobije paywall prije nego checkSubscription odgovori.
+    if (!subscriptionReady) return;
     if (hasProjectsAccess || hasMemberships !== false || gatePromptedRef.done) return;
     gatePromptedRef.done = true;
     requestModule('projects', { onDismiss: () => navigate('/home', { replace: true }) });
-  }, [hasProjectsAccess, hasMemberships, requestModule, navigate, gatePromptedRef]);
+  }, [subscriptionReady, hasProjectsAccess, hasMemberships, requestModule, navigate, gatePromptedRef]);
 
   if (authLoading && storageMode === 'cloud') {
     return (
@@ -118,7 +131,7 @@ const Projects = () => {
           <CollaboratorsTab />
         ) : view === 'people' ? (
           <PeopleTab />
-        ) : hasMemberships === null ? (
+        ) : (hasMemberships === null || !subscriptionReady) ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
