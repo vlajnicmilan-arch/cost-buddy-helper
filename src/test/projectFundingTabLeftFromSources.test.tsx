@@ -78,7 +78,7 @@ describe('ProjectFundingTab — Preostalo od izvora', () => {
 
   it('(c) alocirano manje od potrošenog → negativan iznos ostaje crven', () => {
     render(<ProjectFundingTab {...baseProps} totalAllocated={100} totalSpent={125.5} />);
-    expect(valueEl().textContent).toBe('-25,50 €');
+    expect(valueEl().textContent).toBe('−25,50 €');
     expect(valueEl().classList.contains('text-destructive')).toBe(true);
   });
 });
