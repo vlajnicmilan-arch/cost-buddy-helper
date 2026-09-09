@@ -356,6 +356,24 @@ async function sendBackupMail(
       info.errors.length ? `Greške:\n- ${info.errors.join("\n- ")}` : "Bez grešaka.",
     ].join("\n");
 
+    // Mail servis odbija transakcijske poruke bez tokena za odjavu.
+    let unsubscribeToken: string | null = null;
+    const { data: tok } = await supabase
+      .from("email_unsubscribe_tokens")
+      .select("token")
+      .eq("email", BACKUP_MAIL_TO)
+      .maybeSingle();
+    if (tok?.token) {
+      unsubscribeToken = tok.token;
+    } else {
+      const fresh = crypto.randomUUID().replace(/-/g, "");
+      const { error: tokErr } = await supabase
+        .from("email_unsubscribe_tokens")
+        .insert({ email: BACKUP_MAIL_TO, token: fresh });
+      if (tokErr) throw new Error(`unsubscribe_token: ${tokErr.message}`);
+      unsubscribeToken = fresh;
+    }
+
     await supabase.from("email_send_log").insert({
       message_id: messageId,
       template_name: "backup-weekly",
@@ -375,10 +393,12 @@ async function sendBackupMail(
         text,
         purpose: "transactional",
         label: "backup-weekly",
-        idempotency_key: `backup-weekly:${info.folder}`,
+        unsubscribe_token: unsubscribeToken,
+        idempotency_key: `backup-weekly:${info.folder}:${messageId}`,
         queued_at: new Date().toISOString(),
       },
     });
+
     if (error) throw new Error(error.message);
     return { ok: true, message_id: messageId };
   } catch (e: any) {
