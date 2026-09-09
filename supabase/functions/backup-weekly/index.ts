@@ -316,6 +316,8 @@ Deno.serve(async (req) => {
     const today = new Date().toISOString().slice(0, 10); // UTC YYYY-MM-DD
     const folder = today;
     const results: Array<{ table: string; rows: number; bytes: number; ok: boolean; error?: string }> = [];
+    // Sadržaj za zip (isti bajtovi koji su otišli u mapu dana).
+    const zipEntries: Record<string, Uint8Array> = {};
 
     for (const table of TABLES) {
       try {
@@ -332,11 +334,13 @@ Deno.serve(async (req) => {
           upsert: true,
         });
         if (upErr) throw new Error(upErr.message);
+        zipEntries[`${table}.csv.gz`] = gz;
         results.push({ table, rows: rows.length, bytes: gz.byteLength, ok: true });
       } catch (e: any) {
         results.push({ table, rows: 0, bytes: 0, ok: false, error: e.message });
       }
     }
+
 
     // Prilozi (Storage) — inkrementalno u dijeljeno spremište `_files/`
     const storage = await backupStorage(supabase, folder, startedAt);
