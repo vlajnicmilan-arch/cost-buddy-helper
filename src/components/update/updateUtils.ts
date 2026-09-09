@@ -7,6 +7,7 @@ export const AUTO_UPDATE_KEY = 'pwa-auto-update';
 export const FALLBACK_ORIGINS = [
   APP_ORIGIN,
   'https://cost-buddy-helper.lovable.app',
+  'https://app.vmbalance.com',
 ] as const;
 
 // Stabilan manifest u Storage-u — ažurira ga CI odmah nakon APK uploada,
