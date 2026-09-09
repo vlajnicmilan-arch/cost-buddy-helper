@@ -76,7 +76,7 @@ const localeFor = (lng: string) => {
 };
 
 export function ProjectDecisionsTab({
-  projectId, projectName, projectOwnerId, investorUserId, isDecisionParty, memberNameMap,
+  projectId, projectName, projectOwnerId, investorUserId, onGoToMembers, isDecisionParty, memberNameMap,
 }: Props) {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -205,7 +205,7 @@ export function ProjectDecisionsTab({
             {t('projects.decisions.subtitle', 'Prijedlozi i odobrenja između vlasnika i investitora')}
           </p>
         </div>
-        <NewDecisionButton onSubmit={handleCreate} />
+        <NewDecisionButton onSubmit={handleCreate} hasInvestor={!!investorUserId} onGoToMembers={onGoToMembers} />
       </div>
 
       {loading && (
@@ -927,10 +927,16 @@ function StepDot({ action }: { action: DecisionAction }) {
   return <div className={cn('w-3 h-3 rounded-full mt-1.5', cls)} />;
 }
 
-function NewDecisionButton({ onSubmit }: { onSubmit: (i: { title: string; initial_description: string; price?: number | null }) => Promise<{ ok: boolean }> }) {
+function NewDecisionButton({ onSubmit, hasInvestor = true, onGoToMembers }: {
+  onSubmit: (i: { title: string; initial_description: string; price?: number | null }) => Promise<{ ok: boolean }>;
+  /** Odluka ima smisla samo uz drugu stranu — bez investitora obrazac se ne otvara. */
+  hasInvestor?: boolean;
+  onGoToMembers?: () => void;
+}) {
   const { t } = useTranslation();
   const { pendingCapture } = useDecisionScan();
   const [open, setOpen] = useState(false);
+  const [noInvestorOpen, setNoInvestorOpen] = useState(false);
   // Belt-and-braces: ako je Android popstate zatvorio dijalog dok je kamera
   // roundtripala, a fotka je stigla u context za 'new-decision' ključ —
   // ponovno otvori dijalog. Draft se rehidrira iz DecisionScanContexta.
@@ -945,10 +951,35 @@ function NewDecisionButton({ onSubmit }: { onSubmit: (i: { title: string; initia
   }, []);
   return (
     <>
-      <Button size="sm" onClick={() => setOpen(true)} className="gap-1">
+      <Button
+        size="sm"
+        onClick={() => (hasInvestor ? setOpen(true) : setNoInvestorOpen(true))}
+        className="gap-1"
+      >
         <Plus className="w-4 h-4" /> {t('projects.decisions.new', 'Novi prijedlog')}
       </Button>
-      <NewDecisionDialog open={open} onOpenChange={setOpen} onSubmit={onSubmit} />
+      <NewDecisionDialog open={hasInvestor && open} onOpenChange={setOpen} onSubmit={onSubmit} />
+      <AlertDialog open={noInvestorOpen} onOpenChange={setNoInvestorOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('projects.decisions.noInvestorTitle', 'Nema druge strane')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                'projects.decisions.noInvestorBody',
+                'Odluka se šalje investitoru na odobrenje. Pozovi investitora u tim pa ćeš moći poslati prijedlog.',
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.close', 'Zatvori')}</AlertDialogCancel>
+            {onGoToMembers && (
+              <AlertDialogAction onClick={() => { setNoInvestorOpen(false); onGoToMembers(); }}>
+                {t('projects.decisions.noInvestorCta', 'Otvori Članove')}
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

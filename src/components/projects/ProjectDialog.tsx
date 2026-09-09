@@ -92,7 +92,7 @@ export const ProjectDialog = ({
   const [description, setDescription] = useState('');
   const [icon, setIcon] = useState('📁');
   const [color, setColor] = useState('#3b82f6');
-  const [status, setStatus] = useState<ProjectStatus>('draft');
+  const [status, setStatus] = useState<ProjectStatus>('active');
   const [totalBudget, setTotalBudget] = useState('');
   const [contractValue, setContractValue] = useState('');
   const [startDate, setStartDate] = useState<Date | undefined>();
@@ -148,7 +148,7 @@ export const ProjectDialog = ({
       setDescription(preset?.description ?? '');
       setIcon(preset?.icon ?? gen.icon);
       setColor(preset?.color ?? gen.color);
-      setStatus('draft');
+      setStatus('active');
       setTotalBudget(preset?.totalBudget !== undefined ? String(preset.totalBudget) : '');
       setContractValue('');
       setStartDate(undefined);
@@ -568,7 +568,7 @@ export const ProjectDialog = ({
       <Sheet open={typePickerOpen} onOpenChange={setTypePickerOpen}>
         <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto">
           <SheetHeader className="text-left">
-            <SheetTitle>{t('projectTypes.step.title', 'Odaberi vrstu projekta')}</SheetTitle>
+            <SheetTitle>{t('projectTypes.step.title', 'Za što ćeš koristiti ovaj projekt?')}</SheetTitle>
           </SheetHeader>
           <div className="mt-4">
             <ProjectTypePickerStep selectedId={projectType} onSelect={handleTypeSelected} />

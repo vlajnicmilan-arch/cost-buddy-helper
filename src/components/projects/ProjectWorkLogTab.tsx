@@ -47,6 +47,10 @@ interface ProjectWorkLogTabProps {
    * Worker / member / participant should NOT set this.
    */
   isOwnerReadonly?: boolean;
+  /** True kad projekt ima barem jednu osobu. */
+  hasWorkers?: boolean;
+  /** Otvara tab Ljudi — koristi se u praznom stanju bez osoba. */
+  onGoToPeople?: () => void;
 }
 
 type MonthFilter = 'current' | 'previous' | 'last3' | 'all';
@@ -58,6 +62,8 @@ export const ProjectWorkLogTab = ({
   isReadOnly = false,
   canLogOwnWork = false,
   isOwnerReadonly = false,
+  hasWorkers = true,
+  onGoToPeople,
 }: ProjectWorkLogTabProps) => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
@@ -289,13 +295,20 @@ export const ProjectWorkLogTab = ({
             <BookOpen className="w-10 h-10 mx-auto text-muted-foreground/50 mb-3" />
             <p className="text-sm text-muted-foreground mb-1">
               {logs.length === 0
-                ? t('workLog.empty', 'Još nema zapisa u dnevniku rada')
+                ? hasWorkers
+                  ? t('workLog.empty', 'Još nema zapisa u dnevniku rada')
+                  : t('workLog.emptyNoPeople', 'Dodaj osobu da bi vodio sate')
                 : t('workLog.emptyFiltered', 'Nema zapisa za odabrane filtere')}
             </p>
-            {logs.length === 0 && (
+            {logs.length === 0 && hasWorkers && (
               <p className="text-xs text-muted-foreground">
                 {t('workLog.emptyHint', 'Klikni "Novi zapis" da započneš kronologiju projekta.')}
               </p>
+            )}
+            {logs.length === 0 && !hasWorkers && onGoToPeople && (
+              <Button variant="outline" size="sm" className="mt-3 min-h-[44px]" onClick={onGoToPeople}>
+                {t('workLog.emptyGoToPeople', 'Otvori Ljude')}
+              </Button>
             )}
           </CardContent>
         </Card>

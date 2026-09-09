@@ -237,8 +237,11 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
         // Potrebno za dnevni sažetak push (šalje se u 21:00 lokalno).
         try {
           const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          // Korisnikov odabir u aplikaciji (i18nextLng) ima prednost pred jezikom preglednika.
+          const chosenLang = (localStorage.getItem('i18nextLng') || '').toLowerCase().slice(0, 2);
           const browserLang = (navigator.language || 'hr').toLowerCase().slice(0, 2);
-          const supportedLang = ['hr', 'en', 'de'].includes(browserLang) ? browserLang : 'hr';
+          const candidateLang = ['hr', 'en', 'de'].includes(chosenLang) ? chosenLang : browserLang;
+          const supportedLang = ['hr', 'en', 'de'].includes(candidateLang) ? candidateLang : 'hr';
           const updates: Record<string, string> = {};
           if (browserTz && !(profile as any)?.timezone) updates.timezone = browserTz;
           if (!(profile as any)?.preferred_language) updates.preferred_language = supportedLang;

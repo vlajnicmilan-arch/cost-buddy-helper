@@ -12,17 +12,16 @@ export const ProjectTypePickerStep = ({ selectedId, onSelect }: ProjectTypePicke
 
   return (
     <div className="space-y-4">
+      {/* Naslov živi u SheetTitle dijaloga — ovdje se namjerno ne ponavlja. */}
       <div className="space-y-1">
-        <h3 className="text-base font-semibold">
-          {t('projectTypes.step.title', 'Za što ćeš koristiti ovaj projekt?')}
-        </h3>
         <p className="text-xs text-muted-foreground">
           {t(
             'projectTypes.step.subtitle',
-            'Odaberi vrstu — prilagodit ćemo nazive faza i tabova. Vrsta se kasnije ne mijenja.',
+            'Odaberi vrstu — prilagodit ćemo nazive faza. Vrsta se kasnije ne mijenja.',
           )}
         </p>
       </div>
+
 
       <div
         className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[60vh] overflow-y-auto pr-1"

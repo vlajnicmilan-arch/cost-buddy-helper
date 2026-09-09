@@ -438,7 +438,8 @@
       "hint": "The VTR amount will be automatically added to the contracted value as a contract amendment.",
       "amountRequired": "VTR amount must be greater than 0.",
       "created": "VTR added",
-      "deleteWarning": "Deleting this VTR will reduce the contracted value by {{amount}}. Continue?"
+      "deleteWarning": "Deleting this VTR will reduce the contracted value by {{amount}}. Continue?",
+      "addButtonUnilateral": "Unilateral change (no counterparty)"
     },
     "decisionSource": {
       "fromDecisionBadge": "Created from decision",
@@ -480,7 +481,7 @@
     "fundingRemoved": "Funding source removed",
     "fundingAlreadyExists": "This source is already linked to the project",
     "confirmRemoveFunding": "Are you sure you want to remove this funding source?",
-    "inviteMembers": "Invite Members",
+    "inviteMembers": "Invite member",
     "suggestedContext": "Where will the member see this project?",
     "whereToShow": "Where do you want to see this project?",
     "ownerSuggestedBusiness": "Owner suggested: Business mode",
@@ -777,10 +778,10 @@
     },
     "tooltips": {
       "team": "Other app users with access to the project",
-      "workers": "Your hourly workers (you manage them, you pay them, hours tracking)",
+      "workers": "Your people on the project (you manage and pay them, hours are tracked)",
       "collaborators": "External subcontractors (other companies with agreed amounts)",
-      "projectTeam": "Everyone on the project: app members, workers and external collaborators",
-      "workLog": "Worker hours logged by day and payout calculation"
+      "projectTeam": "Everyone on the project: app members, people and external collaborators",
+      "workLog": "Logged hours per day and payout calculation"
     },
     "templates": {
       "startFrom": "Start from a template (optional)",
@@ -930,7 +931,7 @@
       "addTransactionDesc": "Record an expense or income",
       "setBudget": "Set budget",
       "setBudgetDesc": "Track margin and collection",
-      "inviteTeam": "Invite team",
+      "inviteTeam": "Invite member",
       "inviteTeamDesc": "Collaborate on the project"
     },
     "decisions": {
@@ -1046,7 +1047,10 @@
         "attachmentsAvailableInApp": "Some attachments are available in the app.",
         "annulNote": "Note: this decision was annulled by mutual confirmation.",
         "footerDisclaimer": "Generated from Centar app · {{date}} · ID: {{id}}"
-      }
+      },
+      "noInvestorTitle": "No counterparty",
+      "noInvestorBody": "A decision is sent to the investor for approval. Invite an investor to the team to send a proposal.",
+      "noInvestorCta": "Open Members"
     },
     "investorPriceLabel": "Can see the investor price",
     "investorPriceHint": "This manager already sees each phase's planned cost. Turn this on and they will also see the investor price — that is, how much you earn on every phase.",
@@ -1114,7 +1118,11 @@
       "cta": "{{count}} transactions without a phase — assign"
     },
     "joinNeedsAccount": "Create an account to join this project — it takes less than a minute.",
-    "budgetJoinNeedsAccount": "Create an account to join this budget — it takes less than a minute."
+    "budgetJoinNeedsAccount": "Create an account to join this budget — it takes less than a minute.",
+    "emailPlaceholder": "e.g. name@example.com",
+    "contractAmendment": {
+      "unilateral": "{{n}} unilateral"
+    }
   },
   "estimates": {
     "title": "Quotes & Estimates",
@@ -1242,7 +1250,9 @@
     "autoReminders": {
       "title": "Automatic reminders",
       "hint": "Email the client 3, 7 and 14 days after due date (requires email)."
-    }
+    },
+    "enableBusinessCta": "Enable company",
+    "noBusinessContextHint": "Invoices exist only in a company context. Enable a business profile to issue and track invoices here."
   },
   "settings": {
     "categories": {
@@ -1252,7 +1262,7 @@
       },
       "appearance": {
         "title": "Appearance",
-        "desc": "Theme and module display"
+        "desc": "Light or dark theme and app appearance"
       },
       "notifications": {
         "title": "Notifications",
@@ -1892,7 +1902,8 @@
       "color": "Color",
       "save": "Save and select",
       "duplicateWarning": "A similar category already exists: \"{{name}}\". Add anyway?"
-    }
+    },
+    "salary": "Salary"
   },
   "incomeCategories": {
     "salary": "Salary",
@@ -2018,7 +2029,8 @@
     "trendDown": "-{{percent}}% ↓",
     "vsLastMonth": "vs last month",
     "lessThanLastMonth": "less than last month ✓",
-    "moreThanLastMonth": "more than last month"
+    "moreThanLastMonth": "more than last month",
+    "availableNegativeHint": "A source is in the red — more was spent than the accounts hold."
   },
   "backup": {
     "title": "Backup",
@@ -3266,7 +3278,7 @@
     "settings": "Settings",
     "settingsStep1": "Click the gear icon in the header",
     "settingsStep2": "Settings are grouped into: Profile, Appearance, Notifications, Subscription, Data & security, and Help & support",
-    "settingsStep3": "Under 'Profile' you change your name and language, under 'Appearance' the theme and module display",
+    "settingsStep3": "Under 'Profile' you change your name and language, under 'Appearance' the app theme",
     "settingsStep4": "Under 'Data & security' you export data, turn on the app lock and delete your account"
   },
   "storage": {
@@ -4063,7 +4075,8 @@
     "roleUpdated": "Role updated",
     "verificationEmailSent": "Verification email sent!",
     "memberRemoved": "Member removed",
-    "pdfParseIncomplete": "Processing was not completed — please try again"
+    "pdfParseIncomplete": "Processing was not completed — please try again",
+    "workerAdded": "Person added"
   },
   "placeholders": {
     "selectDestinationAccount": "Select destination account",
@@ -4402,21 +4415,21 @@
     "diagnosticRuntime": "Runtime"
   },
   "workers": {
-    "title": "Worker log",
-    "add": "Add",
+    "title": "People",
+    "add": "Person",
     "listView": "List",
     "calendarView": "Calendar",
     "totalCost": "Total labor cost",
     "totalLaborCost": "Total labor cost",
-    "edit": "Edit worker",
+    "edit": "Edit person",
     "firstNamePlaceholder": "Enter first name",
     "lastNamePlaceholder": "Enter last name",
     "workSchedule": "Working hours",
     "schedule": "Working hours",
-    "noWorkers": "No workers added",
-    "noWorkersHint": "Add workers to track labor costs",
-    "deleteConfirmTitle": "Remove worker?",
-    "deleteConfirmMessage": "Are you sure you want to remove this worker? This action cannot be undone.",
+    "noWorkers": "No people yet",
+    "noWorkersHint": "Add people to track labour costs",
+    "deleteConfirmTitle": "Remove person?",
+    "deleteConfirmMessage": "Are you sure you want to remove this person? This action cannot be undone.",
     "weeklyEntry": "Weekly entry",
     "selectWeek": "Select week",
     "selectDays": "Select days",
@@ -4530,23 +4543,24 @@
     "rateEffectiveFromHint": "Retroactive changes are allowed only up to the first payout covering the period.",
     "rateEffectiveFromRequired": "Choose an \"effective from\" date",
     "rateCollisionError": "A payout already covers this period. Earliest allowed date: {{date}}.",
-    "deleteFailedPayouts": "This worker has {{count}} payouts and therefore cannot be deleted.",
-    "deleteFailedLocked": "This worker has hours locked by a payout and therefore cannot be deleted.",
-    "deleteFailedNotOwner": "Only the project owner can delete a worker.",
-    "deleteFailedNotFound": "This worker no longer exists.",
+    "deleteFailedPayouts": "This person has {{count}} payouts and cannot be deleted.",
+    "deleteFailedLocked": "This person has hours locked by a payout and cannot be deleted.",
+    "deleteFailedNotOwner": "Only the project owner can delete a person.",
+    "deleteFailedNotFound": "Person no longer exists.",
     "deleteFailedOther": "Deletion is not possible: {{reason}}",
     "archiveOfferTitle": "Deletion is not possible",
     "archiveOfferBody": "You can archive them instead: they disappear from the project list, while payouts and history stay untouched.",
     "archive": "Archive",
-    "archived": "Worker archived",
-    "unarchived": "Worker restored to the list",
-    "deleteWithHoursTitle": "Delete the worker and their hours?",
+    "archived": "Person archived",
+    "unarchived": "Person restored to the list",
+    "deleteWithHoursTitle": "Delete person and their hours?",
     "deleteWithHoursBody_one": "{{name}} has {{count}} work entry ({{hours}} h). Deleting permanently removes those hours too. This cannot be undone.",
     "deleteWithHoursBody_other": "{{name}} has {{count}} work entries ({{hours}} h). Deleting permanently removes those hours too. This cannot be undone.",
     "deleteWithHoursValue": "Those hours are worth {{value}}.",
-    "deleteArchiveAlternative": "Archive instead of deleting — the worker and their hours stay on record but disappear from the list.",
+    "deleteArchiveAlternative": "Archive instead of deleting — the person and their hours stay in the records but disappear from the list.",
     "archiveInstead": "Archive instead of deleting",
-    "deleteWorkerAndHours": "Delete worker and hours"
+    "deleteWorkerAndHours": "Delete person and hours",
+    "positionPlaceholder": "e.g. bricklayer, foreman, designer"
   },
   "collaboratorsFilters": {
     "filterStatus": "Status",
@@ -4658,7 +4672,9 @@
       "grandTotal": "Grand total",
       "done": "Export complete",
       "note": "Internal document — not an official working time record."
-    }
+    },
+    "emptyNoPeople": "Add a person to track hours",
+    "emptyGoToPeople": "Open People"
   },
   "support": {
     "title": "Contact support",
@@ -4826,7 +4842,7 @@
   "projectTypes": {
     "step": {
       "title": "What will you use this project for?",
-      "subtitle": "Pick a type — we will tailor phase and tab labels. The type cannot be changed later.",
+      "subtitle": "Pick a type — we will adjust the phase names. The type cannot be changed later.",
       "changeType": "← Change type",
       "lockedBadge": "Type: {{name}}"
     },
@@ -4839,110 +4855,84 @@
       "name": "Construction",
       "tagline": "New builds, construction sites, public works",
       "labels": {
-        "milestones": "Construction stages",
-        "collaborators": "Subcontractors",
-        "documents": "Drawings & Permits"
+        "milestones": "Construction stages"
       }
     },
     "renovation": {
       "name": "Renovation",
       "tagline": "Refurbishment, remodeling, repairs",
       "labels": {
-        "milestones": "Work phases",
-        "collaborators": "Tradespeople",
-        "documents": "Quotes & Invoices"
+        "milestones": "Work phases"
       }
     },
     "interior": {
       "name": "Interior design",
       "tagline": "Interior design, furnishing",
       "labels": {
-        "milestones": "Design phases",
-        "collaborators": "Suppliers"
+        "milestones": "Design phases"
       }
     },
     "it_software": {
       "name": "IT / Software",
       "tagline": "Software, web, app development",
       "labels": {
-        "milestones": "Sprints",
-        "workers": "Team",
-        "collaborators": "Clients / Vendors",
-        "documents": "Specifications"
+        "milestones": "Sprints"
       }
     },
     "marketing": {
       "name": "Marketing",
       "tagline": "Campaigns, advertising, branding",
       "labels": {
-        "milestones": "Campaign phases",
-        "collaborators": "External partners",
-        "documents": "Materials"
+        "milestones": "Campaign phases"
       }
     },
     "education": {
       "name": "Education",
       "tagline": "Courses, training, workshops",
       "labels": {
-        "milestones": "Modules / Lessons",
-        "workers": "Instructors",
-        "members": "Students",
-        "documents": "Materials"
+        "milestones": "Modules / Lessons"
       }
     },
     "beauty": {
       "name": "Beauty / Wellness",
       "tagline": "Cosmetics, hair, wellness",
       "labels": {
-        "milestones": "Treatments / Packages",
-        "workers": "Staff",
-        "documents": "Pricing & Protocols"
+        "milestones": "Treatments / Packages"
       }
     },
     "hospitality_event": {
       "name": "Hospitality / Event",
       "tagline": "Catering, restaurants, events",
       "labels": {
-        "milestones": "Preparation phases",
-        "workers": "Staff",
-        "collaborators": "Suppliers",
-        "documents": "Menu & Contracts"
+        "milestones": "Preparation phases"
       }
     },
     "healthcare": {
       "name": "Healthcare",
       "tagline": "Practices, clinics, treatments",
       "labels": {
-        "milestones": "Project stages",
-        "workers": "Staff",
-        "documents": "Protocols"
+        "milestones": "Project stages"
       }
     },
     "retail_opening": {
       "name": "Retail",
       "tagline": "Store openings, retail",
       "labels": {
-        "milestones": "Opening phases",
-        "collaborators": "Suppliers",
-        "documents": "Contracts"
+        "milestones": "Opening phases"
       }
     },
     "manufacturing": {
       "name": "Manufacturing",
       "tagline": "Production, orders, manufacturing",
       "labels": {
-        "milestones": "Production phases",
-        "collaborators": "Suppliers",
-        "documents": "Technical documentation"
+        "milestones": "Production phases"
       }
     },
     "private_event": {
       "name": "Private event",
       "tagline": "Weddings, celebrations, parties",
       "labels": {
-        "milestones": "Planning phases",
-        "collaborators": "Suppliers",
-        "documents": "Contracts & Invoices"
+        "milestones": "Planning phases"
       }
     }
   },
@@ -6373,7 +6363,8 @@
       "availableHint": "30 days free — activate in one click",
       "errorInvalid": "Trial is not available for this module.",
       "errorAuth": "Session expired. Refresh the page.",
-      "errorGeneric": "Activation failed. Please try again."
+      "errorGeneric": "Activation failed. Please try again.",
+      "tryCta30": "Try 30 days"
     }
   },
   "subscription": {
@@ -7168,7 +7159,7 @@
     "deleteFailed": "Deletion failed: {{reason}}"
   },
   "collaborators": {
-    "add": "Add external collaborator",
+    "add": "Collaborator",
     "edit": "Edit collaborator",
     "project": "Project",
     "projectPlaceholder": "Select a project",

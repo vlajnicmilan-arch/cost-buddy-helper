@@ -174,7 +174,7 @@ export const ProjectCollaboratorsTab = ({ projectId, milestones, isManager, isRe
         {isManager && (
           <Button size="sm" onClick={openAddDialog}>
             <Plus className="w-4 h-4 mr-1" />
-            {t('collaborators.add', 'Dodaj')}
+            {t('collaborators.add', 'Suradnik')}
           </Button>
         )}
       </div>

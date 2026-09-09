@@ -438,7 +438,8 @@
       "hint": "Iznos VTR-a bit će automatski dodan u ugovorenu vrijednost projekta kao aneks ugovora.",
       "amountRequired": "Iznos VTR-a mora biti veći od 0.",
       "created": "VTR dodan",
-      "deleteWarning": "Brisanjem VTR-a smanjit će se ugovorena vrijednost za {{amount}}. Nastaviti?"
+      "deleteWarning": "Brisanjem VTR-a smanjit će se ugovorena vrijednost za {{amount}}. Nastaviti?",
+      "addButtonUnilateral": "Jednostrana izmjena (bez druge strane)"
     },
     "decisionSource": {
       "fromDecisionBadge": "Nastala iz odluke",
@@ -484,7 +485,7 @@
     "fundingRemoved": "Izvor financiranja uklonjen",
     "fundingAlreadyExists": "Ovaj izvor je već povezan s projektom",
     "confirmRemoveFunding": "Jeste li sigurni da želite ukloniti ovaj izvor financiranja?",
-    "inviteMembers": "Pozovi članove",
+    "inviteMembers": "Pozovi člana",
     "suggestedContext": "Gdje će član vidjeti projekt?",
     "whereToShow": "Gdje želite vidjeti ovaj projekt?",
     "ownerSuggestedBusiness": "Vlasnik je predložio: Poslovni mod",
@@ -781,10 +782,10 @@
     },
     "tooltips": {
       "team": "Drugi korisnici aplikacije s pristupom projektu",
-      "workers": "Tvoji satni radnici (vodiš ih ti, plaćaš ih, evidencija sati)",
+      "workers": "Tvoje osobe na projektu (vodiš ih ti, plaćaš ih, evidencija sati)",
       "collaborators": "Vanjski podizvođači (drugi obrti/tvrtke s ugovorenim iznosom)",
-      "projectTeam": "Svi ljudi na projektu: članovi aplikacije, radnici i vanjski suradnici",
-      "workLog": "Upisani sati radnika po danima i obračun isplata"
+      "projectTeam": "Svi ljudi na projektu: članovi aplikacije, osobe i vanjski suradnici",
+      "workLog": "Upisani sati osoba po danima i obračun isplata"
     },
     "templates": {
       "startFrom": "Započni iz šablone (opcionalno)",
@@ -934,7 +935,7 @@
       "addTransactionDesc": "Zabilježi trošak ili prihod",
       "setBudget": "Postavi budžet",
       "setBudgetDesc": "Prati maržu i naplatu",
-      "inviteTeam": "Pozovi tim",
+      "inviteTeam": "Pozovi člana",
       "inviteTeamDesc": "Surađuj na projektu"
     },
     "decisions": {
@@ -1050,7 +1051,10 @@
         "attachmentsAvailableInApp": "Neki prilozi dostupni su u aplikaciji.",
         "annulNote": "Napomena: ova je odluka poništena obostranom potvrdom.",
         "footerDisclaimer": "Generirano iz aplikacije Centar · {{date}} · ID: {{id}}"
-      }
+      },
+      "noInvestorTitle": "Nema druge strane",
+      "noInvestorBody": "Odluka se šalje investitoru na odobrenje. Pozovi investitora u tim pa ćeš moći poslati prijedlog.",
+      "noInvestorCta": "Otvori Članove"
     },
     "investorPriceLabel": "Vidi cijenu prema investitoru",
     "investorPriceHint": "Ovaj voditelj već vidi planirani trošak faze. Uključiš li ovo, vidjet će i cijenu prema investitoru — dakle i koliko zarađuješ na svakoj fazi.",
@@ -1118,7 +1122,11 @@
       "cta": "{{count}} transakcija bez faze — razvrstaj"
     },
     "joinNeedsAccount": "Za pridruživanje projektu otvorite račun — traje manje od minute.",
-    "budgetJoinNeedsAccount": "Za pridruživanje budžetu otvorite račun — traje manje od minute."
+    "budgetJoinNeedsAccount": "Za pridruživanje budžetu otvorite račun — traje manje od minute.",
+    "emailPlaceholder": "npr. ime@primjer.hr",
+    "contractAmendment": {
+      "unilateral": "{{n}} jednostrano"
+    }
   },
   "estimates": {
     "title": "Ponude i predračuni",
@@ -1246,7 +1254,9 @@
     "autoReminders": {
       "title": "Automatski podsjetnici",
       "hint": "Šalji email klijentu 3., 7. i 14. dan kašnjenja (zahtjeva email)."
-    }
+    },
+    "enableBusinessCta": "Uključi tvrtku",
+    "noBusinessContextHint": "Računi postoje samo u kontekstu tvrtke. Uključi poslovni profil pa ćeš ovdje moći izdavati i pratiti račune."
   },
   "settings": {
     "categories": {
@@ -1256,7 +1266,7 @@
       },
       "appearance": {
         "title": "Izgled",
-        "desc": "Tema i prikaz modula u aplikaciji"
+        "desc": "Svijetla ili tamna tema i izgled aplikacije"
       },
       "notifications": {
         "title": "Obavijesti",
@@ -1896,7 +1906,8 @@
       "color": "Boja",
       "save": "Spremi i odaberi",
       "duplicateWarning": "Slična kategorija već postoji: \"{{name}}\". Svejedno dodaj?"
-    }
+    },
+    "salary": "Plaća"
   },
   "incomeCategories": {
     "salary": "Plaća",
@@ -2023,7 +2034,8 @@
     "trendDown": "-{{percent}}% ↓",
     "vsLastMonth": "u odnosu na prošli mjesec",
     "lessThanLastMonth": "manje nego prošli mj. ✓",
-    "moreThanLastMonth": "više nego prošli mj."
+    "moreThanLastMonth": "više nego prošli mj.",
+    "availableNegativeHint": "Izvor je u minusu — potrošeno je više nego što je na računima."
   },
   "backup": {
     "title": "Backup",
@@ -3653,7 +3665,7 @@
     "settings": "Postavke",
     "settingsStep1": "Klikni ikonu zupčanika u zaglavlju",
     "settingsStep2": "Postavke su podijeljene na: Profil, Izgled, Obavijesti, Pretplata, Podaci i sigurnost te Pomoć i podrška",
-    "settingsStep3": "U „Profil“ mijenjaš ime i jezik, u „Izgled“ temu i prikaz modula",
+    "settingsStep3": "U „Profil“ mijenjaš ime i jezik, u „Izgled“ temu aplikacije",
     "settingsStep4": "U „Podaci i sigurnost“ izvoziš podatke, uključuješ zaključavanje i brišeš račun"
   },
   "storage": {
@@ -4071,7 +4083,8 @@
     "roleUpdated": "Uloga ažurirana",
     "verificationEmailSent": "Verifikacijski email je poslan!",
     "memberRemoved": "Član uklonjen",
-    "pdfParseIncomplete": "Obrada nije dovršena — pokušaj ponovno"
+    "pdfParseIncomplete": "Obrada nije dovršena — pokušaj ponovno",
+    "workerAdded": "Osoba dodana"
   },
   "placeholders": {
     "selectDestinationAccount": "Odaberi odredišni račun",
@@ -4410,21 +4423,21 @@
     "diagnosticRuntime": "Runtime"
   },
   "workers": {
-    "title": "Evidencija radnika",
-    "add": "Dodaj",
+    "title": "Ljudi",
+    "add": "Osoba",
     "listView": "Popis",
     "calendarView": "Kalendar",
     "totalCost": "Ukupni trošak rada",
     "totalLaborCost": "Ukupni trošak rada",
-    "edit": "Uredi radnika",
+    "edit": "Uredi osobu",
     "firstNamePlaceholder": "Unesite ime",
     "lastNamePlaceholder": "Unesite prezime",
     "workSchedule": "Radno vrijeme",
     "schedule": "Radno vrijeme",
-    "noWorkers": "Nema unesenih radnika",
-    "noWorkersHint": "Dodajte radnike za praćenje troškova rada",
-    "deleteConfirmTitle": "Ukloni radnika?",
-    "deleteConfirmMessage": "Jeste li sigurni da želite ukloniti ovog radnika? Ova radnja se ne može poništiti.",
+    "noWorkers": "Još nema osoba",
+    "noWorkersHint": "Dodaj osobe za praćenje troškova rada",
+    "deleteConfirmTitle": "Ukloni osobu?",
+    "deleteConfirmMessage": "Jeste li sigurni da želite ukloniti ovu osobu? Ova radnja se ne može poništiti.",
     "weeklyEntry": "Tjedni unos",
     "selectWeek": "Odaberi tjedan",
     "selectDays": "Odaberi dane",
@@ -4538,24 +4551,25 @@
     "rateEffectiveFromHint": "Retroaktivna promjena je dopuštena samo do prve isplate koja pokriva period.",
     "rateEffectiveFromRequired": "Odaberi datum \"vrijedi od\"",
     "rateCollisionError": "Postoji isplata koja pokriva ovaj period. Najraniji dozvoljeni datum: {{date}}.",
-    "deleteFailedPayouts": "Radnik ima {{count}} isplata i zato se ne može obrisati.",
-    "deleteFailedLocked": "Radnik ima sate zaključane isplatom i zato se ne može obrisati.",
-    "deleteFailedNotOwner": "Samo vlasnik projekta može obrisati radnika.",
-    "deleteFailedNotFound": "Radnik više ne postoji.",
+    "deleteFailedPayouts": "Osoba ima {{count}} isplata i zato se ne može obrisati.",
+    "deleteFailedLocked": "Osoba ima sate zaključane isplatom i zato se ne može obrisati.",
+    "deleteFailedNotOwner": "Samo vlasnik projekta može obrisati osobu.",
+    "deleteFailedNotFound": "Osoba više ne postoji.",
     "deleteFailedOther": "Brisanje nije moguće: {{reason}}",
     "archiveOfferTitle": "Brisanje nije moguće",
     "archiveOfferBody": "Možeš ga arhivirati: nestat će s popisa projekta, a isplate i povijest ostaju netaknute.",
     "archive": "Arhiviraj",
-    "archived": "Radnik arhiviran",
-    "unarchived": "Radnik vraćen na popis",
-    "deleteWithHoursTitle": "Obrisati radnika i njegove sate?",
+    "archived": "Osoba arhivirana",
+    "unarchived": "Osoba vraćena na popis",
+    "deleteWithHoursTitle": "Obrisati osobu i njezine sate?",
     "deleteWithHoursBody_one": "{{name}} ima {{count}} unos rada ({{hours}} h). Brisanjem se trajno brišu i ti sati. Ovo se ne može poništiti.",
     "deleteWithHoursBody_few": "{{name}} ima {{count}} unosa rada ({{hours}} h). Brisanjem se trajno brišu i ti sati. Ovo se ne može poništiti.",
     "deleteWithHoursBody_other": "{{name}} ima {{count}} unosa rada ({{hours}} h). Brisanjem se trajno brišu i ti sati. Ovo se ne može poništiti.",
     "deleteWithHoursValue": "Vrijednost tih sati je {{value}}.",
-    "deleteArchiveAlternative": "Arhiviraj umjesto brisanja — radnik i njegovi sati ostaju u evidenciji, ali nestaje s popisa.",
+    "deleteArchiveAlternative": "Arhiviraj umjesto brisanja — osoba i njezini sati ostaju u evidenciji, ali nestaje s popisa.",
     "archiveInstead": "Arhiviraj umjesto brisanja",
-    "deleteWorkerAndHours": "Obriši radnika i sate"
+    "deleteWorkerAndHours": "Obriši osobu i sate",
+    "positionPlaceholder": "npr. zidar, voditelj, dizajner"
   },
   "collaboratorsFilters": {
     "filterStatus": "Status",
@@ -4667,7 +4681,9 @@
       "grandTotal": "Sveukupno",
       "done": "Izvoz završen",
       "note": "Interni dokument — nije službena evidencija radnog vremena."
-    }
+    },
+    "emptyNoPeople": "Dodaj osobu da bi vodio sate",
+    "emptyGoToPeople": "Otvori Ljude"
   },
   "support": {
     "title": "Kontaktirajte podršku",
@@ -4835,7 +4851,7 @@
   "projectTypes": {
     "step": {
       "title": "Za što ćeš koristiti ovaj projekt?",
-      "subtitle": "Odaberi vrstu — prilagodit ćemo nazive faza i tabova. Vrsta se kasnije ne mijenja.",
+      "subtitle": "Odaberi vrstu — prilagodit ćemo nazive faza. Vrsta se kasnije ne mijenja.",
       "changeType": "← Promijeni vrstu",
       "lockedBadge": "Vrsta: {{name}}"
     },
@@ -4848,110 +4864,84 @@
       "name": "Gradilište",
       "tagline": "Novogradnja, gradilišta, javni radovi",
       "labels": {
-        "milestones": "Etape gradnje",
-        "collaborators": "Podizvođači",
-        "documents": "Nacrti & Dozvole"
+        "milestones": "Etape gradnje"
       }
     },
     "renovation": {
       "name": "Adaptacija",
       "tagline": "Renovacija, preuređenje, sanacija",
       "labels": {
-        "milestones": "Faze radova",
-        "collaborators": "Majstori",
-        "documents": "Ponude & Računi"
+        "milestones": "Faze radova"
       }
     },
     "interior": {
       "name": "Uređenje interijera",
       "tagline": "Dizajn interijera, opremanje",
       "labels": {
-        "milestones": "Faze uređenja",
-        "collaborators": "Dobavljači"
+        "milestones": "Faze uređenja"
       }
     },
     "it_software": {
       "name": "IT / Software",
       "tagline": "Razvoj softvera, web, app",
       "labels": {
-        "milestones": "Sprintovi",
-        "workers": "Tim",
-        "collaborators": "Klijenti / Vendori",
-        "documents": "Specifikacije"
+        "milestones": "Sprintovi"
       }
     },
     "marketing": {
       "name": "Marketing",
       "tagline": "Kampanje, oglašavanje, branding",
       "labels": {
-        "milestones": "Faze kampanje",
-        "collaborators": "Vanjski suradnici",
-        "documents": "Materijali"
+        "milestones": "Faze kampanje"
       }
     },
     "education": {
       "name": "Edukacija",
       "tagline": "Tečajevi, treninzi, radionice",
       "labels": {
-        "milestones": "Moduli / Lekcije",
-        "workers": "Predavači",
-        "members": "Polaznici",
-        "documents": "Materijali"
+        "milestones": "Moduli / Lekcije"
       }
     },
     "beauty": {
       "name": "Beauty / Wellness",
       "tagline": "Kozmetika, frizerstvo, wellness",
       "labels": {
-        "milestones": "Tretmani / Paketi",
-        "workers": "Osoblje",
-        "documents": "Cjenik & Protokoli"
+        "milestones": "Tretmani / Paketi"
       }
     },
     "hospitality_event": {
       "name": "Ugostiteljstvo / Event",
       "tagline": "Catering, restorani, eventi",
       "labels": {
-        "milestones": "Faze priprema",
-        "workers": "Osoblje",
-        "collaborators": "Dobavljači",
-        "documents": "Menu & Ugovori"
+        "milestones": "Faze priprema"
       }
     },
     "healthcare": {
       "name": "Zdravstvo",
       "tagline": "Ordinacije, klinike, terapije",
       "labels": {
-        "milestones": "Etape projekta",
-        "workers": "Osoblje",
-        "documents": "Protokoli"
+        "milestones": "Etape projekta"
       }
     },
     "retail_opening": {
       "name": "Trgovina",
       "tagline": "Otvorenje dućana, retail",
       "labels": {
-        "milestones": "Faze otvaranja",
-        "collaborators": "Dobavljači",
-        "documents": "Ugovori"
+        "milestones": "Faze otvaranja"
       }
     },
     "manufacturing": {
       "name": "Proizvodnja",
       "tagline": "Manufaktura, narudžbe, izrada",
       "labels": {
-        "milestones": "Faze proizvodnje",
-        "collaborators": "Dobavljači",
-        "documents": "Tehnička dokumentacija"
+        "milestones": "Faze proizvodnje"
       }
     },
     "private_event": {
       "name": "Privatni event",
       "tagline": "Vjenčanja, slavlja, proslave",
       "labels": {
-        "milestones": "Faze planiranja",
-        "collaborators": "Dobavljači",
-        "documents": "Ugovori & Računi"
+        "milestones": "Faze planiranja"
       }
     }
   },
@@ -6386,7 +6376,8 @@
       "availableHint": "30 dana besplatno — aktiviraj jednim klikom",
       "errorInvalid": "Probno razdoblje nije dostupno za ovaj modul.",
       "errorAuth": "Prijava je istekla. Osvježi stranicu.",
-      "errorGeneric": "Aktivacija nije uspjela. Pokušaj ponovno."
+      "errorGeneric": "Aktivacija nije uspjela. Pokušaj ponovno.",
+      "tryCta30": "Isprobaj 30 dana"
     }
   },
   "subscription": {
@@ -7188,7 +7179,7 @@
     "deleteFailed": "Brisanje nije uspjelo: {{reason}}"
   },
   "collaborators": {
-    "add": "Dodaj vanjskog suradnika",
+    "add": "Suradnik",
     "edit": "Uredi suradnika",
     "project": "Projekt",
     "projectPlaceholder": "Odaberi projekt",

@@ -434,7 +434,8 @@
       "hint": "Der VTR-Betrag wird automatisch dem Vertragswert als Nachtrag hinzugefügt.",
       "amountRequired": "VTR-Betrag muss größer als 0 sein.",
       "created": "VTR hinzugefügt",
-      "deleteWarning": "Beim Löschen dieser VTR wird der Vertragswert um {{amount}} reduziert. Fortfahren?"
+      "deleteWarning": "Beim Löschen dieser VTR wird der Vertragswert um {{amount}} reduziert. Fortfahren?",
+      "addButtonUnilateral": "Einseitige Änderung (ohne Gegenpartei)"
     },
     "decisionSource": {
       "fromDecisionBadge": "Aus Entscheidung erstellt",
@@ -476,7 +477,7 @@
     "fundingRemoved": "Finanzierungsquelle entfernt",
     "fundingAlreadyExists": "Diese Quelle ist bereits mit dem Projekt verknüpft",
     "confirmRemoveFunding": "Sind Sie sicher, dass Sie diese Finanzierungsquelle entfernen möchten?",
-    "inviteMembers": "Mitglieder einladen",
+    "inviteMembers": "Mitglied einladen",
     "suggestedContext": "Wo sieht das Mitglied dieses Projekt?",
     "whereToShow": "Wo möchtest du dieses Projekt sehen?",
     "ownerSuggestedBusiness": "Eigentümer-Vorschlag: Business-Modus",
@@ -790,11 +791,11 @@
     "workers": "Personen",
     "collaborators": "Mitwirkende",
     "tooltips": {
-      "projectTeam": "Alle Personen im Projekt: App-Mitglieder, Arbeiter und externe Mitwirkende",
+      "projectTeam": "Alle im Projekt: App-Mitglieder, Personen und externe Mitwirkende",
       "team": "Teammitglieder",
-      "workers": "Deine Stundenkräfte (du führst sie, du bezahlst sie, Stundenerfassung)",
+      "workers": "Deine Personen im Projekt (du führst und bezahlst sie, Stunden werden erfasst)",
       "collaborators": "Mitwirkende",
-      "workLog": "Erfasste Arbeitsstunden pro Tag und Auszahlungsberechnung"
+      "workLog": "Erfasste Stunden pro Tag und Auszahlungsberechnung"
     },
     "invitationsDisabledClosed": "Projekt ist abgeschlossen oder archiviert — Einladungen sind nicht möglich.",
     "complete": {
@@ -930,7 +931,7 @@
       "addTransactionDesc": "Ausgabe oder Einnahme erfassen",
       "setBudget": "Budget festlegen",
       "setBudgetDesc": "Marge und Inkasso verfolgen",
-      "inviteTeam": "Team einladen",
+      "inviteTeam": "Mitglied einladen",
       "inviteTeamDesc": "Am Projekt mitarbeiten"
     },
     "decisions": {
@@ -1046,7 +1047,10 @@
         "attachmentsAvailableInApp": "Einige Anhänge sind in der App verfügbar.",
         "annulNote": "Hinweis: Diese Entscheidung wurde durch beidseitige Bestätigung aufgehoben.",
         "footerDisclaimer": "Erstellt aus der Centar-App · {{date}} · ID: {{id}}"
-      }
+      },
+      "noInvestorTitle": "Keine Gegenpartei",
+      "noInvestorBody": "Eine Entscheidung wird dem Investor zur Freigabe geschickt. Lade einen Investor ins Team ein, um einen Vorschlag zu senden.",
+      "noInvestorCta": "Mitglieder öffnen"
     },
     "investorPriceLabel": "Sieht den Investorenpreis",
     "investorPriceHint": "Diese Projektleitung sieht bereits die geplanten Kosten jeder Phase. Wenn du dies aktivierst, sieht sie auch den Investorenpreis – also wie viel du an jeder Phase verdienst.",
@@ -1114,7 +1118,11 @@
       "cta": "{{count}} Buchungen ohne Phase — zuordnen"
     },
     "joinNeedsAccount": "Erstelle ein Konto, um dem Projekt beizutreten — das dauert weniger als eine Minute.",
-    "budgetJoinNeedsAccount": "Erstelle ein Konto, um dem Budget beizutreten — das dauert weniger als eine Minute."
+    "budgetJoinNeedsAccount": "Erstelle ein Konto, um dem Budget beizutreten — das dauert weniger als eine Minute.",
+    "emailPlaceholder": "z. B. name@beispiel.de",
+    "contractAmendment": {
+      "unilateral": "{{n}} einseitig"
+    }
   },
   "estimates": {
     "title": "Angebote & Kostenvoranschläge",
@@ -1242,7 +1250,9 @@
     "autoReminders": {
       "title": "Automatische Erinnerungen",
       "hint": "E-Mail an Kunden 3, 7 und 14 Tage nach Fälligkeit (E-Mail erforderlich)."
-    }
+    },
+    "enableBusinessCta": "Firma aktivieren",
+    "noBusinessContextHint": "Rechnungen gibt es nur im Firmenkontext. Aktiviere ein Firmenprofil, um hier Rechnungen zu stellen und zu verfolgen."
   },
   "settings": {
     "categories": {
@@ -1252,7 +1262,7 @@
       },
       "appearance": {
         "title": "Darstellung",
-        "desc": "Design und Modulanzeige"
+        "desc": "Helles oder dunkles Design und Erscheinungsbild der App"
       },
       "notifications": {
         "title": "Benachrichtigungen",
@@ -1892,7 +1902,8 @@
       "color": "Farbe",
       "save": "Speichern und auswählen",
       "duplicateWarning": "Eine ähnliche Kategorie existiert bereits: \"{{name}}\". Trotzdem hinzufügen?"
-    }
+    },
+    "salary": "Gehalt"
   },
   "incomeCategories": {
     "salary": "Gehalt",
@@ -2018,7 +2029,8 @@
     "trendDown": "-{{percent}}% ↓",
     "vsLastMonth": "im Vergleich zum Vormonat",
     "lessThanLastMonth": "weniger als Vormonat ✓",
-    "moreThanLastMonth": "mehr als Vormonat"
+    "moreThanLastMonth": "mehr als Vormonat",
+    "availableNegativeHint": "Eine Quelle ist im Minus — es wurde mehr ausgegeben, als auf den Konten ist."
   },
   "backup": {
     "title": "Backup",
@@ -3645,7 +3657,7 @@
     "settings": "Einstellungen",
     "settingsStep1": "Klicke auf das Zahnradsymbol in der Kopfzeile",
     "settingsStep2": "Die Einstellungen sind gegliedert in: Profil, Darstellung, Benachrichtigungen, Abonnement, Daten & Sicherheit sowie Hilfe & Support",
-    "settingsStep3": "Unter „Profil“ änderst du Name und Sprache, unter „Darstellung“ Design und Modulanzeige",
+    "settingsStep3": "Unter „Profil“ änderst du Name und Sprache, unter „Darstellung“ das App-Design",
     "settingsStep4": "Unter „Daten & Sicherheit“ exportierst du Daten, aktivierst die Sperre und löschst dein Konto"
   },
   "storage": {
@@ -4063,7 +4075,8 @@
     "roleUpdated": "Rolle aktualisiert",
     "verificationEmailSent": "Bestätigungs-E-Mail gesendet!",
     "memberRemoved": "Mitglied entfernt",
-    "pdfParseIncomplete": "Verarbeitung nicht abgeschlossen — bitte erneut versuchen"
+    "pdfParseIncomplete": "Verarbeitung nicht abgeschlossen — bitte erneut versuchen",
+    "workerAdded": "Person hinzugefügt"
   },
   "placeholders": {
     "selectDestinationAccount": "Zielkonto auswählen",
@@ -4402,21 +4415,21 @@
     "diagnosticRuntime": "Laufzeit"
   },
   "workers": {
-    "title": "Arbeitsnachweise",
-    "add": "Hinzufügen",
+    "title": "Personen",
+    "add": "Person",
     "listView": "Liste",
     "calendarView": "Kalender",
     "totalCost": "Gesamte Arbeitskosten",
     "totalLaborCost": "Gesamte Arbeitskosten",
-    "edit": "Arbeiter bearbeiten",
+    "edit": "Person bearbeiten",
     "firstNamePlaceholder": "Vorname eingeben",
     "lastNamePlaceholder": "Nachname eingeben",
     "workSchedule": "Arbeitszeit",
     "schedule": "Arbeitszeit",
-    "noWorkers": "Keine Arbeiter erfasst",
-    "noWorkersHint": "Arbeiter hinzufügen, um Arbeitskosten zu verfolgen",
-    "deleteConfirmTitle": "Arbeiter entfernen?",
-    "deleteConfirmMessage": "Möchten Sie diesen Arbeiter wirklich entfernen? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "noWorkers": "Noch keine Personen",
+    "noWorkersHint": "Personen hinzufügen, um Arbeitskosten zu verfolgen",
+    "deleteConfirmTitle": "Person entfernen?",
+    "deleteConfirmMessage": "Möchten Sie diese Person wirklich entfernen? Diese Aktion kann nicht rückgängig gemacht werden.",
     "weeklyEntry": "Wocheneintrag",
     "selectWeek": "Woche wählen",
     "selectDays": "Tage wählen",
@@ -4530,23 +4543,24 @@
     "rateEffectiveFromHint": "Rückwirkende Änderungen sind nur bis zur ersten Auszahlung erlaubt, die den Zeitraum abdeckt.",
     "rateEffectiveFromRequired": "Datum \"gültig ab\" wählen",
     "rateCollisionError": "Eine Auszahlung deckt diesen Zeitraum bereits ab. Frühestes zulässiges Datum: {{date}}.",
-    "deleteFailedPayouts": "Dieser Mitarbeiter hat {{count}} Auszahlungen und kann daher nicht gelöscht werden.",
-    "deleteFailedLocked": "Dieser Mitarbeiter hat durch eine Auszahlung gesperrte Stunden und kann daher nicht gelöscht werden.",
-    "deleteFailedNotOwner": "Nur der Projektinhaber kann einen Mitarbeiter löschen.",
-    "deleteFailedNotFound": "Dieser Mitarbeiter existiert nicht mehr.",
+    "deleteFailedPayouts": "Diese Person hat {{count}} Auszahlungen und kann nicht gelöscht werden.",
+    "deleteFailedLocked": "Diese Person hat durch eine Auszahlung gesperrte Stunden und kann nicht gelöscht werden.",
+    "deleteFailedNotOwner": "Nur der Projektinhaber kann eine Person löschen.",
+    "deleteFailedNotFound": "Person existiert nicht mehr.",
     "deleteFailedOther": "Löschen nicht möglich: {{reason}}",
     "archiveOfferTitle": "Löschen nicht möglich",
     "archiveOfferBody": "Du kannst ihn archivieren: Er verschwindet aus der Projektliste, Auszahlungen und Historie bleiben unberührt.",
     "archive": "Archivieren",
-    "archived": "Mitarbeiter archiviert",
-    "unarchived": "Mitarbeiter wieder in der Liste",
-    "deleteWithHoursTitle": "Arbeiter und seine Stunden löschen?",
+    "archived": "Person archiviert",
+    "unarchived": "Person wieder in der Liste",
+    "deleteWithHoursTitle": "Person und ihre Stunden löschen?",
     "deleteWithHoursBody_one": "{{name}} hat {{count}} Arbeitseintrag ({{hours}} h). Beim Löschen gehen diese Stunden dauerhaft verloren. Das kann nicht rückgängig gemacht werden.",
     "deleteWithHoursBody_other": "{{name}} hat {{count}} Arbeitseinträge ({{hours}} h). Beim Löschen gehen diese Stunden dauerhaft verloren. Das kann nicht rückgängig gemacht werden.",
     "deleteWithHoursValue": "Diese Stunden sind {{value}} wert.",
-    "deleteArchiveAlternative": "Archivieren statt löschen — Arbeiter und Stunden bleiben erfasst, verschwinden aber aus der Liste.",
+    "deleteArchiveAlternative": "Archivieren statt löschen — Person und Stunden bleiben in der Aufzeichnung, verschwinden aber aus der Liste.",
     "archiveInstead": "Archivieren statt löschen",
-    "deleteWorkerAndHours": "Arbeiter und Stunden löschen"
+    "deleteWorkerAndHours": "Person und Stunden löschen",
+    "positionPlaceholder": "z. B. Maurer, Bauleiter, Designer"
   },
   "collaboratorsFilters": {
     "filterStatus": "Status",
@@ -4658,7 +4672,9 @@
       "grandTotal": "Gesamtsumme",
       "done": "Export abgeschlossen",
       "note": "Internes Dokument — keine offizielle Arbeitszeitaufzeichnung."
-    }
+    },
+    "emptyNoPeople": "Füge eine Person hinzu, um Stunden zu erfassen",
+    "emptyGoToPeople": "Personen öffnen"
   },
   "support": {
     "title": "Support kontaktieren",
@@ -4826,7 +4842,7 @@
   "projectTypes": {
     "step": {
       "title": "Wofür wirst du dieses Projekt nutzen?",
-      "subtitle": "Wähle eine Art — wir passen Phasen- und Tab-Bezeichnungen an. Die Art kann später nicht geändert werden.",
+      "subtitle": "Wähle eine Art — wir passen die Phasennamen an. Die Art kann später nicht geändert werden.",
       "changeType": "← Art ändern",
       "lockedBadge": "Art: {{name}}"
     },
@@ -4839,110 +4855,84 @@
       "name": "Baustelle",
       "tagline": "Neubau, Baustellen, öffentliche Arbeiten",
       "labels": {
-        "milestones": "Bauetappen",
-        "collaborators": "Subunternehmer",
-        "documents": "Pläne & Genehmigungen"
+        "milestones": "Bauetappen"
       }
     },
     "renovation": {
       "name": "Sanierung",
       "tagline": "Renovierung, Umbau, Sanierung",
       "labels": {
-        "milestones": "Arbeitsphasen",
-        "collaborators": "Handwerker",
-        "documents": "Angebote & Rechnungen"
+        "milestones": "Arbeitsphasen"
       }
     },
     "interior": {
       "name": "Innenausbau",
       "tagline": "Innenarchitektur, Einrichtung",
       "labels": {
-        "milestones": "Gestaltungsphasen",
-        "collaborators": "Lieferanten"
+        "milestones": "Gestaltungsphasen"
       }
     },
     "it_software": {
       "name": "IT / Software",
       "tagline": "Software-, Web-, App-Entwicklung",
       "labels": {
-        "milestones": "Sprints",
-        "workers": "Team",
-        "collaborators": "Kunden / Lieferanten",
-        "documents": "Spezifikationen"
+        "milestones": "Sprints"
       }
     },
     "marketing": {
       "name": "Marketing",
       "tagline": "Kampagnen, Werbung, Branding",
       "labels": {
-        "milestones": "Kampagnenphasen",
-        "collaborators": "Externe Partner",
-        "documents": "Materialien"
+        "milestones": "Kampagnenphasen"
       }
     },
     "education": {
       "name": "Bildung",
       "tagline": "Kurse, Trainings, Workshops",
       "labels": {
-        "milestones": "Module / Lektionen",
-        "workers": "Dozenten",
-        "members": "Teilnehmer",
-        "documents": "Materialien"
+        "milestones": "Module / Lektionen"
       }
     },
     "beauty": {
       "name": "Beauty / Wellness",
       "tagline": "Kosmetik, Haare, Wellness",
       "labels": {
-        "milestones": "Behandlungen / Pakete",
-        "workers": "Personal",
-        "documents": "Preise & Protokolle"
+        "milestones": "Behandlungen / Pakete"
       }
     },
     "hospitality_event": {
       "name": "Gastronomie / Event",
       "tagline": "Catering, Restaurants, Events",
       "labels": {
-        "milestones": "Vorbereitungsphasen",
-        "workers": "Personal",
-        "collaborators": "Lieferanten",
-        "documents": "Menü & Verträge"
+        "milestones": "Vorbereitungsphasen"
       }
     },
     "healthcare": {
       "name": "Gesundheitswesen",
       "tagline": "Praxen, Kliniken, Behandlungen",
       "labels": {
-        "milestones": "Projektphasen",
-        "workers": "Personal",
-        "documents": "Protokolle"
+        "milestones": "Projektphasen"
       }
     },
     "retail_opening": {
       "name": "Einzelhandel",
       "tagline": "Ladeneröffnungen, Retail",
       "labels": {
-        "milestones": "Eröffnungsphasen",
-        "collaborators": "Lieferanten",
-        "documents": "Verträge"
+        "milestones": "Eröffnungsphasen"
       }
     },
     "manufacturing": {
       "name": "Produktion",
       "tagline": "Fertigung, Aufträge, Herstellung",
       "labels": {
-        "milestones": "Produktionsphasen",
-        "collaborators": "Lieferanten",
-        "documents": "Technische Dokumentation"
+        "milestones": "Produktionsphasen"
       }
     },
     "private_event": {
       "name": "Privates Event",
       "tagline": "Hochzeiten, Feiern, Veranstaltungen",
       "labels": {
-        "milestones": "Planungsphasen",
-        "collaborators": "Lieferanten",
-        "documents": "Verträge & Rechnungen"
+        "milestones": "Planungsphasen"
       }
     }
   },
@@ -6373,7 +6363,8 @@
       "availableHint": "30 Tage kostenlos — mit einem Klick aktivieren",
       "errorInvalid": "Testphase ist für dieses Modul nicht verfügbar.",
       "errorAuth": "Sitzung abgelaufen. Bitte Seite neu laden.",
-      "errorGeneric": "Aktivierung fehlgeschlagen. Bitte erneut versuchen."
+      "errorGeneric": "Aktivierung fehlgeschlagen. Bitte erneut versuchen.",
+      "tryCta30": "30 Tage testen"
     }
   },
   "subscription": {
@@ -7168,7 +7159,7 @@
     "deleteFailed": "Löschen fehlgeschlagen: {{reason}}"
   },
   "collaborators": {
-    "add": "Externen Mitarbeiter hinzufügen",
+    "add": "Mitwirkender",
     "edit": "Mitarbeiter bearbeiten",
     "project": "Projekt",
     "projectPlaceholder": "Projekt wählen",

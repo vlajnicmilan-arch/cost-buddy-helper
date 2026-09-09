@@ -7,7 +7,8 @@
  *  2. `workers` tab requires `canSeeWorkers`.
  *  3. `collaborators` tab requires `canSeeCollaborators`.
  *  4. `documents` is always visible to project members.
- *  5. `worklog` tab needs ≥1 worker AND (isManager OR explicit permission).
+ *  5. `worklog` tab je vidljiv i bez ijedne osobe (prazno stanje vodi na Ljudi);
+ *     traži samo (isManager OR explicit permission).
  *  6. Everything else: isManager OR explicit permission flag.
  */
 
@@ -43,6 +44,6 @@ export function resolveProjectTabVisibility(input: ProjectTabVisibilityInput): b
   if (tabKey === 'workers' && !canSeeWorkers) return false;
   if (tabKey === 'collaborators' && !canSeeCollaborators) return false;
   if (tabKey === 'documents') return true;
-  if (tabKey === 'worklog') return hasWorkers && (isManager || isTabVisible('worklog'));
+  if (tabKey === 'worklog') return isManager || isTabVisible('worklog');
   return isManager || isTabVisible(tabKey);
 }

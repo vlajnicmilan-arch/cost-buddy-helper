@@ -362,6 +362,10 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
             contingencyLabel: t('projects.contingency.milestoneName', 'Rezerva za nepredviđeno'),
           }
         );
+        // Faze iz predloška nastaju TEK nakon spremanja projekta — bez ovog
+        // osvježavanja kartica bi pokazivala 0 faza do sljedećeg učitavanja.
+        await refetch();
+        await fetchAllStats();
       }
     }
   };

@@ -63,6 +63,11 @@ interface ProjectMilestonesTabProps {
   isOwner: boolean;
   /** Korak D2 — zastavica s `project_members`; vrijedi samo za ulogu `member`. */
   canSeeInvestorPrice?: boolean;
+  /**
+   * True kad projekt ima investitora (član s ulogom `investor`). Tada se
+   * ugovorena vrijednost mijenja ISKLJUČIVO kroz Odluke — ručni VTR gumb nestaje.
+   */
+  hasInvestor?: boolean;
 }
 
 export const ProjectMilestonesTab = ({
@@ -76,7 +81,9 @@ export const ProjectMilestonesTab = ({
   currentUserRole,
   isOwner,
   canSeeInvestorPrice = false,
+  hasInvestor = false,
 }: ProjectMilestonesTabProps) => {
+
 
 
   const { t } = useTranslation();
@@ -387,10 +394,14 @@ export const ProjectMilestonesTab = ({
         </ToggleGroup>
         {isManager && (
           <div className="flex gap-2">
-            <Button onClick={() => { if (!guard()) return; openDialog(undefined, 'vtr'); }} size="sm" variant="outline" className="gap-1.5" disabled={isReadOnly} title={isReadOnly ? blockProps.title : undefined}>
-              <FileSignature className="w-4 h-4" />
-              {t('projects.vtr.addButton', 'Dodaj VTR')}
-            </Button>
+            {/* Uz investitora ugovorena vrijednost se mijenja samo kroz Odluke. */}
+            {!hasInvestor && (
+              <Button data-testid="vtr-add" onClick={() => { if (!guard()) return; openDialog(undefined, 'vtr'); }} size="sm" variant="outline" className="gap-1.5" disabled={isReadOnly} title={isReadOnly ? blockProps.title : undefined}>
+                <FileSignature className="w-4 h-4" />
+                {t('projects.vtr.addButtonUnilateral', 'Jednostrana izmjena (bez druge strane)')}
+              </Button>
+            )}
+
             <Button data-testid="milestone-add" onClick={() => { if (!guard()) return; openDialog(); }} size="sm" disabled={isReadOnly} title={isReadOnly ? blockProps.title : undefined}>
               <Plus className="w-4 h-4 mr-2" />
               {t('projects.addMilestone')}

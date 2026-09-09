@@ -65,7 +65,7 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
     titleKey: 'settings.categories.appearance.title',
     titleFallback: 'Izgled',
     descKey: 'settings.categories.appearance.desc',
-    descFallback: 'Tema i prikaz modula u aplikaciji',
+    descFallback: 'Svijetla ili tamna tema i izgled aplikacije',
     sections: ['theme', 'modules'],
   },
   {

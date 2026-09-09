@@ -18,7 +18,10 @@ export type ProjectType =
   | 'manufacturing'
   | 'private_event';
 
-export type LabelKey = 'milestones' | 'workers' | 'collaborators' | 'documents' | 'members';
+// Samo naziv faza ovisi o vrsti projekta. Nazivi za osobe (Članovi · Ljudi ·
+// Suradnici) i Dokumenti su GLOBALNI i namjerno se ne prilagođavaju vrsti —
+// dosljednost nazivlja je važnija od tematskog imenovanja.
+export type LabelKey = 'milestones';
 
 export interface ProjectTypePreset {
   id: ProjectType;
@@ -44,8 +47,6 @@ export const PROJECT_TYPE_PRESETS: ProjectTypePreset[] = [
     color: '#f59e0b',
     labelKeys: {
       milestones: 'projectTypes.construction_new.labels.milestones',
-      collaborators: 'projectTypes.construction_new.labels.collaborators',
-      documents: 'projectTypes.construction_new.labels.documents',
     },
     templateCategory: 'construction',
   },
@@ -55,8 +56,6 @@ export const PROJECT_TYPE_PRESETS: ProjectTypePreset[] = [
     color: '#ef4444',
     labelKeys: {
       milestones: 'projectTypes.renovation.labels.milestones',
-      collaborators: 'projectTypes.renovation.labels.collaborators',
-      documents: 'projectTypes.renovation.labels.documents',
     },
     templateCategory: 'renovation',
   },
@@ -66,7 +65,6 @@ export const PROJECT_TYPE_PRESETS: ProjectTypePreset[] = [
     color: '#ec4899',
     labelKeys: {
       milestones: 'projectTypes.interior.labels.milestones',
-      collaborators: 'projectTypes.interior.labels.collaborators',
     },
     templateCategory: 'interior',
   },
@@ -76,9 +74,6 @@ export const PROJECT_TYPE_PRESETS: ProjectTypePreset[] = [
     color: '#06b6d4',
     labelKeys: {
       milestones: 'projectTypes.it_software.labels.milestones',
-      workers: 'projectTypes.it_software.labels.workers',
-      collaborators: 'projectTypes.it_software.labels.collaborators',
-      documents: 'projectTypes.it_software.labels.documents',
     },
     templateCategory: 'it_software',
   },
@@ -88,8 +83,6 @@ export const PROJECT_TYPE_PRESETS: ProjectTypePreset[] = [
     color: '#8b5cf6',
     labelKeys: {
       milestones: 'projectTypes.marketing.labels.milestones',
-      collaborators: 'projectTypes.marketing.labels.collaborators',
-      documents: 'projectTypes.marketing.labels.documents',
     },
     templateCategory: 'marketing',
   },
@@ -99,9 +92,6 @@ export const PROJECT_TYPE_PRESETS: ProjectTypePreset[] = [
     color: '#22c55e',
     labelKeys: {
       milestones: 'projectTypes.education.labels.milestones',
-      workers: 'projectTypes.education.labels.workers',
-      members: 'projectTypes.education.labels.members',
-      documents: 'projectTypes.education.labels.documents',
     },
     templateCategory: 'education',
   },
@@ -111,8 +101,6 @@ export const PROJECT_TYPE_PRESETS: ProjectTypePreset[] = [
     color: '#f472b6',
     labelKeys: {
       milestones: 'projectTypes.beauty.labels.milestones',
-      workers: 'projectTypes.beauty.labels.workers',
-      documents: 'projectTypes.beauty.labels.documents',
     },
     templateCategory: 'beauty',
   },
@@ -122,9 +110,6 @@ export const PROJECT_TYPE_PRESETS: ProjectTypePreset[] = [
     color: '#fb923c',
     labelKeys: {
       milestones: 'projectTypes.hospitality_event.labels.milestones',
-      workers: 'projectTypes.hospitality_event.labels.workers',
-      collaborators: 'projectTypes.hospitality_event.labels.collaborators',
-      documents: 'projectTypes.hospitality_event.labels.documents',
     },
     templateCategory: 'hospitality_event',
   },
@@ -134,8 +119,6 @@ export const PROJECT_TYPE_PRESETS: ProjectTypePreset[] = [
     color: '#14b8a6',
     labelKeys: {
       milestones: 'projectTypes.healthcare.labels.milestones',
-      workers: 'projectTypes.healthcare.labels.workers',
-      documents: 'projectTypes.healthcare.labels.documents',
     },
     templateCategory: 'healthcare',
   },
@@ -145,8 +128,6 @@ export const PROJECT_TYPE_PRESETS: ProjectTypePreset[] = [
     color: '#84cc16',
     labelKeys: {
       milestones: 'projectTypes.retail_opening.labels.milestones',
-      collaborators: 'projectTypes.retail_opening.labels.collaborators',
-      documents: 'projectTypes.retail_opening.labels.documents',
     },
     templateCategory: 'retail_opening',
   },
@@ -156,8 +137,6 @@ export const PROJECT_TYPE_PRESETS: ProjectTypePreset[] = [
     color: '#64748b',
     labelKeys: {
       milestones: 'projectTypes.manufacturing.labels.milestones',
-      collaborators: 'projectTypes.manufacturing.labels.collaborators',
-      documents: 'projectTypes.manufacturing.labels.documents',
     },
     templateCategory: 'manufacturing',
   },
@@ -167,8 +146,6 @@ export const PROJECT_TYPE_PRESETS: ProjectTypePreset[] = [
     color: '#a855f7',
     labelKeys: {
       milestones: 'projectTypes.private_event.labels.milestones',
-      collaborators: 'projectTypes.private_event.labels.collaborators',
-      documents: 'projectTypes.private_event.labels.documents',
     },
     templateCategory: 'private_event',
   },

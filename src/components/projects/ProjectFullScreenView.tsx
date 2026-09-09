@@ -921,6 +921,8 @@ export const ProjectFullScreenView = ({
                           currentUserRole={currentUserRole}
                           isOwner={isOwner}
                           canSeeInvestorPrice={(project as any)?.can_see_investor_price === true}
+                          hasInvestor={!!investorMember}
+
                         />
 
                       )}
@@ -978,6 +980,7 @@ export const ProjectFullScreenView = ({
                     investorUserId={investorUserId}
                     isDecisionParty={canSeeDecisions}
                     memberNameMap={memberNameMap}
+                    onGoToMembers={() => setActiveTab('team')}
                   />
                 </TabsContent>
                 )}
@@ -991,6 +994,8 @@ export const ProjectFullScreenView = ({
                     isReadOnly={isReadOnly}
                     canLogOwnWork={worklogPerms.canLogOwnWork}
                     isOwnerReadonly={isOwnerReadonly}
+                    hasWorkers={(workers?.length ?? 0) > 0}
+                    onGoToPeople={() => setActiveTab('team')}
                   />
                 </TabsContent>
                 )}
