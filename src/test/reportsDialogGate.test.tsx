@@ -1,7 +1,7 @@
 // Behavior testovi za gumb "Izvješća" (ReportsDialog):
 //  (a) klik prije subscriptionReady → ništa (bez otvaranja dijaloga, bez reloada, bez navigacije)
 //  (b) spremna pretplata + pravo → dijalog se otvara
-//  (c) spremna pretplata bez prava → meka navigacija na /paywall (react-router, bez reloada)
+//  (c) spremna pretplata bez prava → ModuleUpgradeDialog kroz useModuleGate (bez reloada i bez tihe navigacije)
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -18,6 +18,11 @@ vi.mock('react-router-dom', async () => {
 const subscriptionState = { subscriptionReady: false };
 vi.mock('@/contexts/SubscriptionContext', () => ({
   useSubscription: () => subscriptionState,
+}));
+
+const requestModuleMock = vi.fn();
+vi.mock('@/hooks/useModuleGate', () => ({
+  useModuleGate: () => ({ requestModule: requestModuleMock, openUpgrade: vi.fn() }),
 }));
 
 const featureAccessState = { hasAccess: (_feature: string) => true };
@@ -69,6 +74,7 @@ describe('ReportsDialog gate (gumb Izvješća)', () => {
     clickTrigger();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(navigateMock).not.toHaveBeenCalled();
+    expect(requestModuleMock).not.toHaveBeenCalled();
   });
 
   it('(b) spremna pretplata + pravo → dijalog otvoren', () => {
@@ -78,14 +84,16 @@ describe('ReportsDialog gate (gumb Izvješća)', () => {
     clickTrigger();
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(navigateMock).not.toHaveBeenCalled();
+    expect(requestModuleMock).not.toHaveBeenCalled();
   });
 
-  it('(c) spremna pretplata bez prava → meka navigacija na /paywall, dijalog zatvoren', () => {
+  it('(c) spremna pretplata bez prava → otvara se ModuleUpgradeDialog, bez tihe navigacije', () => {
     subscriptionState.subscriptionReady = true;
     featureAccessState.hasAccess = () => false;
     renderDialog();
     clickTrigger();
-    expect(navigateMock).toHaveBeenCalledWith('/paywall');
+    expect(requestModuleMock).toHaveBeenCalledWith('smjer');
+    expect(navigateMock).not.toHaveBeenCalled();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });

@@ -290,36 +290,43 @@ export const ModuleUpgradeDialog = ({ open, onOpenChange, module }: Props) => {
             </>
           ) : (
             <>
-              <div className="order-2 grid min-w-0 grid-cols-1 gap-2 sm:col-span-2 sm:grid-cols-2">
-                <Button variant="ghost" onClick={() => onOpenChange(false)} className="w-full min-w-0">
-                  {t('moduleUpgrade.notNow', 'Ne sada')}
+              {/* Kad je proba dostupna, ona je JEDINI primarni gumb; otključavanje
+                  i "Ne sada" su sekundarni. */}
+              {canOfferTrial && (
+                <Button
+                  onClick={() => setConfirming(true)}
+                  className="order-1 w-full min-w-0 gap-2 whitespace-normal sm:col-span-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  {t('moduleUpgrade.trial.tryCta30', 'Isprobaj 30 dana')}
                 </Button>
-                {canOfferTrial && (
-                  <Button
-                    variant="outline"
-                    onClick={() => setConfirming(true)}
-                    className="w-full min-w-0 gap-2 whitespace-normal"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    {t('moduleUpgrade.trial.tryCta', 'Isprobaj besplatno 30 dana')}
-                  </Button>
-                )}
-              </div>
+              )}
               {meta.paywallPlan ? (
                 <Button
+                  variant={canOfferTrial ? 'outline' : 'default'}
                   onClick={goPaywall}
                   disabled={pricesLoading}
-                  className="order-1 w-full min-w-0 gap-2 whitespace-normal sm:col-span-2"
+                  className="order-2 w-full min-w-0 gap-2 whitespace-normal sm:col-span-2"
                 >
                   <Sparkles className="w-4 h-4" />
                   {t('moduleUpgrade.unlockCta', 'Otključaj')} {t(meta.titleKey, meta.titleFallback)}
                 </Button>
               ) : (
-                <Button disabled className="order-1 w-full min-w-0 sm:col-span-2">
-                  {t('moduleUpgrade.comingSoonCta', 'Uskoro')}
-                </Button>
+                !canOfferTrial && (
+                  <Button disabled className="order-2 w-full min-w-0 sm:col-span-2">
+                    {t('moduleUpgrade.comingSoonCta', 'Uskoro')}
+                  </Button>
+                )
               )}
+              <Button
+                variant="ghost"
+                onClick={() => onOpenChange(false)}
+                className="order-3 w-full min-w-0 sm:col-span-2"
+              >
+                {t('moduleUpgrade.notNow', 'Ne sada')}
+              </Button>
             </>
+
           )}
         </DialogFooter>
       </DialogContent>

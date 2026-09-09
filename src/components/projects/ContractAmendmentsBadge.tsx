@@ -30,10 +30,15 @@ export const ContractAmendmentsBadge = ({ projectId }: Props) => {
   if (amendments.length === 0) return null;
 
   const fromDecisions = amendments.filter((a) => a.source_decision_id).length;
+  // Izmjene bez odluke su jednostrane — nastale bez suglasnosti druge strane.
+  const unilateral = amendments.length - fromDecisions;
   const tooltipLines = [
     t('projects.contractAmendment.tooltip', 'Aneksi ugovora s klijentom'),
     ...(fromDecisions > 0
       ? [t('projects.contractAmendment.fromDecisions', '{{n}} iz Odluka', { n: fromDecisions })]
+      : []),
+    ...(unilateral > 0
+      ? [t('projects.contractAmendment.unilateral', '{{n}} jednostrano', { n: unilateral })]
       : []),
   ].join(' · ');
 

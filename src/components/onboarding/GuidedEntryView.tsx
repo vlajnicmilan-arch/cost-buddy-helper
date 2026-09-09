@@ -41,7 +41,20 @@ export const GuidedEntryView = ({
   onAddExpense,
   locking = false,
 }: GuidedEntryViewProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  // Datum i iznos prate jezik aplikacije (hr → 8.9.2026., 12,50 €).
+  const locale = i18n.language === 'de' ? 'de-DE' : i18n.language === 'en' ? 'en-US' : 'hr-HR';
+  const formatEntryAmount = (amount: number, currency?: string | null) => {
+    try {
+      return new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: currency || 'EUR',
+        minimumFractionDigits: 2,
+      }).format(amount);
+    } catch {
+      return `${amount.toFixed(2)} ${currency || 'EUR'}`;
+    }
+  };
   const [manualOpen, setManualOpen] = useState(false);
 
   const name = (displayName || '').trim();
@@ -156,11 +169,11 @@ export const GuidedEntryView = ({
                       {entry.description || t('common.noDescription', 'Bez opisa')}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(entry.date).toLocaleDateString()}
+                      {new Date(entry.date).toLocaleDateString(locale)}
                     </p>
                   </div>
                   <p className="text-sm font-semibold shrink-0 tabular-nums">
-                    {entry.amount.toFixed(2)} {entry.currency || 'EUR'}
+                    {formatEntryAmount(entry.amount, entry.currency)}
                   </p>
                 </div>
               </motion.li>

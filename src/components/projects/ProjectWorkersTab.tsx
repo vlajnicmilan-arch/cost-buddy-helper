@@ -375,12 +375,8 @@ export const ProjectWorkersTab = ({
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <User className="w-5 h-5 text-module-muted" />
-          <h3 className="font-semibold text-module-muted">{t('workers.title')}</h3>
-          <Badge variant="secondary">{workers.length}</Badge>
-        </div>
+      {/* Naziv i brojka žive na pod-tabu ("Ljudi N") — ovdje se namjerno ne ponavljaju. */}
+      <div className="flex items-center justify-end">
         <div className="flex items-center gap-1">
           {workers.length > 0 && (
             <DropdownMenu>
@@ -408,7 +404,7 @@ export const ProjectWorkersTab = ({
           )}
           <Button onClick={handleAdd} size="sm">
             <Plus className="w-4 h-4 mr-1" />
-            {t('workers.add')}
+            {t('workers.add', 'Osoba')}
           </Button>
         </div>
       </div>

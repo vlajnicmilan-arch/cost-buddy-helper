@@ -454,8 +454,14 @@ const Dashboard = () => {
             {/* Spending Calendar */}
             <SpendingCalendar expenses={expenses} />
 
-            {/* Cashflow Forecast */}
-            <CashflowForecast />
+            {/* Cashflow Forecast — naslov je ovdje jer sama komponenta nema header. */}
+            <div className="glass-card rounded-2xl p-4 mb-4 sm:mb-6">
+              <h3 className="text-base sm:text-lg font-semibold mb-3">
+                {t('dashboard.cashflow.title')}
+              </h3>
+              <CashflowForecast />
+            </div>
+
 
             {/* Charts Grid */}
             <div className="grid grid-cols-1 gap-4 sm:gap-6 mb-4 sm:mb-8">

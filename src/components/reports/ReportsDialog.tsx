@@ -9,6 +9,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { useModuleGate } from '@/hooks/useModuleGate';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
@@ -73,7 +74,6 @@ import { useTranslation } from 'react-i18next';
 import { ItemsAnalysisTab } from './ItemsAnalysisTab';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { useSubscription } from '@/contexts/SubscriptionContext';
-import { useNavigate } from 'react-router-dom';
 import { ExportButton } from '@/components/ui/export-button';
 
 interface ReportsDialogProps {
@@ -180,7 +180,7 @@ export const ReportsDialog = ({ expenses, triggerClassName, triggerLabel }: Repo
   // Paywall skok smije se dogoditi TEK kad je pretplata stvarno provjerena.
   // Prije toga `hasAccess('reports')` je lažno `false` (prazni entitlementi).
   const { subscriptionReady } = useSubscription();
-  const navigateToPaywall = useNavigate();
+  const { requestModule } = useModuleGate();
 
   
   const { customIncomeCategories } = useCustomIncomeCategories();
@@ -640,8 +640,10 @@ export const ReportsDialog = ({ expenses, triggerClassName, triggerLabel }: Repo
               return;
             }
             if (!hasAccess('reports')) {
+              // Bez prava NE vodimo tiho na /paywall — otvara se isti
+              // ModuleUpgradeDialog kao za svaki drugi zaključan ulaz.
               e.preventDefault();
-              navigateToPaywall('/paywall');
+              requestModule('smjer');
             }
           }}
 

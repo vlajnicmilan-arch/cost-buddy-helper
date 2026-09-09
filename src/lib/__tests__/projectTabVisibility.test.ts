@@ -63,8 +63,8 @@ describe('resolveProjectTabVisibility', () => {
     expect(resolveProjectTabVisibility({ ...base, tabKey: 'documents', isManager: false, isTabVisible: () => false })).toBe(true);
   });
 
-  it('worklog hidden when project has no workers', () => {
-    expect(resolveProjectTabVisibility({ ...base, tabKey: 'worklog', hasWorkers: false, isManager: true })).toBe(false);
+  it('worklog vidljiv i kad projekt nema nijednu osobu (prazno stanje vodi na Ljudi)', () => {
+    expect(resolveProjectTabVisibility({ ...base, tabKey: 'worklog', hasWorkers: false, isManager: true })).toBe(true);
   });
 
   it('worklog visible to manager when workers exist', () => {

@@ -365,6 +365,10 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
                   contingencyLabel: t('projects.contingency.milestoneName', 'Rezerva za nepredviđeno'),
                 }
               );
+              // Faze iz predloška nastaju nakon spremanja — osvježi da kartica
+              // odmah pokaže stvaran broj faza.
+              await refetch();
+              await fetchAllStats();
             }
           }
           setDialogOpen(false);

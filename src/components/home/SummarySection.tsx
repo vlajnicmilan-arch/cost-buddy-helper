@@ -93,7 +93,11 @@ export const SummarySection = React.memo(({
           <p className={`relative text-base sm:text-xl font-bold ${balance >= 0 ? 'text-primary' : 'text-destructive'}`}>
             {formatAmount(balance)}
           </p>
-          <p className="text-[9px] text-muted-foreground mt-0.5">{t('summary.availableHint', 'po svim računima')}</p>
+          <p className="text-[9px] text-muted-foreground mt-0.5">
+            {balance < 0
+              ? t('summary.availableNegativeHint', 'Izvor je u minusu — potrošeno je više nego što je na računima.')
+              : t('summary.availableHint', 'po svim računima')}
+          </p>
         </motion.div>
 
         <motion.div

@@ -136,8 +136,10 @@ export const PeopleTab = () => {
         });
       }
       if (failures.length === 0) {
-        showSuccess(t('people.add.saved', 'Osoba dodana'));
+        // Dijalog se zatvara PRIJE poruke — inače poruka ostane visjeti nad
+        // zatvorenim dijalogom kao "duh".
         setAddOpen(false);
+        showSuccess(t('people.add.saved', 'Osoba dodana'));
       }
       await Promise.all([refetch(), refetchIdentities()]);
     } finally {

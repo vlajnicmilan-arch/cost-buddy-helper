@@ -6,6 +6,7 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/EmptyState';
+import { QuickBusinessProfileDialog } from '@/components/business/QuickBusinessProfileDialog';
 import { Plus, FileText, Loader2, Edit, Trash2, Download, AlertTriangle, CheckCircle2, Mail } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
@@ -40,7 +41,7 @@ interface ProjectInvoicesPanelProps {
 export const ProjectInvoicesPanel = ({ projectId, compact = false, isReadOnly = false }: ProjectInvoicesPanelProps = {}) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
-  const { activeBusinessProfileId } = useAppState();
+  const { activeBusinessProfileId, setActiveBusinessProfileId, setBusinessModeEnabled } = useAppState();
   const { invoices, payments, loading, deleteInvoice, updateInvoice, getEffectiveStatus, refetch } = useProjectInvoices();
   const wrapDeleteWithUndo = useSoftDeleteWithUndo({ onRestored: refetch });
   const { guard } = useProjectWriteGuard({ isReadOnly });
@@ -49,6 +50,7 @@ export const ProjectInvoicesPanel = ({ projectId, compact = false, isReadOnly = 
   const [toDelete, setToDelete] = useState<ProjectInvoice | null>(null);
   const [pdfBusyId, setPdfBusyId] = useState<string | null>(null);
   const [reminderInvoice, setReminderInvoice] = useState<ProjectInvoice | null>(null);
+  const [quickProfileOpen, setQuickProfileOpen] = useState(false);
   const noBusinessCtx = !activeBusinessProfileId;
   const writeDisabled = noBusinessCtx || isReadOnly;
   const writeDisabledTitle = isReadOnly
@@ -115,8 +117,17 @@ export const ProjectInvoicesPanel = ({ projectId, compact = false, isReadOnly = 
         <EmptyState
           variant="generic"
           title={t('invoices.empty', 'Nema računa')}
+          action={noBusinessCtx
+            ? {
+                label: t('invoices.enableBusinessCta', 'Uključi tvrtku'),
+                onClick: () => setQuickProfileOpen(true),
+              }
+            : undefined}
           description={noBusinessCtx
-            ? t('invoices.errors.noBusinessContext', 'Računi se mogu kreirati samo u kontekstu tvrtke. Prebaci se na tvrtku na dashboardu.')
+            ? t(
+                'invoices.noBusinessContextHint',
+                'Računi postoje samo u kontekstu tvrtke. Uključi poslovni profil pa ćeš ovdje moći izdavati i pratiti račune.',
+              )
             : projectId
               ? t('invoices.emptyForProject', 'Nema računa vezanih za ovaj projekt.')
               : t('invoices.emptyHint', 'Evidentirajte izdane račune i pratite uplate. Plaćanja vežite na transakcije prihoda.')}
@@ -240,6 +251,14 @@ export const ProjectInvoicesPanel = ({ projectId, compact = false, isReadOnly = 
       <SendInvoiceReminderDialog
         invoice={reminderInvoice ? { ...reminderInvoice, remaining: (Number(reminderInvoice.total_amount) || 0) - (payments[reminderInvoice.id]?.paid || 0) } : null}
         onOpenChange={(o) => !o && setReminderInvoice(null)}
+      />
+      <QuickBusinessProfileDialog
+        open={quickProfileOpen}
+        onOpenChange={setQuickProfileOpen}
+        onCreated={(profileId) => {
+          setBusinessModeEnabled(true);
+          setActiveBusinessProfileId(profileId);
+        }}
       />
     </div>
   );

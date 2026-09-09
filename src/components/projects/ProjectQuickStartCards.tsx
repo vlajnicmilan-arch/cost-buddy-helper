@@ -64,7 +64,7 @@ export const ProjectQuickStartCards = ({
     },
     !hasTeam && isManager && {
       key: 'team',
-      title: t('projects.quickStartCards.inviteTeam', 'Pozovi tim'),
+      title: t('projects.quickStartCards.inviteTeam', 'Pozovi člana'),
       desc: t('projects.quickStartCards.inviteTeamDesc', 'Surađuj na projektu'),
       icon: Users,
       onClick: onInviteTeam,

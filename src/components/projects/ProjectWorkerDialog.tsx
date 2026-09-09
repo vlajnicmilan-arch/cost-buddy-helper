@@ -280,7 +280,7 @@ export const ProjectWorkerDialog = ({
               id="position"
               value={position}
               onChange={(e) => setPosition(e.target.value)}
-              placeholder={t('workers.positionPlaceholder', 'npr. Programer, Dizajner...')}
+              placeholder={t('workers.positionPlaceholder', 'npr. zidar, voditelj, dizajner')}
               required
             />
           </div>

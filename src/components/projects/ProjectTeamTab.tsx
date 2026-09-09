@@ -54,7 +54,7 @@ export const ProjectTeamTab = ({
     const list: { id: SubTab; label: string; icon: typeof Users; count: number; tooltip: string }[] = [
       {
         id: 'members',
-        label: t('projects.team', 'Tim'),
+        label: t('projects.members', 'Članovi'),
         icon: Users,
         count: members?.length || 0,
         tooltip: t('projects.tooltips.team', 'Drugi korisnici aplikacije s pristupom projektu'),
@@ -63,7 +63,7 @@ export const ProjectTeamTab = ({
     if (canSeeWorkers) {
       list.push({
         id: 'workers',
-        label: t('projects.workers', 'Radnici'),
+        label: t('projects.workers', 'Ljudi'),
         icon: ClipboardList,
         count: workers?.length || 0,
         tooltip: t('projects.tooltips.workers', 'Tvoji zaposlenici (vodiš ih ti, plaćaš ih, evidencija sati)'),
