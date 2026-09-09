@@ -7,6 +7,12 @@ import Landing from "./pages/CentarLanding";
 // `dist/index.html` boot script. See `src/lib/fastLanding.js`.
 import { isFastLanding as isFastLandingCondition, isInstalledApp } from "./lib/fastLanding";
 import { isProdAppHost } from "@/lib/appOrigin";
+import { markOnce } from "./lib/bootTiming";
+
+// First executable statement: records when main.tsx itself started running
+// (after its static imports above were evaluated). Feeds t_js_boot in the
+// `home_ready` diagnostic event. Purely observational.
+markOnce('js_boot');
 
 // Defer Sentry init + boot diagnostics until the browser is idle. These are
 // observability tools — they MUST NOT block first paint or LCP. They run

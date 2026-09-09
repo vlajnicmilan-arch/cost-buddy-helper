@@ -30,6 +30,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useBackButton } from '@/hooks/useBackButton';
 import { BACK_PRIORITY } from '@/contexts/BackButtonContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
+import { markOnce, getMarks, claimHomeReadyReport, homeReadySeverity } from '@/lib/bootTiming';
+import { APP_VERSION } from '@/lib/version';
 
 import { useTranslation } from 'react-i18next';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
@@ -48,6 +51,8 @@ const Index = () => {
   const isBusinessMode = !!activeBusinessProfileId;
   const [businessProfile, setBusinessProfile] = useState<{ id: string; company_name: string; is_vat_payer: boolean; industry_type?: string; enabled_modules?: string[]; theme_color?: string } | null>(null);
   const [businessTab, setBusinessTab] = useState<BusinessTab>('dashboard');
+
+  const { subscriptionReady } = useSubscription();
 
   // Boot-trace: confirms HomePage actually mounted. If app crashes between
   // /home route_change and this event, we know the failure is inside Index
@@ -207,6 +212,47 @@ const Index = () => {
     curMonthIncome,
     curMonthExpenses,
   } = useExpenses({ onBalanceUpdated: refetchPaymentSources });
+
+  // home_ready timing marks — record the FIRST transition of each readiness
+  // signal. markOnce keeps only the first value, so re-renders are no-ops.
+  useEffect(() => {
+    if (!authLoading) markOnce('home_auth_ready');
+  }, [authLoading]);
+  useEffect(() => {
+    if (subscriptionReady) markOnce('home_subscription_ready');
+  }, [subscriptionReady]);
+  useEffect(() => {
+    if (!expensesLoading) markOnce('home_expenses_ready');
+  }, [expensesLoading]);
+
+  // Exactly once per page load: when auth, user, subscription and expenses
+  // are all ready, log one `home_ready` diagnostic event with phase timings.
+  useEffect(() => {
+    if (authLoading || !user || !subscriptionReady || expensesLoading) return;
+    if (!claimHomeReadyReport()) return;
+    const marks = getMarks();
+    const tTotal = Math.round(performance.now());
+    const isNative = !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
+      .Capacitor?.isNativePlatform?.();
+    import('@/lib/diagnosticLogger')
+      .then(({ logDiagnostic }) => logDiagnostic({
+        event: 'home_ready',
+        severity: homeReadySeverity(tTotal),
+        route: window.location.pathname,
+        details: {
+          t_total: tTotal,
+          t_auth: marks['home_auth_ready'] ?? null,
+          t_subscription: marks['home_subscription_ready'] ?? null,
+          t_expenses: marks['home_expenses_ready'] ?? null,
+          t_js_boot: marks['js_boot'] ?? null,
+          platform: isNative ? 'native' : 'web',
+          route: window.location.pathname,
+          storage_mode: storageMode ?? null,
+          app_version: APP_VERSION ?? null,
+        },
+      }))
+      .catch(() => {});
+  }, [authLoading, user, subscriptionReady, expensesLoading, storageMode]);
 
   // Handle notification click → open transaction detail
   useEffect(() => {
