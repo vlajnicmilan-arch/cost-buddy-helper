@@ -61,6 +61,7 @@ export const useSubscription = () => useContext(SubscriptionContext);
  * Fallback = 'dual' (safe: dual čita i tier i entitlements).
  */
 async function fetchEntitlementsMode(): Promise<EntitlementsMode> {
+
   try {
     const { data } = await supabase
       .from('app_settings')
