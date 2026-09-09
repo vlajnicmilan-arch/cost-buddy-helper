@@ -3,58 +3,24 @@
 // Retencija: briše foldere starije od 30 dana.
 // Poziva se iz pg_cron nedjeljom 03:00 Europe/Zagreb.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { zipSync } from "https://esm.sh/fflate@0.8.2";
 import { STORAGE_BUCKETS } from "../_shared/tablesToPurge.ts";
+import { BACKUP_TABLES } from "../_shared/backupTables.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Ključne tablice — sve što je potrebno za rekonstrukciju korisničkih podataka.
-// Uključuje motor salda (custom_payment_sources je anchor stanje) + audit ledger (project_worker_payouts).
-const TABLES = [
-  // Core financial
-  "expenses",
-  "custom_payment_sources",
-  "payment_source_cards",
-  "custom_categories",
-  "income_sources",
-  "recurring_transactions",
-  "installment_plans",
-  "installments",
-  // Projects
-  "projects",
-  "project_milestones",
-  "project_workers",
-  "project_work_entries",
-  "project_worker_payouts",        // audit ledger salda za radnike
-  "project_worker_rate_history",   // audit rate history
-  // Budgets
-  "budget_plans",
-  "budget_categories",
-  "budget_members",
-  "budget_invitations",
-  // Krug
-  "krug",
-  "krug_membership",
-  "krug_ownership",
-  "krug_shared_payment_source",
-  "krug_act_dedup",
-  "krug_deletion_request",
-  "krug_deletion_vote",
-  // Business
-  "business_profiles",
-  "clients",
-  // Bank
-  "bank_connections",
-  "bank_accounts",
-  // Users / meta
-  "profiles",
-  "user_roles",
-  "user_subscriptions",
-  "notification_preferences",
-  "app_settings",
-];
+// Popis tablica NIJE ručan — generira se iz registra izvoza
+// (scripts/generate-backup-tables.mjs → _shared/backupTables.ts).
+const TABLES = BACKUP_TABLES;
+
+const BACKUP_MAIL_TO = "vlajnic.milan@gmail.com";
+const SIGNED_URL_DAYS = 7;
+const SITE_NAME = "Centar";
+const SENDER_DOMAIN = "notify.vmbalance.com";
+
 
 const PAGE_SIZE = 1000;
 // Retencija: 30 dana (usklađeno s politikom privatnosti).
@@ -337,6 +303,120 @@ async function backupStorage(
 }
 
 
+function fmtMB(bytes: number): string {
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/**
+ * Mail BEZ privitka: potpisani link na zip u privatnom bucketu (rok 7 dana).
+ * Šalje se kroz postojeći red transakcijskih mailova (enqueue_email).
+ */
+async function sendBackupMail(
+  supabase: any,
+  info: {
+    folder: string;
+    tables: number;
+    rows: number;
+    files: number;
+    fileBytes: number;
+    zipBytes: number;
+    signedUrl: string | null;
+    errors: string[];
+  },
+): Promise<{ ok: boolean; message_id?: string; error?: string }> {
+  const messageId = crypto.randomUUID();
+  try {
+    const subject = `Centar — tjedna kopija ${info.folder}`;
+    const errorsHtml = info.errors.length
+      ? `<p><strong>Greške (${info.errors.length}):</strong></p><ul>${info.errors
+          .map((e) => `<li>${e.replace(/[<>&]/g, "")}</li>`)
+          .join("")}</ul>`
+      : `<p>Bez grešaka.</p>`;
+    const linkHtml = info.signedUrl
+      ? `<p><a href="${info.signedUrl}">Preuzmi ${`centar-backup-${info.folder}.zip`}</a> (link vrijedi ${SIGNED_URL_DAYS} dana)</p>`
+      : `<p><strong>Zip nije dostupan za preuzimanje</strong> — vidi greške ispod.</p>`;
+    const html = `<div style="font-family:Inter,Arial,sans-serif">
+      <h2>Tjedna kopija ${info.folder}</h2>
+      <ul>
+        <li>Tablica: ${info.tables}</li>
+        <li>Redaka: ${info.rows}</li>
+        <li>Priloga u pretincu: ${info.files} (${fmtMB(info.fileBytes)})</li>
+        <li>Veličina zipa: ${fmtMB(info.zipBytes)}</li>
+      </ul>
+      ${linkHtml}
+      ${errorsHtml}
+    </div>`;
+    const text = [
+      `Tjedna kopija ${info.folder}`,
+      `Tablica: ${info.tables}`,
+      `Redaka: ${info.rows}`,
+      `Priloga u pretincu: ${info.files} (${fmtMB(info.fileBytes)})`,
+      `Veličina zipa: ${fmtMB(info.zipBytes)}`,
+      info.signedUrl ? `Preuzimanje (${SIGNED_URL_DAYS} dana): ${info.signedUrl}` : "Zip nije dostupan za preuzimanje.",
+      info.errors.length ? `Greške:\n- ${info.errors.join("\n- ")}` : "Bez grešaka.",
+    ].join("\n");
+
+    // Mail servis odbija transakcijske poruke bez tokena za odjavu.
+    let unsubscribeToken: string | null = null;
+    const { data: tok } = await supabase
+      .from("email_unsubscribe_tokens")
+      .select("token")
+      .eq("email", BACKUP_MAIL_TO)
+      .maybeSingle();
+    if (tok?.token) {
+      unsubscribeToken = tok.token;
+    } else {
+      const fresh = crypto.randomUUID().replace(/-/g, "");
+      const { error: tokErr } = await supabase
+        .from("email_unsubscribe_tokens")
+        .insert({ email: BACKUP_MAIL_TO, token: fresh });
+      if (tokErr) throw new Error(`unsubscribe_token: ${tokErr.message}`);
+      unsubscribeToken = fresh;
+    }
+
+    await supabase.from("email_send_log").insert({
+      message_id: messageId,
+      template_name: "backup-weekly",
+      recipient_email: BACKUP_MAIL_TO,
+      status: "pending",
+    });
+
+    const { error } = await supabase.rpc("enqueue_email", {
+      queue_name: "transactional_emails",
+      payload: {
+        message_id: messageId,
+        to: BACKUP_MAIL_TO,
+        from: `${SITE_NAME} <noreply@${SENDER_DOMAIN}>`,
+        sender_domain: SENDER_DOMAIN,
+        subject,
+        html,
+        text,
+        purpose: "transactional",
+        label: "backup-weekly",
+        unsubscribe_token: unsubscribeToken,
+        idempotency_key: `backup-weekly:${info.folder}:${messageId}`,
+        queued_at: new Date().toISOString(),
+      },
+    });
+
+    if (error) throw new Error(error.message);
+    return { ok: true, message_id: messageId };
+  } catch (e: any) {
+    const msg = e?.message ?? String(e);
+    console.error("[backup-weekly] mail failed:", msg);
+    try {
+      await supabase.from("app_diagnostics_logs").insert({
+        session_id: "cron-backup-weekly",
+        event: "backup_weekly.mail_failed",
+        severity: "error",
+        details: { folder: info.folder, message_id: messageId, error: msg },
+      });
+    } catch (_) { /* dijagnostika ne smije srušiti prolaz */ }
+    return { ok: false, message_id: messageId, error: msg };
+  }
+}
+
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -350,6 +430,8 @@ Deno.serve(async (req) => {
     const today = new Date().toISOString().slice(0, 10); // UTC YYYY-MM-DD
     const folder = today;
     const results: Array<{ table: string; rows: number; bytes: number; ok: boolean; error?: string }> = [];
+    // Sadržaj za zip (isti bajtovi koji su otišli u mapu dana).
+    const zipEntries: Record<string, Uint8Array> = {};
 
     for (const table of TABLES) {
       try {
@@ -366,11 +448,13 @@ Deno.serve(async (req) => {
           upsert: true,
         });
         if (upErr) throw new Error(upErr.message);
+        zipEntries[`${table}.csv.gz`] = gz;
         results.push({ table, rows: rows.length, bytes: gz.byteLength, ok: true });
       } catch (e: any) {
         results.push({ table, rows: 0, bytes: 0, ok: false, error: e.message });
       }
     }
+
 
     // Prilozi (Storage) — inkrementalno u dijeljeno spremište `_files/`
     const storage = await backupStorage(supabase, folder, startedAt);
@@ -422,6 +506,47 @@ Deno.serve(async (req) => {
         upsert: true,
       });
 
+    // --- Zip dana + mail s potpisanim linkom (bez privitka) -----------------
+    const manifestBytes = new TextEncoder().encode(JSON.stringify(manifest, null, 2));
+    const zipName = `centar-backup-${folder}.zip`;
+    const zipPath = `${folder}/${zipName}`;
+    let zipBytes = 0;
+    let signedUrl: string | null = null;
+    let zipError: string | null = null;
+    try {
+      const zipped = zipSync({ ...zipEntries, "manifest.json": manifestBytes }, { level: 0 });
+      zipBytes = zipped.byteLength;
+      const { error: zipUpErr } = await supabase.storage
+        .from("backups")
+        .upload(zipPath, zipped, { contentType: "application/zip", upsert: true });
+      if (zipUpErr) throw new Error(zipUpErr.message);
+      const { data: signed, error: signErr } = await supabase.storage
+        .from("backups")
+        .createSignedUrl(zipPath, SIGNED_URL_DAYS * 86400);
+      if (signErr) throw new Error(signErr.message);
+      signedUrl = signed?.signedUrl ?? null;
+    } catch (e: any) {
+      zipError = e?.message ?? String(e);
+      console.error("[backup-weekly] zip/sign failed:", zipError);
+    }
+
+    const mailErrors = [
+      ...failed.map((f) => `tablica ${f.table}: ${f.error}`),
+      ...storage.errors.slice(0, 20).map((e) => `prilog ${e.bucket}/${e.path}: ${e.error}`),
+      ...(zipError ? [`zip: ${zipError}`] : []),
+    ];
+    const mail = await sendBackupMail(supabase, {
+      folder,
+      tables: results.length,
+      rows: totalRows,
+      files: storage.files.length,
+      fileBytes: storage.files.reduce((a, f) => a + f.size, 0),
+      zipBytes,
+      signedUrl,
+      errors: mailErrors,
+    });
+
+
     // Retencija: obriši foldere starije od 30 dana
     const cutoff = new Date(Date.now() - RETENTION_DAYS * 86400 * 1000);
     const prune = await pruneOldFolders(supabase, cutoff);
@@ -460,6 +585,12 @@ Deno.serve(async (req) => {
         file_errors: storage.errors.slice(0, 20),
         pruned: prune,
         pruned_files: prunedFiles,
+        zip_path: zipPath,
+        zip_bytes: zipBytes,
+        zip_error: zipError,
+        mail_ok: mail.ok,
+        mail_message_id: mail.message_id,
+
         duration_ms: Date.now() - startedAt,
       },
     });
@@ -481,6 +612,8 @@ Deno.serve(async (req) => {
           errors: storage.errors,
         },
         manifest_path: `${folder}/manifest.json`,
+        zip: { path: zipPath, bytes: zipBytes, error: zipError, signed_url_days: SIGNED_URL_DAYS },
+        mail: { ok: mail.ok, message_id: mail.message_id, error: mail.error, to: BACKUP_MAIL_TO },
         pruned: prune,
         pruned_files: prunedFiles,
         duration_ms: Date.now() - startedAt,
