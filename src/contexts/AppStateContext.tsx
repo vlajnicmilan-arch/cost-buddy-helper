@@ -64,8 +64,9 @@ const USER_SCOPED_KEY_PREFIXES = [
   'login_log_app_open:',
 ] as const;
 
-const removeUserScopedStorage = () => {
+const removeUserScopedStorage = (opts?: { preserveKeys?: readonly string[] }) => {
   USER_SCOPED_KEYS.forEach((key) => {
+    if (opts?.preserveKeys?.includes(key)) return;
     try { localStorage.removeItem(key); } catch { /* noop */ }
   });
   try {
