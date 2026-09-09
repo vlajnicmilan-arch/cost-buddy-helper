@@ -186,6 +186,9 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     };
   }, [subscribed, trialFromEntitlements]);
 
+  // Boot timing only: first moment the subscription state became ready.
+  useEffect(() => { if (subscriptionReady) markOnce('subscription_ready'); }, [subscriptionReady]);
+
   const contextValue = useMemo(() => ({
     tier,
     subscribed,
