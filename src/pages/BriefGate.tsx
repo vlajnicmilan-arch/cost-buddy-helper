@@ -21,6 +21,7 @@ import { planChoreography } from '@/lib/brief/choreography';
 import type { BriefFilterTarget, BriefMessage, BriefSnapshot } from '@/lib/brief/types';
 import { requestOpenOverdueInvoices } from '@/lib/eracun/openOverdueRequest';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { markOnce } from '@/lib/bootTiming';
 import { COMMIT_SHA } from '@/lib/version';
 import {
   BRIEF_GATE_EXIT_EVENT,
