@@ -32,8 +32,25 @@ export const claimHomeReadyReport = (): boolean => {
   return true;
 };
 
-export const homeReadySeverity = (tTotal: number): 'warning' | 'info' =>
-  tTotal > 5000 ? 'warning' : 'info';
+/**
+ * Time actually spent loading the app, excluding the Brief gate screen which
+ * waits on the user. If the Brief was not shown (or never dismissed),
+ * t_load === t_total.
+ */
+export const computeLoadMs = (
+  tTotal: number,
+  briefShown?: number | null,
+  briefDismissed?: number | null,
+): number => {
+  if (typeof briefShown !== 'number' || typeof briefDismissed !== 'number') return tTotal;
+  const briefMs = briefDismissed - briefShown;
+  if (!(briefMs > 0)) return tTotal;
+  return Math.max(0, tTotal - briefMs);
+};
+
+/** Severity is judged on t_load (loading time), not on wall-clock t_total. */
+export const homeReadySeverity = (tLoad: number): 'warning' | 'info' =>
+  tLoad > 5000 ? 'warning' : 'info';
 
 /** Test-only: reset module state between test cases. */
 export const __resetBootTimingForTests = (): void => {
