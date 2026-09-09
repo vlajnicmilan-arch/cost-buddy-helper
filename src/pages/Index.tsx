@@ -31,7 +31,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useBackButton } from '@/hooks/useBackButton';
 import { BACK_PRIORITY } from '@/contexts/BackButtonContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
-import { markOnce, getMarks, claimHomeReadyReport, homeReadySeverity } from '@/lib/bootTiming';
+import { markOnce, getMarks, claimHomeReadyReport, homeReadySeverity, computeLoadMs } from '@/lib/bootTiming';
 import { APP_VERSION } from '@/lib/version';
 
 import { useTranslation } from 'react-i18next';
