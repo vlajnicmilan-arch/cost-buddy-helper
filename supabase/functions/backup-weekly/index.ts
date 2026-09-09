@@ -392,6 +392,47 @@ Deno.serve(async (req) => {
         upsert: true,
       });
 
+    // --- Zip dana + mail s potpisanim linkom (bez privitka) -----------------
+    const manifestBytes = new TextEncoder().encode(JSON.stringify(manifest, null, 2));
+    const zipName = `centar-backup-${folder}.zip`;
+    const zipPath = `${folder}/${zipName}`;
+    let zipBytes = 0;
+    let signedUrl: string | null = null;
+    let zipError: string | null = null;
+    try {
+      const zipped = zipSync({ ...zipEntries, "manifest.json": manifestBytes }, { level: 0 });
+      zipBytes = zipped.byteLength;
+      const { error: zipUpErr } = await supabase.storage
+        .from("backups")
+        .upload(zipPath, zipped, { contentType: "application/zip", upsert: true });
+      if (zipUpErr) throw new Error(zipUpErr.message);
+      const { data: signed, error: signErr } = await supabase.storage
+        .from("backups")
+        .createSignedUrl(zipPath, SIGNED_URL_DAYS * 86400);
+      if (signErr) throw new Error(signErr.message);
+      signedUrl = signed?.signedUrl ?? null;
+    } catch (e: any) {
+      zipError = e?.message ?? String(e);
+      console.error("[backup-weekly] zip/sign failed:", zipError);
+    }
+
+    const mailErrors = [
+      ...failed.map((f) => `tablica ${f.table}: ${f.error}`),
+      ...storage.errors.slice(0, 20).map((e) => `prilog ${e.bucket}/${e.path}: ${e.error}`),
+      ...(zipError ? [`zip: ${zipError}`] : []),
+    ];
+    const mail = await sendBackupMail(supabase, {
+      folder,
+      tables: results.length,
+      rows: totalRows,
+      files: storage.files.length,
+      fileBytes: storage.files.reduce((a, f) => a + f.size, 0),
+      zipBytes,
+      signedUrl,
+      errors: mailErrors,
+    });
+
+
     // Retencija: obriši foldere starije od 30 dana
     const cutoff = new Date(Date.now() - RETENTION_DAYS * 86400 * 1000);
     const prune = await pruneOldFolders(supabase, cutoff);
