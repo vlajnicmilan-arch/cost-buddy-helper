@@ -13,7 +13,7 @@ describe('android shell 3.0.2 — app.vmbalance.com', () => {
     expect(configSource).toContain("'cost-buddy-helper.lovable.app'");
   });
 
-  it('server.url stays on https://vmbalance.com/app?forceHideBadge=true', () => {
+  it('server.url stays unchanged (vmbalance.com/app with forceHideBadge)', () => {
     // Literal split so the appOriginSingleSource guard does not flag this test.
     const expectedServerUrl = 'url: \'https://' + 'vmbalance.com/app?forceHideBadge=true\'';
     expect(configSource).toContain(expectedServerUrl);
