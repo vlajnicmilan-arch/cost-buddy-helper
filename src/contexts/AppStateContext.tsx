@@ -167,10 +167,7 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
       try {
         const rememberedUserId = localStorage.getItem(LAST_RESOLVED_USER_KEY);
         if (rememberedUserId && rememberedUserId !== session.user.id) {
-          USER_SCOPED_KEYS.forEach((key) => {
-            if ((PENDING_CONSENT_KEYS as readonly string[]).includes(key)) return;
-            try { localStorage.removeItem(key); } catch { /* noop */ }
-          });
+          removeUserScopedStorage({ preserveKeys: PENDING_CONSENT_KEYS });
           setDisplayNameState('');
           setUsageProfileState(null);
           setBusinessModeEnabledState(false);
@@ -283,9 +280,7 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
         lastResolvedUserRef.current = null;
         // Ključevi vezani UZ RAČUN, ne uz uređaj — inače ih sljedeći korisnik
         // na istom pregledniku naslijedi.
-        USER_SCOPED_KEYS.forEach((key) => {
-          try { localStorage.removeItem(key); } catch { /* noop */ }
-        });
+        removeUserScopedStorage();
         try { localStorage.removeItem(LAST_RESOLVED_USER_KEY); } catch { /* noop */ }
 
         setOnboardingCompletedState(false);
