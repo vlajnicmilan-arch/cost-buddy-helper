@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { FolderKanban, Plus, ChevronRight, Wallet, Sparkles, Clock, Pause, Info, AlertCircle } from 'lucide-react';
 import { ProjectWithOwnership, DEFAULT_PROJECT_COLORS } from '@/types/project';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useModuleStates } from '@/hooks/useModuleStates';
 import { isModuleActive } from '@/lib/moduleVisibility';
 import { useAppState } from '@/contexts/AppStateContext';

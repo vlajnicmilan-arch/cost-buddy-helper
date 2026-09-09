@@ -28,6 +28,7 @@ import { showError } from '@/hooks/useStatusFeedback';
 import { KRUG_PRESETS, type KrugPresetUiKey } from '@/lib/krugPresets';
 import { useModuleGate } from '@/hooks/useModuleGate';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { formatErrorForUser } from '@/lib/errorMessages';
 
 interface Props {

@@ -3572,7 +3572,7 @@
       "inventory": "Inventory",
       "inventoryDesc": "Track items and warehouse stock",
       "workforce": "Workers & hours",
-      "workforceDesc": "Worker records, hours and labor costs",
+      "workforceDesc": "People records, hours and labor costs",
       "recurringObligations": "Recurring obligations",
       "recurringObligationsDesc": "Rent, subscriptions, leasing and more",
       "reports": "Reports",
