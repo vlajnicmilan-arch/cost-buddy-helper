@@ -3,7 +3,6 @@ import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
 import {
   MODULES,
   isAdminSubscriptionActive,
-  projectAdminSubscription,
   type Module,
   type ModuleStatus,
 } from "./resolve.ts";
@@ -111,17 +110,16 @@ serve(async (req) => {
       .maybeSingle();
 
     if (isAdminSubscriptionActive(adminSub)) {
-      // Klijent u 'entitlements' modu gleda SAMO entitlements, pa admin
-      // pretplatu moramo projicirati u njih — inače write gate blokira
-      // korisnika unatoč subscribed=true.
-      const projected = projectAdminSubscription(entitlements, adminSub);
-      logStep("Admin-assigned subscription found", { tier: adminSub.tier });
+      // ODLUKA 9.9.2026: admin tier se VIŠE NE projicira u entitlemente.
+      // Klijent mora vidjeti točno ono što `has_entitlement` (RLS) vidi,
+      // inače modul izgleda otključan, a svaki upis pada na RLS-u.
+      logStep("Admin-assigned subscription found (no projection)", { tier: adminSub.tier });
       return jsonResponse({
         subscribed: true,
         tier: adminSub.tier,
         subscription_end: adminSub.expires_at,
         source: "admin",
-        entitlements: projected,
+        entitlements,
       });
     }
 

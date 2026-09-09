@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { UserAccessBadges } from './users/UserAccessBadges';
 import { EffectiveAccessSummary } from './users/EffectiveAccessSummary';
-import { UserBillingSection } from './users/UserBillingSection';
+import { UserModuleEntitlementsSection } from './users/UserModuleEntitlementsSection';
 import { UserModuleOverrideSection } from './users/UserModuleOverrideSection';
 import {
   deriveEffectiveAccess,
@@ -49,8 +49,6 @@ interface UsersTabProps {
   actionLoading: string | null;
   currentUserId?: string;
   subscriptions?: Record<string, string>;
-  subLoading?: string | null;
-  onSetUserTier?: (userId: string, tier: string) => void;
   onRefresh: () => void;
   onLoadMore: () => void;
   onManageUser: (action: string, userId: string, role?: string) => void;
@@ -69,8 +67,6 @@ export const UsersTab = ({
   actionLoading,
   currentUserId,
   subscriptions = {},
-  subLoading = null,
-  onSetUserTier,
   onRefresh,
   onLoadMore,
   onManageUser,
@@ -408,15 +404,8 @@ export const UsersTab = ({
                     grants={grants}
                   />
 
-                  {/* B. Naplata (sloj 1) */}
-                  {onSetUserTier && (
-                    <UserBillingSection
-                      userId={u.id}
-                      currentTier={subscriptions[u.id] || 'free'}
-                      loading={subLoading === u.id}
-                      onChangeTier={(tier) => onSetUserTier(u.id, tier)}
-                    />
-                  )}
+                  {/* B. Prava po modulu — jedini izvor istine (user_entitlements) */}
+                  <UserModuleEntitlementsSection userId={u.id} />
 
                   {/* C. Admin override modula (sloj 2) */}
                   <UserModuleOverrideSection

@@ -34,7 +34,7 @@ export function isAdminSubscriptionActive(
   return new Date(sub.expires_at) > now;
 }
 
-/** Moduli koje admin tier otključava. */
+/** Moduli koje admin tier otključava (referenca; više se NE projicira). */
 export function modulesForTier(tier: string): readonly Module[] {
   if (tier === 'business') return MODULES;
   if (tier === 'pro') return ['smjer', 'krug', 'projekti'];
@@ -42,24 +42,11 @@ export function modulesForTier(tier: string): readonly Module[] {
 }
 
 /**
- * UZROK KVARA (kolovoz 2026): u `entitlements` modu klijent (useFeatureAccess)
- * gleda ISKLJUČIVO `entitlements`, a admin-dodijeljena pretplata živi samo u
- * `user_subscriptions`. Korisnik s tier='business' bez isteka je dobivao
- * subscribed=true, ali entitlements.biznis.active=false → write gate ga blokira.
- * Projekcija ispod je jedini izvor istine za tu premosnicu.
+ * ODLUKA 9.9.2026: admin tier (`user_subscriptions`) se više NE projicira u
+ * entitlemente. Klijent dobiva točno ono što `has_entitlement` vraća, isto
+ * što vidi RLS. Prava se dodjeljuju upisom u `user_entitlements`
+ * (source='admin_grant') kroz admin sučelje.
  */
-export function projectAdminSubscription(
-  entitlements: EntitlementMap,
-  sub: AdminSubscription | null | undefined,
-  now: Date = new Date(),
-): EntitlementMap {
-  if (!isAdminSubscriptionActive(sub, now)) return entitlements;
-  const unlocked = modulesForTier(String(sub!.tier));
-  const next = { ...entitlements } as EntitlementMap;
-  for (const m of unlocked) {
-    const current = next[m];
-    if (current?.active) continue;
-    next[m] = { active: true, source: 'admin', period_end: sub!.expires_at ?? null };
-  }
-  return next;
+export function resolveEntitlements(entitlements: EntitlementMap): EntitlementMap {
+  return entitlements;
 }

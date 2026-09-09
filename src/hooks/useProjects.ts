@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAuthedFetchGate } from '@/hooks/useAuthedFetchGate';
 import { Project, ProjectWithOwnership, ProjectRole, ProjectStatus } from '@/types/project';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { useModuleWriteGuard } from '@/hooks/useModuleWriteGuard';
 import { useTranslation } from 'react-i18next';
 import { useAppState } from '@/contexts/AppStateContext';
 import { instantCache } from '@/lib/instantCache';
@@ -18,6 +19,7 @@ export const useProjects = () => {
   const { user } = useAuth();
   const { authReady, canFetch } = useAuthedFetchGate();
   const { t } = useTranslation();
+  const { handleModuleWriteError } = useModuleWriteGuard();
   const { emitAvatarEvent, activeBusinessProfileId } = useAppState();
   const initialKey = projectsCacheKey(user?.id, activeBusinessProfileId);
   const initialCached = user ? instantCache.read<ProjectWithOwnership[]>(initialKey) : null;
@@ -234,6 +236,7 @@ export const useProjects = () => {
       return newProject;
     } catch (error) {
       console.error('Error adding project:', error);
+      if (handleModuleWriteError('projects', error as any)) return null;
       showError(t('common.error'));
       return null;
     }
@@ -294,6 +297,7 @@ export const useProjects = () => {
       showSuccess(t('projects.updated'));
     } catch (error) {
       console.error('Error updating project:', error);
+      if (handleModuleWriteError('projects', error as any)) return null;
       showError(t('common.error'));
     }
   };

@@ -7,6 +7,7 @@ import { useStorage } from '@/contexts/StorageContext';
 import { InstallmentPlan, Installment, InstallmentPlanWithProgress } from '@/types/installment';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { tr } from '@/lib/errorMessages';
+import { useModuleWriteGuard } from '@/hooks/useModuleWriteGuard';
 import { addMonths, startOfMonth, endOfMonth, isWithinInterval, isBefore, startOfToday } from 'date-fns';
 
 interface CreateInstallmentPlanInput {
@@ -21,6 +22,7 @@ interface CreateInstallmentPlanInput {
 }
 
 export const useInstallments = () => {
+  const { handleModuleWriteError } = useModuleWriteGuard();
   const { t } = useTranslation();
   const { user } = useAuth();
   const { authReady, canFetch } = useAuthedFetchGate();
@@ -391,6 +393,7 @@ export const useInstallments = () => {
       };
     } catch (error) {
       console.error('Error creating installment plan:', error);
+      if (handleModuleWriteError('installment_plans', error as any)) return null;
       showError(tr('errors.create.installmentPlan', 'Greška pri kreiranju plana rata'));
       return null;
     }

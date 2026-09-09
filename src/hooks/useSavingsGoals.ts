@@ -5,6 +5,7 @@ import { useStorage } from '@/contexts/StorageContext';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { useAppState } from '@/contexts/AppStateContext';
+import { useModuleWriteGuard } from '@/hooks/useModuleWriteGuard';
 
 export interface SavingsGoal {
   id: string;
@@ -26,6 +27,7 @@ export function useSavingsGoals() {
   const { user } = useAuth();
   const { storageMode } = useStorage();
   const { emitAvatarEvent } = useAppState();
+  const { handleModuleWriteError } = useModuleWriteGuard();
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -74,9 +76,10 @@ export function useSavingsGoals() {
       fetchGoals();
     } catch (err) {
       console.error('Error adding savings goal:', err);
+      if (handleModuleWriteError('savings_goals', err as any)) return;
       showError(t('savingsGoals.errorAdding'));
     }
-  }, [user, fetchGoals, t]);
+  }, [user, fetchGoals, t, handleModuleWriteError]);
 
   const updateGoal = useCallback(async (id: string, updates: Partial<SavingsGoal>) => {
     try {
@@ -90,9 +93,10 @@ export function useSavingsGoals() {
       fetchGoals();
     } catch (err) {
       console.error('Error updating savings goal:', err);
+      if (handleModuleWriteError('savings_goals', err as any)) return;
       showError(t('savingsGoals.errorUpdating'));
     }
-  }, [fetchGoals, t]);
+  }, [fetchGoals, t, handleModuleWriteError]);
 
   const deleteGoal = useCallback(async (id: string) => {
     try {

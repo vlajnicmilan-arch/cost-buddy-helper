@@ -2445,7 +2445,9 @@
     },
     "projectsReadonly": "Projects are read-only. Activate your subscription to make changes.",
     "payoutExpenseLockedWorker": "This expense came from a worker payout — void the payout on the worker card.",
-    "payoutExpenseLockedCollaborator": "This expense came from a collaborator payment — void the payment on the collaborator card."
+    "payoutExpenseLockedCollaborator": "This expense came from a collaborator payment — void the payment on the collaborator card.",
+    "moduleWriteDenied": "The {{module}} module is not active",
+    "moduleWriteDeniedAction": "Unlock"
   },
   "onboarding": {
     "welcomeTitle": "Welcome!",
@@ -5363,6 +5365,24 @@
         "people": "{{count}} people",
         "paidSubscription": "active paid subscription"
       }
+    },
+    "entitlements": {
+      "title": "Module access",
+      "note": "The same source of truth the app and the database use. Turning it on grants access, turning it off revokes it (the record stays).",
+      "enabled": "Module enabled",
+      "disabled": "Module disabled",
+      "error": "Could not save access",
+      "stateActive": "Active",
+      "stateInactive": "Not active",
+      "expiryPlaceholder": "Expiry (optional)",
+      "expiryLabel": "Expiry date",
+      "source": {
+        "paddle": "Subscription",
+        "trial": "Trial",
+        "admin_grant": "Admin",
+        "legacy": "Legacy",
+        "other": "Other"
+      }
     }
   },
   "adminRetention": {
@@ -7214,6 +7234,15 @@
       "alreadyVoided": "This payment has already been voided.",
       "notOwner": "You do not have access to this engagement.",
       "invalidInput": "Amount and payment source are required."
+    }
+  },
+  "modules": {
+    "name": {
+      "smjer": "Smjer",
+      "krug": "Krug",
+      "projekti": "Projects",
+      "biznis": "Business",
+      "mail_uvoz": "Email import"
     }
   }
 }

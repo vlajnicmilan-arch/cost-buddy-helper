@@ -5,10 +5,12 @@ import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { CustomCategory } from '@/types/customCategory';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { useModuleWriteGuard } from '@/hooks/useModuleWriteGuard';
 import { tr } from '@/lib/errorMessages';
 
 export const useCustomCategories = () => {
   const { t } = useTranslation();
+  const { handleModuleWriteError } = useModuleWriteGuard();
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -90,6 +92,7 @@ export const useCustomCategories = () => {
       return newCat;
     } catch (error) {
       console.error('Error adding custom category:', error);
+      if (handleModuleWriteError('custom_categories', error as any)) return null;
       showError(tr('errors.create.category', 'Greška pri dodavanju kategorije'));
       return null;
     }
@@ -119,6 +122,7 @@ export const useCustomCategories = () => {
       showSuccess(t('toasts.categoryUpdated'));
     } catch (error) {
       console.error('Error updating custom category:', error);
+      if (handleModuleWriteError('custom_categories', error as any)) return;
       showError(tr('errors.update.category', 'Greška pri ažuriranju kategorije'));
     }
   };
