@@ -565,6 +565,12 @@ Deno.serve(async (req) => {
         file_errors: storage.errors.slice(0, 20),
         pruned: prune,
         pruned_files: prunedFiles,
+        zip_path: zipPath,
+        zip_bytes: zipBytes,
+        zip_error: zipError,
+        mail_ok: mail.ok,
+        mail_message_id: mail.message_id,
+
         duration_ms: Date.now() - startedAt,
       },
     });
