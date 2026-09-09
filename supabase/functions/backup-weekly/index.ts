@@ -6,6 +6,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { zipSync } from "https://esm.sh/fflate@0.8.2";
 import { STORAGE_BUCKETS } from "../_shared/tablesToPurge.ts";
 import { BACKUP_TABLES } from "../_shared/backupTables.ts";
+import { getOrCreateUnsubscribeToken } from "../_shared/unsubscribeToken.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
