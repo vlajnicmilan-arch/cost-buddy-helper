@@ -27,8 +27,8 @@ export const appUrl = (path = ''): string => {
 
 /**
  * Hostnames treated as production for the app.
- * Deliberately does NOT include `app.vmbalance.com` yet — that lands together
- * with the new Android shell.
+ * Includes `app.vmbalance.com` — the Android shell 3.0.2+ knows it, so the
+ * web code treats it as a prod app host ahead of the landing/app split.
  */
 export const PROD_APP_HOSTS: readonly string[] = (() => {
   const hosts = new Set<string>();
@@ -36,9 +36,11 @@ export const PROD_APP_HOSTS: readonly string[] = (() => {
     const host = new URL(APP_ORIGIN).hostname;
     hosts.add(host);
     hosts.add(host.startsWith('www.') ? host.slice(4) : `www.${host}`);
+    hosts.add(`app.${host.startsWith('www.') ? host.slice(4) : host}`);
   } catch {
     hosts.add('vmbalance.com');
     hosts.add('www.vmbalance.com');
+    hosts.add('app.vmbalance.com');
   }
   return Array.from(hosts);
 })();
