@@ -80,6 +80,49 @@ async function fetchEntitlementsMode(): Promise<EntitlementsMode> {
 
 
 
+/**
+ * Lokalna predmemorija prava (samo ubrzanje ulaska).
+ * Ključ je vezan uz user_id; briše se pri odjavi/promjeni korisnika kroz
+ * USER_SCOPED_KEY_PREFIXES ('subscription_cache:') u AppStateContextu.
+ */
+export const SUBSCRIPTION_CACHE_PREFIX = 'subscription_cache:v1:';
+const SUBSCRIPTION_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+interface SubscriptionCachePayload {
+  user_id: string;
+  saved_at: string;
+  tier: SubscriptionTier;
+  subscribed: boolean;
+  subscription_end: string | null;
+  source: SubscriptionState['source'];
+  entitlements: Record<EntitlementModule, ModuleEntitlement>;
+  entitlements_mode: EntitlementsMode;
+}
+
+export const readSubscriptionCache = (
+  userId: string,
+  now: number = Date.now(),
+): SubscriptionCachePayload | null => {
+  try {
+    const raw = localStorage.getItem(SUBSCRIPTION_CACHE_PREFIX + userId);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as SubscriptionCachePayload;
+    if (!parsed || parsed.user_id !== userId) return null;
+    const savedAt = new Date(parsed.saved_at).getTime();
+    if (!Number.isFinite(savedAt)) return null;
+    if (now - savedAt > SUBSCRIPTION_CACHE_MAX_AGE_MS) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
+export const writeSubscriptionCache = (payload: SubscriptionCachePayload): void => {
+  try {
+    localStorage.setItem(SUBSCRIPTION_CACHE_PREFIX + payload.user_id, JSON.stringify(payload));
+  } catch { /* quota */ }
+};
+
 export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { session, loading: authLoading } = useAuth();
   const [tier, setTier] = useState<SubscriptionTier>('free');
