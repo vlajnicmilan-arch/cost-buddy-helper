@@ -246,6 +246,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error };
   };
 
+  // Boot timing only: first moment auth stopped loading.
+  useEffect(() => { if (!loading) markOnce('auth_ready'); }, [loading]);
+
   const value: AuthContextValue = {
     user,
     session,
