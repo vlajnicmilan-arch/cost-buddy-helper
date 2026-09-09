@@ -31,7 +31,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useBackButton } from '@/hooks/useBackButton';
 import { BACK_PRIORITY } from '@/contexts/BackButtonContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
-import { markOnce, getMarks, claimHomeReadyReport, homeReadySeverity } from '@/lib/bootTiming';
+import { markOnce, getMarks, claimHomeReadyReport, homeReadySeverity, computeLoadMs } from '@/lib/bootTiming';
 import { APP_VERSION } from '@/lib/version';
 
 import { useTranslation } from 'react-i18next';
@@ -213,16 +213,10 @@ const Index = () => {
     curMonthExpenses,
   } = useExpenses({ onBalanceUpdated: refetchPaymentSources });
 
-  // home_ready timing marks — record the FIRST transition of each readiness
-  // signal. markOnce keeps only the first value, so re-renders are no-ops.
+  // home_ready timing mark — record the FIRST transition of expenses loading.
+  // auth_ready / subscription_ready are marked at their own sources.
   useEffect(() => {
-    if (!authLoading) markOnce('home_auth_ready');
-  }, [authLoading]);
-  useEffect(() => {
-    if (subscriptionReady) markOnce('home_subscription_ready');
-  }, [subscriptionReady]);
-  useEffect(() => {
-    if (!expensesLoading) markOnce('home_expenses_ready');
+    if (!expensesLoading) markOnce('expenses_ready');
   }, [expensesLoading]);
 
   // Exactly once per page load: when auth, user, subscription and expenses
@@ -232,18 +226,24 @@ const Index = () => {
     if (!claimHomeReadyReport()) return;
     const marks = getMarks();
     const tTotal = Math.round(performance.now());
+    const tBriefShown = marks['brief_shown'] ?? null;
+    const tBriefDismissed = marks['brief_dismissed'] ?? null;
+    const tLoad = computeLoadMs(tTotal, tBriefShown, tBriefDismissed);
     const isNative = !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
       .Capacitor?.isNativePlatform?.();
     import('@/lib/diagnosticLogger')
       .then(({ logDiagnostic }) => logDiagnostic({
         event: 'home_ready',
-        severity: homeReadySeverity(tTotal),
+        severity: homeReadySeverity(tLoad),
         route: window.location.pathname,
         details: {
           t_total: tTotal,
-          t_auth: marks['home_auth_ready'] ?? null,
-          t_subscription: marks['home_subscription_ready'] ?? null,
-          t_expenses: marks['home_expenses_ready'] ?? null,
+          t_load: tLoad,
+          t_auth: marks['auth_ready'] ?? null,
+          t_subscription: marks['subscription_ready'] ?? null,
+          t_expenses: marks['expenses_ready'] ?? null,
+          t_brief_shown: tBriefShown,
+          t_brief_dismissed: tBriefDismissed,
           t_js_boot: marks['js_boot'] ?? null,
           platform: isNative ? 'native' : 'web',
           route: window.location.pathname,

@@ -6,6 +6,7 @@ import { APP_VERSION } from '@/lib/version';
 import { flushPendingNewsletterConsent } from '@/lib/newsletterConsent';
 import { flushPendingTermsAcceptance } from '@/lib/termsAcceptance';
 import { toDayKey } from '@/lib/dayKey';
+import { markOnce } from '@/lib/bootTiming';
 
 interface AuthContextValue {
   user: User | null;
@@ -244,6 +245,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     return { error };
   };
+
+  // Boot timing only: first moment auth stopped loading.
+  useEffect(() => { if (!loading) markOnce('auth_ready'); }, [loading]);
 
   const value: AuthContextValue = {
     user,

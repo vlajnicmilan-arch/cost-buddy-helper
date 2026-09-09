@@ -21,6 +21,7 @@ import { planChoreography } from '@/lib/brief/choreography';
 import type { BriefFilterTarget, BriefMessage, BriefSnapshot } from '@/lib/brief/types';
 import { requestOpenOverdueInvoices } from '@/lib/eracun/openOverdueRequest';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { markOnce } from '@/lib/bootTiming';
 import { COMMIT_SHA } from '@/lib/version';
 import {
   BRIEF_GATE_EXIT_EVENT,
@@ -181,9 +182,13 @@ const BriefGate = () => {
   if (!shown) return null;
   if (!shown.enabled || messages.length === 0) return <Navigate to="/home" replace />;
 
-  const enter = () => navigate('/home', { replace: true });
+  // Boot timing only: the Brief is actually rendered to the user from here on.
+  markOnce('brief_shown');
+
+  const enter = () => { markOnce('brief_dismissed'); navigate('/home', { replace: true }); };
 
   const openTarget = (target: BriefFilterTarget | null) => {
+    markOnce('brief_dismissed');
     if (!target) return enter();
     if (target.path === '/home') {
       navigate('/home', { replace: true });
