@@ -84,6 +84,7 @@ export const ActiveProjectsStrip = React.memo(({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { hasAccess } = useFeatureAccess();
+  const { subscriptionReady } = useSubscription();
   const moduleStates = useModuleStates();
   const projectsModuleEnabled = isModuleActive('projects', moduleStates.projects);
   const { lightTap } = useHaptics();
@@ -133,14 +134,14 @@ export const ActiveProjectsStrip = React.memo(({
   // Workers/members without 'projects' feature access still see their shared projects.
   const hasProjectsFeature = hasAccess('projects');
   const hasMembership = projects.some(p => !p.isOwner);
-  if (!hasProjectsFeature && !hasMembership) return null;
+  // Skrivanje je odluka o pravima -> tek kad se prava znaju.
+  if (subscriptionReady && !hasProjectsFeature && !hasMembership) return null;
 
   const handleNav = (path: string, state?: Record<string, unknown>) => {
     lightTap();
     if (path === '/projects') {
-      requestModule('projects', {
-        onGranted: () => navigate(path, state ? { state } : undefined),
-      });
+      const go = () => navigate(path, state ? { state } : undefined);
+      requestModule('projects', { onGranted: go, onUnready: go });
       return;
     }
     navigate(path, state ? { state } : undefined);
