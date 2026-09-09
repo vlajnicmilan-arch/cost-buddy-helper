@@ -427,7 +427,6 @@
     "noFundingHint": "Link income sources to the project",
     "addMilestone": "Add Milestone",
     "vtr": {
-      "addButton": "Add VTR",
       "addTitle": "New VTR",
       "editTitle": "Edit VTR",
       "badge": "VTR",
