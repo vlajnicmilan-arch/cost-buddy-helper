@@ -49,7 +49,8 @@ const appOpenInserts = () =>
 describe('app_open dnevni throttle po uređaju', () => {
   beforeEach(() => {
     localStorage.clear();
-    state.insertSpy.mockClear();
+    state.insertSpy.mockReset();
+    state.insertSpy.mockReturnValue(Promise.resolve({}));
     state.authStateCallback = null;
     state.sessionUser = null;
   });
