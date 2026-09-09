@@ -2452,7 +2452,9 @@
     },
     "projectsReadonly": "Projekti su u načinu samo za pregled. Aktiviraj pretplatu da bi mijenjao podatke.",
     "payoutExpenseLockedWorker": "Ovaj trošak je nastao isplatom radniku — poništi isplatu na kartici radnika.",
-    "payoutExpenseLockedCollaborator": "Ovaj trošak je nastao plaćanjem suradniku — poništi plaćanje na kartici suradnika."
+    "payoutExpenseLockedCollaborator": "Ovaj trošak je nastao plaćanjem suradniku — poništi plaćanje na kartici suradnika.",
+    "moduleWriteDenied": "Modul {{module}} nije aktivan",
+    "moduleWriteDeniedAction": "Otključaj"
   },
   "onboarding": {
     "welcomeTitle": "Dobrodošli!",
@@ -5375,6 +5377,24 @@
         "people": "{{count}} osoba",
         "paidSubscription": "aktivna plaćena pretplata"
       }
+    },
+    "entitlements": {
+      "title": "Prava po modulu",
+      "note": "Isti izvor istine koji vide aplikacija i baza. Uključivanje upisuje pravo, isključivanje ga opoziva (zapis ostaje).",
+      "enabled": "Modul uključen",
+      "disabled": "Modul isključen",
+      "error": "Greška pri spremanju prava",
+      "stateActive": "Aktivno",
+      "stateInactive": "Nije aktivno",
+      "expiryPlaceholder": "Istek (neobavezno)",
+      "expiryLabel": "Datum isteka",
+      "source": {
+        "paddle": "Pretplata",
+        "trial": "Proba",
+        "admin_grant": "Admin",
+        "legacy": "Naslijeđeno",
+        "other": "Ostalo"
+      }
     }
   },
   "adminRetention": {
@@ -7236,6 +7256,15 @@
       "alreadyVoided": "Ovo plaćanje je već stornirano.",
       "notOwner": "Nemaš pravo na ovaj angažman.",
       "invalidInput": "Iznos i izvor plaćanja moraju biti ispunjeni."
+    }
+  },
+  "modules": {
+    "name": {
+      "smjer": "Smjer",
+      "krug": "Krug",
+      "projekti": "Projekti",
+      "biznis": "Biznis",
+      "mail_uvoz": "Uvoz e-maila"
     }
   }
 }

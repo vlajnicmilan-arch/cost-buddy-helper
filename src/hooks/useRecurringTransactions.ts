@@ -5,6 +5,7 @@ import { useStorage } from '@/contexts/StorageContext';
 import { useAppState } from '@/contexts/AppStateContext';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
+import { useModuleWriteGuard } from '@/hooks/useModuleWriteGuard';
 
 export interface RecurringTransaction {
   id: string;
@@ -34,6 +35,7 @@ export type RecurringTransactionInsert = Omit<RecurringTransaction, 'id' | 'user
 
 export const useRecurringTransactions = () => {
   const { t } = useTranslation();
+  const { handleModuleWriteError } = useModuleWriteGuard();
   const { user } = useAuth();
   const { storageMode } = useStorage();
   const { activeBusinessProfileId } = useAppState();
@@ -89,6 +91,7 @@ export const useRecurringTransactions = () => {
 
     if (error) {
       console.error('Error adding recurring transaction:', error);
+      if (handleModuleWriteError('recurring_transactions', error)) throw error;
       showError(t('errors.create.recurring', 'Greška pri dodavanju ponavljajuće transakcije'));
       throw error;
     }
@@ -110,6 +113,7 @@ export const useRecurringTransactions = () => {
       await fetchRecurring();
     } catch (error) {
       console.error('Error updating recurring transaction:', error);
+      if (handleModuleWriteError('recurring_transactions', error as any)) return;
       showError(t('toasts.recategorizeError'));
     }
   };

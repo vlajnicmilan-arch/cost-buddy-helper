@@ -2445,7 +2445,9 @@
     },
     "projectsReadonly": "Projekte sind schreibgeschützt. Aktiviere dein Abo, um Änderungen vorzunehmen.",
     "payoutExpenseLockedWorker": "Diese Ausgabe stammt aus einer Arbeiterauszahlung — storniere die Auszahlung auf der Arbeiterkarte.",
-    "payoutExpenseLockedCollaborator": "Diese Ausgabe stammt aus einer Zahlung an einen Partner — storniere die Zahlung auf der Partnerkarte."
+    "payoutExpenseLockedCollaborator": "Diese Ausgabe stammt aus einer Zahlung an einen Partner — storniere die Zahlung auf der Partnerkarte.",
+    "moduleWriteDenied": "Modul {{module}} ist nicht aktiv",
+    "moduleWriteDeniedAction": "Freischalten"
   },
   "onboarding": {
     "welcomeTitle": "Willkommen!",
@@ -5363,6 +5365,24 @@
         "people": "{{count}} Personen",
         "paidSubscription": "aktives kostenpflichtiges Abo"
       }
+    },
+    "entitlements": {
+      "title": "Modulrechte",
+      "note": "Dieselbe Quelle der Wahrheit, die App und Datenbank verwenden. Einschalten erteilt das Recht, Ausschalten widerruft es (der Eintrag bleibt).",
+      "enabled": "Modul aktiviert",
+      "disabled": "Modul deaktiviert",
+      "error": "Rechte konnten nicht gespeichert werden",
+      "stateActive": "Aktiv",
+      "stateInactive": "Nicht aktiv",
+      "expiryPlaceholder": "Ablauf (optional)",
+      "expiryLabel": "Ablaufdatum",
+      "source": {
+        "paddle": "Abonnement",
+        "trial": "Testphase",
+        "admin_grant": "Admin",
+        "legacy": "Altbestand",
+        "other": "Sonstiges"
+      }
     }
   },
   "adminRetention": {
@@ -7214,6 +7234,15 @@
       "alreadyVoided": "Diese Zahlung wurde bereits storniert.",
       "notOwner": "Du hast keinen Zugriff auf dieses Engagement.",
       "invalidInput": "Betrag und Zahlungsquelle sind erforderlich."
+    }
+  },
+  "modules": {
+    "name": {
+      "smjer": "Smjer",
+      "krug": "Krug",
+      "projekti": "Projekte",
+      "biznis": "Business",
+      "mail_uvoz": "E-Mail-Import"
     }
   }
 }

@@ -30,6 +30,7 @@ import { useModuleGate } from '@/hooks/useModuleGate';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { formatErrorForUser } from '@/lib/errorMessages';
+import { useModuleWriteGuard } from '@/hooks/useModuleWriteGuard';
 
 interface Props {
   open: boolean;
@@ -52,6 +53,7 @@ export function CreateKrugDialog({ open, onOpenChange, onCreated }: Props) {
   const { requestModule } = useModuleGate();
   const { hasModuleAccess } = useFeatureAccess();
   const { subscriptionReady } = useSubscription();
+  const { handleModuleWriteError } = useModuleWriteGuard();
 
   const [stepIdx, setStepIdx] = useState(0);
   const [name, setName] = useState('');
@@ -91,6 +93,7 @@ export function CreateKrugDialog({ open, onOpenChange, onCreated }: Props) {
       onCreated(krugId);
     },
     onError: (err: any) => {
+      if (handleModuleWriteError('krug', err)) return;
       if (subscriptionReady && !hasModuleAccess('krug')) {
         requestModule('krug');
         return;

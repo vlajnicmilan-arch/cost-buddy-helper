@@ -64,7 +64,6 @@ const Admin = () => {
   const [replyMessages, setReplyMessages] = useState<Record<string, string>>({});
   const [sendingReply, setSendingReply] = useState<string | null>(null);
   const [subscriptions, setSubscriptions] = useState<Record<string, string>>({});
-  const [subLoading, setSubLoading] = useState<string | null>(null);
   const [pendingUserContext, setPendingUserContext] = useState<DrilldownIntent | null>(null);
 
   const handleDrilldown = (intent: DrilldownIntent) => {
@@ -109,25 +108,6 @@ const Admin = () => {
     setSubscriptions(map);
   };
 
-  const setUserTier = async (userId: string, tier: string) => {
-    setSubLoading(userId);
-    const { error } = await supabase
-      .from('user_subscriptions')
-      .upsert({
-        user_id: userId,
-        tier: tier as any,
-        assigned_by: user?.id,
-        assigned_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id' });
-    if (error) {
-      showError(t('errors.level.setFailed', 'Greška pri postavljanju razine'));
-    } else {
-      setSubscriptions(prev => ({ ...prev, [userId]: tier }));
-      showSuccess(`Razina postavljena na ${tier.charAt(0).toUpperCase() + tier.slice(1)}`);
-    }
-    setSubLoading(null);
-  };
 
   const loadReports = async () => {
     setLoading(true);
@@ -368,8 +348,6 @@ const Admin = () => {
               actionLoading={actionLoading}
               currentUserId={user?.id}
               subscriptions={subscriptions}
-              subLoading={subLoading}
-              onSetUserTier={setUserTier}
               onRefresh={() => loadUsers(1)}
               onLoadMore={() => loadUsers(usersPage + 1)}
               onManageUser={manageUser}
