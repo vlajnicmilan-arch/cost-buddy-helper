@@ -3,58 +3,24 @@
 // Retencija: briše foldere starije od 30 dana.
 // Poziva se iz pg_cron nedjeljom 03:00 Europe/Zagreb.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { zipSync } from "https://esm.sh/fflate@0.8.2";
 import { STORAGE_BUCKETS } from "../_shared/tablesToPurge.ts";
+import { BACKUP_TABLES } from "../_shared/backupTables.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Ključne tablice — sve što je potrebno za rekonstrukciju korisničkih podataka.
-// Uključuje motor salda (custom_payment_sources je anchor stanje) + audit ledger (project_worker_payouts).
-const TABLES = [
-  // Core financial
-  "expenses",
-  "custom_payment_sources",
-  "payment_source_cards",
-  "custom_categories",
-  "income_sources",
-  "recurring_transactions",
-  "installment_plans",
-  "installments",
-  // Projects
-  "projects",
-  "project_milestones",
-  "project_workers",
-  "project_work_entries",
-  "project_worker_payouts",        // audit ledger salda za radnike
-  "project_worker_rate_history",   // audit rate history
-  // Budgets
-  "budget_plans",
-  "budget_categories",
-  "budget_members",
-  "budget_invitations",
-  // Krug
-  "krug",
-  "krug_membership",
-  "krug_ownership",
-  "krug_shared_payment_source",
-  "krug_act_dedup",
-  "krug_deletion_request",
-  "krug_deletion_vote",
-  // Business
-  "business_profiles",
-  "clients",
-  // Bank
-  "bank_connections",
-  "bank_accounts",
-  // Users / meta
-  "profiles",
-  "user_roles",
-  "user_subscriptions",
-  "notification_preferences",
-  "app_settings",
-];
+// Popis tablica NIJE ručan — generira se iz registra izvoza
+// (scripts/generate-backup-tables.mjs → _shared/backupTables.ts).
+const TABLES = BACKUP_TABLES;
+
+const BACKUP_MAIL_TO = "vlajnic.milan@gmail.com";
+const SIGNED_URL_DAYS = 7;
+const SITE_NAME = "Centar";
+const SENDER_DOMAIN = "notify.vmbalance.com";
+
 
 const PAGE_SIZE = 1000;
 // Retencija: 30 dana (usklađeno s politikom privatnosti).
