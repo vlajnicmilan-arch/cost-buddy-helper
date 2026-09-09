@@ -64,9 +64,8 @@ export const ActiveIssuesSection = ({ enabled, projects, allExpenses }: Props) =
       return;
     }
     if (issue.entity_type === "project" && issue.entity_id) {
-      requestModule('projects', {
-        onGranted: () => navigate("/projects", { state: { openProjectId: issue.entity_id, from: "/home" } }),
-      });
+      const go = () => navigate("/projects", { state: { openProjectId: issue.entity_id, from: "/home" } });
+      requestModule('projects', { onGranted: go, onUnready: go });
       return;
     }
     if (issue.entity_type === "budget" && issue.entity_id) {

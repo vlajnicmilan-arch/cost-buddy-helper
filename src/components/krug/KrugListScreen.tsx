@@ -17,6 +17,7 @@ import { clickableProps } from '@/lib/a11y';
 import { CreateKrugDialog } from './CreateKrugDialog';
 import { KrugLifecycleBadge } from './KrugLifecycleBadge';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useModuleGate } from '@/hooks/useModuleGate';
 
 interface Props {
@@ -29,7 +30,10 @@ export function KrugListScreen({ onSelect }: Props) {
   const [createOpen, setCreateOpen] = useState(false);
   const { hasModuleAccess } = useFeatureAccess();
   const { requestModule } = useModuleGate();
-  const canCreate = hasModuleAccess('krug');
+  const { subscriptionReady } = useSubscription();
+  // Dok se prava ne znaju, CTA ostaje "Novi Krug" (requestModule svejedno
+  // ceka spremnost prije paywalla).
+  const canCreate = hasModuleAccess('krug') || !subscriptionReady;
   const krugList = useShowMore(krugs);
 
   // Svaki entry (header CTA, empty state CTA) mora ići kroz jedinstveni

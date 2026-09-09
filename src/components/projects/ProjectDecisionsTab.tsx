@@ -49,6 +49,8 @@ interface Props {
   isDecisionParty: boolean;
   /** Map user_id → display_name (za timeline). */
   memberNameMap: Map<string, string>;
+  /** Prebacuje korisnika na tab Članovi (kad projekt nema investitora). */
+  onGoToMembers?: () => void;
 }
 
 /**

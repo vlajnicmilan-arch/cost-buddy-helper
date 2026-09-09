@@ -28,6 +28,7 @@ import { showError } from '@/hooks/useStatusFeedback';
 import { KRUG_PRESETS, type KrugPresetUiKey } from '@/lib/krugPresets';
 import { useModuleGate } from '@/hooks/useModuleGate';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { formatErrorForUser } from '@/lib/errorMessages';
 
 interface Props {
@@ -50,6 +51,7 @@ export function CreateKrugDialog({ open, onOpenChange, onCreated }: Props) {
   const qc = useQueryClient();
   const { requestModule } = useModuleGate();
   const { hasModuleAccess } = useFeatureAccess();
+  const { subscriptionReady } = useSubscription();
 
   const [stepIdx, setStepIdx] = useState(0);
   const [name, setName] = useState('');
@@ -89,7 +91,7 @@ export function CreateKrugDialog({ open, onOpenChange, onCreated }: Props) {
       onCreated(krugId);
     },
     onError: (err: any) => {
-      if (!hasModuleAccess('krug')) {
+      if (subscriptionReady && !hasModuleAccess('krug')) {
         requestModule('krug');
         return;
       }

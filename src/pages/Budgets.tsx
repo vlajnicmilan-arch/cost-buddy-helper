@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useModuleGate } from '@/hooks/useModuleGate';
 import { ReadOnlyBanner } from '@/components/access/ReadOnlyBanner';
 
@@ -20,6 +21,7 @@ const Budgets = () => {
   const { storageMode } = useStorage();
   const navigate = useNavigate();
   const { hasModuleAccess } = useFeatureAccess();
+  const { subscriptionReady } = useSubscription();
   const { requestModule } = useModuleGate();
   const hasSmjerAccess = hasModuleAccess('smjer');
   const { allExpenses, refetch } = useExpenses();
@@ -42,10 +44,12 @@ const Budgets = () => {
 
   const gatePromptedRef = useState<{ done: boolean }>({ done: false })[0];
   useEffect(() => {
+    // Paywall tek kad se prava znaju (isto pravilo kao Projects.tsx).
+    if (!subscriptionReady) return;
     if (isLocalMode || loading || hasSmjerAccess || budgets.length > 0 || gatePromptedRef.done) return;
     gatePromptedRef.done = true;
     requestModule('smjer', { onDismiss: () => navigate('/home', { replace: true }) });
-  }, [budgets.length, gatePromptedRef, hasSmjerAccess, isLocalMode, loading, navigate, requestModule]);
+  }, [subscriptionReady, budgets.length, gatePromptedRef, hasSmjerAccess, isLocalMode, loading, navigate, requestModule]);
 
   if (authLoading && storageMode === 'cloud') {
     return (
@@ -86,7 +90,7 @@ const Budgets = () => {
           title={t('nav.budgets', 'Budžeti')}
           onDataImported={refetch}
         />
-        {!hasSmjerAccess && budgets.length > 0 && (
+        {subscriptionReady && !hasSmjerAccess && budgets.length > 0 && (
           <ReadOnlyBanner
             className="mb-4"
             title={t('budget.readOnlyTitle', 'Smjer je u načinu samo za pregled')}

@@ -427,7 +427,6 @@
     "noFundingHint": "Povežite izvore prihoda s projektom",
     "addMilestone": "Dodaj fazu",
     "vtr": {
-      "addButton": "Dodaj VTR",
       "addTitle": "Novi VTR",
       "editTitle": "Uredi VTR",
       "badge": "VTR",
@@ -3441,7 +3440,7 @@
       "inventory": "Zalihe",
       "inventoryDesc": "Praćenje artikala i stanja skladišta",
       "workforce": "Radnici & satnice",
-      "workforceDesc": "Evidencija radnika, sati i troškova rada",
+      "workforceDesc": "Evidencija ljudi, sati i troškova rada",
       "recurringObligations": "Ponavljajuće obveze",
       "recurringObligationsDesc": "Najam, pretplate, leasing i ostalo",
       "reports": "Izvještaji",

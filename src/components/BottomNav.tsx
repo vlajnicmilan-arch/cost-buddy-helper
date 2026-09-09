@@ -71,6 +71,9 @@ export const BottomNav = () => {
       // "Ne sada" ostavlja korisnika na trenutnoj stranici bez tehničke greške.
       requestModule(gate.module, {
         onGranted: () => navigate(path),
+        // Prava jos nisu ucitana -> ne otvaraj paywall, pusti navigaciju;
+        // odredisna stranica ima vlastiti gate koji ceka subscriptionReady.
+        onUnready: () => navigate(path),
       });
       return;
     }

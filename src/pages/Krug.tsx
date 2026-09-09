@@ -24,6 +24,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { ReadOnlyBanner } from '@/components/access/ReadOnlyBanner';
 import { useMyKrugs } from '@/hooks/useKrug';
 import { useModuleGate } from '@/hooks/useModuleGate';
@@ -35,9 +36,11 @@ export default function Krug() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { hasModuleAccess } = useFeatureAccess();
+  const { subscriptionReady } = useSubscription();
   const { requestModule } = useModuleGate();
   const hasKrugAccess = hasModuleAccess('krug');
-  const isReadOnly = !hasKrugAccess;
+  // Dok se prava ne znaju ne tvrdimo da je modul zaključan.
+  const isReadOnly = subscriptionReady && !hasKrugAccess;
   const [selectedKrugId, setSelectedKrugId] = useState<string | null>(null);
   // Deep-link fokus iz obavijesti: konkretna transakcija ili zapis podmirenja.
   const [focusExpenseId, setFocusExpenseId] = useState<string | null>(null);
@@ -51,6 +54,9 @@ export default function Krug() {
   const hasMemberships = (krugs?.length ?? 0) > 0;
   const gatePromptedRef = useState<{ done: boolean }>({ done: false })[0];
   useEffect(() => {
+    // Prava se moraju ZNATI prije paywalla — inače aktivna proba dobiva
+    // dijalog na hladnom ulasku (isto pravilo kao Projects.tsx).
+    if (!subscriptionReady) return;
     if (hasKrugAccess) return;
     if (krugsLoading) return;
     if (hasMemberships) return;
@@ -59,7 +65,7 @@ export default function Krug() {
     requestModule('krug', {
       onDismiss: () => navigate('/home', { replace: true }),
     });
-  }, [hasKrugAccess, krugsLoading, hasMemberships, requestModule, navigate, gatePromptedRef]);
+  }, [subscriptionReady, hasKrugAccess, krugsLoading, hasMemberships, requestModule, navigate, gatePromptedRef]);
 
 
   // Deep-link ulaz iz obavijesti (`/krug?id=<uuid>`). Kad payload ima id,

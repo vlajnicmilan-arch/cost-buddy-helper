@@ -423,7 +423,6 @@
     "noFundingHint": "Verknüpfen Sie Einnahmequellen mit dem Projekt",
     "addMilestone": "Meilenstein hinzufügen",
     "vtr": {
-      "addButton": "VTR hinzufügen",
       "addTitle": "Neue VTR",
       "editTitle": "VTR bearbeiten",
       "badge": "VTR",
@@ -3433,7 +3432,7 @@
       "inventory": "Lagerbestand",
       "inventoryDesc": "Artikel- und Bestandsverfolgung",
       "workforce": "Mitarbeiter & Stunden",
-      "workforceDesc": "Mitarbeiterakten, Stunden und Arbeitskosten",
+      "workforceDesc": "Personenakten, Stunden und Arbeitskosten",
       "recurringObligations": "Wiederkehrende Verpflichtungen",
       "recurringObligationsDesc": "Miete, Abonnements, Leasing und mehr",
       "reports": "Berichte",
