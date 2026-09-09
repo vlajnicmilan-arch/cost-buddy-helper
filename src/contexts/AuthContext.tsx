@@ -6,6 +6,7 @@ import { APP_VERSION } from '@/lib/version';
 import { flushPendingNewsletterConsent } from '@/lib/newsletterConsent';
 import { flushPendingTermsAcceptance } from '@/lib/termsAcceptance';
 import { toDayKey } from '@/lib/dayKey';
+import { markOnce } from '@/lib/bootTiming';
 
 interface AuthContextValue {
   user: User | null;
