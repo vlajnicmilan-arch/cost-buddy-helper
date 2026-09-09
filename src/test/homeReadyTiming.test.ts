@@ -4,6 +4,7 @@ import {
   getMarks,
   claimHomeReadyReport,
   homeReadySeverity,
+  computeLoadMs,
   __resetBootTimingForTests,
 } from '@/lib/bootTiming';
 
@@ -54,5 +55,32 @@ describe('home_ready severity', () => {
     expect(homeReadySeverity(10000)).toBe('warning');
     expect(homeReadySeverity(5000)).toBe('info');
     expect(homeReadySeverity(0)).toBe('info');
+  });
+});
+
+describe('t_load (Brief gate deducted)', () => {
+  beforeEach(() => __resetBootTimingForTests());
+
+  it('equals t_total when the Brief was not shown', () => {
+    expect(computeLoadMs(4000, null, null)).toBe(4000);
+    expect(computeLoadMs(4000, 1000, null)).toBe(4000);
+    expect(computeLoadMs(4000, null, 3000)).toBe(4000);
+  });
+
+  it('subtracts the time spent on the Brief', () => {
+    expect(computeLoadMs(11778, 1200, 9000)).toBe(11778 - 7800);
+  });
+
+  it('ignores a non-positive Brief duration', () => {
+    expect(computeLoadMs(5000, 3000, 3000)).toBe(5000);
+    expect(computeLoadMs(5000, 4000, 1000)).toBe(5000);
+  });
+
+  it('drives severity by t_load, not t_total', () => {
+    const tTotal = 12000;
+    const tLoad = computeLoadMs(tTotal, 1000, 9000); // 4000
+    expect(tLoad).toBe(4000);
+    expect(homeReadySeverity(tLoad)).toBe('info');
+    expect(homeReadySeverity(tTotal)).toBe('warning');
   });
 });
