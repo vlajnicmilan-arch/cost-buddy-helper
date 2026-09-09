@@ -19,6 +19,7 @@ export const useProjects = () => {
   const { user } = useAuth();
   const { authReady, canFetch } = useAuthedFetchGate();
   const { t } = useTranslation();
+  const { handleModuleWriteError } = useModuleWriteGuard();
   const { emitAvatarEvent, activeBusinessProfileId } = useAppState();
   const initialKey = projectsCacheKey(user?.id, activeBusinessProfileId);
   const initialCached = user ? instantCache.read<ProjectWithOwnership[]>(initialKey) : null;

@@ -10,6 +10,7 @@ import { tr } from '@/lib/errorMessages';
 
 export const useCustomCategories = () => {
   const { t } = useTranslation();
+  const { handleModuleWriteError } = useModuleWriteGuard();
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
