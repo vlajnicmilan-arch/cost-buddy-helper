@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { APP_VERSION } from '@/lib/version';
 import { flushPendingNewsletterConsent } from '@/lib/newsletterConsent';
 import { flushPendingTermsAcceptance } from '@/lib/termsAcceptance';
+import { toDayKey } from '@/lib/dayKey';
 
 interface AuthContextValue {
   user: User | null;
@@ -134,21 +135,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (validatedSession?.user) {
         flushPendingConsents(validatedSession.user.id);
         lastSignedInUserRef.current = validatedSession.user.id;
-        const deviceInfo = {
-          userAgent: navigator.userAgent,
-          language: navigator.language,
-          platform: navigator.platform,
-          screenWidth: window.screen.width,
-          screenHeight: window.screen.height,
-          viewportWidth: window.innerWidth,
-          viewportHeight: window.innerHeight,
-          appVersion: APP_VERSION,
-          eventType: 'app_open',
-        };
-        supabase.from('user_login_logs').insert({
-          user_id: validatedSession.user.id,
-          device_info: deviceInfo,
-        } as any).then(() => {});
+        // app_open se upisuje najviše jednom dnevno po uređaju i korisniku.
+        const appOpenKey = `login_log_app_open:${validatedSession.user.id}`;
+        const todayKey = toDayKey(new Date());
+        let alreadyLoggedToday = false;
+        try {
+          alreadyLoggedToday = localStorage.getItem(appOpenKey) === todayKey;
+        } catch { /* noop */ }
+        if (!alreadyLoggedToday) {
+          const deviceInfo = {
+            userAgent: navigator.userAgent,
+            language: navigator.language,
+            platform: navigator.platform,
+            screenWidth: window.screen.width,
+            screenHeight: window.screen.height,
+            viewportWidth: window.innerWidth,
+            viewportHeight: window.innerHeight,
+            appVersion: APP_VERSION,
+            eventType: 'app_open',
+          };
+          supabase.from('user_login_logs').insert({
+            user_id: validatedSession.user.id,
+            device_info: deviceInfo,
+          } as any).then(() => {});
+          try {
+            localStorage.setItem(appOpenKey, todayKey ?? '');
+          } catch { /* noop */ }
+        }
       }
     });
 
