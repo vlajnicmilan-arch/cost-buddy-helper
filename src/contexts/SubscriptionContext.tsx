@@ -61,6 +61,7 @@ export const useSubscription = () => useContext(SubscriptionContext);
  * Fallback = 'dual' (safe: dual čita i tier i entitlements).
  */
 async function fetchEntitlementsMode(): Promise<EntitlementsMode> {
+
   try {
     const { data } = await supabase
       .from('app_settings')
@@ -78,6 +79,49 @@ async function fetchEntitlementsMode(): Promise<EntitlementsMode> {
 
 
 
+
+/**
+ * Lokalna predmemorija prava (samo ubrzanje ulaska).
+ * Ključ je vezan uz user_id; briše se pri odjavi/promjeni korisnika kroz
+ * USER_SCOPED_KEY_PREFIXES ('subscription_cache:') u AppStateContextu.
+ */
+export const SUBSCRIPTION_CACHE_PREFIX = 'subscription_cache:v1:';
+const SUBSCRIPTION_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+interface SubscriptionCachePayload {
+  user_id: string;
+  saved_at: string;
+  tier: SubscriptionTier;
+  subscribed: boolean;
+  subscription_end: string | null;
+  source: SubscriptionState['source'];
+  entitlements: Record<EntitlementModule, ModuleEntitlement>;
+  entitlements_mode: EntitlementsMode;
+}
+
+export const readSubscriptionCache = (
+  userId: string,
+  now: number = Date.now(),
+): SubscriptionCachePayload | null => {
+  try {
+    const raw = localStorage.getItem(SUBSCRIPTION_CACHE_PREFIX + userId);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as SubscriptionCachePayload;
+    if (!parsed || parsed.user_id !== userId) return null;
+    const savedAt = new Date(parsed.saved_at).getTime();
+    if (!Number.isFinite(savedAt)) return null;
+    if (now - savedAt > SUBSCRIPTION_CACHE_MAX_AGE_MS) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
+export const writeSubscriptionCache = (payload: SubscriptionCachePayload): void => {
+  try {
+    localStorage.setItem(SUBSCRIPTION_CACHE_PREFIX + payload.user_id, JSON.stringify(payload));
+  } catch { /* quota */ }
+};
 
 export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { session, loading: authLoading } = useAuth();
@@ -115,20 +159,45 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       if (subRes.error) throw subRes.error;
       const data = subRes.data as any;
 
-      setSubscribed(!!data.subscribed);
-      setTier((data.tier as SubscriptionTier) || 'free');
-      setSubscriptionEnd(data.subscription_end || null);
-      setSource((data.source as any) || null);
+      const nextSubscribed = !!data.subscribed;
+      const nextTier = (data.tier as SubscriptionTier) || 'free';
+      const nextEnd = data.subscription_end || null;
+      const nextSource = (data.source as any) || null;
+      const nextEntitlements: Record<EntitlementModule, ModuleEntitlement> = data.entitlements
+        ? {
+            smjer: data.entitlements.smjer ?? EMPTY_ENTITLEMENTS.smjer,
+            krug: data.entitlements.krug ?? EMPTY_ENTITLEMENTS.krug,
+            projekti: data.entitlements.projekti ?? EMPTY_ENTITLEMENTS.projekti,
+            biznis: data.entitlements.biznis ?? EMPTY_ENTITLEMENTS.biznis,
+          }
+        : EMPTY_ENTITLEMENTS;
+
+      setSubscribed(nextSubscribed);
+      setTier(nextTier);
+      setSubscriptionEnd(nextEnd);
+      setSource(nextSource);
       if (data.entitlements) {
-        setEntitlements({
-          smjer: data.entitlements.smjer ?? EMPTY_ENTITLEMENTS.smjer,
-          krug: data.entitlements.krug ?? EMPTY_ENTITLEMENTS.krug,
-          projekti: data.entitlements.projekti ?? EMPTY_ENTITLEMENTS.projekti,
-          biznis: data.entitlements.biznis ?? EMPTY_ENTITLEMENTS.biznis,
-        });
+        // Isti sadržaj → ista referenca, bez nepotrebnog rendera nakon predmemorije.
+        setEntitlements((prev) =>
+          JSON.stringify(prev) === JSON.stringify(nextEntitlements) ? prev : nextEntitlements,
+        );
       }
       setLoading(false);
       setSubscriptionReady(true);
+
+      const userId = session?.user?.id;
+      if (userId) {
+        writeSubscriptionCache({
+          user_id: userId,
+          saved_at: new Date().toISOString(),
+          tier: nextTier,
+          subscribed: nextSubscribed,
+          subscription_end: nextEnd,
+          source: nextSource,
+          entitlements: nextEntitlements,
+          entitlements_mode: mode,
+        });
+      }
     } catch (err) {
       const errMsg = String((err as any)?.message || err);
       if (/jwt|token.*expir|unauthorized/i.test(errMsg)) {
@@ -139,7 +208,24 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // I pri grešci: gate smije odlučivati, korisnik se ne smije zaglaviti.
       setSubscriptionReady(true);
     }
-  }, [session?.access_token]);
+  }, [session?.access_token, session?.user?.id]);
+
+  // Brzi ulazak: čim znamo korisnika, primijeni svježu lokalnu predmemoriju.
+  // Server poziv i dalje ide u pozadini i prepisuje vrijednosti kad stigne.
+  const userId = session?.user?.id;
+  useEffect(() => {
+    if (!userId) return;
+    const cached = readSubscriptionCache(userId);
+    if (!cached) return;
+    setTier(cached.tier);
+    setSubscribed(cached.subscribed);
+    setSubscriptionEnd(cached.subscription_end);
+    setSource(cached.source);
+    setEntitlements(cached.entitlements);
+    setEntitlementsMode(cached.entitlements_mode);
+    setLoading(false);
+    setSubscriptionReady(true);
+  }, [userId]);
 
   // Bez sesije nema što čekati: gate ne smije visjeti u loaderu.
   useEffect(() => {

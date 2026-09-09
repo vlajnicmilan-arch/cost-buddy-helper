@@ -62,6 +62,7 @@ const USER_SCOPED_KEYS = [
  */
 const USER_SCOPED_KEY_PREFIXES = [
   'login_log_app_open:',
+  'subscription_cache:',
 ] as const;
 
 const removeUserScopedStorage = (opts?: { preserveKeys?: readonly string[] }) => {
