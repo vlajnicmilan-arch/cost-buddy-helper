@@ -592,6 +592,8 @@ Deno.serve(async (req) => {
           errors: storage.errors,
         },
         manifest_path: `${folder}/manifest.json`,
+        zip: { path: zipPath, bytes: zipBytes, error: zipError, signed_url_days: SIGNED_URL_DAYS },
+        mail: { ok: mail.ok, message_id: mail.message_id, error: mail.error, to: BACKUP_MAIL_TO },
         pruned: prune,
         pruned_files: prunedFiles,
         duration_ms: Date.now() - startedAt,
