@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "gen:backup-tables": "bun scripts/generate-backup-tables.mjs",
+    "prebuild": "bun scripts/generate-backup-tables.mjs",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
