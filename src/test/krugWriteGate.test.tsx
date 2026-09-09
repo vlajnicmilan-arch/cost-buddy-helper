@@ -17,6 +17,10 @@ vi.mock('@/hooks/useFeatureAccess', () => ({
   useFeatureAccess: () => ({ hasModuleAccess: () => state.hasKrugAccess }),
 }));
 
+vi.mock('@/contexts/SubscriptionContext', () => ({
+  useSubscription: () => ({ subscriptionReady: true }),
+}));
+
 vi.mock('@/hooks/useModuleGate', () => ({
   useModuleGate: () => ({ requestModule: state.requestModule }),
 }));

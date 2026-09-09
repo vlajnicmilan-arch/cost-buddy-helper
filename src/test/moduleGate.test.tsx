@@ -8,6 +8,10 @@ import { render, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ModuleGateProvider, useModuleGate } from '@/hooks/useModuleGate';
 
+vi.mock('@/contexts/SubscriptionContext', () => ({
+  useSubscription: () => ({ subscriptionReady: true }),
+}));
+
 vi.mock('@/hooks/useFeatureAccess', () => ({
   useFeatureAccess: () => ({ hasModuleAccess: (m: string) => m === 'projekti' }),
 }));
