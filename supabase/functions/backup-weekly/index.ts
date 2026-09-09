@@ -6,6 +6,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { zipSync } from "https://esm.sh/fflate@0.8.2";
 import { STORAGE_BUCKETS } from "../_shared/tablesToPurge.ts";
 import { BACKUP_TABLES } from "../_shared/backupTables.ts";
+import { getOrCreateUnsubscribeToken } from "../_shared/unsubscribeToken.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -357,22 +358,7 @@ async function sendBackupMail(
     ].join("\n");
 
     // Mail servis odbija transakcijske poruke bez tokena za odjavu.
-    let unsubscribeToken: string | null = null;
-    const { data: tok } = await supabase
-      .from("email_unsubscribe_tokens")
-      .select("token")
-      .eq("email", BACKUP_MAIL_TO)
-      .maybeSingle();
-    if (tok?.token) {
-      unsubscribeToken = tok.token;
-    } else {
-      const fresh = crypto.randomUUID().replace(/-/g, "");
-      const { error: tokErr } = await supabase
-        .from("email_unsubscribe_tokens")
-        .insert({ email: BACKUP_MAIL_TO, token: fresh });
-      if (tokErr) throw new Error(`unsubscribe_token: ${tokErr.message}`);
-      unsubscribeToken = fresh;
-    }
+    const unsubscribeToken = await getOrCreateUnsubscribeToken(supabase, BACKUP_MAIL_TO);
 
     await supabase.from("email_send_log").insert({
       message_id: messageId,

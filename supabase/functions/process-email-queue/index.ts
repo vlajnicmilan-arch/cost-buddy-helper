@@ -1,5 +1,6 @@
 import { sendLovableEmail } from 'npm:@lovable.dev/email-js'
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { ensureUnsubscribeToken } from '../_shared/unsubscribeToken.ts'
 
 const MAX_RETRIES = 5
 const DEFAULT_BATCH_SIZE = 10
@@ -249,6 +250,10 @@ Deno.serve(async (req) => {
       }
 
       try {
+        // Mail servis odbija transakcijske poruke bez tokena za odjavu.
+        // Osiguravamo ga ovdje, na jednom mjestu, za sve predloške.
+        const unsubscribeToken = await ensureUnsubscribeToken(supabase, payload)
+
         await sendLovableEmail(
           {
             run_id: payload.run_id,
@@ -261,7 +266,7 @@ Deno.serve(async (req) => {
             purpose: payload.purpose,
             label: payload.label,
             idempotency_key: payload.idempotency_key,
-            unsubscribe_token: payload.unsubscribe_token,
+            unsubscribe_token: unsubscribeToken,
             message_id: payload.message_id,
           },
           // sendUrl is optional — when LOVABLE_SEND_URL is not set, the library
