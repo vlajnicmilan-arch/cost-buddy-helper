@@ -57,6 +57,28 @@ const USER_SCOPED_KEYS = [
 ] as const;
 
 /**
+ * Prefiksi korisničkih ključeva s dinamičkim sufiksom (`:<userId>`) — čiste se
+ * pri promjeni korisnika / odjavi, isto kao USER_SCOPED_KEYS.
+ */
+const USER_SCOPED_KEY_PREFIXES = [
+  'login_log_app_open:',
+] as const;
+
+const removeUserScopedStorage = (opts?: { preserveKeys?: readonly string[] }) => {
+  USER_SCOPED_KEYS.forEach((key) => {
+    if (opts?.preserveKeys?.includes(key)) return;
+    try { localStorage.removeItem(key); } catch { /* noop */ }
+  });
+  try {
+    Object.keys(localStorage)
+      .filter((key) => USER_SCOPED_KEY_PREFIXES.some((prefix) => key.startsWith(prefix)))
+      .forEach((key) => {
+        try { localStorage.removeItem(key); } catch { /* noop */ }
+      });
+  } catch { /* noop */ }
+};
+
+/**
  * Ključevi koji se NE brišu prilikom promjene korisnika bez SIGNED_OUT:
  * pravni dokaz prihvaćanja Uvjeta (i eventualno privole za newsletter) može
  * biti zapisan PRIJE nego je identitet poznat, pa mora preživjeti switch
@@ -145,10 +167,7 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
       try {
         const rememberedUserId = localStorage.getItem(LAST_RESOLVED_USER_KEY);
         if (rememberedUserId && rememberedUserId !== session.user.id) {
-          USER_SCOPED_KEYS.forEach((key) => {
-            if ((PENDING_CONSENT_KEYS as readonly string[]).includes(key)) return;
-            try { localStorage.removeItem(key); } catch { /* noop */ }
-          });
+          removeUserScopedStorage({ preserveKeys: PENDING_CONSENT_KEYS });
           setDisplayNameState('');
           setUsageProfileState(null);
           setBusinessModeEnabledState(false);
@@ -261,9 +280,7 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
         lastResolvedUserRef.current = null;
         // Ključevi vezani UZ RAČUN, ne uz uređaj — inače ih sljedeći korisnik
         // na istom pregledniku naslijedi.
-        USER_SCOPED_KEYS.forEach((key) => {
-          try { localStorage.removeItem(key); } catch { /* noop */ }
-        });
+        removeUserScopedStorage();
         try { localStorage.removeItem(LAST_RESOLVED_USER_KEY); } catch { /* noop */ }
 
         setOnboardingCompletedState(false);
