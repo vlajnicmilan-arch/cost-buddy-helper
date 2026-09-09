@@ -13,6 +13,7 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ModuleUpgradeDialog, type UpgradeModule } from '@/components/modules/ModuleUpgradeDialog';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import type { EntitlementModule } from '@/lib/featureModuleMap';
 
 type GateModule = UpgradeModule; // 'smjer' | 'krug' | 'projects' | 'business'
@@ -29,6 +30,13 @@ interface RequestOpts {
   onGranted?: () => void;
   /** Poziva se ako korisnik zatvori dijalog bez otključavanja. Default: no-op. */
   onDismiss?: () => void;
+  /**
+   * Poziva se kad se prava JOŠ NE ZNAJU (`subscriptionReady === false`).
+   * Bez toga zahtjev je tihi no-op — nikad lažni paywall. Navigacijski
+   * ulazi ovdje smiju otići na odredišnu stranicu, koja ima vlastiti
+   * gate svjestan spremnosti (Projects/Krug/Budgets).
+   */
+  onUnready?: () => void;
   /** Ako je true, korisnik s pravom preskače dialog i odmah dobiva onGranted. */
   skipIfGranted?: boolean;
 }
@@ -43,6 +51,7 @@ const ModuleGateContext = createContext<Ctx | null>(null);
 
 export function ModuleGateProvider({ children }: { children: ReactNode }) {
   const { hasModuleAccess } = useFeatureAccess();
+  const { subscriptionReady } = useSubscription();
   const [state, setState] = useState<{ open: boolean; module: GateModule }>({ open: false, module: 'krug' });
   const dismissRef = useRef<() => void>(() => {});
 
@@ -57,9 +66,15 @@ export function ModuleGateProvider({ children }: { children: ReactNode }) {
       opts?.onGranted?.();
       return;
     }
+    // Prava još nisu učitana → entitlementi su prazni i `hasModuleAccess`
+    // lažno vraća false. Nikad ne otvaraj paywall prije spremnosti.
+    if (!subscriptionReady) {
+      opts?.onUnready?.();
+      return;
+    }
     dismissRef.current = opts?.onDismiss ?? (() => {});
     setState({ open: true, module });
-  }, [hasModuleAccess]);
+  }, [hasModuleAccess, subscriptionReady]);
 
   const onOpenChange = useCallback((open: boolean) => {
     setState((s) => ({ ...s, open }));
