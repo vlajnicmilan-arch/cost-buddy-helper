@@ -57,6 +57,27 @@ const USER_SCOPED_KEYS = [
 ] as const;
 
 /**
+ * Prefiksi korisničkih ključeva s dinamičkim sufiksom (`:<userId>`) — čiste se
+ * pri promjeni korisnika / odjavi, isto kao USER_SCOPED_KEYS.
+ */
+const USER_SCOPED_KEY_PREFIXES = [
+  'login_log_app_open:',
+] as const;
+
+const removeUserScopedStorage = () => {
+  USER_SCOPED_KEYS.forEach((key) => {
+    try { localStorage.removeItem(key); } catch { /* noop */ }
+  });
+  try {
+    Object.keys(localStorage)
+      .filter((key) => USER_SCOPED_KEY_PREFIXES.some((prefix) => key.startsWith(prefix)))
+      .forEach((key) => {
+        try { localStorage.removeItem(key); } catch { /* noop */ }
+      });
+  } catch { /* noop */ }
+};
+
+/**
  * Ključevi koji se NE brišu prilikom promjene korisnika bez SIGNED_OUT:
  * pravni dokaz prihvaćanja Uvjeta (i eventualno privole za newsletter) može
  * biti zapisan PRIJE nego je identitet poznat, pa mora preživjeti switch
