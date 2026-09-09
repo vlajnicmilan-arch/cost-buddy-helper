@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useModuleGate } from '@/hooks/useModuleGate';
 import { ReadOnlyBanner } from '@/components/access/ReadOnlyBanner';
 
@@ -20,6 +21,7 @@ const Budgets = () => {
   const { storageMode } = useStorage();
   const navigate = useNavigate();
   const { hasModuleAccess } = useFeatureAccess();
+  const { subscriptionReady } = useSubscription();
   const { requestModule } = useModuleGate();
   const hasSmjerAccess = hasModuleAccess('smjer');
   const { allExpenses, refetch } = useExpenses();
