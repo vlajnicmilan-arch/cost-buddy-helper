@@ -70,15 +70,14 @@ export function useNotificationNavigation() {
       const projectId = extractProjectId(target);
       if (projectId) {
         const h = payload.highlight;
-        requestModule('projects', {
-          onGranted: () => navigate('/projects', {
-            state: {
-              openProjectId: projectId,
-              initialTab: h?.tab,
-              openExpenseId: h?.type === 'expense' ? h.id : undefined,
-            },
-          }),
+        const go = () => navigate('/projects', {
+          state: {
+            openProjectId: projectId,
+            initialTab: h?.tab,
+            openExpenseId: h?.type === 'expense' ? h.id : undefined,
+          },
         });
+        requestModule('projects', { onGranted: go, onUnready: go });
         return true;
       }
 
@@ -88,7 +87,7 @@ export function useNotificationNavigation() {
       // dočekaju korisnika s aktualnim stanjem umjesto prethodnog cache-a.
       if (target.startsWith('/krug')) {
         qc.invalidateQueries({ queryKey: ['krug'] });
-        requestModule('krug', { onGranted: () => navigate(target) });
+        requestModule('krug', { onGranted: () => navigate(target), onUnready: () => navigate(target) });
         return true;
       }
 

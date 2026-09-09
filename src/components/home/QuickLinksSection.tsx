@@ -73,7 +73,7 @@ export const QuickLinksSection = React.memo(({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
         whileHover={{ scale: 1.01 }}
-        onClick={() => requestModule('projects', { onGranted: () => navigate('/projects') })}
+        onClick={() => requestModule('projects', { onGranted: () => navigate('/projects'), onUnready: () => navigate('/projects') })}
         className={cardClass}
         style={monarch
           ? { borderLeftColor: 'hsl(var(--primary) / 0.6)' }

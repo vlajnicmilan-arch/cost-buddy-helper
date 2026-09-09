@@ -55,9 +55,8 @@ export const AIInsightsSection = ({ enabled, allExpenses }: Props) => {
   const handleAction = useCallback((insight: AIInsight) => {
     const action = insight.action;
     if (action?.type === "open_project" && action.target_id) {
-      requestModule('projects', {
-        onGranted: () => navigate("/projects", { state: { openProjectId: action.target_id, from: "/home" } }),
-      });
+      const go = () => navigate("/projects", { state: { openProjectId: action.target_id, from: "/home" } });
+      requestModule('projects', { onGranted: go, onUnready: go });
       return;
     }
     if (action?.type === "open_invoice" && action.target_id) {
