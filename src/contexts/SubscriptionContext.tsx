@@ -208,7 +208,24 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // I pri grešci: gate smije odlučivati, korisnik se ne smije zaglaviti.
       setSubscriptionReady(true);
     }
-  }, [session?.access_token]);
+  }, [session?.access_token, session?.user?.id]);
+
+  // Brzi ulazak: čim znamo korisnika, primijeni svježu lokalnu predmemoriju.
+  // Server poziv i dalje ide u pozadini i prepisuje vrijednosti kad stigne.
+  const userId = session?.user?.id;
+  useEffect(() => {
+    if (!userId) return;
+    const cached = readSubscriptionCache(userId);
+    if (!cached) return;
+    setTier(cached.tier);
+    setSubscribed(cached.subscribed);
+    setSubscriptionEnd(cached.subscription_end);
+    setSource(cached.source);
+    setEntitlements(cached.entitlements);
+    setEntitlementsMode(cached.entitlements_mode);
+    setLoading(false);
+    setSubscriptionReady(true);
+  }, [userId]);
 
   // Bez sesije nema što čekati: gate ne smije visjeti u loaderu.
   useEffect(() => {
