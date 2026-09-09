@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { SubscriptionTier } from '@/lib/subscriptionTiers';
 import { getFreshAccessToken } from '@/lib/supabaseRetry';
+import { markOnce } from '@/lib/bootTiming';
 
 export type EntitlementModule = 'smjer' | 'krug' | 'projekti' | 'biznis';
 export type EntitlementsMode = 'legacy' | 'dual' | 'entitlements';
