@@ -188,6 +188,7 @@ const BriefGate = () => {
   const enter = () => { markOnce('brief_dismissed'); navigate('/home', { replace: true }); };
 
   const openTarget = (target: BriefFilterTarget | null) => {
+    markOnce('brief_dismissed');
     if (!target) return enter();
     if (target.path === '/home') {
       navigate('/home', { replace: true });
