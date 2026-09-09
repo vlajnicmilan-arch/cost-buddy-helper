@@ -159,20 +159,45 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       if (subRes.error) throw subRes.error;
       const data = subRes.data as any;
 
-      setSubscribed(!!data.subscribed);
-      setTier((data.tier as SubscriptionTier) || 'free');
-      setSubscriptionEnd(data.subscription_end || null);
-      setSource((data.source as any) || null);
+      const nextSubscribed = !!data.subscribed;
+      const nextTier = (data.tier as SubscriptionTier) || 'free';
+      const nextEnd = data.subscription_end || null;
+      const nextSource = (data.source as any) || null;
+      const nextEntitlements: Record<EntitlementModule, ModuleEntitlement> = data.entitlements
+        ? {
+            smjer: data.entitlements.smjer ?? EMPTY_ENTITLEMENTS.smjer,
+            krug: data.entitlements.krug ?? EMPTY_ENTITLEMENTS.krug,
+            projekti: data.entitlements.projekti ?? EMPTY_ENTITLEMENTS.projekti,
+            biznis: data.entitlements.biznis ?? EMPTY_ENTITLEMENTS.biznis,
+          }
+        : EMPTY_ENTITLEMENTS;
+
+      setSubscribed(nextSubscribed);
+      setTier(nextTier);
+      setSubscriptionEnd(nextEnd);
+      setSource(nextSource);
       if (data.entitlements) {
-        setEntitlements({
-          smjer: data.entitlements.smjer ?? EMPTY_ENTITLEMENTS.smjer,
-          krug: data.entitlements.krug ?? EMPTY_ENTITLEMENTS.krug,
-          projekti: data.entitlements.projekti ?? EMPTY_ENTITLEMENTS.projekti,
-          biznis: data.entitlements.biznis ?? EMPTY_ENTITLEMENTS.biznis,
-        });
+        // Isti sadržaj → ista referenca, bez nepotrebnog rendera nakon predmemorije.
+        setEntitlements((prev) =>
+          JSON.stringify(prev) === JSON.stringify(nextEntitlements) ? prev : nextEntitlements,
+        );
       }
       setLoading(false);
       setSubscriptionReady(true);
+
+      const userId = session?.user?.id;
+      if (userId) {
+        writeSubscriptionCache({
+          user_id: userId,
+          saved_at: new Date().toISOString(),
+          tier: nextTier,
+          subscribed: nextSubscribed,
+          subscription_end: nextEnd,
+          source: nextSource,
+          entitlements: nextEntitlements,
+          entitlements_mode: mode,
+        });
+      }
     } catch (err) {
       const errMsg = String((err as any)?.message || err);
       if (/jwt|token.*expir|unauthorized/i.test(errMsg)) {
