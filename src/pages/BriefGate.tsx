@@ -181,7 +181,10 @@ const BriefGate = () => {
   if (!shown) return null;
   if (!shown.enabled || messages.length === 0) return <Navigate to="/home" replace />;
 
-  const enter = () => navigate('/home', { replace: true });
+  // Boot timing only: the Brief is actually rendered to the user from here on.
+  markOnce('brief_shown');
+
+  const enter = () => { markOnce('brief_dismissed'); navigate('/home', { replace: true }); };
 
   const openTarget = (target: BriefFilterTarget | null) => {
     if (!target) return enter();
