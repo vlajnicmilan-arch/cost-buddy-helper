@@ -27,6 +27,8 @@ const TABLES = BACKUP_TABLES;
 
 const BACKUP_MAIL_TO = "vlajnic.milan@gmail.com";
 const SIGNED_URL_DAYS = 7;
+// Vremenski proračun za zip datoteka; ostatak ide u sljedeće pokretanje.
+const FILES_ZIP_BUDGET_MS = 100_000;
 const SITE_NAME = "Centar";
 const SENDER_DOMAIN = "notify.vmbalance.com";
 
