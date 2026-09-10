@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { invokeNotifyFunction } from '@/lib/notifyHelper';
+import { isSessionGone } from '@/lib/sessionGone';
 
 export interface ProjectPendingTransaction {
   id: string;
@@ -71,6 +72,7 @@ export const useProjectPendingTransactions = (projectId: string | null) => {
       setRejectedTransactions(transactions.filter((t: any) => t.status === 'rejected'));
     } catch (error) {
       console.error('Error fetching pending project transactions:', error);
+      if (await isSessionGone(user?.id)) return;
       showError(t('common.error'));
     } finally {
       setLoading(false);
