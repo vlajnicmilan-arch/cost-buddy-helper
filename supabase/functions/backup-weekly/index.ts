@@ -961,8 +961,11 @@ Deno.serve(async (req) => {
         })
       : null;
 
-    // Mail ide samo jednom po datumu — kad je sve potpuno ili kad su nastavci iscrpljeni.
-    const mail = mailDecision.send
+    // Mail za potpunu kopiju šalje TEK faza 'drive'. Ovdje ide samo mail
+    // "NEPOTPUNA kopija" kad su nastavci iscrpljeni.
+    const sendIncompleteMailNow = mailDecision.send && mailDecision.incomplete === true;
+    const handOffToDrive = mailDecision.send && !mailDecision.incomplete;
+    const mail = sendIncompleteMailNow
       ? await sendBackupMail(supabase, {
           folder,
           tables: results.length,
@@ -973,10 +976,11 @@ Deno.serve(async (req) => {
           signedUrl,
           fileParts: filesZip.parts,
           errors: mailErrors,
-          incomplete: mailDecision.incomplete,
+          incomplete: true,
           incompleteReason: reason,
         })
       : { ok: false, message_id: undefined as string | undefined, error: undefined as string | undefined };
+
 
 
     // Retencija: obriši foldere starije od 30 dana
