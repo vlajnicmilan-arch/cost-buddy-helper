@@ -14,6 +14,7 @@ import {
   BudgetPeriod 
 } from '@/types/budget';
 import { Expense } from '@/types/expense';
+import { isSessionGone } from '@/lib/sessionGone';
 
 interface UseBudgetsOptions {
   externalExpenses?: Expense[];
@@ -68,6 +69,7 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
       })));
     } catch (error) {
       console.error('Error fetching budgets:', error);
+      if (await isSessionGone(user?.id)) return;
       showError(t('errors.fetchBudgets', 'Greška pri učitavanju budžeta'));
     } finally {
       setLoading(false);
