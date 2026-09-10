@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect, useMemo, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
+import { clearExpenseSnapshots } from '@/lib/storage/expenseSnapshot';
 
 // ─── Avatar Mood ────────────────────────────────────────────────────────────
 export type AvatarMood = 'happy' | 'thinking' | 'worried' | 'proud' | 'neutral';
@@ -77,6 +78,9 @@ const removeUserScopedStorage = (opts?: { preserveKeys?: readonly string[] }) =>
         try { localStorage.removeItem(key); } catch { /* noop */ }
       });
   } catch { /* noop */ }
+  // Trajna (IndexedDB) snimka transakcija je korisnički podatak — briše se
+  // zajedno s ostalim USER_SCOPED ključevima.
+  void clearExpenseSnapshots();
 };
 
 /**

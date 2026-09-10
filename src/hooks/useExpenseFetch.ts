@@ -19,6 +19,9 @@ import { useWalletViewMode } from '@/contexts/WalletViewModeContext';
 import { instantCache } from '@/lib/instantCache';
 import { useAppResume } from '@/hooks/useAppResume';
 import { EXPENSE_LIST_SELECT } from '@/lib/expenseColumns';
+import { loadPagesInParallel } from '@/lib/expensePages';
+import { markExpensesSource } from '@/lib/expenseSourceMark';
+import { readExpenseSnapshot, writeExpenseSnapshot } from '@/lib/storage/expenseSnapshot';
 import { buildExpenseScopeFilter, belongsToMyScope, type ScopeContext } from '@/lib/expenseScope';
 
 // v3: bumped after the explicit-column select (lista više ne nosi teška
@@ -40,6 +43,7 @@ export const useExpenseFetch = () => {
     ...e,
     date: e.date instanceof Date ? e.date : new Date(e.date as unknown as string),
   }));
+  if (initialExpenses.length > 0) markExpensesSource('session');
   const [expenses, setExpenses] = useState<Expense[]>(initialExpenses);
   const [ownedSourceIds, setOwnedSourceIds] = useState<Set<string>>(new Set());
   const [sharedPaymentSourceIds, setSharedPaymentSourceIds] = useState<Set<string>>(new Set());
@@ -169,36 +173,34 @@ export const useExpenseFetch = () => {
 
         let sessionLost = false;
 
+        const fetchPage = async (from: number, withCount: boolean) => {
+          let query = supabase
+            .from('expenses')
+            .select(EXPENSE_LIST_SELECT, withCount ? { count: 'exact' } : undefined)
+            .order('date', { ascending: false })
+            .range(from, from + pageSize - 1);
+
+          if (orFilter) query = query.or(orFilter);
+
+          const { data, error, count } = await query;
+          if (error) throw error;
+          return { rows: (data as any[]) || [], count: count ?? null };
+        };
+
         const loadAllPages = async (): Promise<any[]> => {
-          const collected: any[] = [];
-          let from = 0;
-          while (true) {
-            // Sign-out / expiry mid-pagination: stop before issuing an anon query.
-            if (liveUserIdRef.current !== user.id) {
-              sessionLost = true;
-              break;
-            }
-
-            let query = supabase
-              .from('expenses')
-              .select(EXPENSE_LIST_SELECT)
-              .order('date', { ascending: false })
-              .range(from, from + pageSize - 1);
-
-            if (orFilter) query = query.or(orFilter);
-
-            const { data, error } = await query;
-
-            if (error) throw error;
-            if (!data || data.length === 0) break;
-            collected.push(...data);
-            rowsSoFar = collected.length;
-            fetchRowsRef.current = rowsSoFar;
-
-            if (data.length < pageSize) break;
-            from += pageSize;
-          }
-          return collected;
+          // Prva stranica nosi ukupan broj redaka (count: exact); preostale
+          // stranice idu istovremeno, uz istu zaštitu od odjave.
+          const { rows, sessionLost: lost } = await loadPagesInParallel<any>({
+            pageSize,
+            fetchPage,
+            isSessionAlive: () => liveUserIdRef.current === user.id,
+            onProgress: (n) => {
+              rowsSoFar = n;
+              fetchRowsRef.current = n;
+            },
+          });
+          if (lost) sessionLost = true;
+          return rows;
         };
 
         const { result: allData, attempts } = await runWithTransientRetry(loadAllPages, {
@@ -257,6 +259,8 @@ export const useExpenseFetch = () => {
         }));
         setExpenses(mapped);
         instantCache.write(cacheKey, mapped);
+        markExpensesSource('network');
+        void writeExpenseSnapshot(user.id, mapped);
 
       }
     } catch (error) {
@@ -303,6 +307,8 @@ export const useExpenseFetch = () => {
             }));
             setExpenses(mappedRetry);
             instantCache.write(cacheKey, mappedRetry);
+            markExpensesSource('network');
+            void writeExpenseSnapshot(user!.id, mappedRetry);
             hydratedKeyRef.current = cacheKey;
             setLoading(false);
             return;
@@ -391,9 +397,24 @@ export const useExpenseFetch = () => {
         date: e.date instanceof Date ? e.date : new Date(e.date as unknown as string),
       })));
       setLoading(false);
+      markExpensesSource('session');
       hydratedKeyRef.current = key;
     } else {
       hydratedKeyRef.current = null;
+      // Hladno otvaranje: sessionStorage snimke nema, ali trajna (IndexedDB)
+      // može postojati — crtamo odmah, puni dohvat ide u pozadini.
+      const userId = user.id;
+      let cancelled = false;
+      void (async () => {
+        const snapshot = await readExpenseSnapshot<Expense>(userId);
+        if (cancelled || !snapshot || snapshot.length === 0) return;
+        if (hydratedKeyRef.current === key) return;
+        setExpenses(snapshot);
+        setLoading(false);
+        markExpensesSource('idb');
+        hydratedKeyRef.current = key;
+      })();
+      return () => { cancelled = true; };
     }
   }, [user?.id, isLocalMode]);
 

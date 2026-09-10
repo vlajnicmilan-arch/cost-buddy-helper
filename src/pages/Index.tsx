@@ -32,6 +32,7 @@ import { useBackButton } from '@/hooks/useBackButton';
 import { BACK_PRIORITY } from '@/contexts/BackButtonContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { markOnce, getMarks, claimHomeReadyReport, homeReadySeverity, computeLoadMs } from '@/lib/bootTiming';
+import { getExpensesSource } from '@/lib/expenseSourceMark';
 import { APP_VERSION } from '@/lib/version';
 
 import { useTranslation } from 'react-i18next';
@@ -242,6 +243,7 @@ const Index = () => {
           t_auth: marks['auth_ready'] ?? null,
           t_subscription: marks['subscription_ready'] ?? null,
           t_expenses: marks['expenses_ready'] ?? null,
+          expenses_source: getExpensesSource(),
           t_brief_shown: tBriefShown,
           t_brief_dismissed: tBriefDismissed,
           t_js_boot: marks['js_boot'] ?? null,
