@@ -36,7 +36,7 @@ import { useStatusBar } from "@/hooks/useStatusBar";
 import { useDeepLinks } from "@/hooks/useDeepLinks";
 import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import { DiagnosticRouteTracker } from "@/components/DiagnosticRouteTracker";
-import { CrispChat } from "@/components/CrispChat";
+
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { isPublicRoute } from "@/lib/publicRoutes";
 import { BRIEF_GATE_ENABLED } from "@/lib/featureFlags";
@@ -429,7 +429,6 @@ const App = () => (
                                   <ReconciliationDialogHost />
                                   <ImportBatchDialogHost />
 
-                                  <CrispChat />
                                   <AppRoutes />
                                 </ModuleGateProvider>
                               </BackButtonProvider>
