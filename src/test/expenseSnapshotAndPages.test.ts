@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { planPageRanges, concatPagesInOrder } from '@/lib/expensePages';
+import { planPageRanges, concatPagesInOrder, loadPagesInParallel } from '@/lib/expensePages';
 import {
   readExpenseSnapshot,
   writeExpenseSnapshot,
@@ -96,6 +96,53 @@ describe('paralelne stranice', () => {
     const first = [1, 2];
     const rest = [[3, 4], [5, 6]];
     expect(concatPagesInOrder(first, rest)).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+
+  it('paralelni dohvat čuva redoslijed iako stranice stižu obrnuto', async () => {
+    const pageSize = 2;
+    const pages: Record<number, number[]> = {
+      0: [1, 2],
+      2: [3, 4],
+      4: [5],
+    };
+    const fetchPage = async (from: number, withCount: boolean) => {
+      // kasnija stranica se vraća prva
+      await new Promise(r => setTimeout(r, from === 2 ? 20 : 1));
+      return { rows: pages[from] ?? [], count: withCount ? 5 : null };
+    };
+    const res = await loadPagesInParallel<number>({
+      pageSize,
+      fetchPage,
+      isSessionAlive: () => true,
+    });
+    expect(res.sessionLost).toBe(false);
+    expect(res.rows).toEqual([1, 2, 3, 4, 5]);
+  });
+
+  it('odjava usred paralelnog dohvata ne vraća krnji skup', async () => {
+    let alive = true;
+    const fetchPage = async (from: number, withCount: boolean) => {
+      if (from > 0) alive = false; // odjava dok traju paralelne stranice
+      return { rows: from === 0 ? [1, 2] : [3, 4], count: withCount ? 4 : null };
+    };
+    const res = await loadPagesInParallel<number>({
+      pageSize: 2,
+      fetchPage,
+      isSessionAlive: () => alive,
+    });
+    expect(res.sessionLost).toBe(true);
+    expect(res.rows).toEqual([]);
+  });
+
+  it('odjava prije prve stranice ne šalje upit', async () => {
+    let calls = 0;
+    const res = await loadPagesInParallel<number>({
+      pageSize: 2,
+      fetchPage: async () => { calls++; return { rows: [], count: null }; },
+      isSessionAlive: () => false,
+    });
+    expect(calls).toBe(0);
+    expect(res.sessionLost).toBe(true);
   });
 });
 
