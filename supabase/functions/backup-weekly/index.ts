@@ -192,7 +192,7 @@ async function readManifest(supabase: any, folder: string): Promise<any | null> 
  */
 async function pruneOrphanFiles(supabase: any, keep: Set<string>) {
   const pooled: string[] = [];
-  for (const bucket of STORAGE_BUCKETS) {
+  for (const bucket of BACKUP_BUCKETS) {
     const objects = await listBucketObjects(supabase, "backups", `${FILES_PREFIX}/${bucket}`).catch(
       () => [] as Array<{ path: string }>,
     );
