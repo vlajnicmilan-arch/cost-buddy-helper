@@ -16,6 +16,7 @@ import { detectGmailVerification, type GmailVerificationResult } from './gmailVe
 import { isValidOib } from './oib.ts';
 import { deterministicExtract } from './deterministicExtract.ts';
 import { flattenUblExtraction, mergeDeterministic } from './extractionNormalize.ts';
+import { FUTURE_DATE_WARNING, hasFutureDate } from './dateNormalize.ts';
 import { carriesFinancialSubstance, classifyAsStatement } from './statementSignals.ts';
 import { carriesInvoiceSignal } from './invoiceSignals.ts';
 import { invoiceOverridesStatement } from './invoiceOverride.ts';
@@ -64,6 +65,11 @@ export interface ClassifyInput {
    * račun", izvod-pitanje se više ne postavlja.
    */
   userClassification?: 'racun' | 'izvod' | null;
+  /**
+   * Dan primitka poruke (ISO). Razrješava DVOSMISLEN datum ("10/09/2026") i
+   * mjeri je li konačni datum u budućnosti.
+   */
+  receivedAt?: string | null;
 }
 
 
@@ -150,7 +156,25 @@ export function needsAiEnrichment(
   return ENRICHMENT_FIELDS.some((k) => isBlank(e[k]));
 }
 
+/**
+ * DATUM U BUDUĆNOSTI nije razlog za odbijanje — samo za upozorenje u pregledu.
+ * Zato se pali centralno, nad ishodom bilo koje grane hijerarhije.
+ */
 export async function classifyDocument(
+  input: ClassifyInput,
+  deps: ClassifyDeps,
+): Promise<ClassifyResult> {
+  const result = await runClassification(input, deps);
+  if (
+    hasFutureDate(result.extraction, input.receivedAt ?? null) &&
+    !result.warnings.includes(FUTURE_DATE_WARNING)
+  ) {
+    return { ...result, warnings: [...result.warnings, FUTURE_DATE_WARNING] };
+  }
+  return result;
+}
+
+async function runClassification(
   input: ClassifyInput,
   deps: ClassifyDeps,
 ): Promise<ClassifyResult> {
@@ -169,7 +193,7 @@ export async function classifyDocument(
       classification: 'racun',
       docType: String(docType),
       // PLOSNATI oblik — `mail_item_confirm` i UI čitaju `supplier_oib`, ne `supplier.oib`.
-      extraction: flattenUblExtraction(parsed),
+      extraction: flattenUblExtraction(parsed, { receivedAt: input.receivedAt }),
       confidence: 'visoka',
       route: 'ubl',
       aiCalls: 0,
@@ -322,6 +346,7 @@ export async function classifyDocument(
     let extraction = mergeDeterministic(
       knownOib ? { supplier_oib: knownOib } : null,
       deterministicFields,
+      { receivedAt: input.receivedAt },
     );
     let enrichCalls = 0;
 
@@ -334,6 +359,7 @@ export async function classifyDocument(
       extraction = mergeDeterministic(
         { ...(ai?.extraction ?? {}), ...stripNulls(extraction) },
         deterministicFields,
+        { receivedAt: input.receivedAt },
       );
       warnings.push('ai_dopuna');
     }
@@ -357,7 +383,7 @@ export async function classifyDocument(
     return {
       classification: 'nepoznato',
       docType: null,
-      extraction: mergeDeterministic(null, deterministicFields),
+      extraction: mergeDeterministic(null, deterministicFields, { receivedAt: input.receivedAt }),
       confidence: 'niska',
       route: 'nepoznato',
       aiCalls: 0,
@@ -378,7 +404,7 @@ export async function classifyDocument(
       return {
         classification: 'racun',
         docType: '380',
-        extraction: mergeDeterministic(ai.extraction, deterministicFields),
+        extraction: mergeDeterministic(ai.extraction, deterministicFields, { receivedAt: input.receivedAt }),
         confidence: 'niska',
         route: 'ai',
         aiCalls,
@@ -425,7 +451,7 @@ export async function classifyDocument(
     classification: ai.classification,
     docType: ai.classification === 'racun' ? '380' : null,
     // '' → null + determinizam pobjeđuje AI nagađanje.
-    extraction: mergeDeterministic(ai.extraction, deterministicFields),
+    extraction: mergeDeterministic(ai.extraction, deterministicFields, { receivedAt: input.receivedAt }),
     confidence: deterministic.ambiguous ? 'niska' : ai.confidence,
     route: 'ai',
     aiCalls,
