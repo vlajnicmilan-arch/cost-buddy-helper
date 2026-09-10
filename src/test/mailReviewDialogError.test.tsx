@@ -35,6 +35,11 @@ vi.mock('@/hooks/useBusinessProfiles', () => ({
   useBusinessProfiles: () => ({ profiles: [], loading: false, refetch: vi.fn() }),
 }));
 
+// Strani račun ide u trošak kroz `addExpense` — pisač se ovdje ne testira.
+vi.mock('@/hooks/useExpenses', () => ({
+  useExpenses: () => ({ addExpense: vi.fn() }),
+}));
+
 vi.mock('@/hooks/useMailReviewQueue', () => ({
   useMailReviewQueue: () => ({
     items: [
