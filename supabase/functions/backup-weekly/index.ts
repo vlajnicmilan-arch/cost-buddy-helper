@@ -479,6 +479,7 @@ async function sendBackupMail(
     errors: string[];
     incomplete?: boolean;
     incompleteReason?: string | null;
+    drive?: { text: string; html: string } | null;
   },
 ): Promise<{ ok: boolean; message_id?: string; error?: string }> {
   const messageId = crypto.randomUUID();
