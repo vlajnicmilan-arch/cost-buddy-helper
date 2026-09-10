@@ -19,7 +19,7 @@ import { useWalletViewMode } from '@/contexts/WalletViewModeContext';
 import { instantCache } from '@/lib/instantCache';
 import { useAppResume } from '@/hooks/useAppResume';
 import { EXPENSE_LIST_SELECT } from '@/lib/expenseColumns';
-import { planPageRanges, concatPagesInOrder } from '@/lib/expensePages';
+import { loadPagesInParallel } from '@/lib/expensePages';
 import { markExpensesSource } from '@/lib/expenseSourceMark';
 import { readExpenseSnapshot, writeExpenseSnapshot } from '@/lib/storage/expenseSnapshot';
 import { buildExpenseScopeFilter, belongsToMyScope, type ScopeContext } from '@/lib/expenseScope';
