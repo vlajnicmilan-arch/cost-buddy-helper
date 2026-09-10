@@ -7,6 +7,7 @@ import { CustomCategory } from '@/types/customCategory';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useModuleWriteGuard } from '@/hooks/useModuleWriteGuard';
 import { tr } from '@/lib/errorMessages';
+import { isSessionGone } from '@/lib/sessionGone';
 
 export const useCustomCategories = () => {
   const { t } = useTranslation();
@@ -44,6 +45,7 @@ export const useCustomCategories = () => {
       setCustomCategories((data || []) as CustomCategory[]);
     } catch (error) {
       console.error('Error fetching custom categories:', error);
+      if (await isSessionGone(user?.id)) return;
       showError(tr('errors.fetch.categories', 'Greška pri dohvaćanju prilagođenih kategorija'));
     } finally {
       setLoading(false);

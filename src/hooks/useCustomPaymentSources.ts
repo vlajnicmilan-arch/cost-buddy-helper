@@ -9,6 +9,7 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { tr } from '@/lib/errorMessages';
 import { instantCache } from '@/lib/instantCache';
 import { useAppResume } from '@/hooks/useAppResume';
+import { isSessionGone } from '@/lib/sessionGone';
 
 const paymentSourcesCacheKey = (
   userId: string | undefined,
@@ -257,6 +258,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       }
 
       console.error('Error fetching custom payment sources:', error);
+      if (await isSessionGone(user?.id)) return;
       showError(tr('errors.fetch.sources', 'Greška pri dohvaćanju prilagođenih izvora plaćanja'));
     } finally {
       if (!isStale()) setLoading(false);

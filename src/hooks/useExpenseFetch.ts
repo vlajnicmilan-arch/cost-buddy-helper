@@ -7,6 +7,7 @@ import { useStorage } from '@/contexts/StorageContext';
 import { showError, showSuccess, showWarning } from '@/hooks/useStatusFeedback';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { runWithTransientRetry, classifyFetchFailure } from '@/lib/expenseFetchRetry';
+import { isSessionGone, shouldWarnOnRetry } from '@/lib/sessionGone';
 
 import i18n from '@/i18n';
 import { detectAuthorOutcome } from '@/lib/krugAuthorOutcome';
@@ -202,7 +203,10 @@ export const useExpenseFetch = () => {
 
         const { result: allData, attempts } = await runWithTransientRetry(loadAllPages, {
           onRetry: (info, attempt) => {
-            if (info.kind === 'network' || info.kind === 'timeout') {
+            // Povratak iz pozadine na Androidu prekine zahtjev u tijeku iako
+            // internet radi — prvi pokušaj je tih dok je uređaj online.
+            const online = typeof navigator === 'undefined' ? true : navigator.onLine !== false;
+            if ((info.kind === 'network' || info.kind === 'timeout') && shouldWarnOnRetry(attempt, online)) {
               showWarning(tr('errors.fetch.retrying', 'Nema veze s internetom — pokušavam ponovno'));
             }
             logDiagnostic({
@@ -308,10 +312,28 @@ export const useExpenseFetch = () => {
         }
       }
       console.error('Error fetching expenses:', error);
+      const info = classifyFetchFailure(error);
+
+      // Odjava usred dohvata: preostali upit je otišao kao `anon` i RLS ga je
+      // odbio. To nije greška korisnika — bez poruke i bez error zapisa.
+      if (await isSessionGone(user?.id, { liveUserId: liveUserIdRef.current })) {
+        logDiagnostic({
+          event: 'expense_fetch_after_signout',
+          severity: 'info',
+          details: {
+            cause: info.kind,
+            http_status: info.status ?? null,
+            rows_so_far: fetchRowsRef.current,
+            duration_ms: fetchStartedAtRef.current ? Date.now() - fetchStartedAtRef.current : null,
+            message: info.message.slice(0, 200),
+          },
+        });
+        return;
+      }
+
       // Honest failure message: name the cause (network vs everything else)
       // only after the transient retries are exhausted. Cached rows stay
       // visible — we never clear `expenses` here.
-      const info = classifyFetchFailure(error);
       const isNetwork = info.kind === 'network' || info.kind === 'timeout';
       showError(
         isNetwork

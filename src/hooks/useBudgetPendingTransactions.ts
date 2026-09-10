@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAuthedFetchGate } from '@/hooks/useAuthedFetchGate';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
+import { isSessionGone } from '@/lib/sessionGone';
 
 export interface BudgetPendingTransaction {
   id: string;
@@ -91,6 +92,7 @@ export const useBudgetPendingTransactions = (budgetId: string | null) => {
       setPendingTransactions(transactions);
     } catch (error) {
       console.error('Error fetching pending budget transactions:', error);
+      if (await isSessionGone(user?.id)) return;
       showError(t('common.error'));
     } finally {
       setLoading(false);
