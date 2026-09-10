@@ -312,10 +312,28 @@ export const useExpenseFetch = () => {
         }
       }
       console.error('Error fetching expenses:', error);
+      const info = classifyFetchFailure(error);
+
+      // Odjava usred dohvata: preostali upit je otišao kao `anon` i RLS ga je
+      // odbio. To nije greška korisnika — bez poruke i bez error zapisa.
+      if (await isSessionGone(user?.id, { liveUserId: liveUserIdRef.current })) {
+        logDiagnostic({
+          event: 'expense_fetch_after_signout',
+          severity: 'info',
+          details: {
+            cause: info.kind,
+            http_status: info.status ?? null,
+            rows_so_far: fetchRowsRef.current,
+            duration_ms: fetchStartedAtRef.current ? Date.now() - fetchStartedAtRef.current : null,
+            message: info.message.slice(0, 200),
+          },
+        });
+        return;
+      }
+
       // Honest failure message: name the cause (network vs everything else)
       // only after the transient retries are exhausted. Cached rows stay
       // visible — we never clear `expenses` here.
-      const info = classifyFetchFailure(error);
       const isNetwork = info.kind === 'network' || info.kind === 'timeout';
       showError(
         isNetwork
