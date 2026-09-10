@@ -32,6 +32,7 @@ import { useBackButton } from '@/hooks/useBackButton';
 import { BACK_PRIORITY } from '@/contexts/BackButtonContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { markOnce, getMarks, claimHomeReadyReport, homeReadySeverity, computeLoadMs } from '@/lib/bootTiming';
+import { getExpensesSource } from '@/lib/expenseSourceMark';
 import { APP_VERSION } from '@/lib/version';
 
 import { useTranslation } from 'react-i18next';
