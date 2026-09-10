@@ -242,6 +242,7 @@ const Index = () => {
           t_auth: marks['auth_ready'] ?? null,
           t_subscription: marks['subscription_ready'] ?? null,
           t_expenses: marks['expenses_ready'] ?? null,
+          expenses_source: getExpensesSource(),
           t_brief_shown: tBriefShown,
           t_brief_dismissed: tBriefDismissed,
           t_js_boot: marks['js_boot'] ?? null,

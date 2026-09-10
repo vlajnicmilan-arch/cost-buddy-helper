@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect, useMemo, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
+import { clearExpenseSnapshots } from '@/lib/storage/expenseSnapshot';
 
 // ─── Avatar Mood ────────────────────────────────────────────────────────────
 export type AvatarMood = 'happy' | 'thinking' | 'worried' | 'proud' | 'neutral';
