@@ -48,10 +48,20 @@ export const PROD_APP_HOSTS: readonly string[] = (() => {
 export const isProdAppHost = (hostname: string): boolean =>
   PROD_APP_HOSTS.includes(hostname);
 
+/** Hostnames that serve the app itself rather than the marketing landing page.
+ * Derived from PROD_APP_HOSTS so the upcoming landing/app domain split does not
+ * introduce a new hardcoded literal. */
+export const APP_SUBDOMAIN_HOSTS: readonly string[] = PROD_APP_HOSTS.filter((h) =>
+  h.startsWith('app.'),
+);
+
+export const isAppHost = (hostname: string): boolean =>
+  APP_SUBDOMAIN_HOSTS.includes(hostname);
+
 /**
  * Whether the root `/` route should bypass the marketing landing page and go
  * straight to `/auth`. True only on production app hosts (e.g. app.vmbalance.com)
  * when no user is signed in. Installed/PWA users are handled separately.
  */
 export const shouldSkipLanding = (hostname: string, user: unknown): boolean =>
-  isProdAppHost(hostname) && !user;
+  isAppHost(hostname) && !user;
