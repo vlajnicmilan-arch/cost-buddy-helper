@@ -813,7 +813,7 @@ Deno.serve(async (req) => {
     );
 
     // Tijelo je neobavezno — cron zove funkciju bez njega.
-    let body: { folder?: string; continuation?: number } | null = null;
+    let body: { folder?: string; continuation?: number; phase?: string } | null = null;
     try {
       if (req.method === "POST") body = await req.json();
     } catch { /* prazno ili neispravno tijelo = prvo pokretanje */ }
@@ -823,6 +823,12 @@ Deno.serve(async (req) => {
     const folder = typeof body?.folder === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.folder)
       ? body.folder
       : today;
+
+    // Faza 'drive' radi samo prijenos već složene kopije — ništa se ne gradi ponovno.
+    if (body?.phase === "drive") {
+      return await runDrivePhase(supabase, folder, continuation, startedAt);
+    }
+
     const results: Array<{ table: string; rows: number; bytes: number; ok: boolean; error?: string }> = [];
     // Sadržaj za zip (isti bajtovi koji su otišli u mapu dana).
     const zipEntries: Record<string, Uint8Array> = {};
