@@ -15,6 +15,14 @@ import {
   zipEntryPath,
   type BackupFileRef,
 } from "../_shared/backupFilesZip.ts";
+import {
+  MAX_CONTINUATIONS,
+  decideMail,
+  incompleteReason,
+  isRunComplete,
+  parseContinuation,
+  shouldContinue,
+} from "../_shared/backupContinuation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -378,8 +386,14 @@ async function buildFilesZips(
   files: readonly BackupFileRef[],
   onError: (bucket: string, path: string, error: string) => void,
   deadlineMs: number,
-): Promise<{ parts: FilesZipPart[]; totalBytes: number; error: string | null; incomplete: boolean }> {
-  if (!files.length) return { parts: [], totalBytes: 0, error: null, incomplete: false };
+): Promise<{
+  parts: FilesZipPart[];
+  plannedParts: number;
+  totalBytes: number;
+  error: string | null;
+  incomplete: boolean;
+}> {
+  if (!files.length) return { parts: [], plannedParts: 0, totalBytes: 0, error: null, incomplete: false };
   const plan = planFileParts(files, MAX_PART_BYTES);
   const parts: FilesZipPart[] = [];
   let totalBytes = 0;
@@ -439,11 +453,11 @@ async function buildFilesZips(
         new TextEncoder().encode(JSON.stringify(filesManifest, null, 2)),
         { contentType: "application/json", upsert: true },
       );
-    return { parts, totalBytes, error: null, incomplete };
+    return { parts, plannedParts: plan.length, totalBytes, error: null, incomplete };
   } catch (e: any) {
     const msg = e?.message ?? String(e);
     console.error("[backup-weekly] files zip failed:", msg);
-    return { parts, totalBytes, error: msg, incomplete: true };
+    return { parts, plannedParts: plan.length, totalBytes, error: msg, incomplete: true };
   }
 }
 
@@ -463,11 +477,18 @@ async function sendBackupMail(
     signedUrl: string | null;
     fileParts: FilesZipPart[];
     errors: string[];
+    incomplete?: boolean;
+    incompleteReason?: string | null;
   },
 ): Promise<{ ok: boolean; message_id?: string; error?: string }> {
   const messageId = crypto.randomUUID();
   try {
-    const subject = `Centar — tjedna kopija ${info.folder}`;
+    const subject = info.incomplete
+      ? `NEPOTPUNA kopija — Centar ${info.folder}`
+      : `Centar — tjedna kopija ${info.folder}`;
+    const incompleteHtml = info.incomplete
+      ? `<p><strong>Kopija nije potpuna.</strong> ${(info.incompleteReason ?? "").replace(/[<>&]/g, "")}</p>`
+      : "";
     const errorsHtml = info.errors.length
       ? `<p><strong>Greške (${info.errors.length}):</strong></p><ul>${info.errors
           .map((e) => `<li>${e.replace(/[<>&]/g, "")}</li>`)
@@ -486,7 +507,8 @@ async function sendBackupMail(
           .join("")}</ul>`
       : "";
     const html = `<div style="font-family:Inter,Arial,sans-serif">
-      <h2>Tjedna kopija ${info.folder}</h2>
+      <h2>${info.incomplete ? "NEPOTPUNA kopija" : "Tjedna kopija"} ${info.folder}</h2>
+      ${incompleteHtml}
       <ul>
         <li>Tablica: ${info.tables}</li>
         <li>Redaka: ${info.rows}</li>
@@ -498,7 +520,8 @@ async function sendBackupMail(
       ${errorsHtml}
     </div>`;
     const text = [
-      `Tjedna kopija ${info.folder}`,
+      info.incomplete ? `NEPOTPUNA kopija ${info.folder}` : `Tjedna kopija ${info.folder}`,
+      ...(info.incomplete && info.incompleteReason ? [info.incompleteReason] : []),
       `Tablica: ${info.tables}`,
       `Redaka: ${info.rows}`,
       `Priloga u pretincu: ${info.files} (${fmtMB(info.fileBytes)})`,
@@ -571,8 +594,17 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Tijelo je neobavezno — cron zove funkciju bez njega.
+    let body: { folder?: string; continuation?: number } | null = null;
+    try {
+      if (req.method === "POST") body = await req.json();
+    } catch { /* prazno ili neispravno tijelo = prvo pokretanje */ }
+    const continuation = parseContinuation(body);
+
     const today = new Date().toISOString().slice(0, 10); // UTC YYYY-MM-DD
-    const folder = today;
+    const folder = typeof body?.folder === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.folder)
+      ? body.folder
+      : today;
     const results: Array<{ table: string; rows: number; bytes: number; ok: boolean; error?: string }> = [];
     // Sadržaj za zip (isti bajtovi koji su otišli u mapu dana).
     const zipEntries: Record<string, Uint8Array> = {};
@@ -690,17 +722,37 @@ Deno.serve(async (req) => {
       ...(zipError ? [`zip: ${zipError}`] : []),
       ...(filesZip.error ? [`zip datoteka: ${filesZip.error}`] : []),
     ];
-    const mail = await sendBackupMail(supabase, {
-      folder,
-      tables: results.length,
-      rows: totalRows,
-      files: storage.files.length,
-      fileBytes: storage.files.reduce((a, f) => a + f.size, 0),
-      zipBytes,
-      signedUrl,
-      fileParts: filesZip.parts,
-      errors: mailErrors,
-    });
+    const runState = {
+      filesZipIncomplete: filesZip.incomplete,
+      filesRemaining: storage.remaining,
+      continuation,
+    };
+    const complete = isRunComplete(runState);
+    const mailDecision = decideMail(runState);
+    const reason = mailDecision.send && mailDecision.incomplete
+      ? incompleteReason({
+          partsDone: filesZip.parts.length,
+          partsPlanned: filesZip.plannedParts,
+          filesRemaining: storage.remaining,
+        })
+      : null;
+
+    // Mail ide samo jednom po datumu — kad je sve potpuno ili kad su nastavci iscrpljeni.
+    const mail = mailDecision.send
+      ? await sendBackupMail(supabase, {
+          folder,
+          tables: results.length,
+          rows: totalRows,
+          files: storage.files.length,
+          fileBytes: storage.files.reduce((a, f) => a + f.size, 0),
+          zipBytes,
+          signedUrl,
+          fileParts: filesZip.parts,
+          errors: mailErrors,
+          incomplete: mailDecision.incomplete,
+          incompleteReason: reason,
+        })
+      : { ok: false, message_id: undefined as string | undefined, error: undefined as string | undefined };
 
 
     // Retencija: obriši foldere starije od 30 dana
@@ -723,10 +775,11 @@ Deno.serve(async (req) => {
     // Log rezultata
     await supabase.from("app_diagnostics_logs").insert({
       session_id: "cron-backup-weekly",
-      event: storage.partial ? "backup_weekly.partial" : "backup_weekly.completed",
-      severity: consecutivePartial >= 2 ? "error" : (failed.length || storage.partial) ? "warning" : "info",
+      event: complete ? "backup_weekly.completed" : "backup_weekly.partial",
+      severity: consecutivePartial >= 2 ? "error" : (failed.length || !complete) ? "warning" : "info",
       details: {
         folder,
+        continuation,
         total_rows: totalRows,
         total_bytes: totalBytes,
         tables_ok: results.length - failed.length,
@@ -748,17 +801,41 @@ Deno.serve(async (req) => {
         files_zip_bytes: filesZip.totalBytes,
         files_zip_error: filesZip.error,
         files_zip_incomplete: filesZip.incomplete,
+        files_zip_planned_parts: filesZip.plannedParts,
+        complete,
+        mail_sent: mailDecision.send,
+        mail_incomplete: mailDecision.send && mailDecision.incomplete,
         mail_ok: mail.ok,
         mail_message_id: mail.message_id,
+
 
         duration_ms: Date.now() - startedAt,
       },
     });
 
+    // Nepotpuno pokretanje samo pokreće sljedeće (fire-and-forget, najviše MAX_CONTINUATIONS).
+    const willContinue = shouldContinue(runState);
+    if (willContinue) {
+      const next = fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/backup-weekly`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ folder, continuation: continuation + 1 }),
+      }).catch((e) => console.error("[backup-weekly] continuation failed:", e?.message ?? e));
+      // @ts-ignore EdgeRuntime postoji u Supabase runtimeu
+      if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(next);
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         folder,
+        continuation,
+        complete,
+        will_continue: willContinue,
+        max_continuations: MAX_CONTINUATIONS,
         total_rows: totalRows,
         total_bytes: totalBytes,
         results,
