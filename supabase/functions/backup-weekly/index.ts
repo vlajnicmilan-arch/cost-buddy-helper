@@ -241,12 +241,15 @@ async function backupStorage(
   let partial = false;
   let remaining = 0;
 
-  for (const bucket of STORAGE_BUCKETS) {
+  for (const bucket of BACKUP_BUCKETS) {
     let objects: Array<{ path: string; size: number; updated_at: string | null }> = [];
     try {
       objects = await listBucketObjects(supabase, bucket);
     } catch (e: any) {
-      buckets.push({ bucket, files: 0, bytes: 0, error: e.message });
+      const msg = String(e?.message ?? e);
+      // Bucket koji ne postoji nije greška kopije — preskoči ga tiho.
+      if (/bucket not found/i.test(msg)) continue;
+      buckets.push({ bucket, files: 0, bytes: 0, error: msg });
       continue;
     }
     buckets.push({
