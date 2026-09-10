@@ -92,6 +92,9 @@ const Auth = () => {
   const formStartedRef = useRef(false);
   useEffect(() => {
     if (viewLoggedRef.current) return;
+    // Persist the ?src= landing attribution locally so it survives the
+    // landing/app domain split. Must happen before auth_page_viewed reads it.
+    recordLandingAuthSource(window.location.search);
     viewLoggedRef.current = true;
     const tab = resolveInitialAuthTab(
       window.location.search,
