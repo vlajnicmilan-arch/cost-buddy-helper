@@ -518,6 +518,7 @@ async function sendBackupMail(
       </ul>
       ${linkHtml}
       ${filesLinksHtml}
+      ${info.drive?.html ?? ""}
       ${errorsHtml}
     </div>`;
     const text = [
@@ -536,6 +537,7 @@ async function sendBackupMail(
             ),
           ]
         : []),
+      ...(info.drive?.text ? [info.drive.text] : []),
       info.errors.length ? `Greške:\n- ${info.errors.join("\n- ")}` : "Bez grešaka.",
     ].join("\n");
 
