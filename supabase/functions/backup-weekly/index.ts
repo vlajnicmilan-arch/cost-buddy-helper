@@ -23,6 +23,15 @@ import {
   parseContinuation,
   shouldContinue,
 } from "../_shared/backupContinuation.ts";
+import {
+  DRIVE_FOLDER_SETTING_KEY,
+  DRIVE_ROOT_FOLDER_NAME,
+  createDriveClient,
+  driveMailLine,
+  foldersToTrash,
+  planDriveUploads,
+  type DriveTarget,
+} from "../_shared/googleDrive.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
