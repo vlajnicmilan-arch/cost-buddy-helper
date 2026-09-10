@@ -6698,7 +6698,8 @@
       "vise_kandidata_sifra_mjesta": "Several possible billing point codes — none was used",
       "odrediste_ponuda": "Customer matched by name only — check the destination.",
       "nauceno_odbijanje": "You already dismissed messages like this from this sender — they no longer reach the review queue.",
-      "potvrda_uz_racun": "A payment receipt for this invoice arrived in the same message — the receipt is not entered as a separate invoice."
+      "potvrda_uz_racun": "A payment receipt for this invoice arrived in the same message — the receipt is not entered as a separate invoice.",
+      "datum_u_buducnosti": "The date is in the future — please check before confirming"
     },
     "field": {
       "supplierName": "Supplier",
@@ -6780,7 +6781,14 @@
       "receipt": "This is the payment receipt for invoice {{number}} from the same email — confirming links it to that invoice, no new one is created.",
       "invoice": "The same email also carried a payment receipt for invoice {{number}} — this is one obligation, not two invoices."
     },
-    "missingNumber": "This document has no number (in-app invoice, till receipt) — enter it anyway. Duplicate protection then works by supplier, date and amount."
+    "missingNumber": "This document has no number (in-app invoice, till receipt) — enter it anyway. Duplicate protection then works by supplier, date and amount.",
+    "foreignCurrency": {
+      "reason": "This invoice is in {{currency}} — incoming invoices support EUR only",
+      "saveAsExpense": "Save as expense",
+      "saved": "Saved as an expense",
+      "failed": "Saving the expense failed: {{reason}}",
+      "missingAmount": "No amount — enter it before saving"
+    }
   },
   "documents": {
     "title": "Documents",
