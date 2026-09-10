@@ -425,6 +425,8 @@ async function buildFilesZips(
     const filesManifest = {
       created_at: new Date().toISOString(),
       folder,
+      planned_parts: plan.length,
+      complete: !incomplete,
       parts: parts.map((p) => ({ part: p.part, name: p.name, bytes: p.bytes, files: p.files })),
       files: buildFilesManifest(plan),
     };
@@ -435,11 +437,11 @@ async function buildFilesZips(
         new TextEncoder().encode(JSON.stringify(filesManifest, null, 2)),
         { contentType: "application/json", upsert: true },
       );
-    return { parts, totalBytes, error: null };
+    return { parts, totalBytes, error: null, incomplete };
   } catch (e: any) {
     const msg = e?.message ?? String(e);
     console.error("[backup-weekly] files zip failed:", msg);
-    return { parts, totalBytes, error: msg };
+    return { parts, totalBytes, error: msg, incomplete: true };
   }
 }
 
