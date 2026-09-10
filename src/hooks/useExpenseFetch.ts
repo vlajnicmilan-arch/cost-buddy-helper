@@ -296,6 +296,8 @@ export const useExpenseFetch = () => {
         }));
         setExpenses(mapped);
         instantCache.write(cacheKey, mapped);
+        markExpensesSource('network');
+        void writeExpenseSnapshot(user.id, mapped);
 
       }
     } catch (error) {
@@ -342,6 +344,8 @@ export const useExpenseFetch = () => {
             }));
             setExpenses(mappedRetry);
             instantCache.write(cacheKey, mappedRetry);
+            markExpensesSource('network');
+            void writeExpenseSnapshot(user!.id, mappedRetry);
             hydratedKeyRef.current = cacheKey;
             setLoading(false);
             return;
