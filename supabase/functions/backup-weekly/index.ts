@@ -438,6 +438,7 @@ async function sendBackupMail(
     fileBytes: number;
     zipBytes: number;
     signedUrl: string | null;
+    fileParts: FilesZipPart[];
     errors: string[];
   },
 ): Promise<{ ok: boolean; message_id?: string; error?: string }> {
@@ -452,6 +453,15 @@ async function sendBackupMail(
     const linkHtml = info.signedUrl
       ? `<p><a href="${info.signedUrl}">Preuzmi ${`centar-backup-${info.folder}.zip`}</a> (link vrijedi ${SIGNED_URL_DAYS} dana)</p>`
       : `<p><strong>Zip nije dostupan za preuzimanje</strong> — vidi greške ispod.</p>`;
+    const filesLinksHtml = info.fileParts.length
+      ? `<p><strong>Datoteke (${info.fileParts.length} ${info.fileParts.length === 1 ? "dio" : "dijela"}):</strong></p><ul>${info.fileParts
+          .map((p) =>
+            p.signedUrl
+              ? `<li><a href="${p.signedUrl}">${p.name}</a> — ${fmtMB(p.bytes)}</li>`
+              : `<li>${p.name} — ${fmtMB(p.bytes)} (link nije dostupan)</li>`,
+          )
+          .join("")}</ul>`
+      : "";
     const html = `<div style="font-family:Inter,Arial,sans-serif">
       <h2>Tjedna kopija ${info.folder}</h2>
       <ul>
@@ -461,6 +471,7 @@ async function sendBackupMail(
         <li>Veličina zipa: ${fmtMB(info.zipBytes)}</li>
       </ul>
       ${linkHtml}
+      ${filesLinksHtml}
       ${errorsHtml}
     </div>`;
     const text = [
@@ -470,6 +481,14 @@ async function sendBackupMail(
       `Priloga u pretincu: ${info.files} (${fmtMB(info.fileBytes)})`,
       `Veličina zipa: ${fmtMB(info.zipBytes)}`,
       info.signedUrl ? `Preuzimanje (${SIGNED_URL_DAYS} dana): ${info.signedUrl}` : "Zip nije dostupan za preuzimanje.",
+      ...(info.fileParts.length
+        ? [
+            `Datoteke (${info.fileParts.length}):`,
+            ...info.fileParts.map(
+              (p) => `- ${p.name} (${fmtMB(p.bytes)}): ${p.signedUrl ?? "link nije dostupan"}`,
+            ),
+          ]
+        : []),
       info.errors.length ? `Greške:\n- ${info.errors.join("\n- ")}` : "Bez grešaka.",
     ].join("\n");
 
