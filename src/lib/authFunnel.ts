@@ -48,6 +48,26 @@ export const readAuthEntry = (): AuthEntryAttribution => {
   }
 };
 
+const VALID_AUTH_SOURCES = new Set(['home', 'projekti']);
+
+/**
+ * Record the landing source from the `?src=` query parameter when arriving at
+ * `/auth`. This survives the upcoming landing/app domain split because the
+ * value is written into sessionStorage from the app host itself, not carried
+ * across domains. Unknown values are ignored; missing value is a no-op.
+ * Pure side-effect — unit tested via sessionStorage mock.
+ */
+export const recordLandingAuthSource = (search: string): void => {
+  try {
+    const src = new URLSearchParams(search || '').get('src');
+    if (!src || !VALID_AUTH_SOURCES.has(src)) return;
+    const path = src === 'projekti' ? '/projekti' : '/';
+    rememberAuthEntry(`landing_${src}`, path);
+  } catch {
+    /* noop — must never block auth */
+  }
+};
+
 const EMAIL_RE = /[\w.+-]+@[\w-]+\.[\w.-]+/g;
 
 /**
