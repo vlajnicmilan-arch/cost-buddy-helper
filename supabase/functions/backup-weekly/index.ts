@@ -678,6 +678,8 @@ Deno.serve(async (req) => {
       folder,
       storage.files.map((f) => ({ bucket: f.bucket, path: f.path, size: f.size, stored_at: f.stored_at })),
       (bucket, path, error) => storage.errors.push({ bucket, path, error }),
+      // Ostatak vremena izvođenja: preostali dijelovi idu u sljedeće pokretanje.
+      startedAt + FILES_ZIP_BUDGET_MS,
     );
 
     const mailErrors = [
