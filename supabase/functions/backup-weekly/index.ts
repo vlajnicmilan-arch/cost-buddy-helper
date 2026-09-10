@@ -1031,10 +1031,11 @@ Deno.serve(async (req) => {
         files_zip_incomplete: filesZip.incomplete,
         files_zip_planned_parts: filesZip.plannedParts,
         complete,
-        mail_sent: mailDecision.send,
-        mail_incomplete: mailDecision.send && mailDecision.incomplete,
+        mail_sent: sendIncompleteMailNow,
+        mail_incomplete: sendIncompleteMailNow,
         mail_ok: mail.ok,
         mail_message_id: mail.message_id,
+        drive_handoff: handOffToDrive,
 
 
         duration_ms: Date.now() - startedAt,
@@ -1044,17 +1045,12 @@ Deno.serve(async (req) => {
     // Nepotpuno pokretanje samo pokreće sljedeće (fire-and-forget, najviše MAX_CONTINUATIONS).
     const willContinue = shouldContinue(runState);
     if (willContinue) {
-      const next = fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/backup-weekly`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ folder, continuation: continuation + 1 }),
-      }).catch((e) => console.error("[backup-weekly] continuation failed:", e?.message ?? e));
-      // @ts-ignore EdgeRuntime postoji u Supabase runtimeu
-      if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(next);
+      scheduleContinuation({ folder, continuation: continuation + 1 });
+    } else if (handOffToDrive) {
+      // Kopija je potpuna → faza 'drive' (ona šalje mail).
+      scheduleContinuation({ folder, phase: "drive", continuation: 0 });
     }
+
 
     return new Response(
       JSON.stringify({
