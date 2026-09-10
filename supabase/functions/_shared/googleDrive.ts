@@ -57,14 +57,19 @@ export function foldersToTrash(
   return sorted.slice(keep);
 }
 
+export type DriveMailInfo = {
+  ok: boolean;
+  folder?: string;
+  files?: number;
+  bytes?: number;
+  webViewLink?: string | null;
+  error?: string;
+};
+
 /** Redak o Drive kopiji u mailu (uspjeh ili jasna napomena o neuspjehu). */
-export function driveMailLine(
-  info:
-    | { ok: true; folder: string; files: number; bytes: number; webViewLink: string | null }
-    | { ok: false; error: string },
-): { text: string; html: string } {
+export function driveMailLine(info: DriveMailInfo): { text: string; html: string } {
   if (!info.ok) {
-    const reason = String(info.error).replace(/[<>&]/g, "");
+    const reason = String(info.error ?? "nepoznat razlog").replace(/[<>&]/g, "");
     return {
       text: `Drive NIJE uspio: ${reason}`,
       html: `<p><strong>Drive NIJE uspio:</strong> ${reason}</p>`,
