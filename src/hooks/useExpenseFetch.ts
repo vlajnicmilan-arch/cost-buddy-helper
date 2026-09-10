@@ -7,6 +7,7 @@ import { useStorage } from '@/contexts/StorageContext';
 import { showError, showSuccess, showWarning } from '@/hooks/useStatusFeedback';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { runWithTransientRetry, classifyFetchFailure } from '@/lib/expenseFetchRetry';
+import { isSessionGone, shouldWarnOnRetry } from '@/lib/sessionGone';
 
 import i18n from '@/i18n';
 import { detectAuthorOutcome } from '@/lib/krugAuthorOutcome';
@@ -202,7 +203,10 @@ export const useExpenseFetch = () => {
 
         const { result: allData, attempts } = await runWithTransientRetry(loadAllPages, {
           onRetry: (info, attempt) => {
-            if (info.kind === 'network' || info.kind === 'timeout') {
+            // Povratak iz pozadine na Androidu prekine zahtjev u tijeku iako
+            // internet radi — prvi pokušaj je tih dok je uređaj online.
+            const online = typeof navigator === 'undefined' ? true : navigator.onLine !== false;
+            if ((info.kind === 'network' || info.kind === 'timeout') && shouldWarnOnRetry(attempt, online)) {
               showWarning(tr('errors.fetch.retrying', 'Nema veze s internetom — pokušavam ponovno'));
             }
             logDiagnostic({
