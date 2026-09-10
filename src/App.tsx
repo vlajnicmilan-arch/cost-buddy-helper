@@ -39,6 +39,7 @@ import { DiagnosticRouteTracker } from "@/components/DiagnosticRouteTracker";
 
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { isPublicRoute } from "@/lib/publicRoutes";
+import { shouldSkipLanding } from "@/lib/appOrigin";
 import { BRIEF_GATE_ENABLED } from "@/lib/featureFlags";
 import { isGateCandidate, isUserDisabled, readLastShown } from "@/lib/briefGate";
 import { logGateSkip } from "@/lib/brief/gateSkipLog";
