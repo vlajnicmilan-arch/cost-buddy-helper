@@ -375,20 +375,38 @@ async function buildFilesZips(
   folder: string,
   files: readonly BackupFileRef[],
   onError: (bucket: string, path: string, error: string) => void,
-): Promise<{ parts: FilesZipPart[]; totalBytes: number; error: string | null }> {
-  if (!files.length) return { parts: [], totalBytes: 0, error: null };
+  deadlineMs: number,
+): Promise<{ parts: FilesZipPart[]; totalBytes: number; error: string | null; incomplete: boolean }> {
+  if (!files.length) return { parts: [], totalBytes: 0, error: null, incomplete: false };
   const plan = planFileParts(files, MAX_PART_BYTES);
   const parts: FilesZipPart[] = [];
   let totalBytes = 0;
+  let incomplete = false;
+
+  // Dijelovi već složeni u ranijem pokretanju istog dana — ne gradi ih ponovno.
+  const existing = new Map<string, number>();
+  try {
+    const { data: listed } = await supabase.storage.from("backups").list(folder, { limit: 1000 });
+    for (const o of listed ?? []) {
+      const size = Number((o as any)?.metadata?.size ?? 0);
+      if (o?.name?.startsWith("centar-files-") && size > 0) existing.set(o.name, size);
+    }
+  } catch { /* popis nije nužan */ }
+
   try {
     for (let i = 0; i < plan.length; i++) {
       const name = filesZipName(folder, i + 1);
       const path = `${folder}/${name}`;
-      const zipped = await buildZipPart(supabase, plan[i], onError);
-      const { error: upErr } = await supabase.storage
-        .from("backups")
-        .upload(path, zipped, { contentType: "application/zip", upsert: true });
-      if (upErr) throw new Error(upErr.message);
+      let bytes = existing.get(name) ?? 0;
+      if (!bytes) {
+        if (Date.now() > deadlineMs) { incomplete = true; break; }
+        const zipped = await buildZipPart(supabase, plan[i], onError);
+        const { error: upErr } = await supabase.storage
+          .from("backups")
+          .upload(path, zipped, { contentType: "application/zip", upsert: true });
+        if (upErr) throw new Error(upErr.message);
+        bytes = zipped.byteLength;
+      }
       const { data: signed } = await supabase.storage
         .from("backups")
         .createSignedUrl(path, SIGNED_URL_DAYS * 86400);
@@ -396,12 +414,13 @@ async function buildFilesZips(
         part: i + 1,
         name,
         path,
-        bytes: zipped.byteLength,
+        bytes,
         files: plan[i].length,
         signedUrl: signed?.signedUrl ?? null,
       });
-      totalBytes += zipped.byteLength;
+      totalBytes += bytes;
     }
+
 
     const filesManifest = {
       created_at: new Date().toISOString(),
