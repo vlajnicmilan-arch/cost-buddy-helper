@@ -20,7 +20,7 @@ import { loadCampaign, mergeCampaign, readCampaignFromParams } from '@/lib/paywa
 import { Sparkles } from 'lucide-react';
 
 import i18n from '@/i18n';
-import { readAuthEntry, sanitizeAuthError, resolveInitialAuthTab } from '@/lib/authFunnel';
+import { readAuthEntry, recordLandingAuthSource, sanitizeAuthError, resolveInitialAuthTab } from '@/lib/authFunnel';
 import { resolveSignupIntent } from '@/lib/signupIntent';
 import { detectEmbeddedBrowser } from '@/lib/embeddedBrowser';
 import { startVerificationAutoLogin } from '@/lib/verificationAutoLogin';
