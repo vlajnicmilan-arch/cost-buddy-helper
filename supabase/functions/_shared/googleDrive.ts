@@ -75,8 +75,8 @@ export function driveMailLine(info: DriveMailInfo): { text: string; html: string
       html: `<p><strong>Drive NIJE uspio:</strong> ${reason}</p>`,
     };
   }
-  const mb = `${(info.bytes / (1024 * 1024)).toFixed(1)} MB`;
-  const label = `Kopija na Google Driveu: ${DRIVE_ROOT_FOLDER_NAME}/${info.folder} — ${info.files} datoteka, ${mb}`;
+  const mb = `${((info.bytes ?? 0) / (1024 * 1024)).toFixed(1)} MB`;
+  const label = `Kopija na Google Driveu: ${DRIVE_ROOT_FOLDER_NAME}/${info.folder ?? ""} — ${info.files ?? 0} datoteka, ${mb}`;
   return {
     text: info.webViewLink ? `${label}\n${info.webViewLink}` : label,
     html: info.webViewLink
