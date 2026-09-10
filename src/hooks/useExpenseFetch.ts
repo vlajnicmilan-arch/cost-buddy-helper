@@ -434,9 +434,24 @@ export const useExpenseFetch = () => {
         date: e.date instanceof Date ? e.date : new Date(e.date as unknown as string),
       })));
       setLoading(false);
+      markExpensesSource('session');
       hydratedKeyRef.current = key;
     } else {
       hydratedKeyRef.current = null;
+      // Hladno otvaranje: sessionStorage snimke nema, ali trajna (IndexedDB)
+      // može postojati — crtamo odmah, puni dohvat ide u pozadini.
+      const userId = user.id;
+      let cancelled = false;
+      void (async () => {
+        const snapshot = await readExpenseSnapshot<Expense>(userId);
+        if (cancelled || !snapshot || snapshot.length === 0) return;
+        if (hydratedKeyRef.current === key) return;
+        setExpenses(snapshot);
+        setLoading(false);
+        markExpensesSource('idb');
+        hydratedKeyRef.current = key;
+      })();
+      return () => { cancelled = true; };
     }
   }, [user?.id, isLocalMode]);
 
