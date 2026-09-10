@@ -23,6 +23,15 @@ import {
   parseContinuation,
   shouldContinue,
 } from "../_shared/backupContinuation.ts";
+import {
+  DRIVE_FOLDER_SETTING_KEY,
+  DRIVE_ROOT_FOLDER_NAME,
+  createDriveClient,
+  driveMailLine,
+  foldersToTrash,
+  planDriveUploads,
+  type DriveTarget,
+} from "../_shared/googleDrive.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -479,6 +488,7 @@ async function sendBackupMail(
     errors: string[];
     incomplete?: boolean;
     incompleteReason?: string | null;
+    drive?: { text: string; html: string } | null;
   },
 ): Promise<{ ok: boolean; message_id?: string; error?: string }> {
   const messageId = crypto.randomUUID();
@@ -517,6 +527,7 @@ async function sendBackupMail(
       </ul>
       ${linkHtml}
       ${filesLinksHtml}
+      ${info.drive?.html ?? ""}
       ${errorsHtml}
     </div>`;
     const text = [
@@ -535,6 +546,7 @@ async function sendBackupMail(
             ),
           ]
         : []),
+      ...(info.drive?.text ? [info.drive.text] : []),
       info.errors.length ? `Greške:\n- ${info.errors.join("\n- ")}` : "Bez grešaka.",
     ].join("\n");
 
@@ -583,6 +595,212 @@ async function sendBackupMail(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Faza 'drive' — kopija na vlasnikov Google Drive (nakon potpune kopije)
+// ---------------------------------------------------------------------------
+
+const DRIVE_BUDGET_MS = 100_000;
+
+function driveMime(name: string): string {
+  if (name.endsWith(".zip")) return "application/zip";
+  if (name.endsWith(".json")) return "application/json";
+  return "application/octet-stream";
+}
+
+async function readSetting(supabase: any, key: string): Promise<string | null> {
+  const { data } = await supabase.from("app_settings").select("value").eq("key", key).maybeSingle();
+  const v = data?.value;
+  if (typeof v === "string") return v;
+  if (v && typeof v === "object" && typeof (v as any).id === "string") return (v as any).id;
+  return null;
+}
+
+async function writeSetting(supabase: any, key: string, value: string): Promise<void> {
+  await supabase.from("app_settings").upsert(
+    { key, value, updated_at: new Date().toISOString() },
+    { onConflict: "key" },
+  );
+}
+
+/** Datoteke dana koje idu na Drive (zip tablica, dijelovi datoteka, manifesti). */
+async function collectDriveTargets(supabase: any, folder: string): Promise<DriveTarget[]> {
+  const { data, error } = await supabase.storage.from("backups").list(folder, { limit: 1000 });
+  if (error) throw new Error(`popis mape ${folder}: ${error.message}`);
+  const wanted: DriveTarget[] = [];
+  for (const o of data ?? []) {
+    const name: string = o?.name ?? "";
+    const keep =
+      name === `centar-backup-${folder}.zip` ||
+      /^centar-files-\d{4}-\d{2}-\d{2}-\d+\.zip$/.test(name) ||
+      name === "files-manifest.json" ||
+      name === "manifest.json";
+    if (!keep) continue;
+    wanted.push({ name, size: Number(o?.metadata?.size ?? 0), path: `${folder}/${name}` });
+  }
+  return wanted.sort((a, b) => (a.name < b.name ? -1 : 1));
+}
+
+/** Podaci za mail složeni iz već postojeće kopije (ništa se ne gradi ponovno). */
+async function mailInfoFromStorage(supabase: any, folder: string) {
+  const manifest = await readManifest(supabase, folder);
+  const targets = await collectDriveTargets(supabase, folder);
+  const zipName = `centar-backup-${folder}.zip`;
+  const zipEntry = targets.find((t) => t.name === zipName);
+  const { data: zipSigned } = await supabase.storage
+    .from("backups")
+    .createSignedUrl(`${folder}/${zipName}`, SIGNED_URL_DAYS * 86400);
+  const fileParts: FilesZipPart[] = [];
+  for (const t of targets.filter((x) => x.name.startsWith("centar-files-"))) {
+    const { data: signed } = await supabase.storage
+      .from("backups")
+      .createSignedUrl(t.path, SIGNED_URL_DAYS * 86400);
+    const part = Number(t.name.match(/-(\d+)\.zip$/)?.[1] ?? 0);
+    fileParts.push({
+      part,
+      name: t.name,
+      path: t.path,
+      bytes: t.size,
+      files: 0,
+      signedUrl: signed?.signedUrl ?? null,
+    });
+  }
+  fileParts.sort((a, b) => a.part - b.part);
+  return {
+    folder,
+    tables: Number(manifest?.totals?.tables ?? 0),
+    rows: Number(manifest?.totals?.rows ?? 0),
+    files: Number(manifest?.totals?.files ?? 0),
+    fileBytes: Number(manifest?.totals?.file_bytes ?? 0),
+    zipBytes: zipEntry?.size ?? 0,
+    signedUrl: zipSigned?.signedUrl ?? null,
+    fileParts,
+    errors: ((manifest?.errors ?? []) as any[]).slice(0, 20).map((e) =>
+      `${e.kind ?? "greška"} ${e.table ?? `${e.bucket ?? ""}/${e.path ?? ""}`}: ${e.error ?? ""}`,
+    ),
+  };
+}
+
+function scheduleContinuation(payload: Record<string, unknown>) {
+  const next = fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/backup-weekly`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  }).catch((e) => console.error("[backup-weekly] continuation failed:", e?.message ?? e));
+  // @ts-ignore EdgeRuntime postoji u Supabase runtimeu
+  if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(next);
+}
+
+async function runDrivePhase(supabase: any, folder: string, continuation: number, startedAt: number) {
+  const drive = createDriveClient();
+  let uploaded = 0;
+  let uploadedBytes = 0;
+  let skipped = 0;
+  let folderId: string | null = null;
+  let webViewLink: string | null = null;
+  let driveError: string | null = null;
+  let remaining = 0;
+  let trashed: string[] = [];
+
+  try {
+    // Korijenska mapa — id iz app_settings, uz provjeru da još postoji.
+    let rootId = await readSetting(supabase, DRIVE_FOLDER_SETTING_KEY);
+    if (rootId && !(await drive.folderUsable(rootId))) rootId = null;
+    if (!rootId) {
+      rootId = await drive.ensureFolder(DRIVE_ROOT_FOLDER_NAME);
+      await writeSetting(supabase, DRIVE_FOLDER_SETTING_KEY, rootId);
+    }
+
+    folderId = await drive.ensureFolder(folder, rootId);
+    webViewLink = await drive.folderLink(folderId);
+
+    const targets = await collectDriveTargets(supabase, folder);
+    const existing = await drive.listFolder(folderId);
+    const plan = planDriveUploads(existing, targets);
+    skipped = plan.skipped.length;
+
+    for (const t of plan.upload) {
+      if (Date.now() - startedAt > DRIVE_BUDGET_MS) {
+        remaining = plan.upload.length - uploaded;
+        break;
+      }
+      await drive.uploadFromStorage(supabase, "backups", t.path, t.name, folderId, t.size, driveMime(t.name));
+      uploaded++;
+      uploadedBytes += t.size;
+    }
+    if (uploaded < plan.upload.length && remaining === 0) remaining = plan.upload.length - uploaded;
+
+    if (remaining === 0) {
+      // Retencija na Driveu: zadnjih 8 datumskih mapa.
+      const children = await drive.listFolder(rootId);
+      for (const f of foldersToTrash(children.map((c) => ({ id: c.id, name: c.name })))) {
+        await drive.trashFile(f.id);
+        trashed.push(f.name);
+      }
+    }
+  } catch (e: any) {
+    driveError = e?.message ?? String(e);
+    console.error("[backup-weekly] drive phase failed:", driveError);
+  }
+
+  const failedNow = Boolean(driveError) || remaining > 0;
+  const exhausted = continuation >= MAX_CONTINUATIONS;
+  const willContinue = failedNow && !exhausted;
+
+  let mail: { ok: boolean; message_id?: string; error?: string } = { ok: false };
+  if (!failedNow || exhausted) {
+    const info = await mailInfoFromStorage(supabase, folder);
+    const driveLine = failedNow
+      ? driveMailLine({ ok: false, error: driveError ?? `preostalo ${remaining} datoteka nakon ${MAX_CONTINUATIONS} nastavaka` })
+      : driveMailLine({
+          ok: true,
+          folder,
+          files: uploaded + skipped,
+          bytes: uploadedBytes,
+          webViewLink,
+        });
+    mail = await sendBackupMail(supabase, { ...info, drive: driveLine });
+  }
+
+  const details = {
+    folder,
+    phase: "drive",
+    continuation,
+    drive_uploaded_files: uploaded,
+    drive_uploaded_bytes: uploadedBytes,
+    drive_skipped_files: skipped,
+    drive_folder_id: folderId,
+    drive_error: driveError,
+    drive_remaining: remaining,
+    drive_trashed_folders: trashed,
+    will_continue: willContinue,
+    mail_sent: !failedNow || exhausted,
+    mail_ok: mail.ok,
+    mail_message_id: mail.message_id,
+    duration_ms: Date.now() - startedAt,
+  };
+
+  await supabase.from("app_diagnostics_logs").insert({
+    session_id: "cron-backup-weekly",
+    event: failedNow && exhausted
+      ? "backup_weekly.drive_failed"
+      : failedNow
+        ? "backup_weekly.drive_partial"
+        : "backup_weekly.drive_completed",
+    severity: failedNow ? (exhausted ? "error" : "warning") : "info",
+    details,
+  });
+
+  if (willContinue) scheduleContinuation({ folder, phase: "drive", continuation: continuation + 1 });
+
+  return new Response(JSON.stringify({ success: !failedNow, ...details }), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    status: 200,
+  });
+}
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -595,7 +813,7 @@ Deno.serve(async (req) => {
     );
 
     // Tijelo je neobavezno — cron zove funkciju bez njega.
-    let body: { folder?: string; continuation?: number } | null = null;
+    let body: { folder?: string; continuation?: number; phase?: string } | null = null;
     try {
       if (req.method === "POST") body = await req.json();
     } catch { /* prazno ili neispravno tijelo = prvo pokretanje */ }
@@ -605,6 +823,12 @@ Deno.serve(async (req) => {
     const folder = typeof body?.folder === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.folder)
       ? body.folder
       : today;
+
+    // Faza 'drive' radi samo prijenos već složene kopije — ništa se ne gradi ponovno.
+    if (body?.phase === "drive") {
+      return await runDrivePhase(supabase, folder, continuation, startedAt);
+    }
+
     const results: Array<{ table: string; rows: number; bytes: number; ok: boolean; error?: string }> = [];
     // Sadržaj za zip (isti bajtovi koji su otišli u mapu dana).
     const zipEntries: Record<string, Uint8Array> = {};
@@ -737,8 +961,11 @@ Deno.serve(async (req) => {
         })
       : null;
 
-    // Mail ide samo jednom po datumu — kad je sve potpuno ili kad su nastavci iscrpljeni.
-    const mail = mailDecision.send
+    // Mail za potpunu kopiju šalje TEK faza 'drive'. Ovdje ide samo mail
+    // "NEPOTPUNA kopija" kad su nastavci iscrpljeni.
+    const sendIncompleteMailNow = mailDecision.send && mailDecision.incomplete === true;
+    const handOffToDrive = mailDecision.send && !mailDecision.incomplete;
+    const mail = sendIncompleteMailNow
       ? await sendBackupMail(supabase, {
           folder,
           tables: results.length,
@@ -749,10 +976,11 @@ Deno.serve(async (req) => {
           signedUrl,
           fileParts: filesZip.parts,
           errors: mailErrors,
-          incomplete: mailDecision.incomplete,
+          incomplete: true,
           incompleteReason: reason,
         })
       : { ok: false, message_id: undefined as string | undefined, error: undefined as string | undefined };
+
 
 
     // Retencija: obriši foldere starije od 30 dana
@@ -803,10 +1031,11 @@ Deno.serve(async (req) => {
         files_zip_incomplete: filesZip.incomplete,
         files_zip_planned_parts: filesZip.plannedParts,
         complete,
-        mail_sent: mailDecision.send,
-        mail_incomplete: mailDecision.send && mailDecision.incomplete,
+        mail_sent: sendIncompleteMailNow,
+        mail_incomplete: sendIncompleteMailNow,
         mail_ok: mail.ok,
         mail_message_id: mail.message_id,
+        drive_handoff: handOffToDrive,
 
 
         duration_ms: Date.now() - startedAt,
@@ -816,17 +1045,12 @@ Deno.serve(async (req) => {
     // Nepotpuno pokretanje samo pokreće sljedeće (fire-and-forget, najviše MAX_CONTINUATIONS).
     const willContinue = shouldContinue(runState);
     if (willContinue) {
-      const next = fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/backup-weekly`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ folder, continuation: continuation + 1 }),
-      }).catch((e) => console.error("[backup-weekly] continuation failed:", e?.message ?? e));
-      // @ts-ignore EdgeRuntime postoji u Supabase runtimeu
-      if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(next);
+      scheduleContinuation({ folder, continuation: continuation + 1 });
+    } else if (handOffToDrive) {
+      // Kopija je potpuna → faza 'drive' (ona šalje mail).
+      scheduleContinuation({ folder, phase: "drive", continuation: 0 });
     }
+
 
     return new Response(
       JSON.stringify({
