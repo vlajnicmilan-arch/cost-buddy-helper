@@ -670,6 +670,7 @@ async function processMessage(
 
     const input: ClassifyInput = {
       userClassification,
+      receivedAt: (msg.received_at as string | null) ?? null,
       sniffed,
       xml,
       fromHeader: msg.from_header as string | null,

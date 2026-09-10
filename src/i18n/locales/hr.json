@@ -6711,7 +6711,8 @@
       "vise_kandidata_sifra_mjesta": "Više mogućih šifri obračunskog mjesta — nije upisana",
       "odrediste_ponuda": "Kupac je prepoznat samo po nazivu — provjeri odredište.",
       "nauceno_odbijanje": "Ovakve poruke od ovog pošiljatelja si već odbacio — ubuduće ne dolaze na pregled.",
-      "potvrda_uz_racun": "Uz ovaj račun stigla je i potvrda plaćanja iz iste poruke — potvrda se ne unosi kao zaseban račun."
+      "potvrda_uz_racun": "Uz ovaj račun stigla je i potvrda plaćanja iz iste poruke — potvrda se ne unosi kao zaseban račun.",
+      "datum_u_buducnosti": "Datum je u budućnosti — provjeri prije potvrde"
     },
     "field": {
       "supplierName": "Dobavljač",
@@ -6793,7 +6794,14 @@
       "receipt": "Ovo je potvrda plaćanja za račun {{number}} iz iste poruke — potvrdom se veže na taj račun, novi se ne stvara.",
       "invoice": "Iz iste poruke stigla je i potvrda plaćanja za račun {{number}} — riječ je o jednoj obvezi, ne o dva računa."
     },
-    "missingNumber": "Ovaj dokument nema broj (račun iz aplikacije, blagajnički isječak) — svejedno unesi. Zaštita od dvostrukog unosa tada radi po dobavljaču, datumu i iznosu."
+    "missingNumber": "Ovaj dokument nema broj (račun iz aplikacije, blagajnički isječak) — svejedno unesi. Zaštita od dvostrukog unosa tada radi po dobavljaču, datumu i iznosu.",
+    "foreignCurrency": {
+      "reason": "Račun je u {{currency}} — ulazni računi podržavaju samo EUR",
+      "saveAsExpense": "Spremi kao trošak",
+      "saved": "Spremljeno kao trošak",
+      "failed": "Spremanje troška nije uspjelo: {{reason}}",
+      "missingAmount": "Nema iznosa — upiši ga prije spremanja"
+    }
   },
   "documents": {
     "title": "Dokumenti",

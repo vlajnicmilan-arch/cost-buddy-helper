@@ -6698,7 +6698,8 @@
       "vise_kandidata_sifra_mjesta": "Mehrere mögliche Abrechnungsstellen-Codes — keiner übernommen",
       "odrediste_ponuda": "Kunde nur über den Namen erkannt — Ziel prüfen.",
       "nauceno_odbijanje": "Solche Nachrichten dieses Absenders hast du bereits verworfen — sie erscheinen nicht mehr zur Prüfung.",
-      "potvrda_uz_racun": "Zu dieser Rechnung kam in derselben Nachricht ein Zahlungsbeleg — der Beleg wird nicht als eigene Rechnung erfasst."
+      "potvrda_uz_racun": "Zu dieser Rechnung kam in derselben Nachricht ein Zahlungsbeleg — der Beleg wird nicht als eigene Rechnung erfasst.",
+      "datum_u_buducnosti": "Das Datum liegt in der Zukunft — bitte vor dem Bestätigen prüfen"
     },
     "field": {
       "supplierName": "Lieferant",
@@ -6780,7 +6781,14 @@
       "receipt": "Das ist die Zahlungsbestätigung zur Rechnung {{number}} aus derselben E-Mail — die Bestätigung verknüpft sie, es entsteht keine neue Rechnung.",
       "invoice": "Dieselbe E-Mail enthielt auch eine Zahlungsbestätigung zur Rechnung {{number}} — eine Verpflichtung, nicht zwei Rechnungen."
     },
-    "missingNumber": "Dieses Dokument hat keine Nummer (App-Rechnung, Kassenbon) — trotzdem erfassen. Der Doppelerfassungsschutz arbeitet dann über Lieferant, Datum und Betrag."
+    "missingNumber": "Dieses Dokument hat keine Nummer (App-Rechnung, Kassenbon) — trotzdem erfassen. Der Doppelerfassungsschutz arbeitet dann über Lieferant, Datum und Betrag.",
+    "foreignCurrency": {
+      "reason": "Diese Rechnung lautet auf {{currency}} — Eingangsrechnungen unterstützen nur EUR",
+      "saveAsExpense": "Als Ausgabe speichern",
+      "saved": "Als Ausgabe gespeichert",
+      "failed": "Speichern der Ausgabe fehlgeschlagen: {{reason}}",
+      "missingAmount": "Kein Betrag — bitte vor dem Speichern eintragen"
+    }
   },
   "documents": {
     "title": "Dokumente",
