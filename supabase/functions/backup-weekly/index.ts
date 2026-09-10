@@ -719,6 +719,9 @@ Deno.serve(async (req) => {
         zip_path: zipPath,
         zip_bytes: zipBytes,
         zip_error: zipError,
+        files_zip_parts: filesZip.parts.length,
+        files_zip_bytes: filesZip.totalBytes,
+        files_zip_error: filesZip.error,
         mail_ok: mail.ok,
         mail_message_id: mail.message_id,
 
