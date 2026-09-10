@@ -29,7 +29,13 @@ import { formatDateHr, parseHrDate } from '@/lib/dateFormat';
 import { formatHrAmount, parseHrAmount } from '@/lib/money';
 import { resolveConfirmDocType } from '@/lib/mail/docType';
 
-import { normalizeExtractionDates } from '@/lib/mail/dateNormalize';
+import { normalizeExtractionDates, normalizeDateToIso } from '@/lib/mail/dateNormalize';
+import {
+  foreignExpenseAmount,
+  foreignExpenseDescription,
+  foreignInvoiceCurrency,
+} from '@/lib/mail/foreignCurrency';
+import { useExpenses } from '@/hooks/useExpenses';
 import { StatementReviewCard } from '@/components/mail/StatementReviewCard';
 import { DocumentsEmptyState } from './DocumentsEmptyState';
 import { VerificationReviewCard } from '@/components/mail/VerificationReviewCard';
@@ -99,6 +105,10 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
   } = useMailReviewQueue(active);
 
   const { profiles } = useBusinessProfiles();
+  // Strani račun ne može u `incoming_invoices` (CHECK: samo EUR) — izlaz je
+  // OBIČAN trošak, kroz jedini pisač u `expenses`.
+  const { addExpense } = useExpenses();
+  const [savingExpenseId, setSavingExpenseId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [collision, setCollision] = useState<{ item: MailReviewItem; existing: Record<string, unknown> } | null>(null);
@@ -260,8 +270,9 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
         t('mailReview.confirmFailed', 'Spremanje nije uspjelo'),
       );
 
+      // RAZLOG S BAZE UVIJEK IDE DO KORISNIKA — nikad generičan tekst.
       showError(
-        failure.detail && failure.reason !== 'baza'
+        failure.detail
           ? t('mailReview.errorDetail', '{{base}} ({{reason}})', { base, reason: failure.detail })
           : base,
       );
@@ -269,6 +280,54 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
     } catch (e) {
       showError(t('mailReview.confirmFailed', 'Spremanje nije uspjelo'));
       console.warn('[MailReviewList] confirm threw:', describeDbError(e));
+    }
+  };
+
+  /**
+   * NE-EUR RAČUN → obično trošak. Iznos ostaje u izvornoj valuti, BEZ
+   * preračuna; stavka se zatim zatvara istim putem kao potvrda (izlazi iz
+   * reda, dokument ostaje u Primljeno).
+   */
+  const handleSaveAsExpense = async (item: MailReviewItem, currency: string) => {
+    const extraction = (item.extraction ?? {}) as Record<string, unknown>;
+    const amount = foreignExpenseAmount(extraction);
+    if (amount === null) {
+      showError(
+        t('mailReview.foreignCurrency.missingAmount', 'Nema iznosa — upiši ga prije spremanja'),
+      );
+      return;
+    }
+    const iso = normalizeDateToIso(extraction.issue_date) ?? item.created_at.slice(0, 10);
+    setSavingExpenseId(item.id);
+    try {
+      const created: any = await addExpense({
+        expense: {
+          amount,
+          description: foreignExpenseDescription(
+            extraction,
+            t('mailReview.classification.racun', 'Račun'),
+          ),
+          category: 'other',
+          type: 'expense',
+          date: new Date(`${iso}T12:00:00`),
+          currency,
+          merchant_name: (extraction.supplier_name as string | null) ?? null,
+          business_profile_id:
+            item.scope_type === 'business_profile' ? item.scope_id : null,
+        } as any,
+      });
+      if (!created?.id) throw new Error('expense_not_created');
+      const closed = await keepItem(item.id);
+      if (closed) onCountChange?.();
+      showSuccess(t('mailReview.foreignCurrency.saved', 'Spremljeno kao trošak'));
+    } catch (e) {
+      showError(
+        t('mailReview.foreignCurrency.failed', 'Spremanje troška nije uspjelo: {{reason}}', {
+          reason: describeDbError(e),
+        }),
+      );
+    } finally {
+      setSavingExpenseId(null);
     }
   };
 
@@ -523,6 +582,8 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
         const missingNumber = currentNumber === '';
         const noNumberAcked = noNumberAck[item.id] === true;
 
+        // NE-EUR: RPC se ne zove jer bi sigurno pao na CHECK-u.
+        const foreignCurrency = foreignInvoiceCurrency(extraction);
         const sibling = siblings.get(item.id);
         const dupMatch = duplicateCandidates.get(item.id);
         const dupAcked = dupAck[item.id] === true;
@@ -773,8 +834,38 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
               </label>
             )}
 
+            {foreignCurrency && (
+              <div
+                data-testid="foreign-currency-notice"
+                className="space-y-2 rounded-md border border-document-pending bg-document-pending-surface p-2 text-xs text-document-pending-foreground"
+              >
+                <div className="flex items-start gap-2 font-medium">
+                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <span>
+                    {t(
+                      'mailReview.foreignCurrency.reason',
+                      'Račun je u {{currency}} — ulazni računi podržavaju samo EUR',
+                      { currency: foreignCurrency },
+                    )}
+                  </span>
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-wrap gap-2 pt-1">
 
+              {foreignCurrency ? (
+                <Button
+                  size="sm"
+                  className="min-h-[44px]"
+                  data-testid="save-as-expense"
+                  disabled={working || savingExpenseId === item.id}
+                  onClick={() => handleSaveAsExpense(item, foreignCurrency)}
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  {t('mailReview.foreignCurrency.saveAsExpense', 'Spremi kao trošak')}
+                </Button>
+              ) : (
               <Button
                 size="sm"
                 className="min-h-[44px]"
@@ -793,6 +884,7 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
                   ? t('mailReview.duplicate.confirmAnyway', 'Svejedno unesi')
                   : t('mailReview.confirm', 'Potvrdi')}
               </Button>
+              )}
               <Button
                 size="sm"
                 variant="outline"
