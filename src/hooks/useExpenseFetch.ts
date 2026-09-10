@@ -173,33 +173,68 @@ export const useExpenseFetch = () => {
 
         let sessionLost = false;
 
+        const fetchPage = async (from: number, withCount: boolean) => {
+          let query = supabase
+            .from('expenses')
+            .select(EXPENSE_LIST_SELECT, withCount ? { count: 'exact' } : undefined)
+            .order('date', { ascending: false })
+            .range(from, from + pageSize - 1);
+
+          if (orFilter) query = query.or(orFilter);
+
+          const { data, error, count } = await query;
+          if (error) throw error;
+          return { rows: (data as any[]) || [], count: count ?? null };
+        };
+
         const loadAllPages = async (): Promise<any[]> => {
-          const collected: any[] = [];
-          let from = 0;
+          // Sign-out / expiry: stop before issuing an anon query.
+          if (liveUserIdRef.current !== user.id) {
+            sessionLost = true;
+            return [];
+          }
+
+          // Prva stranica nosi i ukupan broj redaka (count: exact) iz kojeg se
+          // izračunaju preostale stranice.
+          const first = await fetchPage(0, true);
+          rowsSoFar = first.rows.length;
+          fetchRowsRef.current = rowsSoFar;
+          if (first.rows.length < pageSize) return first.rows;
+
+          const ranges = planPageRanges(first.count, pageSize, first.rows.length);
+
+          if (ranges.length > 0) {
+            if (liveUserIdRef.current !== user.id) {
+              sessionLost = true;
+              return [];
+            }
+            // Preostale stranice istovremeno; redoslijed rezultata je isti kao
+            // kod sekvencijalnog dohvata jer se spajaju po rastućem rasponu.
+            const rest = await Promise.all(ranges.map(r => fetchPage(r.from, false)));
+            if (liveUserIdRef.current !== user.id) {
+              sessionLost = true;
+              return [];
+            }
+            const all = concatPagesInOrder(first.rows, rest.map(p => p.rows));
+            rowsSoFar = all.length;
+            fetchRowsRef.current = rowsSoFar;
+            return all;
+          }
+
+          // Count nije poznat → sekvencijalni nastavak kao i dosad.
+          const collected: any[] = [...first.rows];
+          let from = pageSize;
           while (true) {
-            // Sign-out / expiry mid-pagination: stop before issuing an anon query.
             if (liveUserIdRef.current !== user.id) {
               sessionLost = true;
               break;
             }
-
-            let query = supabase
-              .from('expenses')
-              .select(EXPENSE_LIST_SELECT)
-              .order('date', { ascending: false })
-              .range(from, from + pageSize - 1);
-
-            if (orFilter) query = query.or(orFilter);
-
-            const { data, error } = await query;
-
-            if (error) throw error;
-            if (!data || data.length === 0) break;
-            collected.push(...data);
+            const page = await fetchPage(from, false);
+            if (page.rows.length === 0) break;
+            collected.push(...page.rows);
             rowsSoFar = collected.length;
             fetchRowsRef.current = rowsSoFar;
-
-            if (data.length < pageSize) break;
+            if (page.rows.length < pageSize) break;
             from += pageSize;
           }
           return collected;
