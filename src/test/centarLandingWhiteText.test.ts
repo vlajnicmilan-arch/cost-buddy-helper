@@ -10,6 +10,7 @@ const CSS_PATH = 'src/pages/CentarLanding.css';
  */
 const ALLOWED_SELECTOR_PARTS = [
   '.btn-primary', // text on the blue accent button
+  '.contact-fab', // tekst na plavom accent gumbu, kao .btn-primary
   '.centar-lightbox-close', // close button on the dark lightbox overlay
   '.shot::after', // zoom badge on rgba(0,0,0,.55)
 ];
