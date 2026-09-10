@@ -188,56 +188,19 @@ export const useExpenseFetch = () => {
         };
 
         const loadAllPages = async (): Promise<any[]> => {
-          // Sign-out / expiry: stop before issuing an anon query.
-          if (liveUserIdRef.current !== user.id) {
-            sessionLost = true;
-            return [];
-          }
-
-          // Prva stranica nosi i ukupan broj redaka (count: exact) iz kojeg se
-          // izračunaju preostale stranice.
-          const first = await fetchPage(0, true);
-          rowsSoFar = first.rows.length;
-          fetchRowsRef.current = rowsSoFar;
-          if (first.rows.length < pageSize) return first.rows;
-
-          const ranges = planPageRanges(first.count, pageSize, first.rows.length);
-
-          if (ranges.length > 0) {
-            if (liveUserIdRef.current !== user.id) {
-              sessionLost = true;
-              return [];
-            }
-            // Preostale stranice istovremeno; redoslijed rezultata je isti kao
-            // kod sekvencijalnog dohvata jer se spajaju po rastućem rasponu.
-            const rest = await Promise.all(ranges.map(r => fetchPage(r.from, false)));
-            if (liveUserIdRef.current !== user.id) {
-              sessionLost = true;
-              return [];
-            }
-            const all = concatPagesInOrder(first.rows, rest.map(p => p.rows));
-            rowsSoFar = all.length;
-            fetchRowsRef.current = rowsSoFar;
-            return all;
-          }
-
-          // Count nije poznat → sekvencijalni nastavak kao i dosad.
-          const collected: any[] = [...first.rows];
-          let from = pageSize;
-          while (true) {
-            if (liveUserIdRef.current !== user.id) {
-              sessionLost = true;
-              break;
-            }
-            const page = await fetchPage(from, false);
-            if (page.rows.length === 0) break;
-            collected.push(...page.rows);
-            rowsSoFar = collected.length;
-            fetchRowsRef.current = rowsSoFar;
-            if (page.rows.length < pageSize) break;
-            from += pageSize;
-          }
-          return collected;
+          // Prva stranica nosi ukupan broj redaka (count: exact); preostale
+          // stranice idu istovremeno, uz istu zaštitu od odjave.
+          const { rows, sessionLost: lost } = await loadPagesInParallel<any>({
+            pageSize,
+            fetchPage,
+            isSessionAlive: () => liveUserIdRef.current === user.id,
+            onProgress: (n) => {
+              rowsSoFar = n;
+              fetchRowsRef.current = n;
+            },
+          });
+          if (lost) sessionLost = true;
+          return rows;
         };
 
         const { result: allData, attempts } = await runWithTransientRetry(loadAllPages, {
