@@ -651,10 +651,19 @@ Deno.serve(async (req) => {
       console.error("[backup-weekly] zip/sign failed:", zipError);
     }
 
+    // --- Zip(ovi) korisničkih datoteka za taj datum -------------------------
+    const filesZip = await buildFilesZips(
+      supabase,
+      folder,
+      storage.files.map((f) => ({ bucket: f.bucket, path: f.path, size: f.size, stored_at: f.stored_at })),
+      (bucket, path, error) => storage.errors.push({ bucket, path, error }),
+    );
+
     const mailErrors = [
       ...failed.map((f) => `tablica ${f.table}: ${f.error}`),
       ...storage.errors.slice(0, 20).map((e) => `prilog ${e.bucket}/${e.path}: ${e.error}`),
       ...(zipError ? [`zip: ${zipError}`] : []),
+      ...(filesZip.error ? [`zip datoteka: ${filesZip.error}`] : []),
     ];
     const mail = await sendBackupMail(supabase, {
       folder,
@@ -664,6 +673,7 @@ Deno.serve(async (req) => {
       fileBytes: storage.files.reduce((a, f) => a + f.size, 0),
       zipBytes,
       signedUrl,
+      fileParts: filesZip.parts,
       errors: mailErrors,
     });
 
