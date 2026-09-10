@@ -77,6 +77,9 @@ const removeUserScopedStorage = (opts?: { preserveKeys?: readonly string[] }) =>
         try { localStorage.removeItem(key); } catch { /* noop */ }
       });
   } catch { /* noop */ }
+  // Trajna (IndexedDB) snimka transakcija je korisnički podatak — briše se
+  // zajedno s ostalim USER_SCOPED ključevima.
+  void clearExpenseSnapshots();
 };
 
 /**
