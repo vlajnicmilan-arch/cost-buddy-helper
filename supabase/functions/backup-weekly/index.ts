@@ -319,6 +319,111 @@ function fmtMB(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+// ---------------------------------------------------------------------------
+// Zip dijelovi korisničkih datoteka (streaming, datoteka po datoteka)
+// ---------------------------------------------------------------------------
+
+type FilesZipPart = {
+  part: number;
+  name: string;
+  path: string;
+  bytes: number;
+  files: number;
+  signedUrl: string | null;
+};
+
+/**
+ * Složi JEDAN zip dio streamingom: svaka datoteka se preuzme, ubaci u zip i
+ * odmah otpusti; u memoriji ostaje samo izlazni tok tog dijela (≤ prag).
+ */
+async function buildZipPart(
+  supabase: any,
+  files: readonly BackupFileRef[],
+  onError: (bucket: string, path: string, error: string) => void,
+): Promise<Uint8Array> {
+  const chunks: Uint8Array[] = [];
+  let zipErr: Error | null = null;
+  const zip = new Zip((err, data) => {
+    if (err) zipErr = err;
+    else if (data && data.length) chunks.push(data);
+  });
+
+  for (const f of files) {
+    try {
+      const { data, error } = await supabase.storage.from("backups").download(f.stored_at);
+      if (error || !data) throw new Error(error?.message ?? "empty download");
+      const bytes = new Uint8Array(await data.arrayBuffer());
+      const entry = new ZipPassThrough(zipEntryPath(f));
+      zip.add(entry);
+      entry.push(bytes, true);
+    } catch (e: any) {
+      onError(f.bucket, f.path, e?.message ?? String(e));
+    }
+  }
+  zip.end();
+  if (zipErr) throw zipErr;
+
+  const total = chunks.reduce((a, c) => a + c.length, 0);
+  const out = new Uint8Array(total);
+  let off = 0;
+  for (const c of chunks) { out.set(c, off); off += c.length; }
+  return out;
+}
+
+async function buildFilesZips(
+  supabase: any,
+  folder: string,
+  files: readonly BackupFileRef[],
+  onError: (bucket: string, path: string, error: string) => void,
+): Promise<{ parts: FilesZipPart[]; totalBytes: number; error: string | null }> {
+  if (!files.length) return { parts: [], totalBytes: 0, error: null };
+  const plan = planFileParts(files, MAX_PART_BYTES);
+  const parts: FilesZipPart[] = [];
+  let totalBytes = 0;
+  try {
+    for (let i = 0; i < plan.length; i++) {
+      const name = filesZipName(folder, i + 1);
+      const path = `${folder}/${name}`;
+      const zipped = await buildZipPart(supabase, plan[i], onError);
+      const { error: upErr } = await supabase.storage
+        .from("backups")
+        .upload(path, zipped, { contentType: "application/zip", upsert: true });
+      if (upErr) throw new Error(upErr.message);
+      const { data: signed } = await supabase.storage
+        .from("backups")
+        .createSignedUrl(path, SIGNED_URL_DAYS * 86400);
+      parts.push({
+        part: i + 1,
+        name,
+        path,
+        bytes: zipped.byteLength,
+        files: plan[i].length,
+        signedUrl: signed?.signedUrl ?? null,
+      });
+      totalBytes += zipped.byteLength;
+    }
+
+    const filesManifest = {
+      created_at: new Date().toISOString(),
+      folder,
+      parts: parts.map((p) => ({ part: p.part, name: p.name, bytes: p.bytes, files: p.files })),
+      files: buildFilesManifest(plan),
+    };
+    await supabase.storage
+      .from("backups")
+      .upload(
+        `${folder}/files-manifest.json`,
+        new TextEncoder().encode(JSON.stringify(filesManifest, null, 2)),
+        { contentType: "application/json", upsert: true },
+      );
+    return { parts, totalBytes, error: null };
+  } catch (e: any) {
+    const msg = e?.message ?? String(e);
+    console.error("[backup-weekly] files zip failed:", msg);
+    return { parts, totalBytes, error: msg };
+  }
+}
+
 /**
  * Mail BEZ privitka: potpisani link na zip u privatnom bucketu (rok 7 dana).
  * Šalje se kroz postojeći red transakcijskih mailova (enqueue_email).
