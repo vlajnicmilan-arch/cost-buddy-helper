@@ -47,3 +47,11 @@ export const PROD_APP_HOSTS: readonly string[] = (() => {
 
 export const isProdAppHost = (hostname: string): boolean =>
   PROD_APP_HOSTS.includes(hostname);
+
+/**
+ * Whether the root `/` route should bypass the marketing landing page and go
+ * straight to `/auth`. True only on production app hosts (e.g. app.vmbalance.com)
+ * when no user is signed in. Installed/PWA users are handled separately.
+ */
+export const shouldSkipLanding = (hostname: string, user: unknown): boolean =>
+  isProdAppHost(hostname) && !user;
