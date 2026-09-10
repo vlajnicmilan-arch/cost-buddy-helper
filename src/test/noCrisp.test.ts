@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 /**
- * Nalog: ukloniti Crisp u cijelosti i dodati "Piši nam" mailto gumb.
+ * Nalog: ukloniti stari chat widget u cijelosti i dodati "Piši nam" mailto gumb.
  *
  * (a) src/, index.html i public/ ne smiju sadržavati nijedan spomen
  *     uklonjenog chat servisa (case-insensitive). Riječ je složena iz
