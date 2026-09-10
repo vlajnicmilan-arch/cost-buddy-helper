@@ -11,7 +11,7 @@
  *     Svaki izlaz ide kroz `normalizeExtractionDates` — u redu su samo ISO datumi.
  */
 
-import { normalizeExtractionDates } from './dateNormalize.ts';
+import { normalizeExtractionDates, type DateNormalizeOptions } from './dateNormalize.ts';
 
 
 
@@ -46,7 +46,10 @@ export const FLAT_EXTRACTION_KEYS = [
 ] as const;
 
 /** UBL (`parseUbl`) rezultat → plosnati oblik koji baza i UI razumiju. */
-export function flattenUblExtraction(parsed: Record<string, unknown>): Record<string, unknown> {
+export function flattenUblExtraction(
+  parsed: Record<string, unknown>,
+  options?: DateNormalizeOptions,
+): Record<string, unknown> {
   const supplier = (parsed.supplier ?? {}) as Record<string, unknown>;
   const customer = (parsed.customer ?? {}) as Record<string, unknown>;
 
@@ -78,7 +81,7 @@ export function flattenUblExtraction(parsed: Record<string, unknown>): Record<st
     ubl: parsed,
   };
 
-  return normalizeExtractionDates(emptyToNull(flat));
+  return normalizeExtractionDates(emptyToNull(flat), options);
 }
 
 /**
@@ -88,12 +91,13 @@ export function flattenUblExtraction(parsed: Record<string, unknown>): Record<st
 export function mergeDeterministic(
   aiExtraction: Record<string, unknown> | null,
   deterministic: Record<string, unknown>,
+  options?: DateNormalizeOptions,
 ): Record<string, unknown> {
   const base = emptyToNull(aiExtraction ?? {});
   for (const [key, value] of Object.entries(deterministic)) {
     if (value !== null && value !== undefined && value !== '') base[key] = value;
     else if (base[key] === undefined) base[key] = null;
   }
-  return normalizeExtractionDates(base);
+  return normalizeExtractionDates(base, options);
 }
 
