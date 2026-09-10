@@ -453,3 +453,15 @@ body.centar-landing-body[data-centar-theme="light"]{background:#FAFBFC}
 .centar-landing[data-theme="light"] .prow-best{background:rgba(37,99,235,.05)}
 .centar-landing[data-theme="light"] .founding{background:rgba(37,99,235,.05)}
 .centar-landing[data-theme="light"] .m-biz .mod-name{color:#5A6472}
+
+/* ── "Piši nam" gumb (zamjena za uklonjeni chat oblačić) ─────────────── */
+.centar-landing .contact-fab{
+  position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:30;
+  display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;
+  border-radius:999px;background:var(--accent);color:#fff;
+  font-family:var(--mono);font-size:13px;letter-spacing:.04em;text-decoration:none;
+  box-shadow:0 8px 24px -8px rgba(0,0,0,.55);
+}
+.centar-landing .contact-fab:hover{background:#2f74e6}
+.centar-landing .contact-fab:focus-visible{outline:2px solid #fff;outline-offset:3px}
+.centar-landing .contact-fab svg{flex:0 0 auto}

@@ -239,3 +239,17 @@ body:has(.projekti-landing) {
 
     .projekti-landing .sticky { display:none; }
   }
+
+/* ── "Piši nam" gumb (zamjena za uklonjeni chat oblačić) ─────────────── */
+/* Na mobitelu stoji iznad ljepljive CTA trake (~70 px), pa je ne prekriva. */
+.projekti-landing .contact-fab {
+  position:fixed; right:16px; bottom:calc(84px + env(safe-area-inset-bottom,0px)); z-index:35;
+  display:inline-flex; align-items:center; gap:8px; min-height:44px; padding:0 16px;
+  border-radius:999px; background:hsl(var(--primary)); color:hsl(var(--landing-cta-foreground));
+  font-size:14px; font-weight:600; text-decoration:none; box-shadow:var(--landing-shadow-lift);
+}
+.projekti-landing .contact-fab:hover { filter:brightness(1.05); }
+.projekti-landing .contact-fab svg { flex:0 0 auto; }
+@media (min-width: 760px) {
+  .projekti-landing .contact-fab { right:20px; bottom:20px; }
+}
