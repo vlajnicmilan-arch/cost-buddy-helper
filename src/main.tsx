@@ -51,38 +51,6 @@ if (path === '/native-oauth/callback') {
 }
 
 const isFastLanding = isFastLandingCondition();
-const CRISP_WEBSITE_ID = "83888a2d-5927-4961-a7b1-eb91af074a0d";
-const CRISP_SCRIPT_ID = "crisp-chat-loader";
-
-const loadFastLandingCrisp = () => {
-  const w = window as any;
-  w.$crisp = w.$crisp || [];
-  w.CRISP_WEBSITE_ID = CRISP_WEBSITE_ID;
-  if (document.getElementById(CRISP_SCRIPT_ID)) return;
-
-  const script = document.createElement("script");
-  script.id = CRISP_SCRIPT_ID;
-  script.src = "https://client.crisp.chat/l.js";
-  script.async = true;
-  document.head.appendChild(script);
-};
-
-// Crisp is a third-party widget (~200 KB of JS + its own network chatter) and
-// it is never needed for the first paint. Load it on the first real visitor
-// interaction, or 5 s after load — whichever comes first.
-const scheduleFastLandingCrisp = () => {
-  let done = false;
-  const fire = () => {
-    if (done) return;
-    done = true;
-    events.forEach((e) => window.removeEventListener(e, fire));
-    loadFastLandingCrisp();
-  };
-  const events = ["pointerdown", "keydown", "touchstart", "scroll"] as const;
-  events.forEach((e) => window.addEventListener(e, fire, { once: true, passive: true }));
-  window.setTimeout(fire, 5000);
-};
-
 
 // Funnel: capture UTM params synchronously (URL may change after redirects),
 // then log install once per device (best-effort, deferred to idle).
@@ -388,7 +356,6 @@ if (!isDevHmr) {
 const root = createRoot(document.getElementById("root")!);
 
 if (isFastLanding) {
-  scheduleFastLandingCrisp();
   idle(() => {
     import("./lib/landingPerf")
       .then(({ startLandingPerf }) => startLandingPerf(true))
