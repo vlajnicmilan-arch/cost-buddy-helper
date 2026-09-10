@@ -289,29 +289,29 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
    * reda, dokument ostaje u Primljeno).
    */
   const handleSaveAsExpense = async (item: MailReviewItem, currency: string) => {
-    const extraction = (item.extraction ?? {}) as Record<string, unknown>;
-    const amount = foreignExpenseAmount(extraction);
+    const source = (item.extraction ?? {}) as Record<string, unknown>;
+    const amount = foreignExpenseAmount(source);
     if (amount === null) {
       showError(
         t('mailReview.foreignCurrency.missingAmount', 'Nema iznosa — upiši ga prije spremanja'),
       );
       return;
     }
-    const iso = normalizeDateToIso(extraction.issue_date) ?? item.created_at.slice(0, 10);
+    const iso = normalizeDateToIso(source.issue_date) ?? item.created_at.slice(0, 10);
     setSavingExpenseId(item.id);
     try {
       const created: any = await addExpense({
         expense: {
           amount,
           description: foreignExpenseDescription(
-            extraction,
+            source,
             t('mailReview.classification.racun', 'Račun'),
           ),
           category: 'other',
           type: 'expense',
           date: new Date(`${iso}T12:00:00`),
           currency,
-          merchant_name: (extraction.supplier_name as string | null) ?? null,
+          merchant_name: (source.supplier_name as string | null) ?? null,
           business_profile_id:
             item.scope_type === 'business_profile' ? item.scope_id : null,
         } as any,

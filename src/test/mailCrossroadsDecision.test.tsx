@@ -37,6 +37,10 @@ vi.mock('@/hooks/useBusinessProfiles', () => ({
   useBusinessProfiles: () => ({ profiles: [], loading: false, refetch: vi.fn() }),
 }));
 
+vi.mock('@/hooks/useExpenses', () => ({
+  useExpenses: () => ({ addExpense: vi.fn() }),
+}));
+
 vi.mock('@/hooks/useMailReviewQueue', () => ({
   useMailReviewQueue: () => ({
     items: [
