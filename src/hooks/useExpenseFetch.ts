@@ -19,6 +19,9 @@ import { useWalletViewMode } from '@/contexts/WalletViewModeContext';
 import { instantCache } from '@/lib/instantCache';
 import { useAppResume } from '@/hooks/useAppResume';
 import { EXPENSE_LIST_SELECT } from '@/lib/expenseColumns';
+import { planPageRanges, concatPagesInOrder } from '@/lib/expensePages';
+import { markExpensesSource } from '@/lib/expenseSourceMark';
+import { readExpenseSnapshot, writeExpenseSnapshot } from '@/lib/storage/expenseSnapshot';
 import { buildExpenseScopeFilter, belongsToMyScope, type ScopeContext } from '@/lib/expenseScope';
 
 // v3: bumped after the explicit-column select (lista više ne nosi teška
@@ -40,6 +43,7 @@ export const useExpenseFetch = () => {
     ...e,
     date: e.date instanceof Date ? e.date : new Date(e.date as unknown as string),
   }));
+  if (initialExpenses.length > 0) markExpensesSource('session');
   const [expenses, setExpenses] = useState<Expense[]>(initialExpenses);
   const [ownedSourceIds, setOwnedSourceIds] = useState<Set<string>>(new Set());
   const [sharedPaymentSourceIds, setSharedPaymentSourceIds] = useState<Set<string>>(new Set());
