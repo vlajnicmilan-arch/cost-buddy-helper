@@ -189,6 +189,13 @@ export const STORAGE_BUCKETS: readonly string[] = [
   "invoice-pdfs",
 ];
 
+// Bucketi koji ulaze u TJEDNU KOPIJU. Namjerno odvojeno od STORAGE_BUCKETS —
+// taj popis vodi brisanje korisnikovih datoteka (purgeUser) i ne smije se širiti.
+export const BACKUP_BUCKETS: readonly string[] = [
+  ...STORAGE_BUCKETS,
+  "inbound-mail",
+];
+
 // ---------------------------------------------------------------------------
 // Conditionally purged — only with policy.deletePaidRecords
 // (currently empty — Stripe/lifetime tables were removed with the Paddle switch)

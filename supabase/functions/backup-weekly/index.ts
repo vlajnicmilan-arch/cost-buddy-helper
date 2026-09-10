@@ -3,10 +3,18 @@
 // Retencija: briše foldere starije od 30 dana.
 // Poziva se iz pg_cron nedjeljom 03:00 Europe/Zagreb.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { zipSync } from "https://esm.sh/fflate@0.8.2";
-import { STORAGE_BUCKETS } from "../_shared/tablesToPurge.ts";
+import { zipSync, Zip, ZipPassThrough } from "https://esm.sh/fflate@0.8.2";
+import { BACKUP_BUCKETS } from "../_shared/tablesToPurge.ts";
 import { BACKUP_TABLES } from "../_shared/backupTables.ts";
 import { getOrCreateUnsubscribeToken } from "../_shared/unsubscribeToken.ts";
+import {
+  MAX_PART_BYTES,
+  buildFilesManifest,
+  filesZipName,
+  planFileParts,
+  zipEntryPath,
+  type BackupFileRef,
+} from "../_shared/backupFilesZip.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,6 +27,8 @@ const TABLES = BACKUP_TABLES;
 
 const BACKUP_MAIL_TO = "vlajnic.milan@gmail.com";
 const SIGNED_URL_DAYS = 7;
+// Vremenski proračun za zip datoteka; ostatak ide u sljedeće pokretanje.
+const FILES_ZIP_BUDGET_MS = 100_000;
 const SITE_NAME = "Centar";
 const SENDER_DOMAIN = "notify.vmbalance.com";
 
@@ -184,7 +194,7 @@ async function readManifest(supabase: any, folder: string): Promise<any | null> 
  */
 async function pruneOrphanFiles(supabase: any, keep: Set<string>) {
   const pooled: string[] = [];
-  for (const bucket of STORAGE_BUCKETS) {
+  for (const bucket of BACKUP_BUCKETS) {
     const objects = await listBucketObjects(supabase, "backups", `${FILES_PREFIX}/${bucket}`).catch(
       () => [] as Array<{ path: string }>,
     );
@@ -233,12 +243,15 @@ async function backupStorage(
   let partial = false;
   let remaining = 0;
 
-  for (const bucket of STORAGE_BUCKETS) {
+  for (const bucket of BACKUP_BUCKETS) {
     let objects: Array<{ path: string; size: number; updated_at: string | null }> = [];
     try {
       objects = await listBucketObjects(supabase, bucket);
     } catch (e: any) {
-      buckets.push({ bucket, files: 0, bytes: 0, error: e.message });
+      const msg = String(e?.message ?? e);
+      // Bucket koji ne postoji nije greška kopije — preskoči ga tiho.
+      if (/bucket not found/i.test(msg)) continue;
+      buckets.push({ bucket, files: 0, bytes: 0, error: msg });
       continue;
     }
     buckets.push({
@@ -308,6 +321,132 @@ function fmtMB(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+// ---------------------------------------------------------------------------
+// Zip dijelovi korisničkih datoteka (streaming, datoteka po datoteka)
+// ---------------------------------------------------------------------------
+
+type FilesZipPart = {
+  part: number;
+  name: string;
+  path: string;
+  bytes: number;
+  files: number;
+  signedUrl: string | null;
+};
+
+/**
+ * Složi JEDAN zip dio streamingom: svaka datoteka se preuzme, ubaci u zip i
+ * odmah otpusti; u memoriji ostaje samo izlazni tok tog dijela (≤ prag).
+ */
+async function buildZipPart(
+  supabase: any,
+  files: readonly BackupFileRef[],
+  onError: (bucket: string, path: string, error: string) => void,
+): Promise<Uint8Array> {
+  const chunks: Uint8Array[] = [];
+  let zipErr: Error | null = null;
+  const zip = new Zip((err, data) => {
+    if (err) zipErr = err;
+    else if (data && data.length) chunks.push(data);
+  });
+
+  for (const f of files) {
+    try {
+      const { data, error } = await supabase.storage.from("backups").download(f.stored_at);
+      if (error || !data) throw new Error(error?.message ?? "empty download");
+      const bytes = new Uint8Array(await data.arrayBuffer());
+      const entry = new ZipPassThrough(zipEntryPath(f));
+      zip.add(entry);
+      entry.push(bytes, true);
+    } catch (e: any) {
+      onError(f.bucket, f.path, e?.message ?? String(e));
+    }
+  }
+  zip.end();
+  if (zipErr) throw zipErr;
+
+  const total = chunks.reduce((a, c) => a + c.length, 0);
+  const out = new Uint8Array(total);
+  let off = 0;
+  for (const c of chunks) { out.set(c, off); off += c.length; }
+  return out;
+}
+
+async function buildFilesZips(
+  supabase: any,
+  folder: string,
+  files: readonly BackupFileRef[],
+  onError: (bucket: string, path: string, error: string) => void,
+  deadlineMs: number,
+): Promise<{ parts: FilesZipPart[]; totalBytes: number; error: string | null; incomplete: boolean }> {
+  if (!files.length) return { parts: [], totalBytes: 0, error: null, incomplete: false };
+  const plan = planFileParts(files, MAX_PART_BYTES);
+  const parts: FilesZipPart[] = [];
+  let totalBytes = 0;
+  let incomplete = false;
+
+  // Dijelovi već složeni u ranijem pokretanju istog dana — ne gradi ih ponovno.
+  const existing = new Map<string, number>();
+  try {
+    const { data: listed } = await supabase.storage.from("backups").list(folder, { limit: 1000 });
+    for (const o of listed ?? []) {
+      const size = Number((o as any)?.metadata?.size ?? 0);
+      if (o?.name?.startsWith("centar-files-") && size > 0) existing.set(o.name, size);
+    }
+  } catch { /* popis nije nužan */ }
+
+  try {
+    for (let i = 0; i < plan.length; i++) {
+      const name = filesZipName(folder, i + 1);
+      const path = `${folder}/${name}`;
+      let bytes = existing.get(name) ?? 0;
+      if (!bytes) {
+        if (Date.now() > deadlineMs) { incomplete = true; break; }
+        const zipped = await buildZipPart(supabase, plan[i], onError);
+        const { error: upErr } = await supabase.storage
+          .from("backups")
+          .upload(path, zipped, { contentType: "application/zip", upsert: true });
+        if (upErr) throw new Error(upErr.message);
+        bytes = zipped.byteLength;
+      }
+      const { data: signed } = await supabase.storage
+        .from("backups")
+        .createSignedUrl(path, SIGNED_URL_DAYS * 86400);
+      parts.push({
+        part: i + 1,
+        name,
+        path,
+        bytes,
+        files: plan[i].length,
+        signedUrl: signed?.signedUrl ?? null,
+      });
+      totalBytes += bytes;
+    }
+
+
+    const filesManifest = {
+      created_at: new Date().toISOString(),
+      folder,
+      planned_parts: plan.length,
+      complete: !incomplete,
+      parts: parts.map((p) => ({ part: p.part, name: p.name, bytes: p.bytes, files: p.files })),
+      files: buildFilesManifest(plan),
+    };
+    await supabase.storage
+      .from("backups")
+      .upload(
+        `${folder}/files-manifest.json`,
+        new TextEncoder().encode(JSON.stringify(filesManifest, null, 2)),
+        { contentType: "application/json", upsert: true },
+      );
+    return { parts, totalBytes, error: null, incomplete };
+  } catch (e: any) {
+    const msg = e?.message ?? String(e);
+    console.error("[backup-weekly] files zip failed:", msg);
+    return { parts, totalBytes, error: msg, incomplete: true };
+  }
+}
+
 /**
  * Mail BEZ privitka: potpisani link na zip u privatnom bucketu (rok 7 dana).
  * Šalje se kroz postojeći red transakcijskih mailova (enqueue_email).
@@ -322,6 +461,7 @@ async function sendBackupMail(
     fileBytes: number;
     zipBytes: number;
     signedUrl: string | null;
+    fileParts: FilesZipPart[];
     errors: string[];
   },
 ): Promise<{ ok: boolean; message_id?: string; error?: string }> {
@@ -336,6 +476,15 @@ async function sendBackupMail(
     const linkHtml = info.signedUrl
       ? `<p><a href="${info.signedUrl}">Preuzmi ${`centar-backup-${info.folder}.zip`}</a> (link vrijedi ${SIGNED_URL_DAYS} dana)</p>`
       : `<p><strong>Zip nije dostupan za preuzimanje</strong> — vidi greške ispod.</p>`;
+    const filesLinksHtml = info.fileParts.length
+      ? `<p><strong>Datoteke (${info.fileParts.length} ${info.fileParts.length === 1 ? "dio" : "dijela"}):</strong></p><ul>${info.fileParts
+          .map((p) =>
+            p.signedUrl
+              ? `<li><a href="${p.signedUrl}">${p.name}</a> — ${fmtMB(p.bytes)}</li>`
+              : `<li>${p.name} — ${fmtMB(p.bytes)} (link nije dostupan)</li>`,
+          )
+          .join("")}</ul>`
+      : "";
     const html = `<div style="font-family:Inter,Arial,sans-serif">
       <h2>Tjedna kopija ${info.folder}</h2>
       <ul>
@@ -345,6 +494,7 @@ async function sendBackupMail(
         <li>Veličina zipa: ${fmtMB(info.zipBytes)}</li>
       </ul>
       ${linkHtml}
+      ${filesLinksHtml}
       ${errorsHtml}
     </div>`;
     const text = [
@@ -354,6 +504,14 @@ async function sendBackupMail(
       `Priloga u pretincu: ${info.files} (${fmtMB(info.fileBytes)})`,
       `Veličina zipa: ${fmtMB(info.zipBytes)}`,
       info.signedUrl ? `Preuzimanje (${SIGNED_URL_DAYS} dana): ${info.signedUrl}` : "Zip nije dostupan za preuzimanje.",
+      ...(info.fileParts.length
+        ? [
+            `Datoteke (${info.fileParts.length}):`,
+            ...info.fileParts.map(
+              (p) => `- ${p.name} (${fmtMB(p.bytes)}): ${p.signedUrl ?? "link nije dostupan"}`,
+            ),
+          ]
+        : []),
       info.errors.length ? `Greške:\n- ${info.errors.join("\n- ")}` : "Bez grešaka.",
     ].join("\n");
 
@@ -516,10 +674,21 @@ Deno.serve(async (req) => {
       console.error("[backup-weekly] zip/sign failed:", zipError);
     }
 
+    // --- Zip(ovi) korisničkih datoteka za taj datum -------------------------
+    const filesZip = await buildFilesZips(
+      supabase,
+      folder,
+      storage.files.map((f) => ({ bucket: f.bucket, path: f.path, size: f.size, stored_at: f.stored_at })),
+      (bucket, path, error) => storage.errors.push({ bucket, path, error }),
+      // Ostatak vremena izvođenja: preostali dijelovi idu u sljedeće pokretanje.
+      startedAt + FILES_ZIP_BUDGET_MS,
+    );
+
     const mailErrors = [
       ...failed.map((f) => `tablica ${f.table}: ${f.error}`),
       ...storage.errors.slice(0, 20).map((e) => `prilog ${e.bucket}/${e.path}: ${e.error}`),
       ...(zipError ? [`zip: ${zipError}`] : []),
+      ...(filesZip.error ? [`zip datoteka: ${filesZip.error}`] : []),
     ];
     const mail = await sendBackupMail(supabase, {
       folder,
@@ -529,6 +698,7 @@ Deno.serve(async (req) => {
       fileBytes: storage.files.reduce((a, f) => a + f.size, 0),
       zipBytes,
       signedUrl,
+      fileParts: filesZip.parts,
       errors: mailErrors,
     });
 
@@ -574,6 +744,10 @@ Deno.serve(async (req) => {
         zip_path: zipPath,
         zip_bytes: zipBytes,
         zip_error: zipError,
+        files_zip_parts: filesZip.parts.length,
+        files_zip_bytes: filesZip.totalBytes,
+        files_zip_error: filesZip.error,
+        files_zip_incomplete: filesZip.incomplete,
         mail_ok: mail.ok,
         mail_message_id: mail.message_id,
 
@@ -599,6 +773,11 @@ Deno.serve(async (req) => {
         },
         manifest_path: `${folder}/manifest.json`,
         zip: { path: zipPath, bytes: zipBytes, error: zipError, signed_url_days: SIGNED_URL_DAYS },
+        files_zip: {
+          parts: filesZip.parts.map((p) => ({ part: p.part, name: p.name, bytes: p.bytes, files: p.files })),
+          bytes: filesZip.totalBytes,
+          error: filesZip.error,
+        },
         mail: { ok: mail.ok, message_id: mail.message_id, error: mail.error, to: BACKUP_MAIL_TO },
         pruned: prune,
         pruned_files: prunedFiles,
