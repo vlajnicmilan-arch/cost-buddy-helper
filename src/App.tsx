@@ -158,6 +158,10 @@ const RootRoute = ({ storageMode, user, ready }: RootRouteProps) => {
     return <Navigate to="/app" replace />;
   }
 
+  if (shouldSkipLanding(window.location.hostname, user)) {
+    return <Navigate to="/auth" replace />;
+  }
+
   return <Suspense fallback={<PageLoader />}><Landing /></Suspense>;
 };
 
