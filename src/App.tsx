@@ -46,7 +46,10 @@ import { logGateSkip } from "@/lib/brief/gateSkipLog";
 
 import { BriefGateBoundary } from "@/components/BriefGateBoundary";
 import { Loader2 } from "lucide-react";
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
+import { logDiagnostic } from "@/lib/diagnosticLogger";
+import { BOOT_STALL_DELAYS_MS, buildBootStallDetails } from "@/lib/bootStallDiagnostics";
+
 import StatusFeedback from "@/components/StatusFeedback";
 import { FeedbackFAB } from "@/components/feedback/FeedbackFAB";
 import { FileSavedDialog } from "@/components/FileSavedDialog";
