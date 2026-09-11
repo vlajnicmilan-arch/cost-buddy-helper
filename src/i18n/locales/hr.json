@@ -6877,7 +6877,7 @@
       "hasImport": "Uvoz iz ovog dokumenta postoji — ne može se vratiti."
     },
     "empty": {
-      "intro": "Ovdje stižu računi, ponude i izvodi koje proslijediš na svoju Centar adresu. Proslijedi bilo koji mail s računom — Centar ga pročita i pripremi za tvoju potvrdu.",
+      "intro": "Ovdje stižu računi i izvodi.",
       "settingsLink": "Postavke uvoza"
     }
   },

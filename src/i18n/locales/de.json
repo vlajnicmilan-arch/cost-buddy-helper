@@ -6862,7 +6862,7 @@
       "hasImport": "Zu diesem Dokument existiert ein Import — es kann nicht zurückgesetzt werden."
     },
     "empty": {
-      "intro": "Hier landen Rechnungen, Angebote und Auszüge, die du an deine Centar-Adresse weiterleitest. Leite eine beliebige E-Mail mit Rechnung weiter — Centar liest sie und bereitet sie zur Bestätigung vor.",
+      "intro": "Hier kommen Rechnungen und Kontoauszüge an.",
       "settingsLink": "Import-Einstellungen"
     }
   },
