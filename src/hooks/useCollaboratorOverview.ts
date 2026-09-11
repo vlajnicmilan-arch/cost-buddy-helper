@@ -7,6 +7,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useAppState } from '@/contexts/AppStateContext';
+import { filterProjectsByBusinessScope } from '@/lib/businessProjectScope';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import {
   groupCollaborators,
@@ -17,6 +19,7 @@ import {
 
 export const useCollaboratorOverview = () => {
   const { user } = useAuth();
+  const { activeBusinessProfileId } = useAppState();
   const [rows, setRows] = useState<CollaboratorRow[]>([]);
   const [projectNames, setProjectNames] = useState<Record<string, string>>({});
   const [projectOptions, setProjectOptions] = useState<{ id: string; name: string }[]>([]);
@@ -34,16 +37,17 @@ export const useCollaboratorOverview = () => {
     setLoading(true);
     setError(null);
     try {
-      const { data: projects, error: projectsErr } = await supabase
+      const { data: allProjects, error: projectsErr } = await supabase
         .from('projects')
         .select('id, name, business_profile_id')
         .eq('user_id', user.id)
         .is('deleted_at', null);
       if (projectsErr) throw projectsErr;
+      const projects = filterProjectsByBusinessScope((allProjects ?? []) as any[], activeBusinessProfileId);
 
       const names: Record<string, string> = {};
       const profileByProject: Record<string, string | null> = {};
-      for (const p of projects ?? []) {
+      for (const p of projects) {
         names[(p as any).id] = (p as any).name;
         profileByProject[(p as any).id] = (p as any).business_profile_id ?? null;
       }
@@ -72,7 +76,7 @@ export const useCollaboratorOverview = () => {
 
       setProjectNames(names);
       setProjectOptions(
-        (projects ?? [])
+        projects
           .map((p: any) => ({ id: p.id as string, name: (p.name as string) ?? '' }))
           .sort((a, b) => a.name.localeCompare(b.name, 'hr')),
       );
@@ -87,7 +91,7 @@ export const useCollaboratorOverview = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, activeBusinessProfileId]);
 
   useEffect(() => {
     fetchAll();

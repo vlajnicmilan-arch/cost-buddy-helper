@@ -9,6 +9,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useAppState } from '@/contexts/AppStateContext';
+import { filterProjectsByBusinessScope } from '@/lib/businessProjectScope';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import type { RateHistoryRow, WorkEntryForCost } from '@/lib/workerRateHistory';
 import {
@@ -54,6 +56,7 @@ const EMPTY: PeopleData = {
 
 export const useWorkerIdentities = () => {
   const { user } = useAuth();
+  const { activeBusinessProfileId } = useAppState();
   const [data, setData] = useState<PeopleData>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,13 +72,21 @@ export const useWorkerIdentities = () => {
     try {
       const [peopleRes, projectsRes] = await Promise.all([
         supabase.from('workers').select('*').eq('user_id', user.id),
-        supabase.from('projects').select('id, name').eq('user_id', user.id).is('deleted_at', null),
+        supabase
+          .from('projects')
+          .select('id, name, business_profile_id')
+          .eq('user_id', user.id)
+          .is('deleted_at', null),
       ]);
       if (peopleRes.error) throw peopleRes.error;
       if (projectsRes.error) throw projectsRes.error;
 
       const projectNames: Record<string, string> = {};
-      for (const p of projectsRes.data ?? []) projectNames[p.id as string] = (p as any).name;
+      const scopedProjects = filterProjectsByBusinessScope(
+        (projectsRes.data ?? []) as any[],
+        activeBusinessProfileId,
+      );
+      for (const p of scopedProjects) projectNames[p.id as string] = (p as any).name;
       const projectIds = Object.keys(projectNames);
 
       let engagements: EngagementRow[] = [];
@@ -163,7 +174,7 @@ export const useWorkerIdentities = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, activeBusinessProfileId]);
 
   useEffect(() => {
     fetchAll();
