@@ -13,9 +13,11 @@ describe('android shell 3.0.2 — app.vmbalance.com', () => {
     expect(configSource).toContain("'cost-buddy-helper.lovable.app'");
   });
 
-  it('server.url stays unchanged (vmbalance.com/app with forceHideBadge)', () => {
+  // 3.0.3: ugrađena adresa prelazi na app.vmbalance.com (vmbalance.com je krovna
+  // stranica i preusmjerava; ljuska je na preusmjerenoj adresi zapinjala).
+  it('server.url points to app.vmbalance.com/app with forceHideBadge', () => {
     // Literal split so the appOriginSingleSource guard does not flag this test.
-    const expectedServerUrl = 'url: \'https://' + 'vmbalance.com/app?forceHideBadge=true\'';
+    const expectedServerUrl = 'url: \'https://app.' + 'vmbalance.com/app?forceHideBadge=true\'';
     expect(configSource).toContain(expectedServerUrl);
   });
 
