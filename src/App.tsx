@@ -46,7 +46,10 @@ import { logGateSkip } from "@/lib/brief/gateSkipLog";
 
 import { BriefGateBoundary } from "@/components/BriefGateBoundary";
 import { Loader2 } from "lucide-react";
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
+import { logDiagnostic } from "@/lib/diagnosticLogger";
+import { BOOT_STALL_DELAYS_MS, buildBootStallDetails } from "@/lib/bootStallDiagnostics";
+
 import StatusFeedback from "@/components/StatusFeedback";
 import { FeedbackFAB } from "@/components/feedback/FeedbackFAB";
 import { FileSavedDialog } from "@/components/FileSavedDialog";
@@ -227,6 +230,35 @@ const AppRoutes = () => {
 
   // Wait for all readiness signals before making routing decisions
   const allReady = isInitialized && authReady && appStateReady;
+
+  // BOOT WATCHDOG: ako spremnost ne stigne, zapiši ŠTO nedostaje (8 s pa 20 s).
+  const bootStateRef = useRef({ isInitialized, authReady, appStateReady, storageMode, allReady });
+  bootStateRef.current = { isInitialized, authReady, appStateReady, storageMode, allReady };
+  useEffect(() => {
+    const startedAt = Date.now();
+    const timers = BOOT_STALL_DELAYS_MS.map((delay) =>
+      window.setTimeout(() => {
+        const snapshot = bootStateRef.current;
+        if (snapshot.allReady) return;
+        logDiagnostic({
+          event: 'boot_stalled',
+          severity: 'warning',
+          details: buildBootStallDetails({
+            isInitialized: snapshot.isInitialized,
+            authReady: snapshot.authReady,
+            appStateReady: snapshot.appStateReady,
+            storageMode: snapshot.storageMode ?? null,
+            hostname: window.location.hostname,
+            pathname: window.location.pathname,
+            elapsedMs: Date.now() - startedAt,
+          }),
+        });
+      }, delay),
+    );
+    return () => timers.forEach((t) => window.clearTimeout(t));
+  }, []);
+
+
 
   // Determine where /app should redirect
   const getAppEntryRoute = () => {

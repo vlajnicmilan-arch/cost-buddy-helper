@@ -28,6 +28,7 @@ const makeQuery = (): any => {
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
     auth: {
+      getUser: async () => ({ data: { user: null }, error: null }),
       getSession: async () => ({
         data: { session: state.userId ? { user: { id: state.userId } } : null },
       }),

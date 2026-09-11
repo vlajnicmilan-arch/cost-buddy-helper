@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect, useMemo, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { clearExpenseSnapshots } from '@/lib/storage/expenseSnapshot';
 
@@ -156,13 +157,23 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   // resurrect business mode — user explicitly opts in via the switcher.
   useEffect(() => {
     const resolveOnboarding = async () => {
+      // DIJAGNOSTIKA POKRETANJA: gdje stane razrješavanje stanja aplikacije.
+      const resolveStartedAt = Date.now();
+      let step = 'get_session';
+      logDiagnostic('app_state_resolve_start', {});
+      try {
       const { data: { session } } = await supabase.auth.getSession();
+      step = 'session_resolved';
       lastResolvedUserRef.current = session?.user?.id ?? null;
 
       
       if (!session?.user) {
         // No user — ready immediately, onboarding state from localStorage is fine
         setAppStateReady(true);
+        logDiagnostic('app_state_resolve_done', {
+          durationMs: Date.now() - resolveStartedAt,
+          hasSession: false,
+        });
         return;
       }
 
@@ -185,6 +196,7 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
       }
 
 
+      step = 'storage_config';
       // User exists — restore cloud storage config if missing
       const hasStorageConfig = localStorage.getItem('finmate-storage-config');
       if (!hasStorageConfig) {
@@ -192,6 +204,7 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
         window.dispatchEvent(new Event('storage-mode-restored'));
       }
 
+      step = 'business_profile';
       // Validate the remembered business profile still exists (silently clear if not)
       const storedProfileId = localStorage.getItem('active_business_profile_id');
       if (storedProfileId) {
@@ -211,6 +224,7 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
         }
       }
 
+      step = 'profile_fetch';
       // Backend (profiles.onboarding_completed) je izvor istine.
       // localStorage služi samo kao cache za sinkroni initial render.
       try {
@@ -267,6 +281,22 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
       }
 
       setAppStateReady(true);
+      logDiagnostic('app_state_resolve_done', {
+        durationMs: Date.now() - resolveStartedAt,
+        hasSession: true,
+      });
+      } catch (e) {
+        logDiagnostic({
+          event: 'app_state_resolve_done',
+          severity: 'warning',
+          details: {
+            durationMs: Date.now() - resolveStartedAt,
+            failedStep: step,
+            error: (e as Error)?.message ?? 'unknown',
+          },
+        });
+        throw e;
+      }
     };
 
     resolveOnboarding();

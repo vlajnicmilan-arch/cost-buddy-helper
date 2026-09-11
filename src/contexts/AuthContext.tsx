@@ -7,6 +7,7 @@ import { flushPendingNewsletterConsent } from '@/lib/newsletterConsent';
 import { flushPendingTermsAcceptance } from '@/lib/termsAcceptance';
 import { toDayKey } from '@/lib/dayKey';
 import { markOnce } from '@/lib/bootTiming';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 
 interface AuthContextValue {
   user: User | null;
@@ -100,7 +101,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     // THEN check for existing session
+    // DIJAGNOSTIKA POKRETANJA: mjerimo koliko traje getSession/getUser i
+    // javljamo ako getSession uopće ne odgovori (best-effort, ne mijenja tok).
+    const authStartedAt = Date.now();
+    let getSessionSettled = false;
+    logDiagnostic({ event: 'auth_get_session_start', severity: 'info' });
+    const getSessionTimeout = window.setTimeout(() => {
+      if (getSessionSettled) return;
+      logDiagnostic({
+        event: 'auth_get_session_timeout',
+        severity: 'warning',
+        details: { waitedMs: Date.now() - authStartedAt },
+      });
+    }, 6000);
+
     supabase.auth.getSession().then(async ({ data: { session: existing } }) => {
+      getSessionSettled = true;
+      window.clearTimeout(getSessionTimeout);
+      logDiagnostic({
+        event: 'auth_get_session_done',
+        severity: 'info',
+        details: { durationMs: Date.now() - authStartedAt, hasSession: !!existing },
+      });
       // Validate the restored session against the backend. A locally cached
       // JWT remains "valid" (signature OK, not expired) even after the
       // backend user has been hard-deleted, which would otherwise let the
@@ -109,8 +131,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // returns an error (user_not_found / invalid token) in that case.
       let validatedSession = existing;
       if (existing?.user) {
+        const getUserStartedAt = Date.now();
         try {
           const { data: userData, error: userErr } = await supabase.auth.getUser();
+          logDiagnostic({
+            event: 'auth_get_user_done',
+            severity: 'info',
+            details: {
+              durationMs: Date.now() - getUserStartedAt,
+              ok: !userErr && !!userData?.user,
+              error: userErr?.message ?? null,
+            },
+          });
           if (userErr || !userData?.user) {
             console.warn('[auth] Restored session rejected by server, signing out:', userErr?.message);
             await supabase.auth.signOut().catch(() => {});
@@ -121,6 +153,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             validatedSession = null;
           }
         } catch (e) {
+          logDiagnostic({
+            event: 'auth_get_user_done',
+            severity: 'warning',
+            details: {
+              durationMs: Date.now() - getUserStartedAt,
+              ok: false,
+              error: (e as Error)?.message ?? 'unknown',
+            },
+          });
           // Network failure — keep the cached session rather than locking
           // the user out on a transient hiccup. Next foreground will retry.
           console.warn('[auth] getUser() validation failed (network?):', (e as Error)?.message);
