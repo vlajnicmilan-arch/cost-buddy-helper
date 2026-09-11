@@ -12,7 +12,10 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { Plus, FolderKanban, Download, Loader2, Camera as CameraIcon, ImagePlus, Zap, Mic, BookOpen } from 'lucide-react';
+import { Plus, FolderKanban, Download, Loader2, Camera as CameraIcon, ImagePlus, Zap, Mic, BookOpen, Users, Handshake } from 'lucide-react';
+import { PeopleTab } from '@/components/projects/PeopleTab';
+import { CollaboratorsTab } from '@/components/projects/CollaboratorsTab';
+import { cn } from '@/lib/utils';
 import { DailyStandupSheet } from '@/components/projects/DailyStandupSheet';
 import { WorkLogQuickEntry } from '@/components/projects/WorkLogQuickEntry';
 import { useTranslation } from 'react-i18next';
@@ -20,6 +23,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { AnimatePresence, motion } from 'framer-motion';
 import { applyTemplateToProject } from '@/lib/projectTemplateApply';
+import { filterProjectsByBusinessScope } from '@/lib/businessProjectScope';
 import { useNativeCamera } from '@/hooks/useNativeCamera';
 import { dataUrlToFile, saveDocument } from '@/lib/documentStorage';
 
@@ -43,6 +47,7 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
   const { projects, loading, addProject, updateProject, deleteProject, refetch } = useProjects();
   const { takePhoto, pickFromGallery, cameraInputRef, galleryInputRef } = useNativeCamera();
 
+  const [view, setView] = useState<'projects' | 'people' | 'collaborators'>('projects');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [selectedProject, setSelectedProject] = useState<ProjectWithOwnership | null>(null);
@@ -65,12 +70,7 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
 
   // Show owned projects assigned to this profile + shared projects joined under this profile.
   const businessProjects = useMemo(
-    () => projects.filter((p) => {
-      if (!activeBusinessProfileId) return false;
-      const isOwnedBusinessProject = p.business_profile_id === activeBusinessProfileId;
-      const isSharedBusinessProject = !p.isOwner && p.member_context === 'business' && p.member_business_profile_id === activeBusinessProfileId;
-      return isOwnedBusinessProject || isSharedBusinessProject;
-    }),
+    () => (activeBusinessProfileId ? filterProjectsByBusinessScope(projects, activeBusinessProfileId) : []),
     [projects, activeBusinessProfileId]
   );
 
@@ -231,6 +231,33 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
       <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" />
       <input ref={galleryInputRef} type="file" accept="image/*" className="hidden" />
 
+      {/* Projekti | Ljudi | Suradnici */}
+      <div className="flex gap-1 p-1 bg-muted/40 rounded-xl border border-border/30">
+        {([
+          { id: 'projects' as const, label: t('nav.projects', 'Projekti'), icon: FolderKanban },
+          { id: 'people' as const, label: t('people.title', 'Ljudi'), icon: Users },
+          { id: 'collaborators' as const, label: t('collaboratorsOverview.title', 'Suradnici'), icon: Handshake },
+        ]).map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setView(id)}
+            aria-pressed={view === id}
+            className={cn(
+              'flex items-center gap-1 rounded-lg px-1.5 py-2 text-xs font-medium transition-all min-h-[44px] flex-1 justify-center',
+              view === id
+                ? 'bg-background text-foreground shadow-sm border border-border'
+                : 'text-muted-foreground hover:bg-muted/60',
+            )}
+          >
+            <Icon className="w-3.5 h-3.5 shrink-0" />
+            <span className="whitespace-nowrap">{label}</span>
+          </button>
+        ))}
+      </div>
+
+      {view === 'projects' && (
+        <>
       {/* Header */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -343,6 +370,11 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
           </div>
         </AnimatePresence>
       )}
+        </>
+      )}
+
+      {view === 'people' && <PeopleTab />}
+      {view === 'collaborators' && <CollaboratorsTab />}
 
       {/* Create/Edit Dialog */}
       <ProjectDialog
