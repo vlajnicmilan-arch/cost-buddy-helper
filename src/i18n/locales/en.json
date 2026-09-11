@@ -6862,7 +6862,7 @@
       "hasImport": "An import from this document exists — it cannot be sent back."
     },
     "empty": {
-      "intro": "Invoices, quotes and statements you forward to your Centar address arrive here. Forward any email with an invoice — Centar reads it and prepares it for your confirmation.",
+      "intro": "Invoices and statements arrive here.",
       "settingsLink": "Import settings"
     }
   },
