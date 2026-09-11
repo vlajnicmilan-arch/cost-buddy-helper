@@ -59,6 +59,7 @@ export interface BootStallInput {
 }
 
 export interface BootStallDetails extends BootStallInput {
+  [key: string]: unknown;
   hasSessionInLocalStorage: boolean;
   isCapacitor: boolean;
   navigatorLocksSupported: boolean;
