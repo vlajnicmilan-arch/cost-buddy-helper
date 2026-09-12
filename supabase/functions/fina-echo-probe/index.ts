@@ -10,6 +10,7 @@ import forge from "npm:node-forge@1.3.1";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { serialize, digestBase64, bytesToBase64, type XmlNode } from "./c14n.ts";
 import { readWsdlEcho } from "./wsdl.ts";
+import { FINA_CA_PEM } from "./finaCa.ts";
 
 const ENDPOINT =
   "https://webservisi.fina.hr/B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService";
@@ -329,7 +330,11 @@ Deno.serve(async (req) => {
     const oib = Deno.env.get("FINA_BUYER_OIB")!.trim();
     report.certificate = { subject: key.subject, issuer: key.issuer, serial: key.serial };
 
-    const client = (Deno as any).createHttpClient({ cert: key.certPem, key: key.keyPem });
+    const client = (Deno as any).createHttpClient({
+      caCerts: [FINA_CA_PEM],
+      cert: key.certPem,
+      key: key.keyPem,
+    });
 
     // Step 1 — WSDL over mTLS.
     let wsdlInfo = {
