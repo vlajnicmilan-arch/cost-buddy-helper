@@ -7,6 +7,13 @@ import {
   STICKY_ERROR_MODULES,
 } from '@/lib/notifyFlags';
 import { resolveNoteModule, type NoteModule } from '@/lib/notifyModule';
+import {
+  isRawTechnicalMessage,
+  callerStack,
+  currentRoute,
+  RAW_ERROR_REPLACEMENT,
+} from '@/lib/rawErrorGuard';
+import { tr } from '@/lib/errorMessages';
 
 type FeedbackType = 'success' | 'warning' | 'error';
 export type FeedbackSeverity = 'info' | 'warning' | 'error';
