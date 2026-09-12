@@ -76,7 +76,7 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
     } catch (error) {
       console.error('Error fetching budgets:', error);
       if (await isSessionGone(user?.id)) return;
-      showError(t('errors.fetchBudgets', 'Greška pri učitavanju budžeta'));
+      showError(fetchFailureMessage(error, t('errors.fetchBudgets', 'Greška pri učitavanju budžeta')));
     } finally {
       setLoading(false);
     }
