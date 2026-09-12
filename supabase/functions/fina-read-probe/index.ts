@@ -112,14 +112,28 @@ Deno.serve(async (req) => {
   if (missing) return missing;
 
   let inspect = false;
+  let raw = false;
+  let filterMode: "date" | "none" | "status" = "date";
+  let wantedInvoiceId: string | null = null;
   try {
     const parsed = await req.json();
     inspect = parsed?.inspect === true;
+    raw = parsed?.raw === true;
+    if (parsed?.filter === "none" || parsed?.filter === "status" || parsed?.filter === "date") {
+      filterMode = parsed.filter;
+    }
+    if (typeof parsed?.invoiceId === "string" && parsed.invoiceId.trim()) {
+      wantedInvoiceId = parsed.invoiceId.trim();
+    }
   } catch {
     // no body
   }
 
-  const report: Record<string, unknown> = { endpoint: ENDPOINT, mode: inspect ? "inspect" : "read" };
+  const report: Record<string, unknown> = {
+    endpoint: ENDPOINT,
+    mode: inspect ? "inspect" : raw ? "raw" : "read",
+    filter: filterMode,
+  };
   const steps: Record<string, unknown> = {};
   report.steps = steps;
   const httpStatuses: number[] = [];
