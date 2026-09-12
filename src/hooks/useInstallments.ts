@@ -7,6 +7,7 @@ import { useStorage } from '@/contexts/StorageContext';
 import { InstallmentPlan, Installment, InstallmentPlanWithProgress } from '@/types/installment';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { tr } from '@/lib/errorMessages';
+import { loadWithRetry, fetchFailureMessage } from '@/lib/loadWithRetry';
 import { useModuleWriteGuard } from '@/hooks/useModuleWriteGuard';
 import { addMonths, startOfMonth, endOfMonth, isWithinInterval, isBefore, startOfToday } from 'date-fns';
 
