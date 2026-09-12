@@ -114,7 +114,7 @@ const Calendar = () => {
   const isHoliday = (day: number) => holidays.has(getDateKey(day));
 
   return (
-    <div className="min-h-dvh bg-background pb-24">
+    <div className="min-h-dvh bg-background pb-[calc(var(--bottom-nav-h)+1rem)]">
       <PageHeader title={t('calendar.title', 'Kalendar')} />
 
       <div className="max-w-lg mx-auto px-4 pt-4">
@@ -257,7 +257,7 @@ const Calendar = () => {
       {/* FAB */}
       <button
         onClick={() => handleAddEvent()}
-        className="fixed bottom-20 right-4 z-40 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+        className="fixed bottom-[calc(var(--bottom-nav-h)+1rem)] right-4 z-40 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center active:scale-95 transition-transform"
       >
         <Plus className="w-6 h-6" />
       </button>

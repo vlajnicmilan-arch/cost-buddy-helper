@@ -1,7 +1,7 @@
 import { Skeleton } from '@/components/ui/skeleton';
 
 export const HomeSkeleton = () => (
-  <div className="min-h-dvh bg-background p-4 sm:p-6 pb-24 animate-in fade-in duration-300">
+  <div className="min-h-dvh bg-background p-4 sm:p-6 pb-[calc(var(--bottom-nav-h)+1rem)] animate-in fade-in duration-300">
     {/* Header skeleton */}
     <div className="flex items-center justify-between mb-6">
       <div className="flex items-center gap-3">

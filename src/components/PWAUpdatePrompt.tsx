@@ -147,7 +147,7 @@ const PWAUpdatePromptInner = () => {
       {SHOW_TEST_BUTTON && (
         <button
           onClick={handleTestClick}
-          className="fixed bottom-4 left-4 z-[99] p-2 bg-warning text-warning-foreground rounded-full shadow-lg hover:opacity-80 transition-opacity"
+          className="fixed bottom-[calc(var(--bottom-nav-h)+1rem)] left-4 z-[99] p-2 bg-warning text-warning-foreground rounded-full shadow-lg hover:opacity-80 transition-opacity"
           title="Test update notification"
         >
           <Bug className="w-4 h-4" />
@@ -161,7 +161,7 @@ const PWAUpdatePromptInner = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 100, scale: 0.9 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed bottom-4 left-4 right-4 z-[100] sm:left-auto sm:right-4 sm:max-w-sm"
+            className="fixed bottom-[calc(var(--bottom-nav-h)+1rem)] left-4 right-4 z-[100] sm:left-auto sm:right-4 sm:max-w-sm"
           >
             <div className="bg-card border border-border rounded-2xl shadow-2xl p-4 space-y-3">
               {isTestMode && (

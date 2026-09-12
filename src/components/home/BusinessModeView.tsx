@@ -163,7 +163,7 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
 
 
   return (
-    <div className={`business-theme-${FORCED_BUSINESS_THEME} min-h-dvh bg-background pb-20`}>
+    <div className={`business-theme-${FORCED_BUSINESS_THEME} min-h-dvh bg-background pb-[calc(var(--bottom-nav-h)+1rem)]`}>
 
       {/* Accent bar + Business header */}
       <div className="h-1 bg-primary rounded-b-full" />

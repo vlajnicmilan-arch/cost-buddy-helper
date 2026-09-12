@@ -51,7 +51,7 @@ export const FeedbackFAB = ({ className }: FeedbackFABProps) => {
         whileTap={{ scale: 0.92 }}
         className={cn(
           // Position: above BottomNav, to the LEFT of the FloatingAIAvatar (which sits at right-2/3)
-          'fixed bottom-[78px] right-[76px] sm:right-[84px] z-40',
+          'fixed bottom-[calc(var(--bottom-nav-h)+14px)] right-[76px] sm:right-[84px] z-40',
           'w-11 h-11 rounded-full',
           'bg-card/95 backdrop-blur border border-border shadow-lg',
           'flex items-center justify-center',

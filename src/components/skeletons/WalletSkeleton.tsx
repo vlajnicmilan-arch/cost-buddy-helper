@@ -1,7 +1,7 @@
 import { Skeleton } from '@/components/ui/skeleton';
 
 export const WalletSkeleton = () => (
-  <div className="min-h-dvh bg-background p-4 sm:p-6 pb-24 animate-in fade-in duration-300">
+  <div className="min-h-dvh bg-background p-4 sm:p-6 pb-[calc(var(--bottom-nav-h)+1rem)] animate-in fade-in duration-300">
     <Skeleton className="h-8 w-32 mb-6" />
 
     {/* Balance card */}

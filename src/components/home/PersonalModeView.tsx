@@ -277,7 +277,7 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
   const stillGuided = showGuidedLayout || phase === 'lock';
   if (stillGuided) {
     return (
-      <div className="min-h-dvh bg-background overflow-x-hidden pb-20">
+      <div className="min-h-dvh bg-background overflow-x-hidden pb-[calc(var(--bottom-nav-h)+1rem)]">
         <div className="max-w-md mx-auto px-4 py-8">
           <GuidedEntryView
             displayName={props.displayName}
@@ -315,7 +315,7 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
 
   return (
     <motion.div
-      className="min-h-dvh bg-background overflow-x-hidden pb-20"
+      className="min-h-dvh bg-background overflow-x-hidden pb-[calc(var(--bottom-nav-h)+1rem)]"
       initial={phase === 'reveal' ? { opacity: 0 } : false}
       animate={{ opacity: 1 }}
       transition={{ duration: phase === 'reveal' ? 0.45 : 0.25, ease: [0.16, 1, 0.3, 1] }}
