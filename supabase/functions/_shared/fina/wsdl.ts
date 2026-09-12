@@ -1,3 +1,32 @@
+export interface WsdlOperationInfo {
+  targetNamespace: string | null;
+  operation: string | null;
+  soapAction: string | null;
+  inputMessage: string | null;
+  outputMessage: string | null;
+}
+
+/**
+ * Pull one operation (matched by name fragment) with its SOAPAction, input and
+ * output message names out of the FINA WSDL.
+ */
+export function readWsdlOperation(wsdl: string, nameFragment: string): WsdlOperationInfo {
+  const targetNamespace = wsdl.match(/targetNamespace\s*=\s*"([^"]+)"/)?.[1] ?? null;
+  const escaped = nameFragment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const opBlock = wsdl.match(
+    new RegExp(
+      `<(?:\\w+:)?operation[^>]*name="([^"]*${escaped}[^"]*)"[\\s\\S]{0,600}?<\\/(?:\\w+:)?operation>`,
+    ),
+  );
+  const operation = opBlock?.[1] ?? null;
+  const soapAction = opBlock?.[0].match(/soapAction\s*=\s*"([^"]*)"/)?.[1] ?? null;
+  const inputMessage =
+    opBlock?.[0].match(/<(?:\w+:)?input[^>]*message="(?:[\w.-]+:)?([^"]+)"/)?.[1] ?? null;
+  const outputMessage =
+    opBlock?.[0].match(/<(?:\w+:)?output[^>]*message="(?:[\w.-]+:)?([^"]+)"/)?.[1] ?? null;
+  return { targetNamespace, operation, soapAction, inputMessage, outputMessage };
+}
+
 /** Pull the Echo operation name, SOAPAction and target namespace out of the FINA WSDL. */
 export function readWsdlEcho(wsdl: string): {
   targetNamespace: string | null;
@@ -5,17 +34,16 @@ export function readWsdlEcho(wsdl: string): {
   soapAction: string | null;
   inputMessage: string | null;
 } {
-  const targetNamespace = wsdl.match(/targetNamespace\s*=\s*"([^"]+)"/)?.[1] ?? null;
-  const opBlock = wsdl.match(
-    /<(?:\w+:)?operation[^>]*name="([^"]*[Ee]cho[^"]*)"[\s\S]{0,600}?<\/(?:\w+:)?operation>/,
-  );
-  const operation = opBlock?.[1] ?? null;
-  const soapAction = opBlock?.[0].match(/soapAction\s*=\s*"([^"]*)"/)?.[1] ?? null;
-  const inputMessage =
-    opBlock?.[0].match(/<(?:\w+:)?input[^>]*message="(?:[\w.-]+:)?([^"]+)"/)?.[1] ??
-    wsdl.match(/<(?:\w+:)?element\s+name="([^"]*[Ee]cho[^"]*)"/)?.[1] ??
-    null;
-  return { targetNamespace, operation, soapAction, inputMessage };
+  const info = readWsdlOperation(wsdl, "cho");
+  return {
+    targetNamespace: info.targetNamespace,
+    operation: info.operation,
+    soapAction: info.soapAction,
+    inputMessage:
+      info.inputMessage ??
+      wsdl.match(/<(?:\w+:)?element\s+name="([^"]*[Ee]cho[^"]*)"/)?.[1] ??
+      null,
+  };
 }
 
 /** Collect every xmlns:prefix declaration in the document (first declaration wins). */
