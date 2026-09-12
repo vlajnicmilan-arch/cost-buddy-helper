@@ -26,7 +26,7 @@ export function readWsdlOperation(
     : `[^"]*${escaped}[^"]*`;
   const opBlock = wsdl.match(
     new RegExp(
-      `<(?:\\w+:)?operation[^>]*name="${namePattern}"[\\s\\S]{0,600}?<\\/(?:\\w+:)?operation>`,
+      `<(?:\\w+:)?operation[^>]*name="(${namePattern})"[\\s\\S]{0,600}?<\\/(?:\\w+:)?operation>`,
     ),
   );
   const operation = opBlock?.[1] ?? null;
