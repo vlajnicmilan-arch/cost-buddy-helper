@@ -114,7 +114,9 @@ Deno.serve(async (req) => {
   let inspect = false;
   let raw = false;
   let dumpSchemas = false;
-  let filterMode: "date" | "none" | "status" = "date";
+  let filterMode: "date" | "none" | "status" | "idrange" = "date";
+  let idFrom = 0;
+  let idTo = 0;
   let wantedInvoiceId: string | null = null;
   try {
     const parsed = await req.json();
