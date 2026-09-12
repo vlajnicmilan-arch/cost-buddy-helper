@@ -37,8 +37,8 @@ import {
 
 const V1: SignOptions = { hash: "SHA-256", signTimestamp: true, keyInfo: "bst" };
 
-const LIST_OP = "GetB2BIncomingInvoiceList";
-const GET_OP = "GetB2BIncomingInvoice";
+const LIST_OP = "getB2BIncomingInvoiceList";
+const GET_OP = "getB2BIncomingInvoice";
 
 interface OperationInfo {
   operation: string | null;
@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
     steps.schemas = schemaDocs;
 
     const resolve = (opFragment: string): OperationInfo => {
-      const op = readWsdlOperation(wsdlText, opFragment);
+      const op = readWsdlOperation(wsdlText, opFragment, true);
       if (!op.inputMessage) {
         return { operation: op.operation, soapAction: op.soapAction, element: null, schema: null, error: `no input message for ${opFragment}` };
       }
@@ -220,9 +220,9 @@ Deno.serve(async (req) => {
     const listNs = listOp.element.namespace;
     const listRoot = listOp.element.localName;
     const dateNode =
+      findNode(listOp.schema, "From") ??
       findNode(listOp.schema, "DateFrom") ??
-      findNode(listOp.schema, "StartDate") ??
-      findNode(listOp.schema, "DateRangeFrom");
+      findNode(listOp.schema, "StartDate");
     const to = new Date();
     const from = new Date(to.getTime() - 60 * 24 * 3600 * 1000);
     const dateType = dateNode?.type ?? null;
@@ -236,19 +236,24 @@ Deno.serve(async (req) => {
           name: "m:Data",
           children: [
             {
-              name: "m:Filter",
+              name: "m:B2BIncomingInvoiceList",
               children: [
                 {
-                  name: "m:DateRange",
+                  name: "v01:Filter",
                   children: [
-                    { name: `m:${dateNode?.name ?? "DateFrom"}`, children: [formatDate(from, dateType)] },
                     {
-                      name: `m:${
-                        findNode(listOp.schema, "DateTo")?.name ??
-                        findNode(listOp.schema, "EndDate")?.name ??
-                        "DateTo"
-                      }`,
-                      children: [formatDate(to, dateType)],
+                      name: "v01:DateRange",
+                      children: [
+                        { name: `v01:${dateNode?.name ?? "From"}`, children: [formatDate(from, dateType)] },
+                        {
+                          name: `v01:${
+                            findNode(listOp.schema, "To")?.name ??
+                            findNode(listOp.schema, "DateTo")?.name ??
+                            "To"
+                          }`,
+                          children: [formatDate(to, dateType)],
+                        },
+                      ],
                     },
                   ],
                 },
