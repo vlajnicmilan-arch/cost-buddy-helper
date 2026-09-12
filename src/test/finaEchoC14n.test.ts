@@ -7,7 +7,7 @@ import {
   sortAttrNames,
   type XmlNode,
 } from '../../supabase/functions/fina-echo-probe/c14n';
-import { readWsdlEcho } from '../../supabase/functions/fina-echo-probe/index';
+import { readWsdlEcho } from '../../supabase/functions/fina-echo-probe/wsdl';
 
 const body: XmlNode = {
   name: 'soapenv:Body',
