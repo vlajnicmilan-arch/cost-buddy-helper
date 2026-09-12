@@ -113,6 +113,7 @@ Deno.serve(async (req) => {
 
   let inspect = false;
   let raw = false;
+  let dumpSchemas = false;
   let filterMode: "date" | "none" | "status" = "date";
   let wantedInvoiceId: string | null = null;
   try {
