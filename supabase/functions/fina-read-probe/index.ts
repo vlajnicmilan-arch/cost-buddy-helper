@@ -37,8 +37,8 @@ import {
 
 const V1: SignOptions = { hash: "SHA-256", signTimestamp: true, keyInfo: "bst" };
 
-const LIST_OP = "GetB2BIncomingInvoiceList";
-const GET_OP = "GetB2BIncomingInvoice";
+const LIST_OP = "getB2BIncomingInvoiceList";
+const GET_OP = "getB2BIncomingInvoice";
 
 interface OperationInfo {
   operation: string | null;
