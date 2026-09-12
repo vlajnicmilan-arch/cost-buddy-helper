@@ -30,7 +30,7 @@ export default function Documents() {
   const { count, refetch } = useMailPendingCount(true);
 
   return (
-    <div className="min-h-dvh bg-background pb-24">
+    <div className="min-h-dvh bg-background pb-[calc(var(--bottom-nav-h)+1rem)]">
       <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
         <PageContainer noVerticalPadding className="flex items-center gap-2 py-3">
           <Button

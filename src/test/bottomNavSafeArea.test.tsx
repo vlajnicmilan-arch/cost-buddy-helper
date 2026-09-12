@@ -1,4 +1,6 @@
 import { render, screen } from '@testing-library/react';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -48,5 +50,15 @@ describe('bottom navigation safe-area spacing', () => {
     expect(screen.getByTestId('ai-avatar').parentElement?.className).toContain('var(--bottom-nav-h)');
     expect(screen.getByRole('button', { name: /povratnu informaciju/i }).className).toContain('var(--bottom-nav-h)');
     expect(container.querySelectorAll('[class*="var(--bottom-nav-h)"]')).toHaveLength(2);
+  });
+
+  it('keeps fixed bottom-navigation padding out of every page', () => {
+    const pagesDir = join(process.cwd(), 'src/pages');
+    const pageFiles = readdirSync(pagesDir).filter((file) => file.endsWith('.tsx'));
+
+    for (const file of pageFiles) {
+      const source = readFileSync(join(pagesDir, file), 'utf8');
+      expect(source, file).not.toMatch(/\bpb-(?:20|24)\b/);
+    }
   });
 });
