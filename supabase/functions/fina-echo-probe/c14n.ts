@@ -45,19 +45,71 @@ export function sortAttrNames(names: string[]): string[] {
   return [...ns, ...rest];
 }
 
-/** Serialise a node tree into canonical form. */
-export function serialize(node: XmlNode | string): string {
+function prefixOf(qname: string): string | null {
+  const idx = qname.indexOf(":");
+  return idx < 0 ? null : qname.slice(0, idx);
+}
+
+/**
+ * exc-c14n §3: a namespace declaration is emitted on an element only when its
+ * prefix is *visibly utilised* by that element (its own name or the name of one
+ * of its attributes) and it is not already rendered, with the same value, by an
+ * output ancestor.
+ */
+function serializeNode(
+  node: XmlNode | string,
+  declared: Record<string, string>,
+  rendered: Record<string, string>,
+): string {
   if (typeof node === "string") return escapeText(node);
+
   const attrs = node.attrs ?? {};
-  const names = sortAttrNames(Object.keys(attrs));
-  const attrStr = names.map((n) => ` ${n}="${escapeAttr(attrs[n])}"`).join("");
+  const childDeclared = { ...declared };
+  const plain: string[] = [];
+  for (const name of Object.keys(attrs)) {
+    if (name === "xmlns") childDeclared[""] = attrs[name];
+    else if (name.startsWith("xmlns:")) childDeclared[name.slice(6)] = attrs[name];
+    else plain.push(name);
+  }
+
+  // Visibly utilised prefixes on this element.
+  const used = new Set<string>();
+  used.add(prefixOf(node.name) ?? "");
+  for (const name of plain) {
+    const p = prefixOf(name);
+    if (p) used.add(p);
+  }
+
+  const childRendered = { ...rendered };
+  const nsAttrs: string[] = [];
+  for (const prefix of used) {
+    const value = childDeclared[prefix];
+    if (value === undefined) continue; // undeclared prefix / no default ns in scope
+    if (prefix === "" && value === "" && rendered[""] === undefined) continue;
+    if (childRendered[prefix] === value) continue;
+    childRendered[prefix] = value;
+    nsAttrs.push(prefix === "" ? "xmlns" : `xmlns:${prefix}`);
+  }
+
+  const attrStr = [
+    ...nsAttrs.sort().map((n) => ` ${n}="${escapeAttr(childDeclared[n === "xmlns" ? "" : n.slice(6)])}"`),
+    ...plain.sort().map((n) => ` ${n}="${escapeAttr(attrs[n])}"`),
+  ].join("");
+
   const children = node.children ?? [];
   if (children.length === 0) {
     // exc-c14n never emits self-closing tags.
     return `<${node.name}${attrStr}></${node.name}>`;
   }
-  return `<${node.name}${attrStr}>${children.map(serialize).join("")}</${node.name}>`;
+  const inner = children.map((c) => serializeNode(c, childDeclared, childRendered)).join("");
+  return `<${node.name}${attrStr}>${inner}</${node.name}>`;
 }
+
+/** Serialise a node tree into canonical form. */
+export function serialize(node: XmlNode | string): string {
+  return serializeNode(node, {}, {});
+}
+
 
 interface ParseResult {
   node: XmlNode;

@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import {
   serialize,
   canonicalize,
@@ -8,6 +10,7 @@ import {
   type XmlNode,
 } from '../../supabase/functions/fina-echo-probe/c14n';
 import { readWsdlEcho } from '../../supabase/functions/fina-echo-probe/wsdl';
+
 
 const body: XmlNode = {
   name: 'soapenv:Body',
@@ -87,5 +90,59 @@ describe('fina-echo-probe WSDL reading', () => {
       soapAction: 'EchoBuyer',
       inputMessage: 'EchoBuyerRequest',
     });
+  });
+});
+
+const samplesDir = path.resolve(
+  __dirname,
+  '../../supabase/functions/fina-echo-probe/samples',
+);
+
+const readSample = (file: string) => readFileSync(path.join(samplesDir, file), 'utf8');
+
+const extract = (xml: string, tag: string) => {
+  const start = xml.indexOf(`<${tag} `);
+  const end = xml.indexOf(`</${tag}>`) + `</${tag}>`.length;
+  return xml.slice(start, end);
+};
+
+const timestampDigest = (xml: string) => {
+  const ref = xml.match(/<ds:Reference URI="#id-ts">[\s\S]*?<ds:DigestValue>([^<]+)</);
+  return ref?.[1];
+};
+
+describe('fina-echo-probe c14n against sent envelopes', () => {
+  const expectedBody =
+    '<soapenv:Body xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"' +
+    ' xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"' +
+    ' wsu:Id="id-body">' +
+    '<echo:EchoBuyerSoapIn xmlns:echo="http://fina.hr/eracun/b2b/ws/erp/v0.1">' +
+    '<v01:HeaderBuyer xmlns:v01="http://fina.hr/eracun/b2b/invoicewebservicecomponents/v0.1">';
+
+  it('declares xmlns:v01 on the first element that visibly uses it', () => {
+    for (const file of ['echo-V1.xml', 'echo-V2.xml']) {
+      const canonical = canonicalize(extract(readSample(file), 'soapenv:Body'));
+      expect(canonical.startsWith(expectedBody)).toBe(true);
+      expect(canonical).toContain('</v01:HeaderBuyer></echo:EchoBuyerSoapIn></soapenv:Body>');
+      expect(canonical).not.toContain('EchoBuyerSoapIn xmlns:echo="http://fina.hr/eracun/b2b/ws/erp/v0.1" xmlns:v01=');
+    }
+  });
+
+  it('produces the independently verified body digests', async () => {
+    const v1 = canonicalize(extract(readSample('echo-V1.xml'), 'soapenv:Body'));
+    const v2 = canonicalize(extract(readSample('echo-V2.xml'), 'soapenv:Body'));
+    expect(await digestBase64('SHA-256', v1)).toBe('zIcvnTSzMi9TOiMtd0vMgQVjy8IBq64mZOlfG72Sn3U=');
+    expect(await digestBase64('SHA-1', v2)).toBe('5tP5QQPb6XTaeLBfzONMqd8qmLk=');
+  });
+
+  it('leaves the timestamp digests unchanged', async () => {
+    const v1 = readSample('echo-V1.xml');
+    const v2 = readSample('echo-V2.xml');
+    expect(timestampDigest(v1)?.startsWith('Io04pLJo')).toBe(true);
+    expect(timestampDigest(v2)?.startsWith('6R3d1sCX')).toBe(true);
+    for (const [xml, algo] of [[v1, 'SHA-256'], [v2, 'SHA-1']] as const) {
+      const canonical = canonicalize(extract(xml, 'wsu:Timestamp'));
+      expect(await digestBase64(algo, canonical)).toBe(timestampDigest(xml));
+    }
   });
 });
