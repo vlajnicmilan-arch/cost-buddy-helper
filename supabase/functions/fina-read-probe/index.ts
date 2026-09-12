@@ -251,6 +251,18 @@ Deno.serve(async (req) => {
 
     const filterChildren = (): XmlNode[] => {
       if (filterMode === "none") return [];
+      if (filterMode === "idrange") {
+        // GetB2BIncomingInvoiceListMsg.xsd: choice Filter | InvoiceIDRange(From,To)
+        return [
+          {
+            name: "m:InvoiceIDRange",
+            children: [
+              { name: "m:From", children: [String(idFrom)] },
+              { name: "m:To", children: [String(idTo)] },
+            ],
+          },
+        ];
+      }
       if (filterMode === "status") {
         const statusNode =
           findNode(listOp.schema, "InvoiceStatus") ??
