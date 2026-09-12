@@ -21,14 +21,20 @@ export const usePendingTransactions = (incomeSourceId: string | null) => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('expenses')
-        .select('*')
-        .eq('income_source_id', incomeSourceId)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
+      // Kratki ispad poslužitelja se tiho ponavlja; poruka tek nakon
+      // iscrpljenih pokušaja (podaci na ekranu ostaju).
+      const data = await loadWithRetry('pending_transactions', async () => {
+        const { data, error } = await supabase
+          .from('expenses')
+          .select('*')
+          .eq('income_source_id', incomeSourceId)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false });
 
-      if (error) throw error;
+        if (error) throw error;
+        return data;
+      });
+      
       
       // Convert date strings to Date objects
       const transactions = (data || []).map(t => ({
