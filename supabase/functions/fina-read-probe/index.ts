@@ -241,6 +241,43 @@ Deno.serve(async (req) => {
     const from = new Date(to.getTime() - 60 * 24 * 3600 * 1000);
     const dateType = dateNode?.type ?? null;
 
+    const filterChildren = (): XmlNode[] => {
+      if (filterMode === "none") return [];
+      if (filterMode === "status") {
+        const statusNode =
+          findNode(listOp.schema, "InvoiceStatus") ??
+          findNode(listOp.schema, "StatusCode") ??
+          findNode(listOp.schema, "Status");
+        return [
+          {
+            name: "v01:Filter",
+            children: [{ name: `v01:${statusNode?.name ?? "InvoiceStatus"}`, children: ["RECEIVED"] }],
+          },
+        ];
+      }
+      return [
+        {
+          name: "v01:Filter",
+          children: [
+            {
+              name: "v01:DateRange",
+              children: [
+                { name: `v01:${dateNode?.name ?? "From"}`, children: [formatDate(from, dateType)] },
+                {
+                  name: `v01:${
+                    findNode(listOp.schema, "To")?.name ??
+                    findNode(listOp.schema, "DateTo")?.name ??
+                    "To"
+                  }`,
+                  children: [formatDate(to, dateType)],
+                },
+              ],
+            },
+          ],
+        },
+      ];
+    };
+
     const buildList = (): XmlNode => ({
       name: `m:${listRoot}`,
       attrs: { "xmlns:m": listNs, "xmlns:v01": COMPONENTS_NS },
@@ -251,27 +288,7 @@ Deno.serve(async (req) => {
           children: [
             {
               name: "m:B2BIncomingInvoiceList",
-              children: [
-                {
-                  name: "v01:Filter",
-                  children: [
-                    {
-                      name: "v01:DateRange",
-                      children: [
-                        { name: `v01:${dateNode?.name ?? "From"}`, children: [formatDate(from, dateType)] },
-                        {
-                          name: `v01:${
-                            findNode(listOp.schema, "To")?.name ??
-                            findNode(listOp.schema, "DateTo")?.name ??
-                            "To"
-                          }`,
-                          children: [formatDate(to, dateType)],
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
+              children: filterChildren(),
             },
           ],
         },
@@ -280,17 +297,40 @@ Deno.serve(async (req) => {
 
     // (a) list
     const listA = await call("list_before", buildList(), listOp.soapAction ?? "");
+    report.raw_list_first_4000 = listA.text.slice(0, 4000);
+    report.invoice_id_occurrences = (listA.text.match(/InvoiceID/g) ?? []).length;
     if (listA.fault) {
       report.error = "list call returned a SOAP Fault — stopping";
       report.fault = snippet(listA.text, 2000);
       return new Response(JSON.stringify(report, null, 2), { status: 200, headers: { "Content-Type": "application/json" } });
     }
 
-    const parseList = (xml: string) => {
-      const items = blocks(xml, "B2BIncomingInvoice").concat(
-        blocks(xml, "IncomingInvoice").filter((b) => !/B2BIncomingInvoice/.test(b)),
-      );
-      return items.map((b) => ({
+    /**
+     * Find the element that actually carries InvoiceID: for every tag name in
+     * the response, take its blocks and keep the tightest set where each block
+     * has exactly one InvoiceID. No hardcoded element name, no text filtering.
+     */
+    const invoiceItems = (xml: string): string[] => {
+      const names = new Set<string>();
+      for (const m of xml.matchAll(/<(?:[\w.-]+:)?([\w.-]+)[\s>]/g)) names.add(m[1]);
+      let best: string[] | null = null;
+      let bestLen = Infinity;
+      for (const n of names) {
+        if (/^InvoiceID$/i.test(n)) continue;
+        const bs = blocks(xml, n).filter((b) => /<(?:[\w.-]+:)?InvoiceID\b/.test(b));
+        if (!bs.length) continue;
+        if (!bs.every((b) => (b.match(/<(?:[\w.-]+:)?InvoiceID\b/g) ?? []).length === 1)) continue;
+        const len = bs.reduce((s, b) => s + b.length, 0);
+        if (len < bestLen) {
+          bestLen = len;
+          best = bs;
+        }
+      }
+      return best ?? [];
+    };
+
+    const parseList = (xml: string) =>
+      invoiceItems(xml).map((b) => ({
         invoice_id: firstText(b, ["InvoiceID", "InvoiceId"]),
         invoice_number: firstText(b, ["InvoiceNumber", "InvoiceNo", "DocumentNumber"]),
         supplier: firstText(b, ["SupplierName", "SellerName", "SupplierID", "SellerID"]),
@@ -298,12 +338,15 @@ Deno.serve(async (req) => {
         date: firstText(b, ["InvoiceDate", "IssueDate", "DateOfIssue"]),
         status: firstText(b, ["Status", "InvoiceStatus", "StatusCode"]),
       }));
-    };
 
     const before = parseList(listA.text);
     report.list_before = { count: before.length, invoices: before };
 
-    const first = before[0];
+    if (raw) {
+      return new Response(JSON.stringify(report, null, 2), { status: 200, headers: { "Content-Type": "application/json" } });
+    }
+
+    const first = (wantedInvoiceId && before.find((i) => i.invoice_id === wantedInvoiceId)) || before[0];
     if (!first?.invoice_id) {
       report.note = "list returned no invoice with an InvoiceID — nothing to fetch";
       report.list_sample = snippet(listA.text, 2000);
