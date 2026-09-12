@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
     steps.schemas = schemaDocs;
 
     const resolve = (opFragment: string): OperationInfo => {
-      const op = readWsdlOperation(wsdlText, opFragment);
+      const op = readWsdlOperation(wsdlText, opFragment, true);
       if (!op.inputMessage) {
         return { operation: op.operation, soapAction: op.soapAction, element: null, schema: null, error: `no input message for ${opFragment}` };
       }
