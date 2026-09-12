@@ -368,6 +368,18 @@ Deno.serve(async (req) => {
 
     const before = parseList(listA.text);
     report.list_before = { count: before.length, invoices: before };
+    // Business-level ack/error from the response envelope (not a SOAP Fault).
+    report.ack = {
+      status: textOf(listA.text, ["AckStatus"]),
+      status_code: textOf(listA.text, ["AckStatusCode"]),
+      status_text: textOf(listA.text, ["AckStatusText"]),
+      error_code: textOf(listA.text, ["ErrorCode"]),
+      error_message: textOf(listA.text, ["ErrorMessage"]),
+    };
+    if ((report.ack as any).error_code) {
+      report.error = `FINA business error ${(report.ack as any).error_code}: ${(report.ack as any).error_message}`;
+      return new Response(JSON.stringify(report, null, 2), { status: 200, headers: { "Content-Type": "application/json" } });
+    }
 
     if (raw) {
       return new Response(JSON.stringify(report, null, 2), { status: 200, headers: { "Content-Type": "application/json" } });
