@@ -361,25 +361,70 @@ Deno.serve(async (req) => {
       soapAction: null as string | null,
       inputMessage: null as string | null,
     };
+    let wsdlText = "";
     try {
       const t0 = Date.now();
       const res = await fetch(`${ENDPOINT}?wsdl`, { client } as RequestInit);
-      const text = await res.text();
-      wsdlInfo = readWsdlEcho(text);
+      wsdlText = await res.text();
+      wsdlInfo = readWsdlEcho(wsdlText);
       steps.wsdl = {
         http_status: res.status,
         duration_ms: Date.now() - t0,
         ...wsdlInfo,
-        wsdl_head: text.slice(0, 3000),
+        wsdl_head: wsdlText.slice(0, 3000),
       };
     } catch (e) {
       steps.wsdl = { error: safeMessage(e) };
     }
 
-    const messageName = wsdlInfo.inputMessage ?? wsdlInfo.operation ?? "EchoBuyer";
-    const ns =
-      wsdlInfo.targetNamespace ??
-      `http://fina.hr/eracun/b2b/sync/${wsdlInfo.operation ?? "EchoBuyer"}/v0.1`;
+    // Step 1b — resolve the body root element from wsdl:message → wsdl:part element=.
+    const part = wsdlInfo.inputMessage
+      ? readMessagePartElement(wsdlText, wsdlInfo.inputMessage)
+      : null;
+    steps.messagePart = part ?? { error: "no input message name from WSDL" };
+
+    if (part?.usesType) {
+      report.error = `message part uses type="${part.usesType}" — RPC style, stopping`;
+      return new Response(JSON.stringify(report, null, 2), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (!part || !part.localName || !part.namespace) {
+      report.error = part?.error ?? "could not resolve Echo body element from WSDL";
+      return new Response(JSON.stringify(report, null, 2), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Step 1c — if the element lives in an imported schema, fetch it and list its children.
+    try {
+      const loc = findSchemaLocation(wsdlText, part.namespace);
+      if (loc) {
+        const url = new URL(loc, `${ENDPOINT}?wsdl`).toString();
+        const res = await fetch(url, { client } as RequestInit);
+        const schema = await res.text();
+        steps.schema = {
+          url,
+          http_status: res.status,
+          element: `{${part.namespace}}${part.localName}`,
+          children: readElementChildren(schema, part.localName),
+          head: schema.slice(0, 2000),
+        };
+      } else {
+        steps.schema = {
+          inline: true,
+          element: `{${part.namespace}}${part.localName}`,
+          children: readElementChildren(wsdlText, part.localName),
+        };
+      }
+    } catch (e) {
+      steps.schema = { error: safeMessage(e) };
+    }
+
+    const elementName = part.localName;
+    const ns = part.namespace;
     const soapAction = wsdlInfo.soapAction ?? "";
 
     // Step 2 — signed Echo, variant by variant until one is accepted.
