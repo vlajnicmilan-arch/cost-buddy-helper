@@ -86,7 +86,27 @@ function resolveDuration(severity: FeedbackSeverity, module: NoteModule, message
   return computeDuration('success', message);
 }
 
-function show(type: FeedbackType, message?: string, options?: FeedbackOptions) {
+function show(type: FeedbackType, rawMessage?: string, options?: FeedbackOptions) {
+  let message = rawMessage;
+
+  // Središnja zaštita: tehnički tekst ("Failed to fetch", ime iznimke) ne ide
+  // korisniku — zamjenjuje se rečenicom, a original završi u dijagnostici.
+  if (type === 'error' && isRawTechnicalMessage(rawMessage)) {
+    message = tr('errors.connectionBlip', RAW_ERROR_REPLACEMENT);
+    const details = {
+      raw_message: (rawMessage || '').slice(0, 200),
+      route: currentRoute(),
+      caller_stack: callerStack(),
+    };
+    void import('@/lib/diagnosticLogger')
+      .then(({ logDiagnostic }) =>
+        logDiagnostic({ event: 'raw_error_shown', severity: 'warning', details }),
+      )
+      .catch(() => {
+        /* dijagnostika je best-effort */
+      });
+  }
+
   const severity = severityOf(type);
   const module = resolveNoteModule({ explicit: options?.module, message });
   const duration = resolveDuration(severity, module, message);
