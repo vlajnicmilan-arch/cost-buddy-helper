@@ -17,10 +17,18 @@ import {
 } from '@/lib/expenseFetchRetry';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { getBuildStamp } from '@/lib/buildStamp';
-import { tr } from '@/lib/errorMessages';
+import i18next from 'i18next';
 
 /** Poruka koju korisnik vidi TEK nakon iscrpljenih ponavljanja. */
 export const NETWORK_FETCH_FALLBACK = 'Nema veze s poslužiteljem — podaci nisu osvježeni';
+
+/**
+ * Siguran prijevod bez uvoza @/i18n: u testovima i18next nije inicijaliziran
+ * i ne smije se inicijalizirati (lanac @/lib/errorMessages → @/i18n to radi).
+ */
+function trSafe(key: string, defaultValue: string): string {
+  return i18next.isInitialized ? i18next.t(key, { defaultValue }) : defaultValue;
+}
 
 /**
  * Pokreće `fn` uz prolazni retry i dijagnostiku. Konačni pad se baca dalje,
@@ -66,7 +74,7 @@ export async function loadWithRetry<T>(
 export function fetchFailureMessage(error: unknown, fallback: string): string {
   const info: FetchFailureInfo = classifyFetchFailure(error);
   if (info.kind === 'network' || info.kind === 'timeout') {
-    return tr('errors.fetch.serverUnavailable', NETWORK_FETCH_FALLBACK);
+    return trSafe('errors.fetch.serverUnavailable', NETWORK_FETCH_FALLBACK);
   }
   return fallback;
 }

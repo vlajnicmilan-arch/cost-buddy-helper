@@ -13,7 +13,15 @@ import {
   currentRoute,
   RAW_ERROR_REPLACEMENT,
 } from '@/lib/rawErrorGuard';
-import { tr } from '@/lib/errorMessages';
+import i18next from 'i18next';
+
+/**
+ * Siguran prijevod bez uvoza @/i18n: lanac @/lib/errorMessages → @/i18n bi
+ * inicijalizirao i18next i u testovima prebacio dijaloge na engleski.
+ */
+function trSafe(key: string, defaultValue: string): string {
+  return i18next.isInitialized ? i18next.t(key, { defaultValue }) : defaultValue;
+}
 
 type FeedbackType = 'success' | 'warning' | 'error';
 export type FeedbackSeverity = 'info' | 'warning' | 'error';
@@ -99,7 +107,7 @@ function show(type: FeedbackType, rawMessage?: string, options?: FeedbackOptions
   // Središnja zaštita: tehnički tekst ("Failed to fetch", ime iznimke) ne ide
   // korisniku — zamjenjuje se rečenicom, a original završi u dijagnostici.
   if (type === 'error' && isRawTechnicalMessage(rawMessage)) {
-    message = tr('errors.connectionBlip', RAW_ERROR_REPLACEMENT);
+    message = trSafe('errors.connectionBlip', RAW_ERROR_REPLACEMENT);
     const details = {
       raw_message: (rawMessage || '').slice(0, 200),
       route: currentRoute(),
