@@ -329,7 +329,11 @@ Deno.serve(async (req) => {
     const oib = Deno.env.get("FINA_BUYER_OIB")!.trim();
     report.certificate = { subject: key.subject, issuer: key.issuer, serial: key.serial };
 
-    const client = (Deno as any).createHttpClient({ cert: key.certPem, key: key.keyPem });
+    const client = (Deno as any).createHttpClient({
+      caCerts: [FINA_CA_PEM],
+      cert: key.certPem,
+      key: key.keyPem,
+    });
 
     // Step 1 — WSDL over mTLS.
     let wsdlInfo = {
