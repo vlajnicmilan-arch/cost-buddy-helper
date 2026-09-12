@@ -120,6 +120,7 @@ Deno.serve(async (req) => {
     const parsed = await req.json();
     inspect = parsed?.inspect === true;
     raw = parsed?.raw === true;
+    dumpSchemas = parsed?.dumpSchemas === true;
     if (parsed?.filter === "none" || parsed?.filter === "status" || parsed?.filter === "date") {
       filterMode = parsed.filter;
     }
