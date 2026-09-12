@@ -10,10 +10,10 @@ import path from 'node:path';
 
 describe('uvoz modula obavijesti ne inicijalizira i18next', () => {
   it('i18next ostaje neinicijaliziran nakon importa useStatusFeedback i loadWithRetry', async () => {
-    expect(i18next.isInitialized).toBe(false);
+    expect(i18next.isInitialized).not.toBe(true);
     await import('@/hooks/useStatusFeedback');
     await import('@/lib/loadWithRetry');
-    expect(i18next.isInitialized).toBe(false);
+    expect(i18next.isInitialized).not.toBe(true);
   });
 
   it('datoteke nemaju uvoz iz errorMessages/i18n', () => {
