@@ -2330,8 +2330,8 @@
       "retrying": "Nema veze s internetom — pokušavam ponovno",
       "expensesNetwork": "Nema veze s internetom — transakcije nisu osvježene",
       "serverUnavailable": "Nema veze s poslužiteljem — podaci nisu osvježeni"
-    },,
-    "connectionBlip": "Veza s poslužiteljem je nakratko pukla. Pokušaj ponovno."
+    },
+    "connectionBlip": "Veza s poslužiteljem je nakratko pukla. Pokušaj ponovno.",
     "save": {
       "generic": "Greška pri spremanju",
       "category": "Greška pri spremanju kategorije",
