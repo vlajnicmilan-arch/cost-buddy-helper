@@ -393,6 +393,7 @@ Deno.serve(async (req) => {
       try {
         const cryptoKey = await cryptoKeyFor(VARIANTS[variant].hash);
         const envelope = await buildEnvelope(variant, key, cryptoKey, oib, messageName, ns);
+        if (dump && (variant === "V1" || variant === "V2")) envelopes[variant] = envelope;
         const res = await fetch(ENDPOINT, {
           method: "POST",
           client,
