@@ -2321,8 +2321,10 @@
       "pending": "Failed to load pending transactions",
       "logs": "Failed to load logs",
       "retrying": "No internet connection — retrying",
-      "expensesNetwork": "No internet connection — transactions were not refreshed"
+      "expensesNetwork": "No internet connection — transactions were not refreshed",
+      "serverUnavailable": "No connection to the server — data was not refreshed"
     },
+    "connectionBlip": "The connection to the server dropped briefly. Please try again.",
     "save": {
       "generic": "Failed to save",
       "category": "Failed to save category",
