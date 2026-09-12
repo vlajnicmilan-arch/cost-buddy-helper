@@ -106,6 +106,8 @@ project_id = "fzalxjretvtvokiotvkf"
     verify_jwt = false
   [functions.fina-echo-probe]
     verify_jwt = false
+  [functions.fina-read-probe]
+    verify_jwt = false
 
 
 

@@ -8,8 +8,8 @@ import {
   digestBase64,
   sortAttrNames,
   type XmlNode,
-} from '../../supabase/functions/fina-echo-probe/c14n';
-import { readWsdlEcho } from '../../supabase/functions/fina-echo-probe/wsdl';
+} from '../../supabase/functions/_shared/fina/c14n';
+import { readWsdlEcho } from '../../supabase/functions/_shared/fina/wsdl';
 
 
 const body: XmlNode = {
