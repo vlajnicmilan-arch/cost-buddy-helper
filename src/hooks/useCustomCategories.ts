@@ -8,6 +8,7 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useModuleWriteGuard } from '@/hooks/useModuleWriteGuard';
 import { tr } from '@/lib/errorMessages';
 import { isSessionGone } from '@/lib/sessionGone';
+import { loadWithRetry, fetchFailureMessage } from '@/lib/loadWithRetry';
 
 export const useCustomCategories = () => {
   const { t } = useTranslation();
