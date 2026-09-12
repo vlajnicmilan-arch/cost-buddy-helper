@@ -170,6 +170,12 @@ Deno.serve(async (req) => {
       }
     }
     steps.schemas = schemaDocs;
+    if (dumpSchemas) {
+      return new Response(
+        JSON.stringify({ ...report, schema_docs: schemaDocs.map((d, i) => ({ url: d.url, text: schemas[i + 1] ?? "" })) }, null, 2),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }
 
     const resolve = (opFragment: string): OperationInfo => {
       const op = readWsdlOperation(wsdlText, opFragment, true);
