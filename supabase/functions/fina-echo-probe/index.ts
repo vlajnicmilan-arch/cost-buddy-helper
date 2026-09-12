@@ -319,8 +319,21 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Optional request flag: return the signed envelopes for offline signature review.
+  // The envelope carries only the public certificate and the signature value.
+  let dump = false;
+  try {
+    const parsed = await req.json();
+    dump = parsed?.dump === true;
+  } catch {
+    // No body / invalid JSON — dump stays off.
+  }
+
   const report: Record<string, unknown> = { endpoint: ENDPOINT, steps: {}, variants: [] };
   const steps = report.steps as Record<string, unknown>;
+  const envelopes: Record<string, string> = {};
+  if (dump) report.envelopes = envelopes;
+
 
   try {
     const key = loadP12(
