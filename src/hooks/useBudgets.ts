@@ -15,6 +15,7 @@ import {
 } from '@/types/budget';
 import { Expense } from '@/types/expense';
 import { isSessionGone } from '@/lib/sessionGone';
+import { loadWithRetry, fetchFailureMessage } from '@/lib/loadWithRetry';
 
 interface UseBudgetsOptions {
   externalExpenses?: Expense[];
