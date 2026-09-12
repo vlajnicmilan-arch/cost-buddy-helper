@@ -6,6 +6,7 @@ import { Expense } from '@/types/expense';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { tr } from '@/lib/errorMessages';
 import { isSessionGone } from '@/lib/sessionGone';
+import { loadWithRetry, fetchFailureMessage } from '@/lib/loadWithRetry';
 
 export const usePendingTransactions = (incomeSourceId: string | null) => {
   const { t } = useTranslation();
@@ -47,7 +48,7 @@ export const usePendingTransactions = (incomeSourceId: string | null) => {
       console.error('Error fetching pending transactions:', error);
       // Odjava usred dohvata → tiho, upit je otišao bez sesije.
       if (await isSessionGone(user?.id)) return;
-      showError(tr('errors.fetch.pending', 'Greška pri učitavanju transakcija na čekanju'));
+      showError(fetchFailureMessage(error, tr('errors.fetch.pending', 'Greška pri učitavanju transakcija na čekanju')));
     } finally {
       setLoading(false);
     }
