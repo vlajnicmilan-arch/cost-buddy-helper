@@ -10,6 +10,7 @@ import forge from "npm:node-forge@1.3.1";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { serialize, digestBase64, bytesToBase64, type XmlNode } from "./c14n.ts";
 import { readWsdlEcho } from "./wsdl.ts";
+import { FINA_CA_PEM } from "./finaCa.ts";
 
 const ENDPOINT =
   "https://webservisi.fina.hr/B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService";
