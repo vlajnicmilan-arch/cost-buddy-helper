@@ -82,29 +82,40 @@ export const useInstallments = () => {
     }
 
     try {
-      // Fetch plans with installments
-      const { data: plansData, error: plansError } = await supabase
-        .from('installment_plans')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+      // Kratki ispad poslužitelja se tiho ponavlja; poruka tek nakon
+      // iscrpljenih pokušaja (podaci na ekranu ostaju).
+      const loaded = await loadWithRetry('installments', async () => {
+        const { data: plansData, error: plansError } = await supabase
+          .from('installment_plans')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
 
-      if (plansError) throw plansError;
+        if (plansError) throw plansError;
 
-      if (!plansData || plansData.length === 0) {
+        if (!plansData || plansData.length === 0) {
+          return { plansData: [], installmentsData: [] as any[] };
+        }
+
+        const planIds = plansData.map(p => p.id);
+        const { data: installmentsData, error: installmentsError } = await supabase
+          .from('installments')
+          .select('*')
+          .in('plan_id', planIds)
+          .order('installment_number', { ascending: true });
+
+        if (installmentsError) throw installmentsError;
+        return { plansData, installmentsData: installmentsData || [] };
+      });
+
+      const { plansData, installmentsData } = loaded;
+
+      if (plansData.length === 0) {
         setPlans([]);
         setLoading(false);
         return;
       }
 
-      const planIds = plansData.map(p => p.id);
-      const { data: installmentsData, error: installmentsError } = await supabase
-        .from('installments')
-        .select('*')
-        .in('plan_id', planIds)
-        .order('installment_number', { ascending: true });
-
-      if (installmentsError) throw installmentsError;
 
       const plansWithProgress: InstallmentPlanWithProgress[] = plansData.map(plan => {
         const planInstallments: Installment[] = (installmentsData || [])
