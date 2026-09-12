@@ -123,9 +123,11 @@ Deno.serve(async (req) => {
     inspect = parsed?.inspect === true;
     raw = parsed?.raw === true;
     dumpSchemas = parsed?.dumpSchemas === true;
-    if (parsed?.filter === "none" || parsed?.filter === "status" || parsed?.filter === "date") {
+    if (["none", "status", "date", "idrange"].includes(parsed?.filter)) {
       filterMode = parsed.filter;
     }
+    idFrom = Number(parsed?.idFrom ?? 0);
+    idTo = Number(parsed?.idTo ?? 0);
     if (typeof parsed?.invoiceId === "string" && parsed.invoiceId.trim()) {
       wantedInvoiceId = parsed.invoiceId.trim();
     }
