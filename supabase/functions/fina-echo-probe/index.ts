@@ -438,7 +438,7 @@ Deno.serve(async (req) => {
       );
 
     const variants = report.variants as Array<Record<string, unknown>>;
-    for (const variant of Object.keys(VARIANTS) as Variant[]) {
+    for (const variant of ["V1"] as Variant[]) {
       const t0 = Date.now();
       try {
         const cryptoKey = await cryptoKeyFor(VARIANTS[variant].hash);
