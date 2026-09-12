@@ -136,7 +136,7 @@ function isoNow(offsetMs = 0): string {
   return new Date(Date.now() + offsetMs).toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
-function buildEchoBody(oib: string, messageName: string, ns: string): XmlNode {
+function buildEchoBody(oib: string, elementName: string, ns: string): XmlNode {
   return {
     name: "soapenv:Body",
     attrs: {
@@ -146,7 +146,7 @@ function buildEchoBody(oib: string, messageName: string, ns: string): XmlNode {
     },
     children: [
       {
-        name: `echo:${messageName}`,
+        name: `echo:${elementName}`,
         attrs: { "xmlns:echo": ns, "xmlns:v01": COMPONENTS_NS },
         children: [
           {
