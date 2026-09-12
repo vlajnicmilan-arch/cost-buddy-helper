@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import {
   serialize,
   canonicalize,
@@ -8,6 +10,7 @@ import {
   type XmlNode,
 } from '../../supabase/functions/fina-echo-probe/c14n';
 import { readWsdlEcho } from '../../supabase/functions/fina-echo-probe/wsdl';
+
 
 const body: XmlNode = {
   name: 'soapenv:Body',
