@@ -157,6 +157,16 @@ function buildEchoBody(oib: string, elementName: string, ns: string): XmlNode {
               { name: "v01:MessageType", children: ["9999"] },
             ],
           },
+          // Schema EchoBuyerMsg.xsd: HeaderBuyer, then Data/EchoData/Echo (qualified).
+          {
+            name: "echo:Data",
+            children: [
+              {
+                name: "echo:EchoData",
+                children: [{ name: "echo:Echo", children: ["K2 probe"] }],
+              },
+            ],
+          },
         ],
       },
     ],
