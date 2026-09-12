@@ -61,7 +61,7 @@ const Budgets = () => {
 
   if (isLocalMode) {
     return (
-      <div className="min-h-dvh bg-background pb-20">
+      <div className="min-h-dvh bg-background pb-[calc(var(--bottom-nav-h)+1rem)]">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -79,7 +79,7 @@ const Budgets = () => {
   }
 
   return (
-    <div className="min-h-dvh bg-background pb-20">
+    <div className="min-h-dvh bg-background pb-[calc(var(--bottom-nav-h)+1rem)]">
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}

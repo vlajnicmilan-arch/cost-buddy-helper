@@ -231,7 +231,7 @@ export const AIInsightBubble = ({
   const avatarMood = eventMood !== 'neutral' ? eventMood : insightMood;
 
   return (
-    <div className="fixed bottom-[72px] right-2 sm:right-3 z-40 flex flex-col items-end gap-2 pointer-events-none [&_button]:pointer-events-auto [&_a]:pointer-events-auto">
+    <div className="fixed bottom-[calc(var(--bottom-nav-h)+8px)] right-2 sm:right-3 z-40 flex flex-col items-end gap-2 pointer-events-none [&_button]:pointer-events-auto [&_a]:pointer-events-auto">
       {/* Speech bubble — above the avatar */}
       <AnimatePresence>
         {isVisible && (

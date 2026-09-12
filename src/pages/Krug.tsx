@@ -114,7 +114,7 @@ export default function Krug() {
   }, [user, qc]);
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-[calc(var(--bottom-nav-h)+1rem)]">
       <PageHeader title={t('krug.title', 'Krug')} />
       <main className="max-w-4xl mx-auto px-4 py-4 space-y-4">
         {isReadOnly && (

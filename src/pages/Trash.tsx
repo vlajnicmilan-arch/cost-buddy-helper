@@ -87,7 +87,7 @@ export default function Trash() {
   };
 
   return (
-    <div className="min-h-dvh bg-background pb-20">
+    <div className="min-h-dvh bg-background pb-[calc(var(--bottom-nav-h)+1rem)]">
       <div className="max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
         <div className="flex items-center gap-3 mb-6">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label={t('common.back', 'Natrag')}>
