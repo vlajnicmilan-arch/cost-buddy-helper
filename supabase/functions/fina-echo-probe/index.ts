@@ -54,8 +54,8 @@ function loadP12(p12B64: string, password: string): KeyMaterial {
   const asn1 = forge.asn1.fromDer(der);
   const p12 = forge.pkcs12.pkcs12FromAsn1(asn1, password);
 
-  const certBags = p12.getBags({ bagType: forge.pki.oids.certBag }).
-    [forge.pki.oids.certBag] ?? [];
+  const certBags =
+    p12.getBags({ bagType: forge.pki.oids.certBag })[forge.pki.oids.certBag] ?? [];
   const keyBags =
     p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag })[
       forge.pki.oids.pkcs8ShroudedKeyBag
