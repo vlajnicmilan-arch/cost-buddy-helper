@@ -2321,8 +2321,10 @@
       "pending": "Ausstehende Transaktionen konnten nicht geladen werden",
       "logs": "Logs konnten nicht geladen werden",
       "retrying": "Keine Internetverbindung — neuer Versuch",
-      "expensesNetwork": "Keine Internetverbindung — Transaktionen wurden nicht aktualisiert"
+      "expensesNetwork": "Keine Internetverbindung — Transaktionen wurden nicht aktualisiert",
+      "serverUnavailable": "Keine Verbindung zum Server — Daten wurden nicht aktualisiert"
     },
+    "connectionBlip": "Die Verbindung zum Server ist kurz abgebrochen. Bitte versuche es erneut.",
     "save": {
       "generic": "Speichern fehlgeschlagen",
       "category": "Kategorie konnte nicht gespeichert werden",

@@ -8,6 +8,7 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useModuleWriteGuard } from '@/hooks/useModuleWriteGuard';
 import { tr } from '@/lib/errorMessages';
 import { isSessionGone } from '@/lib/sessionGone';
+import { loadWithRetry, fetchFailureMessage } from '@/lib/loadWithRetry';
 
 export const useCustomCategories = () => {
   const { t } = useTranslation();
@@ -35,18 +36,23 @@ export const useCustomCategories = () => {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('custom_categories')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+      // Kratki ispad poslužitelja se tiho ponavlja; poruka tek nakon
+      // iscrpljenih pokušaja (podaci na ekranu ostaju).
+      const data = await loadWithRetry('custom_categories', async () => {
+        const { data, error } = await supabase
+          .from('custom_categories')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
 
-      if (error) throw error;
+        if (error) throw error;
+        return data;
+      });
       setCustomCategories((data || []) as CustomCategory[]);
     } catch (error) {
       console.error('Error fetching custom categories:', error);
       if (await isSessionGone(user?.id)) return;
-      showError(tr('errors.fetch.categories', 'Greška pri dohvaćanju prilagođenih kategorija'));
+      showError(fetchFailureMessage(error, tr('errors.fetch.categories', 'Greška pri dohvaćanju prilagođenih kategorija')));
     } finally {
       setLoading(false);
     }

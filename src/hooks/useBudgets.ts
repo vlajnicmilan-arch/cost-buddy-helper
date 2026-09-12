@@ -15,6 +15,7 @@ import {
 } from '@/types/budget';
 import { Expense } from '@/types/expense';
 import { isSessionGone } from '@/lib/sessionGone';
+import { loadWithRetry, fetchFailureMessage } from '@/lib/loadWithRetry';
 
 interface UseBudgetsOptions {
   externalExpenses?: Expense[];
@@ -44,18 +45,24 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
     }
 
     try {
-      const { data: budgetsData, error: budgetsError } = await supabase
-        .from('budget_plans')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Kratki ispad poslužitelja se tiho ponavlja; poruka tek nakon
+      // iscrpljenih pokušaja (podaci na ekranu ostaju).
+      const { budgetsData, categoriesData } = await loadWithRetry('budgets', async () => {
+        const { data: budgetsData, error: budgetsError } = await supabase
+          .from('budget_plans')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-      if (budgetsError) throw budgetsError;
+        if (budgetsError) throw budgetsError;
 
-      const { data: categoriesData, error: categoriesError } = await supabase
-        .from('budget_categories')
-        .select('*');
+        const { data: categoriesData, error: categoriesError } = await supabase
+          .from('budget_categories')
+          .select('*');
 
-      if (categoriesError) throw categoriesError;
+        if (categoriesError) throw categoriesError;
+
+        return { budgetsData, categoriesData };
+      });
 
       setBudgets((budgetsData || []).map(b => ({
         ...b,
@@ -70,7 +77,7 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
     } catch (error) {
       console.error('Error fetching budgets:', error);
       if (await isSessionGone(user?.id)) return;
-      showError(t('errors.fetchBudgets', 'Greška pri učitavanju budžeta'));
+      showError(fetchFailureMessage(error, t('errors.fetchBudgets', 'Greška pri učitavanju budžeta')));
     } finally {
       setLoading(false);
     }

@@ -7,6 +7,7 @@ import { useStorage } from '@/contexts/StorageContext';
 import { InstallmentPlan, Installment, InstallmentPlanWithProgress } from '@/types/installment';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { tr } from '@/lib/errorMessages';
+import { loadWithRetry, fetchFailureMessage } from '@/lib/loadWithRetry';
 import { useModuleWriteGuard } from '@/hooks/useModuleWriteGuard';
 import { addMonths, startOfMonth, endOfMonth, isWithinInterval, isBefore, startOfToday } from 'date-fns';
 
@@ -82,29 +83,40 @@ export const useInstallments = () => {
     }
 
     try {
-      // Fetch plans with installments
-      const { data: plansData, error: plansError } = await supabase
-        .from('installment_plans')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+      // Kratki ispad poslužitelja se tiho ponavlja; poruka tek nakon
+      // iscrpljenih pokušaja (podaci na ekranu ostaju).
+      const loaded = await loadWithRetry('installments', async () => {
+        const { data: plansData, error: plansError } = await supabase
+          .from('installment_plans')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
 
-      if (plansError) throw plansError;
+        if (plansError) throw plansError;
 
-      if (!plansData || plansData.length === 0) {
+        if (!plansData || plansData.length === 0) {
+          return { plansData: [], installmentsData: [] as any[] };
+        }
+
+        const planIds = plansData.map(p => p.id);
+        const { data: installmentsData, error: installmentsError } = await supabase
+          .from('installments')
+          .select('*')
+          .in('plan_id', planIds)
+          .order('installment_number', { ascending: true });
+
+        if (installmentsError) throw installmentsError;
+        return { plansData, installmentsData: installmentsData || [] };
+      });
+
+      const { plansData, installmentsData } = loaded;
+
+      if (plansData.length === 0) {
         setPlans([]);
         setLoading(false);
         return;
       }
 
-      const planIds = plansData.map(p => p.id);
-      const { data: installmentsData, error: installmentsError } = await supabase
-        .from('installments')
-        .select('*')
-        .in('plan_id', planIds)
-        .order('installment_number', { ascending: true });
-
-      if (installmentsError) throw installmentsError;
 
       const plansWithProgress: InstallmentPlanWithProgress[] = plansData.map(plan => {
         const planInstallments: Installment[] = (installmentsData || [])
@@ -139,7 +151,7 @@ export const useInstallments = () => {
       setPlans(plansWithProgress);
     } catch (error) {
       console.error('Error fetching installment plans:', error);
-      showError(tr('errors.fetch.installments', 'Greška pri učitavanju planova rata'));
+      showError(fetchFailureMessage(error, tr('errors.fetch.installments', 'Greška pri učitavanju planova rata')));
     } finally {
       setLoading(false);
     }

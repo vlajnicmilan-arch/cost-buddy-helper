@@ -6,6 +6,7 @@ import { Expense } from '@/types/expense';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { tr } from '@/lib/errorMessages';
 import { isSessionGone } from '@/lib/sessionGone';
+import { loadWithRetry, fetchFailureMessage } from '@/lib/loadWithRetry';
 
 export const usePendingTransactions = (incomeSourceId: string | null) => {
   const { t } = useTranslation();
@@ -21,14 +22,20 @@ export const usePendingTransactions = (incomeSourceId: string | null) => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('expenses')
-        .select('*')
-        .eq('income_source_id', incomeSourceId)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
+      // Kratki ispad poslužitelja se tiho ponavlja; poruka tek nakon
+      // iscrpljenih pokušaja (podaci na ekranu ostaju).
+      const data = await loadWithRetry('pending_transactions', async () => {
+        const { data, error } = await supabase
+          .from('expenses')
+          .select('*')
+          .eq('income_source_id', incomeSourceId)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false });
 
-      if (error) throw error;
+        if (error) throw error;
+        return data;
+      });
+      
       
       // Convert date strings to Date objects
       const transactions = (data || []).map(t => ({
@@ -41,7 +48,7 @@ export const usePendingTransactions = (incomeSourceId: string | null) => {
       console.error('Error fetching pending transactions:', error);
       // Odjava usred dohvata → tiho, upit je otišao bez sesije.
       if (await isSessionGone(user?.id)) return;
-      showError(tr('errors.fetch.pending', 'Greška pri učitavanju transakcija na čekanju'));
+      showError(fetchFailureMessage(error, tr('errors.fetch.pending', 'Greška pri učitavanju transakcija na čekanju')));
     } finally {
       setLoading(false);
     }
