@@ -298,6 +298,9 @@ Deno.serve(async (req) => {
     // (a) list
     const listA = await call("list_before", buildList(), listOp.soapAction ?? "");
     report.raw_list_first_4000 = listA.text.slice(0, 4000);
+    report.raw_list_body_first_4000 = (listA.text.match(
+      /<(?:[\w.-]+:)?Body\b[^>]*>[\s\S]*?<\/(?:[\w.-]+:)?Body>/,
+    )?.[0] ?? "").slice(0, 4000);
     report.invoice_id_occurrences = (listA.text.match(/InvoiceID/g) ?? []).length;
     if (listA.fault) {
       report.error = "list call returned a SOAP Fault — stopping";
