@@ -150,7 +150,7 @@ export const useInstallments = () => {
       setPlans(plansWithProgress);
     } catch (error) {
       console.error('Error fetching installment plans:', error);
-      showError(tr('errors.fetch.installments', 'Greška pri učitavanju planova rata'));
+      showError(fetchFailureMessage(error, tr('errors.fetch.installments', 'Greška pri učitavanju planova rata')));
     } finally {
       setLoading(false);
     }
