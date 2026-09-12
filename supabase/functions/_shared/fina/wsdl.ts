@@ -9,13 +9,24 @@ export interface WsdlOperationInfo {
 /**
  * Pull one operation (matched by name fragment) with its SOAPAction, input and
  * output message names out of the FINA WSDL.
+ *
+ * When `exact` is true the name attribute must equal the fragment exactly
+ * (useful when one operation name is a prefix of another, e.g.
+ * getB2BIncomingInvoice vs getB2BIncomingInvoiceList).
  */
-export function readWsdlOperation(wsdl: string, nameFragment: string): WsdlOperationInfo {
+export function readWsdlOperation(
+  wsdl: string,
+  nameFragment: string,
+  exact = false,
+): WsdlOperationInfo {
   const targetNamespace = wsdl.match(/targetNamespace\s*=\s*"([^"]+)"/)?.[1] ?? null;
   const escaped = nameFragment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const namePattern = exact
+    ? `(?:\\w+:)?${escaped}`
+    : `[^"]*${escaped}[^"]*`;
   const opBlock = wsdl.match(
     new RegExp(
-      `<(?:\\w+:)?operation[^>]*name="([^"]*${escaped}[^"]*)"[\\s\\S]{0,600}?<\\/(?:\\w+:)?operation>`,
+      `<(?:\\w+:)?operation[^>]*name="${namePattern}"[\\s\\S]{0,600}?<\\/(?:\\w+:)?operation>`,
     ),
   );
   const operation = opBlock?.[1] ?? null;
