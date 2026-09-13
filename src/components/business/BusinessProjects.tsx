@@ -58,6 +58,7 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
   const [personalProjects, setPersonalProjects] = useState<any[]>([]);
   const [loadingPersonal, setLoadingPersonal] = useState(false);
   const [importingIds, setImportingIds] = useState<Set<string>>(new Set());
+  const [moveTarget, setMoveTarget] = useState<any | null>(null);
   const [projectStats, setProjectStats] = useState<Record<string, ProjectStat>>({});
   const [quickPhotoOpen, setQuickPhotoOpen] = useState(false);
   const [quickPhotoUploading, setQuickPhotoUploading] = useState(false);
