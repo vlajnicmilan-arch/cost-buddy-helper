@@ -27,6 +27,7 @@ import { applyTemplateToProject } from '@/lib/projectTemplateApply';
 import { filterProjectsByBusinessScope } from '@/lib/businessProjectScope';
 import { useNativeCamera } from '@/hooks/useNativeCamera';
 import { dataUrlToFile, saveDocument } from '@/lib/documentStorage';
+import { buildMoveSummary, type MoveSummary } from '@/lib/projectMoveSummary';
 
 interface BusinessProjectsProps {
   onRefreshExpenses?: () => void;
