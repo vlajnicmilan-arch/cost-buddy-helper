@@ -59,6 +59,7 @@ export const ProjectCard = ({
   isArchived,
   onClick,
   onMigrateToBusiness,
+  onReturnToPersonal,
   isReadOnly: isReadOnlyProp
 }: ProjectCardProps) => {
   const { formatAmount } = useCurrency();
