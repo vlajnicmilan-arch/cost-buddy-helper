@@ -100,7 +100,7 @@ describe('FeedbackDialog — dijagnostika', () => {
     });
     // isključi konzolu
     screen.getByRole('switch').click();
-    fireEvent.click(screen.getByRole('button', { name: /Send/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Pošalji/i }));
 
     await waitFor(() => expect(state.submittedPayload).not.toBeNull());
     expect(state.submittedPayload?.app_version).toBe('1.2.3');
