@@ -62,7 +62,7 @@ const Projects = () => {
       ]);
       const ownedCount = owned.count || 0;
       setOwnedProjectCount(ownedCount);
-      setHasMemberships((hasProjectsAccess || (members.count || 0) + ownedCount) > 0);
+      setHasMemberships(hasProjectsAccess || ((members.count || 0) + ownedCount) > 0);
     };
     check();
   }, [user, hasProjectsAccess]);
