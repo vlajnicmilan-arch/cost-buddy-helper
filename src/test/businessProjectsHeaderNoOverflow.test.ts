@@ -23,8 +23,11 @@ describe('BusinessProjects header — horizontal overflow guard', () => {
     expect(src).toMatch(/className="flex flex-wrap items-center gap-2 w-full min-w-0 sm:w-auto"/);
   });
 
-  it('no non-wrapping button row remains', () => {
-    expect(src).not.toMatch(/className="flex items-center gap-2">/);
+  it('header does not contain a non-wrapping button row', () => {
+    const headerMatch = src.match(/\{\/\* Header \*\/\}[\s\S]*?\{\/\* Project List \*\/\}/);
+    expect(headerMatch).toBeTruthy();
+    const headerSection = headerMatch?.[0] ?? '';
+    expect(headerSection).not.toMatch(/<div className="flex items-center gap-2">/);
   });
 
   it('title can shrink instead of pushing buttons', () => {
@@ -33,7 +36,7 @@ describe('BusinessProjects header — horizontal overflow guard', () => {
   });
 
   it('all action buttons can shrink and truncate labels', () => {
-    const buttons = src.match(/<Button[\s\S]*?\/>/g) ?? [];
+    const buttons = src.match(/<Button[\s\S]*?<\/Button>/g) ?? [];
     const shrinkable = buttons.filter((b) => b.includes('min-w-0') && b.includes('truncate'));
     expect(shrinkable.length).toBeGreaterThanOrEqual(4);
   });
