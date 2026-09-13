@@ -242,6 +242,84 @@ export const PersonPayoutDialog = ({
 
           {/* Second floor: amount, wallet, editable split */}
           <div className="space-y-3">
+            <div>
+              <Label className="text-xs">{t('people.payout.period', 'Razdoblje')}</Label>
+              <div className="mt-1 flex items-center gap-2">
+                <Popover open={periodOpen} onOpenChange={setPeriodOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="h-9 min-w-0 flex-1 justify-start gap-1.5 text-xs font-normal"
+                    >
+                      <CalendarIcon className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">
+                        {periodRange?.from
+                          ? periodRange?.to
+                            ? `${format(periodRange.from, 'yyyy-MM-dd')} → ${format(periodRange.to, 'yyyy-MM-dd')}`
+                            : format(periodRange.from, 'yyyy-MM-dd')
+                          : t('people.payout.pickPeriod', 'Odaberi razdoblje')}
+                      </span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="range"
+                      selected={periodRange}
+                      onSelect={(range) => {
+                        setPeriodRange(range);
+                        if (range?.from && range?.to) {
+                          setPeriodOpen(false);
+                          calcFromPeriod(range);
+                        }
+                      }}
+                      numberOfMonths={1}
+                      disabled={makeCalendarDisabled(periodLimits)}
+                      initialFocus
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+                {periodRange?.from && periodRange?.to && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 shrink-0 text-xs"
+                    disabled={periodLoading}
+                    onClick={() => calcFromPeriod(periodRange)}
+                  >
+                    {periodLoading ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      t('people.payout.calcFromHours', 'Izračunaj iz sati')
+                    )}
+                  </Button>
+                )}
+              </div>
+              {periodPreview && periodPreview.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {periodPreview.map((p) => {
+                    const o = payable.find((x) => x.engagementId === p.engagementId);
+                    return (
+                      <div
+                        key={p.engagementId}
+                        className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground"
+                      >
+                        <span className="min-w-0 truncate">
+                          {(p.projectId && projectNames[p.projectId]) ||
+                            t('people.unknownProject', 'Projekt')}
+                          {o ? ` · ${formatAmount(o.hourlyRate)}/h` : ''}
+                        </span>
+                        <span className="shrink-0">
+                          {p.hours} h → {formatAmount(p.gross)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label className="text-xs">{t('people.payout.amount', 'Iznos isplate')}</Label>
