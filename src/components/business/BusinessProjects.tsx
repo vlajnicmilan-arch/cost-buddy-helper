@@ -179,6 +179,73 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
     }
   };
 
+  /**
+   * Return (not copy) a company project back to personal. Mirror RPC of the
+   * move above; balances of wallets are untouched — only the scope changes.
+   */
+  const handleReturnToPersonal = async (project: any) => {
+    if (!user) return;
+    setImportingIds(prev => new Set(prev).add(project.id));
+    try {
+      const { error } = await (supabase.rpc as any)('move_project_to_personal', {
+        p_project_id: project.id,
+      });
+      if (error) throw error;
+      showSuccess(t('projects.returnedToPersonal', 'Projekt vraćen u osobno'));
+      refetch();
+      fetchAllStats();
+      onRefreshExpenses?.();
+    } catch (err) {
+      console.error('Error returning project to personal:', err);
+      showError(t('common.error'));
+    } finally {
+      setImportingIds(prev => { const n = new Set(prev); n.delete(project.id); return n; });
+      setReturnTarget(null);
+    }
+  };
+
+  /**
+   * Sažetak prije potvrde: koliko troškova i koliki iznos mijenja pregled, iz
+   * kojih su novčanika plaćeni i je li koji novčanik iz druge strane.
+   * Novčanici se čitaju BEZ obzira na aktivni doseg — ime mora biti točno.
+   */
+  useEffect(() => {
+    const target = moveTarget ?? returnTarget;
+    if (!target || !user) { setMoveSummary(null); return; }
+    let cancelled = false;
+    const load = async () => {
+      setMoveSummaryLoading(true);
+      try {
+        const [expensesRes, sourcesRes] = await Promise.all([
+          (supabase.from('expenses') as any)
+            .select('amount, payment_source, expense_nature, deleted_at')
+            .eq('project_id', target.id)
+            .eq('user_id', user.id),
+          (supabase.from('custom_payment_sources') as any)
+            .select('id, name, business_profile_id')
+            .eq('user_id', user.id),
+        ]);
+        if (cancelled) return;
+        setMoveSummary(
+          buildMoveSummary(
+            expensesRes.data || [],
+            sourcesRes.data || [],
+            moveTarget ? activeBusinessProfileId : null,
+            t('paymentSources.cash', 'Gotovina'),
+          ),
+        );
+      } catch (err) {
+        console.error('Error building move summary:', err);
+        if (!cancelled) setMoveSummary(null);
+      } finally {
+        if (!cancelled) setMoveSummaryLoading(false);
+      }
+    };
+    void load();
+    return () => { cancelled = true; };
+  }, [moveTarget, returnTarget, user, activeBusinessProfileId, t]);
+
+
   const handleCloseFullScreen = () => {
     setDetailDialogOpen(false);
     setSelectedProject(null);
