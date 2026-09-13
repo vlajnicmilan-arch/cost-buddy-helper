@@ -124,8 +124,32 @@ export const PersonPayoutDialog = ({
       setNote('');
       setAllocation({});
       setTouched(false);
+      setPeriodRange(undefined);
+      setPeriodOpen(false);
+      setPeriodLoading(false);
+      setPeriodPreview(null);
     }
   }, [open]);
+
+  // Fills the amount from hours worked in the selected period (all
+  // engagements). Only a proposal — the user can still edit the amount and
+  // the FIFO split stays untouched.
+  const calcFromPeriod = async (range: DateRange | undefined) => {
+    if (!range?.from || !range?.to) return;
+    setPeriodLoading(true);
+    try {
+      const { total, items } = await previewPersonPeriod(
+        obligations,
+        format(range.from, 'yyyy-MM-dd'),
+        format(range.to, 'yyyy-MM-dd'),
+      );
+      setPeriodPreview(items.filter((i) => i.hours > 0 || i.gross > 0));
+      setAmount(String(total));
+      setTouched(false);
+    } finally {
+      setPeriodLoading(false);
+    }
+  };
 
   // Silent FIFO proposal while the user has not edited the split by hand.
   useEffect(() => {
