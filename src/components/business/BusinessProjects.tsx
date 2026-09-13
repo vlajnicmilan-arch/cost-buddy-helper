@@ -245,6 +245,44 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
     return () => { cancelled = true; };
   }, [moveTarget, returnTarget, user, activeBusinessProfileId, t]);
 
+  /** Pregled troškova i novčanika prije potvrde premještanja. */
+  const renderMoveSummary = () => {
+    if (moveSummaryLoading) {
+      return (
+        <p className="text-sm text-muted-foreground">{t('common.loading', 'Učitavanje...')}</p>
+      );
+    }
+    if (!moveSummary || moveSummary.count === 0) return null;
+    return (
+      <div className="rounded-lg border bg-muted/40 p-3 space-y-2 text-sm">
+        <p className="font-medium">
+          {t('projects.moveSummary.expenses', '{{count}} troškova, ukupno {{total}} €', {
+            count: moveSummary.count,
+            total: moveSummary.total.toFixed(2),
+          })}
+        </p>
+        <ul className="space-y-1">
+          {moveSummary.lines.map((line) => (
+            <li key={line.key} className="flex items-start justify-between gap-2 min-w-0">
+              <span className="truncate">{line.name}</span>
+              <span className="shrink-0 text-muted-foreground">
+                {line.count} · {line.total.toFixed(2)} €
+              </span>
+            </li>
+          ))}
+        </ul>
+        {moveSummary.hasCrossScope && (
+          <p className="text-muted-foreground">
+            {t(
+              'projects.moveSummary.crossScope',
+              'Troškovi ostaju vezani na novčanik iz kojeg su plaćeni. Stanje nijednog novčanika se ne mijenja.',
+            )}
+          </p>
+        )}
+      </div>
+    );
+  };
+
 
   const handleCloseFullScreen = () => {
     setDetailDialogOpen(false);
