@@ -13,7 +13,7 @@ const state = vi.hoisted(() => ({
 
 vi.mock('react-i18next', async () => ({
   ...(await import('@/test/mocks/reactI18next')).createReactI18nextMock(),
-  useTranslation: () => ({ t: (key: string, fallback?: string) => fallback ?? key }),
+  useTranslation: () => ({ t: (key: string, fallback?: string) => fallback ?? key, i18n: { language: 'hr' } }),
 }));
 
 vi.mock('@/hooks/useAuth', () => ({
