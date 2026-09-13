@@ -57,6 +57,9 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
   const hasOverride = 'businessProfileIdOverride' in options;
   const readProfileId = hasOverride ? businessProfileIdOverride ?? null : activeBusinessProfileId;
   
+  // Ovisnosti idu po `user?.id`, ne po objektu: auth događaji (osvježenje
+  // tokena, povratak u prvi plan) inače mijenjaju referencu i pokreću dohvat.
+  const userId = user?.id ?? null;
   const initialKey = paymentSourcesCacheKey(user?.id, readProfileId, includePersonal);
   const initialCached = user ? instantCache.read<CustomPaymentSource[]>(initialKey) : null;
   const [customPaymentSources, setCustomPaymentSources] = useState<CustomPaymentSource[]>(initialCached || []);
