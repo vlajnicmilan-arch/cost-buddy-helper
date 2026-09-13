@@ -60,6 +60,9 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
   const [loadingPersonal, setLoadingPersonal] = useState(false);
   const [importingIds, setImportingIds] = useState<Set<string>>(new Set());
   const [moveTarget, setMoveTarget] = useState<any | null>(null);
+  const { profiles: businessProfiles } = useBusinessProfiles();
+  const activeCompanyName =
+    businessProfiles.find(p => p.id === activeBusinessProfileId)?.name ?? t('business.company', 'tvrtku');
   const [projectStats, setProjectStats] = useState<Record<string, ProjectStat>>({});
   const [quickPhotoOpen, setQuickPhotoOpen] = useState(false);
   const [quickPhotoUploading, setQuickPhotoUploading] = useState(false);
