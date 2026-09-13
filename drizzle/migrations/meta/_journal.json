@@ -15,6 +15,13 @@
       "when": 1789328987628,
       "tag": "0001_move_project_to_personal",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789333021390,
+      "tag": "0002_create_expense_with_items",
+      "breakpoints": true
     }
   ]
 }

@@ -7433,6 +7433,10 @@ export type Database = {
         }
         Returns: Json
       }
+      create_expense_with_items: {
+        Args: { p_expense: Json; p_items?: Json }
+        Returns: Json
+      }
       create_person_payout: {
         Args: {
           p_items: Json
