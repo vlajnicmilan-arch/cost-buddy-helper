@@ -3,6 +3,8 @@ import { renderHook, waitFor } from '@testing-library/react';
 import {
   filterProjectsByBusinessScope,
   isProjectInBusinessScope,
+  filterProjectsByPersonalScope,
+  isProjectInPersonalScope,
 } from '@/lib/businessProjectScope';
 
 const PROJECTS = [
