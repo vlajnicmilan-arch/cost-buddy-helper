@@ -38,8 +38,8 @@ vi.mock('react-router-dom', async () => ({
 vi.mock('@/components/BottomNav', () => ({ BottomNav: () => null }));
 vi.mock('@/components/PageHeader', () => ({ PageHeader: () => null }));
 vi.mock('@/components/TrialFeatureChip', () => ({ TrialFeatureChip: () => null }));
-vi.mock('@/components/projects/PeopleTab', () => ({ PeopleTab: () => null }));
-vi.mock('@/components/projects/CollaboratorsTab', () => ({ CollaboratorsTab: () => null }));
+vi.mock('@/components/projects/PeopleTab', () => ({ PeopleTab: () => <div data-testid="people-tab" /> }));
+vi.mock('@/components/projects/CollaboratorsTab', () => ({ CollaboratorsTab: () => <div data-testid="collaborators-tab" /> }));
 vi.mock('@/components/projects/ProjectsPanel', () => ({
   ProjectsPanel: ({ canCreate }: { canCreate: boolean }) => (
     <div data-testid="projects-panel" data-can-create={String(canCreate)} />
