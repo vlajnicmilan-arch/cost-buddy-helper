@@ -27,6 +27,10 @@ vi.mock('@/hooks/useStatusFeedback', () => ({
 
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
+    auth: {
+      getUser: vi.fn(() => Promise.resolve({ data: { user: null }, error: null })),
+      getSession: vi.fn(() => Promise.resolve({ data: { session: null }, error: null })),
+    },
     from: () => ({
       insert: (payload: Record<string, any>) => {
         state.submittedPayload = payload;
