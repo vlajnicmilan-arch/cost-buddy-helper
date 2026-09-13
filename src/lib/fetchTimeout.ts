@@ -50,3 +50,32 @@ export function withTimeout<T>(
     if (timer) clearTimeout(timer);
   }) as Promise<T>;
 }
+
+/**
+ * Rok koji nakon aborta čeka da se podložni zahtjev stvarno zatvori.
+ * Koristi se za veliki dohvat transakcija kako novi single-flight zahtjev ne
+ * bi krenuo dok API sloj još drži vezu prethodnog zahtjeva.
+ */
+export function withTimeoutAndDrain<T>(
+  fn: (signal: AbortSignal) => Promise<T>,
+  ms: number,
+): Promise<T> {
+  const controller = new AbortController();
+  let timedOut = false;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const task = fn(controller.signal);
+
+  return new Promise<T>((resolve, reject) => {
+    timer = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, ms);
+
+    task.then(
+      (value) => timedOut ? reject(new FetchTimeoutError(ms)) : resolve(value),
+      (error) => timedOut ? reject(new FetchTimeoutError(ms)) : reject(error),
+    );
+  }).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
+}

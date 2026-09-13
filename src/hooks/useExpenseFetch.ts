@@ -7,7 +7,7 @@ import { useStorage } from '@/contexts/StorageContext';
 import { showError, showSuccess, showWarning } from '@/hooks/useStatusFeedback';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { runWithTransientRetry, classifyFetchFailure } from '@/lib/expenseFetchRetry';
-import { withTimeout, EXPENSES_FETCH_TIMEOUT_MS } from '@/lib/fetchTimeout';
+import { withTimeoutAndDrain, EXPENSES_FETCH_TIMEOUT_MS } from '@/lib/fetchTimeout';
 import { beginWeakFetch, endWeakFetch } from '@/lib/weakConnection';
 import { isSessionGone, shouldWarnOnRetry } from '@/lib/sessionGone';
 
@@ -240,7 +240,7 @@ export const useExpenseFetch = () => {
         };
 
         try {
-          var allData = await withTimeout(loadAllPages, EXPENSES_FETCH_TIMEOUT_MS);
+          var allData = await withTimeoutAndDrain(loadAllPages, EXPENSES_FETCH_TIMEOUT_MS);
         } catch (retryError) {
           if (weakShown) endWeakFetch('expenses', 'failed');
           throw retryError;
