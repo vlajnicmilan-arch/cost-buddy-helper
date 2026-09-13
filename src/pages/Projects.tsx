@@ -67,6 +67,16 @@ const Projects = () => {
     check();
   }, [user, hasProjectsAccess]);
 
+  const canSeePeopleTabs = ownedProjectCount !== null && ownedProjectCount > 0;
+
+  useEffect(() => {
+    // Ako korisnik izgubi pravo na Ljudi/Suradnici (npr. obrisao zadnji vlastiti
+    // projekt), vrati ga na Projects tab da ne ostane na praznom tabu.
+    if ((view === 'people' || view === 'collaborators') && ownedProjectCount === 0) {
+      setView('projects');
+    }
+  }, [view, ownedProjectCount]);
+
   const gatePromptedRef = useState<{ done: boolean }>({ done: false })[0];
   useEffect(() => {
     // Dok se prava ne znaju (hladni start), NIJEDNA odluka — inače korisnik s
