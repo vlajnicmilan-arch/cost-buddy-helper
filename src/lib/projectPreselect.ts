@@ -2,14 +2,10 @@
  * PRED-ODABIR PROJEKTA pri skenu i pregledu dokumenta.
  *
  * (a) pokrenuto iz otvorenog projekta → taj projekt (currentId ostaje);
- * (b) korisnik ima točno jedan AKTIVAN projekt → taj (može se maknuti);
- * (c) inače prazno.
+ * (b) inače PRAZNO — nikad automatski pred-odabir "jedinog aktivnog projekta".
+ *     Kategorije se mijenjaju samo kad korisnik sam odabere projekt.
  */
 export const pickPreselectedProject = (
-  projects: { id: string; status?: string | null }[],
+  _projects: { id: string; status?: string | null }[],
   currentId: string | null,
-): string | null => {
-  if (currentId) return currentId;
-  const active = projects.filter((p) => p.status === 'active');
-  return active.length === 1 ? active[0].id : null;
-};
+): string | null => currentId ?? null;
