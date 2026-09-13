@@ -113,7 +113,7 @@ describe('FeedbackDialog — dijagnostika', () => {
 
   it('šalje console_tail samo kad je kvačica uključena', async () => {
     renderDialog('bug');
-    fireEvent.change(screen.getByPlaceholderText(/What were you trying/i), {
+    fireEvent.change(screen.getByRole('textbox'), {
       target: { value: 'Nešto ne radi' },
     });
     fireEvent.click(screen.getByRole('button', { name: /Send/i }));
