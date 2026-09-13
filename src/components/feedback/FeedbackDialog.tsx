@@ -124,13 +124,15 @@ export const FeedbackDialog = ({ open, onOpenChange, defaultType = 'idea' }: Fee
         rating,
         language: (i18n.language || 'hr').slice(0, 2),
       };
-      if (includeDiagnostics && diagnostics) {
+      if (diagnostics) {
         payload.route = diagnostics.route;
         payload.app_version = diagnostics.app_version;
         payload.user_agent = diagnostics.user_agent;
         payload.viewport = diagnostics.viewport;
         payload.platform = diagnostics.platform;
-        payload.console_tail = diagnostics.console_tail;
+        if (includeConsoleLogs) {
+          payload.console_tail = diagnostics.console_tail;
+        }
       }
 
       const { error } = await supabase.from('feedback_submissions').insert(payload as any);
