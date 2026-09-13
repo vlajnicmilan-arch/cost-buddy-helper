@@ -8140,6 +8140,10 @@ export type Database = {
         Args: { p_business_profile_id: string; p_project_id: string }
         Returns: Json
       }
+      move_project_to_personal: {
+        Args: { p_project_id: string }
+        Returns: Json
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
