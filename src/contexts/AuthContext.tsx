@@ -51,7 +51,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, nextSession) => {
         setSession(nextSession);
-        setUser(nextSession?.user ?? null);
+        // Isti korisnik = ista referenca: osvježenje tokena ne smije
+        // pokrenuti ponovni dohvat u desecima hookova.
+        setUser(prev => pickStableUser(prev, nextSession?.user ?? null));
 
         if (nextSession?.user) {
           flushPendingConsents(nextSession.user.id);
