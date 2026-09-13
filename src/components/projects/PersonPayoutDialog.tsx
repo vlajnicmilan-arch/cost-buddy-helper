@@ -86,6 +86,12 @@ export const PersonPayoutDialog = ({
   const [note, setNote] = useState('');
   const [allocation, setAllocation] = useState<Allocation>({});
   const [touched, setTouched] = useState(false);
+  const [periodRange, setPeriodRange] = useState<DateRange | undefined>(undefined);
+  const [periodOpen, setPeriodOpen] = useState(false);
+  const [periodLoading, setPeriodLoading] = useState(false);
+  const [periodPreview, setPeriodPreview] = useState<EngagementPeriodPreview[] | null>(null);
+
+  const periodLimits = useMemo(() => getDateRange('report'), []);
 
   const obligations: EngagementObligation[] = useMemo(
     () =>
