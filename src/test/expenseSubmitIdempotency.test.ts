@@ -71,7 +71,7 @@ describe('idempotency key plumbing', () => {
   });
 
   it('treats a unique-violation on client_request_id as a no-op', () => {
-    expect(CRUD).toMatch(/error\.code === '23505'[\s\S]{0,200}client_request_id/);
+    expect(CRUD).toMatch(/err\?\.code === '23505'[\s\S]{0,200}client_request_id/);
   });
 
   it('does not block the save on the balance recompute', () => {
