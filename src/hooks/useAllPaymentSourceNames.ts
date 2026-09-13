@@ -19,16 +19,17 @@ export interface PaymentSourceName {
  */
 export const useAllPaymentSourceNames = (): PaymentSourceName[] => {
   const { user, authReady } = useAuth();
+  const userId = user?.id ?? null;
   const [names, setNames] = useState<PaymentSourceName[]>([]);
 
   useEffect(() => {
-    if (!authReady || !user) return;
+    if (!authReady || !userId) return;
     let cancelled = false;
     const load = async () => {
       const { data, error } = await supabase
         .from('custom_payment_sources' as any)
         .select('id, name, icon, color')
-        .eq('user_id', user.id);
+        .eq('user_id', userId);
       if (cancelled) return;
       if (error) {
         console.error('Error loading payment source names:', error);
@@ -38,7 +39,7 @@ export const useAllPaymentSourceNames = (): PaymentSourceName[] => {
     };
     void load();
     return () => { cancelled = true; };
-  }, [authReady, user]);
+  }, [authReady, userId]);
 
   return names;
 };

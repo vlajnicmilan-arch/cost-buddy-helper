@@ -12,6 +12,20 @@ import { useAppResume } from '@/hooks/useAppResume';
 import { isSessionGone } from '@/lib/sessionGone';
 import { loadWithRetry } from '@/lib/loadWithRetry';
 
+/**
+ * DIJELJENJE DOHVATA MEĐU INSTANCAMA
+ *
+ * 33 komponente koriste ovaj hook. Bez dijeljenja svaka instanca vodi vlastiti
+ * lanac upita (novčanici → kartice → članovi), pa se na Početnoj skupi na
+ * desetke istih zahtjeva. Rezultat se zato kratko pamti po dosegu
+ * (user_id + poslovni profil + uključeni osobni izvori), a istovremeni pozivi
+ * dijele isto obećanje kroz `loadWithRetry` (ključ = isti doseg).
+ */
+const SOURCES_SHARE_TTL_MS = 5000;
+const recentSourcesByScope = new Map<string, { at: number; data: CustomPaymentSource[] }>();
+
+export const __resetPaymentSourcesShareForTests = () => recentSourcesByScope.clear();
+
 const paymentSourcesCacheKey = (
   userId: string | undefined,
   businessProfileId: string | null | undefined,
@@ -43,6 +57,9 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
   const hasOverride = 'businessProfileIdOverride' in options;
   const readProfileId = hasOverride ? businessProfileIdOverride ?? null : activeBusinessProfileId;
   
+  // Ovisnosti idu po `user?.id`, ne po objektu: auth događaji (osvježenje
+  // tokena, povratak u prvi plan) inače mijenjaju referencu i pokreću dohvat.
+  const userId = user?.id ?? null;
   const initialKey = paymentSourcesCacheKey(user?.id, readProfileId, includePersonal);
   const initialCached = user ? instantCache.read<CustomPaymentSource[]>(initialKey) : null;
   const [customPaymentSources, setCustomPaymentSources] = useState<CustomPaymentSource[]>(initialCached || []);
@@ -77,13 +94,21 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       return;
     }
 
-    if (!user) {
+    if (!userId) {
       setLoading(false);
       return;
     }
 
     const mySeq = ++fetchSeqRef.current;
     const isStale = () => mySeq !== fetchSeqRef.current;
+
+    const scopeKey = `payment_sources:${userId}:${readProfileId || 'personal'}:${includePersonal ? 'incl' : 'excl'}`;
+    const shared = recentSourcesByScope.get(scopeKey);
+    if (shared && Date.now() - shared.at < SOURCES_SHARE_TTL_MS) {
+      setCustomPaymentSources(shared.data);
+      setLoading(false);
+      return;
+    }
 
 
     try {
@@ -94,7 +119,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       let ownQuery = supabase
         .from('custom_payment_sources' as any)
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .order('sort_order', { ascending: true });
 
       if (readProfileId) {
@@ -118,7 +143,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       const { data: memberships, error: memberError } = await supabase
         .from('payment_source_members' as any)
         .select('payment_source_id, role')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .abortSignal(signal);
 
       if (memberError) throw memberError;
@@ -186,7 +211,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
         const sourceMembers = allMemberships.filter((m: any) => m.payment_source_id === source.id);
         // memberCount = members other than the owner
         const memberCount = sourceMembers.filter((m: any) => m.user_id !== source.user_id).length;
-        const isOwned = source.user_id === user.id;
+        const isOwned = source.user_id === userId;
         const ownerName = !isOwned
           ? (ownerProfiles.find((p: any) => p.user_id === source.user_id)?.display_name || null)
           : null;
@@ -211,18 +236,19 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
         return sourcesWithCards;
       };
 
-      const sourcesWithCards = await loadWithRetry('payment_sources', loadSources);
+      const sourcesWithCards = await loadWithRetry('payment_sources', loadSources, { singleFlightKey: scopeKey });
 
       if (isStale()) return;
 
       const finalSources = sourcesWithCards as CustomPaymentSource[];
+      recentSourcesByScope.set(scopeKey, { at: Date.now(), data: finalSources });
       setCustomPaymentSources(finalSources);
-      if (!isLocalMode && user) {
+      if (!isLocalMode && userId) {
         instantCache.write(
-          paymentSourcesCacheKey(user.id, readProfileId, includePersonal),
+          paymentSourcesCacheKey(userId, readProfileId, includePersonal),
           finalSources,
         );
-        hydratedKeyRef.current = paymentSourcesCacheKey(user.id, readProfileId, includePersonal);
+        hydratedKeyRef.current = paymentSourcesCacheKey(userId, readProfileId, includePersonal);
       }
     } catch (error) {
       // A stale fetch (deps changed mid-flight) is not an error — silently skip.
@@ -261,17 +287,17 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       }
 
       console.error('Error fetching custom payment sources:', error);
-      if (await isSessionGone(user?.id)) return;
+      if (await isSessionGone(userId)) return;
       showError(tr('errors.fetch.sources', 'Greška pri dohvaćanju prilagođenih izvora plaćanja'));
     } finally {
       if (!isStale()) setLoading(false);
     }
-  }, [user, isLocalMode, readProfileId, includePersonal, authReady]);
+  }, [userId, isLocalMode, readProfileId, includePersonal, authReady]);
 
   // Hydrate from cache instantly when context changes
   useEffect(() => {
-    if (isLocalMode || !user) return;
-    const key = paymentSourcesCacheKey(user.id, readProfileId, includePersonal);
+    if (isLocalMode || !userId) return;
+    const key = paymentSourcesCacheKey(userId, readProfileId, includePersonal);
     const cached = instantCache.read<CustomPaymentSource[]>(key);
     if (cached && cached.length > 0) {
       setCustomPaymentSources(cached);
@@ -280,7 +306,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
     } else {
       hydratedKeyRef.current = null;
     }
-  }, [user?.id, readProfileId, includePersonal, isLocalMode, user]);
+  }, [userId, readProfileId, includePersonal, isLocalMode]);
 
   useEffect(() => {
     fetchCustomPaymentSources();
@@ -299,7 +325,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
   // je marginalan jer je engine već konzistentan na serveru.
   // Zajednički okidač (visibilitychange → visible + online) s debounceom živi
   // u `useAppResume`; ovaj hook samo tiho ponovi dohvat.
-  useAppResume(fetchCustomPaymentSources, { enabled: !isLocalMode && !!user });
+  useAppResume(fetchCustomPaymentSources, { enabled: !isLocalMode && !!userId });
 
   // Subscribe to reorder events via Context to sync state across hook instances
   useEffect(() => {

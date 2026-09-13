@@ -77,6 +77,12 @@ export const useExpenseFetch = () => {
 
   const isLocalMode = storageMode === 'local' && !user;
 
+  // Ovisnosti hookova idu po `user?.id`; sam objekt se čita kroz ref, pa
+  // osvježenje tokena ne prekida ni ne restartira dohvat.
+  const userRef = useRef(user);
+  userRef.current = user;
+  const userId = user?.id ?? null;
+
 
   /**
    * Fetches the caller's payment-source memberships and owned income sources.
@@ -87,6 +93,7 @@ export const useExpenseFetch = () => {
   const fetchOwnedSources = useCallback(async (): Promise<{
     sharedIds: Set<string>;
   }> => {
+    const user = userRef.current;
     if (isLocalMode || !user) {
       setOwnedSourceIds(new Set());
       setSharedPaymentSourceIds(new Set());
@@ -132,9 +139,10 @@ export const useExpenseFetch = () => {
       console.error('Error fetching owned sources:', error);
       return { sharedIds: sharedIdsRef.current };
     }
-  }, [user, isLocalMode]);
+  }, [userId, isLocalMode]);
 
-  const fetchExpenses = useCallback(async (sharedIdsOverride?: Set<string>) => runSingleFlight(`expenses:${user?.id ?? 'anon'}`, async () => {
+  const fetchExpenses = useCallback(async (sharedIdsOverride?: Set<string>) => runSingleFlight(`expenses:${userId ?? 'anon'}`, async () => {
+    const user = userRef.current;
     // Cloud dohvat se NE smije pokrenuti dok se ne zna je li korisnik
     // prijavljen — inače upit ide kao `anon` i RLS puca.
     if (!isLocalMode && !authReady) return;
@@ -386,7 +394,7 @@ export const useExpenseFetch = () => {
       hydratedKeyRef.current = cacheKey;
       setLoading(false);
     }
-  }), [user, isLocalMode, authReady]);
+  }), [userId, isLocalMode, authReady]);
 
   const parseExpense = useCallback((raw: Record<string, unknown>): Expense => ({
     ...(raw as unknown as Expense),
@@ -464,11 +472,12 @@ export const useExpenseFetch = () => {
 
   // Svježina na povratku u fokus / mrežu — dashboard i novčanik brojke se
   // tiho usklade sa serverskom istinom (loading se ne pali nakon hidracije).
-  useAppResume(() => fetchExpenses(), { enabled: !isLocalMode && !!user && authReady });
+  useAppResume(() => fetchExpenses(), { enabled: !isLocalMode && !!userId && authReady });
 
 
   // Realtime subscription for cloud mode
   useEffect(() => {
+    const user = userRef.current;
     if (isLocalMode || !user) return;
 
     // Clean up existing channel
@@ -558,7 +567,7 @@ export const useExpenseFetch = () => {
       supabase.removeChannel(channel);
       realtimeChannelRef.current = null;
     };
-  }, [user, isLocalMode, parseExpense]);
+  }, [userId, isLocalMode, parseExpense]);
 
   // Helper: business_profile_id of the source attached to an expense (null if personal)
   const expenseSourceBusinessProfileId = useCallback((e: Expense): string | null => {
@@ -637,7 +646,7 @@ export const useExpenseFetch = () => {
       if (ownedSourceIds.has(expense.income_source_id)) return true;
       return false;
     });
-  }, [expenses, ownedSourceIds, sharedPaymentSourceIds, fullAccessSourceIds, hiddenPaymentSourceIds, isPaymentSourceHidden, isLocalMode, user, applyViewMode]);
+  }, [expenses, ownedSourceIds, sharedPaymentSourceIds, fullAccessSourceIds, hiddenPaymentSourceIds, isPaymentSourceHidden, isLocalMode, userId, applyViewMode]);
 
   // View-mode filtered expenses (no payment source access filtering)
   const contextFilteredExpenses = useMemo(() => applyViewMode(expenses), [expenses, applyViewMode]);

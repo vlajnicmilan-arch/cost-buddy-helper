@@ -60,9 +60,13 @@ function trSafe(key: string, defaultValue: string): string {
 export async function loadWithRetry<T>(
   name: string,
   fn: (signal: AbortSignal) => Promise<T>,
-  options: { timeoutMs?: number } = {},
+  options: { timeoutMs?: number; singleFlightKey?: string } = {},
 ): Promise<T> {
-  return runSingleFlight(name, () => loadWithRetryInternal(name, fn, options));
+  // `name` ostaje ime za dijagnostiku; ključ spajanja smije biti uži
+  // (npr. korisnik + poslovni profil) da se dohvati različitih dosega
+  // ne gutaju međusobno.
+  const key = options.singleFlightKey ?? name;
+  return runSingleFlight(key, () => loadWithRetryInternal(name, fn, options));
 }
 
 async function loadWithRetryInternal<T>(
