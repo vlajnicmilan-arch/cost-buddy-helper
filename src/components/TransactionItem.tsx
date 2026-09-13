@@ -321,6 +321,14 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
                 </TooltipContent>
               </Tooltip>
             )}
+            {(expense as any).pending_sync && (
+              <Badge
+                variant="outline"
+                className="text-[9px] py-0 px-1 h-4 border-muted-foreground/30 text-muted-foreground shrink-0"
+              >
+                {t('feedback.sendingExpense', 'Šalje se…')}
+              </Badge>
+            )}
             {expense.bank_match_status === 'pending_bank' && (
               <Tooltip>
                 <TooltipTrigger asChild>
