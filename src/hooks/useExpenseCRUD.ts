@@ -194,31 +194,28 @@ export const useExpenseCRUD = ({
 
         // Diagnostic trail BEFORE insert — captures whether project_id was passed in
         // (helps debug "transaction saved without project" reports). Best-effort.
-        try {
-          await supabase.from('app_diagnostics_logs').insert([{
-            session_id: 'expense-crud',
-            event: 'expense_insert_attempt',
-            route: typeof window !== 'undefined' ? window.location.pathname : null,
-            user_id: user.id,
-            app_version: (import.meta as any).env?.VITE_APP_VERSION ?? 'unknown',
-            device_info: {
-              userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
-            },
-            details: {
-              has_project_id: !!normalizedExpense.project_id,
-              project_id: normalizedExpense.project_id ?? null,
-              has_income_source: !!normalizedExpense.income_source_id,
-              income_source_id: normalizedExpense.income_source_id ?? null,
-              has_budget_id: !!normalizedExpense.budget_id,
-              type: normalizedExpense.type,
-              amount: normalizedExpense.amount,
-              description_preview: (normalizedExpense.description || '').slice(0, 60),
-              is_pending: !!isPendingMemberTransaction,
-            },
-          }]);
-        } catch {
-          // Best-effort: never block insert because of diagnostics.
-        }
+        // Dijagnostika NIKAD u kritičnom putu — upis se šalje bez čekanja.
+        void supabase.from('app_diagnostics_logs').insert([{
+          session_id: 'expense-crud',
+          event: 'expense_insert_attempt',
+          route: typeof window !== 'undefined' ? window.location.pathname : null,
+          user_id: user.id,
+          app_version: (import.meta as any).env?.VITE_APP_VERSION ?? 'unknown',
+          device_info: {
+            userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+          },
+          details: {
+            has_project_id: !!normalizedExpense.project_id,
+            project_id: normalizedExpense.project_id ?? null,
+            has_income_source: !!normalizedExpense.income_source_id,
+            income_source_id: normalizedExpense.income_source_id ?? null,
+            has_budget_id: !!normalizedExpense.budget_id,
+            type: normalizedExpense.type,
+            amount: normalizedExpense.amount,
+            description_preview: (normalizedExpense.description || '').slice(0, 60),
+            is_pending: !!isPendingMemberTransaction,
+          },
+        }]).then(undefined, () => { /* best-effort */ });
 
         // Regresijska zaštita: AI scan MORA proslijediti items.
         // Ako items fale, najvjerojatnije je riječ o wrapperu koji je "izgubio"
@@ -231,22 +228,20 @@ export const useExpenseCRUD = ({
               '[ExpenseCRUD] ai_extracted=true bez items — sumnja na regresiju write-patha',
               { merchant: normalizedExpense.merchant_name, route: typeof window !== 'undefined' ? window.location.pathname : null },
             );
-            try {
-              await supabase.from('app_diagnostics_logs').insert([{
-                session_id: 'expense-crud',
-                event: 'receipt_items_missing_on_ai_scan',
-                route: typeof window !== 'undefined' ? window.location.pathname : null,
-                user_id: user.id,
-                app_version: (import.meta as any).env?.VITE_APP_VERSION ?? 'unknown',
-                device_info: {},
-                severity: 'warning',
-                details: {
-                  merchant: normalizedExpense.merchant_name ?? null,
-                  amount: normalizedExpense.amount,
-                  description_preview: (normalizedExpense.description || '').slice(0, 60),
-                },
-              }]);
-            } catch { /* best-effort */ }
+            void supabase.from('app_diagnostics_logs').insert([{
+              session_id: 'expense-crud',
+              event: 'receipt_items_missing_on_ai_scan',
+              route: typeof window !== 'undefined' ? window.location.pathname : null,
+              user_id: user.id,
+              app_version: (import.meta as any).env?.VITE_APP_VERSION ?? 'unknown',
+              device_info: {},
+              severity: 'warning',
+              details: {
+                merchant: normalizedExpense.merchant_name ?? null,
+                amount: normalizedExpense.amount,
+                description_preview: (normalizedExpense.description || '').slice(0, 60),
+              },
+            }]).then(undefined, () => { /* best-effort */ });
           }
         } catch { /* helper import never blocks insert */ }
 
@@ -302,7 +297,22 @@ export const useExpenseCRUD = ({
           : effectiveEntrySource === 'manual'
             ? 'manual_entry'
             : 'default';
+        // Idempotencija: id se generira PRIJE slanja i ponavlja se na ručni
+        // "Pokušaj ponovno" — funkcija baze na postojeći id vraća postojeći
+        // redak, pa ponovni pokušaj nikad ne stvara duplikat.
+        const { stableSaveId } = await import('@/lib/expenseSave');
+        const saveSignature = [
+          user.id,
+          normalizedExpense.type,
+          normalizedExpense.amount,
+          normalizedExpense.description,
+          normalizedExpense.date.toISOString(),
+          canonicalPaymentSource,
+        ].join('|');
+        const clientExpenseId = stableSaveId(saveSignature);
+
         const basePayload = {
+          id: clientExpenseId,
           user_id: user.id,
           amount: normalizedExpense.amount,
           description: normalizedExpense.description,
