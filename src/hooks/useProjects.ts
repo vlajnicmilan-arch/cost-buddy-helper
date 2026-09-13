@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { filterProjectsByPersonalScope } from '@/lib/businessProjectScope';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthedFetchGate } from '@/hooks/useAuthedFetchGate';
@@ -156,6 +157,13 @@ export const useProjects = () => {
       setLoading(false);
     }
   }, [user, authReady, canFetch, isLocalMode, t, activeBusinessProfileId]);
+
+  // Personal mode shows ONLY personal projects (company projects live inside
+  // their company). Business mode keeps the server-side scoping above.
+  const visibleProjects = useMemo(
+    () => (activeBusinessProfileId ? projects : filterProjectsByPersonalScope(projects)),
+    [projects, activeBusinessProfileId],
+  );
 
   // Hydrate from cache instantly on mount / context change
   useEffect(() => {
@@ -400,7 +408,11 @@ export const useProjects = () => {
   };
 
   return {
-    projects,
+    // Personal mode lists ONLY personal projects; company projects live inside
+    // their company. Business mode keeps its server-side scoping.
+    projects: visibleProjects,
+    /** Unfiltered list — name resolution only (old expenses on company projects). */
+    allProjects: projects,
     loading,
     addProject,
     updateProject,

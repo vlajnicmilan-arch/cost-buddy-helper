@@ -32,3 +32,18 @@ export const filterProjectsByBusinessScope = <T extends BusinessScopeProject>(
   projects: T[],
   profileId: string | null | undefined,
 ): T[] => (profileId ? projects.filter((p) => isProjectInBusinessScope(p, profileId)) : projects);
+
+/**
+ * Personal scope: own projects with no company + shared projects joined personally.
+ * A project that belongs to a company is only visible inside that company.
+ */
+export const isProjectInPersonalScope = (project: BusinessScopeProject): boolean => {
+  const isOwned = project.isOwner !== false;
+  if (isOwned) return !project.business_profile_id;
+  return project.member_context !== 'business';
+};
+
+/** Single source of truth for personal-mode project lists. */
+export const filterProjectsByPersonalScope = <T extends BusinessScopeProject>(
+  projects: T[],
+): T[] => projects.filter(isProjectInPersonalScope);

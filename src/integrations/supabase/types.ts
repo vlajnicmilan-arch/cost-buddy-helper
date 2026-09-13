@@ -8136,6 +8136,10 @@ export type Database = {
         Returns: Json
       }
       month_key_from_date: { Args: { _d: string }; Returns: string }
+      move_project_to_business_profile: {
+        Args: { p_business_profile_id: string; p_project_id: string }
+        Returns: Json
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string

@@ -179,14 +179,16 @@ const Index = () => {
   const { customCategories } = useCustomCategories();
   const { plans: installmentPlans } = useInstallments();
   const { budgets: budgetsWithStats } = useBudgets();
-  const { projects } = useProjects();
+  const { projects, allProjects } = useProjects();
 
   const contextLookup = useMemo(() => ({
     budgets: budgetsWithStats.map(b => ({ id: b.id, name: b.name, icon: b.icon, color: b.color })),
-    projects: projects.map(p => ({ id: p.id, name: p.name, icon: p.icon, color: p.color })),
+    // Name resolution uses the UNFILTERED list so an older personal expense on a
+    // company project keeps showing the project name.
+    projects: allProjects.map(p => ({ id: p.id, name: p.name, icon: p.icon, color: p.color })),
     customPaymentSources: customPaymentSources.map(s => ({ id: s.id, name: s.name, icon: s.icon, color: s.color, cards: s.cards?.map(c => ({ id: c.id, last_four_digits: c.last_four_digits })) })),
     customCategories: customCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon, color: c.color })),
-  }), [budgetsWithStats, projects, customPaymentSources, customCategories]);
+  }), [budgetsWithStats, allProjects, customPaymentSources, customCategories]);
 
   const {
     expenses,

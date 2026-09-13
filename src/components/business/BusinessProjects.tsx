@@ -12,7 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { Plus, FolderKanban, Download, Loader2, Camera as CameraIcon, ImagePlus, Zap, Mic, BookOpen, Users, Handshake } from 'lucide-react';
+import { Plus, FolderKanban, Download, Loader2, Camera as CameraIcon, ImagePlus, Zap, Mic, BookOpen, Users, Handshake, ArrowRightLeft } from 'lucide-react';
+import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
 import { PeopleTab } from '@/components/projects/PeopleTab';
 import { CollaboratorsTab } from '@/components/projects/CollaboratorsTab';
 import { cn } from '@/lib/utils';
@@ -58,6 +59,10 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
   const [personalProjects, setPersonalProjects] = useState<any[]>([]);
   const [loadingPersonal, setLoadingPersonal] = useState(false);
   const [importingIds, setImportingIds] = useState<Set<string>>(new Set());
+  const [moveTarget, setMoveTarget] = useState<any | null>(null);
+  const { profiles: businessProfiles } = useBusinessProfiles();
+  const activeCompanyName =
+    businessProfiles.find(p => p.id === activeBusinessProfileId)?.name ?? t('business.company', 'tvrtku');
   const [projectStats, setProjectStats] = useState<Record<string, ProjectStat>>({});
   const [quickPhotoOpen, setQuickPhotoOpen] = useState(false);
   const [quickPhotoUploading, setQuickPhotoUploading] = useState(false);
@@ -143,33 +148,30 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
     }
   };
 
-  const handleImportProject = async (project: any) => {
+  /**
+   * Move (not copy) a personal project into the active company. One atomic RPC
+   * moves the project, its expenses, linked incoming invoices and engagements;
+   * milestones/documents/members follow via project_id.
+   */
+  const handleMoveProject = async (project: any) => {
     if (!user || !activeBusinessProfileId) return;
     setImportingIds(prev => new Set(prev).add(project.id));
     try {
-      const { error } = await supabase
-        .from('projects')
-        .insert({
-          user_id: user.id,
-          name: project.name,
-          description: project.description,
-          icon: project.icon,
-          color: project.color,
-          status: project.status,
-          total_budget: project.total_budget,
-          start_date: project.start_date,
-          end_date: project.end_date,
-          business_profile_id: activeBusinessProfileId,
-        });
+      const { error } = await (supabase.rpc as any)('move_project_to_business_profile', {
+        p_project_id: project.id,
+        p_business_profile_id: activeBusinessProfileId,
+      });
       if (error) throw error;
-      showSuccess(`Projekt "${project.name}" uvezen`);
+      setPersonalProjects(prev => prev.filter(p => p.id !== project.id));
+      showSuccess(t('projects.moved', 'Projekt premješten u tvrtku'));
       refetch();
       onRefreshExpenses?.();
     } catch (err) {
-      console.error('Error importing project:', err);
+      console.error('Error moving project:', err);
       showError(t('common.error'));
     } finally {
       setImportingIds(prev => { const n = new Set(prev); n.delete(project.id); return n; });
+      setMoveTarget(null);
     }
   };
 
@@ -322,8 +324,8 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
             className="gap-1.5 rounded-xl min-w-0"
             onClick={() => { setImportDialogOpen(true); fetchPersonalProjects(); }}
           >
-            <Download className="w-4 h-4 shrink-0" />
-            <span className="truncate">{t('projects.importPersonal', 'Uvezi')}</span>
+            <ArrowRightLeft className="w-4 h-4 shrink-0" />
+            <span className="truncate">{t('projects.movePersonal', 'Premjesti')}</span>
           </Button>
           <Button
             size="sm"
@@ -496,8 +498,8 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
         <DialogContent className="max-w-md max-h-[70vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Download className="w-5 h-5 text-primary" />
-              {t('projects.importFromPersonal', 'Uvezi projekt iz osobnih financija')}
+              <ArrowRightLeft className="w-5 h-5 text-primary" />
+              {t('projects.moveFromPersonal', 'Premjesti projekt iz osobnih u {{company}}', { company: activeCompanyName })}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-2 mt-2">
@@ -507,7 +509,7 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
               </div>
             ) : personalProjects.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
-                {t('projects.noPersonalProjects', 'Nemate osobnih projekata za uvoz.')}
+                {t('projects.noPersonalProjectsToMove', 'Nemate osobnih projekata za premještanje.')}
               </p>
             ) : (
               personalProjects.map((project) => (
@@ -529,14 +531,14 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
                     variant="outline"
                     className="shrink-0 gap-1 rounded-lg"
                     disabled={importingIds.has(project.id)}
-                    onClick={() => handleImportProject(project)}
+                    onClick={() => setMoveTarget(project)}
                   >
                     {importingIds.has(project.id) ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
-                      <Download className="w-3.5 h-3.5" />
+                      <ArrowRightLeft className="w-3.5 h-3.5" />
                     )}
-                    {t('common.import', 'Uvezi')}
+                    {t('projects.move', 'Premjesti')}
                   </Button>
                 </div>
               ))
@@ -544,6 +546,28 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Confirm move personal → company */}
+      <AlertDialog open={!!moveTarget} onOpenChange={(o) => { if (!o) setMoveTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('projects.move', 'Premjesti')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                'projects.confirmMove',
+                'Projekt {{project}} premješta se u {{company}} zajedno s fazama, troškovima i ljudima.',
+                { project: moveTarget?.name ?? '', company: activeCompanyName },
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (moveTarget) void handleMoveProject(moveTarget); }}>
+              {t('projects.move', 'Premjesti')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Daily Standup Sheet */}
       <DailyStandupSheet
