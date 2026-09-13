@@ -65,7 +65,7 @@ export const FeedbackDialog = ({ open, onOpenChange, defaultType = 'idea' }: Fee
   const [message, setMessage] = useState('');
   const [email, setEmail] = useState('');
   const [rating, setRating] = useState<number | null>(null);
-  const [includeDiagnostics, setIncludeDiagnostics] = useState(false);
+  const [includeConsoleLogs, setIncludeConsoleLogs] = useState(defaultType === 'bug');
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -88,6 +88,7 @@ export const FeedbackDialog = ({ open, onOpenChange, defaultType = 'idea' }: Fee
   useEffect(() => {
     if (open) {
       setType(defaultType);
+      setIncludeConsoleLogs(defaultType === 'bug');
       if (user?.email) setEmail(user.email);
     } else {
       setTimeout(() => {
@@ -123,13 +124,15 @@ export const FeedbackDialog = ({ open, onOpenChange, defaultType = 'idea' }: Fee
         rating,
         language: (i18n.language || 'hr').slice(0, 2),
       };
-      if (includeDiagnostics && diagnostics) {
+      if (diagnostics) {
         payload.route = diagnostics.route;
         payload.app_version = diagnostics.app_version;
         payload.user_agent = diagnostics.user_agent;
         payload.viewport = diagnostics.viewport;
         payload.platform = diagnostics.platform;
-        payload.console_tail = diagnostics.console_tail;
+        if (includeConsoleLogs) {
+          payload.console_tail = diagnostics.console_tail;
+        }
       }
 
       const { error } = await supabase.from('feedback_submissions').insert(payload as any);
@@ -281,25 +284,25 @@ export const FeedbackDialog = ({ open, onOpenChange, defaultType = 'idea' }: Fee
               </div>
             )}
 
-            {/* Diagnostics toggle */}
+            {/* Console log toggle — basic diagnostics are always attached */}
             <div className="rounded-lg border border-border/60 bg-muted/30 p-3 space-y-2">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <Label htmlFor="feedback-diag" className="text-sm font-medium cursor-pointer">
-                    {t('feedbackForm.attachDiagnostics', 'Priloži dijagnostiku')}
+                    {t('feedbackForm.attachConsoleLogs', 'Priloži zapis konzole')}
                   </Label>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {t('feedbackForm.diagnosticsHelp', 'Trenutna stranica, verzija i posljednje console poruke. Pomaže timu brže riješiti problem.')}
+                    {t('feedbackForm.consoleLogsHelp', 'Verzija, ruta, platforma i preglednik uvijek se šalju. Kvačica dodaje posljednje console poruke.')}
                   </p>
                 </div>
                 <Switch
                   id="feedback-diag"
-                  checked={includeDiagnostics}
-                  onCheckedChange={setIncludeDiagnostics}
+                  checked={includeConsoleLogs}
+                  onCheckedChange={setIncludeConsoleLogs}
                 />
               </div>
 
-              {includeDiagnostics && (
+              {includeConsoleLogs && (
                 <button
                   type="button"
                   onClick={() => setShowDiagnostics((s) => !s)}
@@ -312,7 +315,7 @@ export const FeedbackDialog = ({ open, onOpenChange, defaultType = 'idea' }: Fee
                 </button>
               )}
 
-              {includeDiagnostics && showDiagnostics && diagnostics && (
+              {includeConsoleLogs && showDiagnostics && diagnostics && (
                 <pre className="text-[10px] leading-tight bg-background/60 rounded p-2 overflow-x-auto max-h-40 text-muted-foreground">
 {JSON.stringify(diagnostics, null, 2)}
                 </pre>

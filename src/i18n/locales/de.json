@@ -4837,6 +4837,8 @@
     "emailOptional": "E-Mail (optional, für eine Antwort)",
     "attachDiagnostics": "Diagnose anhängen",
     "diagnosticsHelp": "Aktuelle Seite, Version und letzte Konsolenmeldungen. Hilft dem Team, Probleme schneller zu lösen.",
+    "attachConsoleLogs": "Konsolenprotokoll anhängen",
+    "consoleLogsHelp": "Version, Route, Plattform und Browser werden immer gesendet. Der Schalter fügt letzte Konsolenmeldungen hinzu.",
     "showPreview": "Anzeigen, was gesendet wird",
     "hidePreview": "Vorschau ausblenden",
     "send": "Senden",

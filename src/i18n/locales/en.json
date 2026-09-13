@@ -4837,6 +4837,8 @@
     "emailOptional": "Email (optional, for a reply)",
     "attachDiagnostics": "Attach diagnostics",
     "diagnosticsHelp": "Current page, version, and recent console logs. Helps the team resolve issues faster.",
+    "attachConsoleLogs": "Attach console log",
+    "consoleLogsHelp": "Version, route, platform and browser are always sent. The toggle adds recent console messages.",
     "showPreview": "Show what is sent",
     "hidePreview": "Hide preview",
     "send": "Send",

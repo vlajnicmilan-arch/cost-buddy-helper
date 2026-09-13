@@ -4846,6 +4846,8 @@
     "emailOptional": "Email (opcionalno, za odgovor)",
     "attachDiagnostics": "Priloži dijagnostiku",
     "diagnosticsHelp": "Trenutna stranica, verzija i posljednje console poruke. Pomaže timu brže riješiti problem.",
+    "attachConsoleLogs": "Priloži zapis konzole",
+    "consoleLogsHelp": "Verzija, ruta, platforma i preglednik uvijek se šalju. Kvačica dodaje posljednje console poruke.",
     "showPreview": "Prikaži što se šalje",
     "hidePreview": "Sakrij pregled",
     "send": "Pošalji",

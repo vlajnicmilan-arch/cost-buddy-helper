@@ -38,8 +38,8 @@ vi.mock('react-router-dom', async () => ({
 vi.mock('@/components/BottomNav', () => ({ BottomNav: () => null }));
 vi.mock('@/components/PageHeader', () => ({ PageHeader: () => null }));
 vi.mock('@/components/TrialFeatureChip', () => ({ TrialFeatureChip: () => null }));
-vi.mock('@/components/projects/PeopleTab', () => ({ PeopleTab: () => null }));
-vi.mock('@/components/projects/CollaboratorsTab', () => ({ CollaboratorsTab: () => null }));
+vi.mock('@/components/projects/PeopleTab', () => ({ PeopleTab: () => <div data-testid="people-tab" /> }));
+vi.mock('@/components/projects/CollaboratorsTab', () => ({ CollaboratorsTab: () => <div data-testid="collaborators-tab" /> }));
 vi.mock('@/components/projects/ProjectsPanel', () => ({
   ProjectsPanel: ({ canCreate }: { canCreate: boolean }) => (
     <div data-testid="projects-panel" data-can-create={String(canCreate)} />
@@ -109,5 +109,47 @@ describe('Projects — hladni ulazak i gate', () => {
     state.hasProjectsAccess = false;
     renderPage();
     await waitFor(() => expect(requestModule).toHaveBeenCalledWith('projects', expect.anything()));
+  });
+
+  it('korisnik bez vlastitih projekata vidi samo tab Projekti', async () => {
+    state.hasProjectsAccess = true;
+    state.ownedCount = 0;
+    state.memberCount = 1;
+    renderPage();
+    await screen.findByTestId('projects-panel');
+    expect(screen.getByRole('button', { name: /Projekti/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Ljudi/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Suradnici/i })).not.toBeInTheDocument();
+  });
+
+  it('vlasnik s barem jednim projektom vidi sve tri taba', async () => {
+    state.hasProjectsAccess = true;
+    state.ownedCount = 1;
+    state.memberCount = 0;
+    renderPage();
+    await screen.findByTestId('projects-panel');
+    expect(screen.getByRole('button', { name: /Projekti/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Ljudi/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Suradnici/i })).toBeInTheDocument();
+  });
+
+  it('aktivni tab Ljudi/Suradnici se vraća na Projekti kad nestane vlasništva', async () => {
+    state.hasProjectsAccess = true;
+    state.ownedCount = 1;
+    state.memberCount = 0;
+    const { rerender } = renderPage();
+    await screen.findByRole('button', { name: /Ljudi/i });
+    // klik na Ljudi
+    screen.getByRole('button', { name: /Ljudi/i }).click();
+    await waitFor(() => expect(screen.getByTestId('people-tab')).toBeInTheDocument());
+    // simuliraj da je korisnik obrisao zadnji projekt
+    state.ownedCount = 0;
+    rerender(
+      <MemoryRouter>
+        <Projects />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.queryByTestId('people-tab')).not.toBeInTheDocument());
+    expect(screen.getByTestId('projects-panel')).toBeInTheDocument();
   });
 });

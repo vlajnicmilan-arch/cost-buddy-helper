@@ -35,6 +35,7 @@ const Projects = () => {
 
   // Free users get access if they are a member of at least one project (invited as worker/member)
   const [hasMemberships, setHasMemberships] = useState<boolean | null>(null);
+  const [ownedProjectCount, setOwnedProjectCount] = useState<number | null>(null);
   const [view, setView] = useState<'projects' | 'people' | 'collaborators'>('projects');
 
 
@@ -46,8 +47,7 @@ const Projects = () => {
 
   useEffect(() => {
     const check = async () => {
-      if (!user) { setHasMemberships(false); return; }
-       if (hasProjectsAccess) { setHasMemberships(true); return; }
+      if (!user) { setHasMemberships(false); setOwnedProjectCount(0); return; }
       // Vlasnik projekta NIJE u project_members — bez ove provjere bi mu se
       // pri hladnom ulasku nudio paywall iako ima što vidjeti.
       const [members, owned] = await Promise.all([
@@ -60,10 +60,22 @@ const Projects = () => {
           .select('id', { count: 'exact', head: true })
           .eq('user_id', user.id),
       ]);
-      setHasMemberships(((members.count || 0) + (owned.count || 0)) > 0);
+      const ownedCount = owned.count || 0;
+      setOwnedProjectCount(ownedCount);
+      setHasMemberships(hasProjectsAccess || ((members.count || 0) + ownedCount) > 0);
     };
     check();
   }, [user, hasProjectsAccess]);
+
+  const canSeePeopleTabs = ownedProjectCount !== null && ownedProjectCount > 0;
+
+  useEffect(() => {
+    // Ako korisnik izgubi pravo na Ljudi/Suradnici (npr. obrisao zadnji vlastiti
+    // projekt), vrati ga na Projects tab da ne ostane na praznom tabu.
+    if ((view === 'people' || view === 'collaborators') && ownedProjectCount === 0) {
+      setView('projects');
+    }
+  }, [view, ownedProjectCount]);
 
   const gatePromptedRef = useState<{ done: boolean }>({ done: false })[0];
   useEffect(() => {
@@ -102,30 +114,37 @@ const Projects = () => {
           <TrialFeatureChip feature="projects" />
         </div>
 
-        {/* Projekti | Ljudi | Suradnici */}
-        <div className="flex gap-1 p-1 mb-3 bg-muted/40 rounded-xl border border-border/30">
-          {([
-            { id: 'projects' as const, label: t('nav.projects', 'Projekti'), icon: FolderKanban },
-            { id: 'people' as const, label: t('people.title', 'Ljudi'), icon: Users },
-            { id: 'collaborators' as const, label: t('collaboratorsOverview.title', 'Suradnici'), icon: Handshake },
-          ]).map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setView(id)}
-              aria-pressed={view === id}
-              className={cn(
-                'flex items-center gap-1 rounded-lg px-1.5 py-2 text-xs font-medium transition-all min-h-[44px] flex-1 justify-center',
-                view === id
-                  ? 'bg-background text-foreground shadow-sm border border-border'
-                  : 'text-muted-foreground hover:bg-muted/60',
-              )}
-            >
-              <Icon className="w-3.5 h-3.5 shrink-0" />
-              <span className="whitespace-nowrap">{label}</span>
-            </button>
-          ))}
-        </div>
+        {/* Projekti | Ljudi | Suradnici — Ljudi i Suradnici samo za vlasnike projekata */}
+        {(canSeePeopleTabs || view === 'projects') && (
+          <div className={cn(
+            'flex gap-1 p-1 mb-3 bg-muted/40 rounded-xl border border-border/30',
+            !canSeePeopleTabs && 'hidden'
+          )}>
+            {([
+              { id: 'projects' as const, label: t('nav.projects', 'Projekti'), icon: FolderKanban },
+              ...(canSeePeopleTabs ? [
+                { id: 'people' as const, label: t('people.title', 'Ljudi'), icon: Users },
+                { id: 'collaborators' as const, label: t('collaboratorsOverview.title', 'Suradnici'), icon: Handshake },
+              ] : []),
+            ]).map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setView(id)}
+                aria-pressed={view === id}
+                className={cn(
+                  'flex items-center gap-1 rounded-lg px-1.5 py-2 text-xs font-medium transition-all min-h-[44px] flex-1 justify-center',
+                  view === id
+                    ? 'bg-background text-foreground shadow-sm border border-border'
+                    : 'text-muted-foreground hover:bg-muted/60',
+                )}
+              >
+                <Icon className="w-3.5 h-3.5 shrink-0" />
+                <span className="whitespace-nowrap">{label}</span>
+              </button>
+            ))}
+          </div>
+        )}
 
         {view === 'collaborators' ? (
           <CollaboratorsTab />
