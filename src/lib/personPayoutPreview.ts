@@ -35,7 +35,7 @@ export const previewEngagementPeriod = async (
       p_project_id: projectId,
       p_period_start: periodStart,
       p_period_end: periodEnd,
-    } as never);
+    });
     if (error) throw error;
     const raw = (data ?? { hours: 0, gross: 0 }) as { hours?: unknown; gross?: unknown };
     return { hours: Number(raw.hours ?? 0) || 0, gross: Number(raw.gross ?? 0) || 0 };
