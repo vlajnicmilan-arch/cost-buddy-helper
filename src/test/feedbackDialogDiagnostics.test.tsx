@@ -95,7 +95,7 @@ describe('FeedbackDialog — dijagnostika', () => {
 
   it('uvijek šalje osnovnu dijagnostiku bez obzira na kvačicu', async () => {
     renderDialog('bug');
-    fireEvent.change(screen.getByPlaceholderText(/What were you trying/i), {
+    fireEvent.change(screen.getByRole('textbox'), {
       target: { value: 'Nešto ne radi' },
     });
     // isključi konzolu
