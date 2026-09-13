@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { filterProjectsByPersonalScope } from '@/lib/businessProjectScope';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthedFetchGate } from '@/hooks/useAuthedFetchGate';
