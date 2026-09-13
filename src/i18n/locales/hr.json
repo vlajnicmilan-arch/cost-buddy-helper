@@ -7083,7 +7083,10 @@
       "done": "Isplata zabilježena",
       "open": "Isplati",
       "shortfallFrom": "Nedoplaćeno iz {{month}}: {{amount}}",
-      "earlierPeriod": "ranijeg razdoblja"
+      "earlierPeriod": "ranijeg razdoblja",
+      "period": "Razdoblje",
+      "pickPeriod": "Odaberi razdoblje",
+      "calcFromHours": "Izračunaj iz sati"
     },
     "payoutVoided": "stornirano",
     "payoutVoidReason": "Razlog",

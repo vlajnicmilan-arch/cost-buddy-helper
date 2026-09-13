@@ -7065,7 +7065,10 @@
       "done": "Payout recorded",
       "open": "Pay",
       "shortfallFrom": "Underpaid from {{month}}: {{amount}}",
-      "earlierPeriod": "an earlier period"
+      "earlierPeriod": "an earlier period",
+      "period": "Period",
+      "pickPeriod": "Choose a period",
+      "calcFromHours": "Calculate from hours"
     },
     "payoutVoided": "voided",
     "payoutVoidReason": "Reason",
