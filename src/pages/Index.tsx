@@ -180,15 +180,25 @@ const Index = () => {
   const { plans: installmentPlans } = useInstallments();
   const { budgets: budgetsWithStats } = useBudgets();
   const { projects, allProjects } = useProjects();
+  const allPaymentSourceNames = useAllPaymentSourceNames();
 
-  const contextLookup = useMemo(() => ({
-    budgets: budgetsWithStats.map(b => ({ id: b.id, name: b.name, icon: b.icon, color: b.color })),
-    // Name resolution uses the UNFILTERED list so an older personal expense on a
-    // company project keeps showing the project name.
-    projects: allProjects.map(p => ({ id: p.id, name: p.name, icon: p.icon, color: p.color })),
-    customPaymentSources: customPaymentSources.map(s => ({ id: s.id, name: s.name, icon: s.icon, color: s.color, cards: s.cards?.map(c => ({ id: c.id, last_four_digits: c.last_four_digits })) })),
-    customCategories: customCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon, color: c.color })),
-  }), [budgetsWithStats, allProjects, customPaymentSources, customCategories]);
+  const contextLookup = useMemo(() => {
+    // Name resolution uses ALL wallets (both scopes): a moved expense stays
+    // linked to the wallet it was paid from and must never show "unknown".
+    const scoped = customPaymentSources.map(s => ({ id: s.id, name: s.name, icon: s.icon, color: s.color, cards: s.cards?.map(c => ({ id: c.id, last_four_digits: c.last_four_digits })) }));
+    const known = new Set(scoped.map(s => s.id));
+    const extras = allPaymentSourceNames
+      .filter(s => !known.has(s.id))
+      .map(s => ({ id: s.id, name: s.name, icon: s.icon ?? undefined, color: s.color ?? undefined, cards: undefined }));
+    return {
+      budgets: budgetsWithStats.map(b => ({ id: b.id, name: b.name, icon: b.icon, color: b.color })),
+      // Name resolution uses the UNFILTERED list so an older personal expense on a
+      // company project keeps showing the project name.
+      projects: allProjects.map(p => ({ id: p.id, name: p.name, icon: p.icon, color: p.color })),
+      customPaymentSources: [...scoped, ...extras],
+      customCategories: customCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon, color: c.color })),
+    };
+  }, [budgetsWithStats, allProjects, customPaymentSources, allPaymentSourceNames, customCategories]);
 
   const {
     expenses,
