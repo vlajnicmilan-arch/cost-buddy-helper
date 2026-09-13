@@ -28,6 +28,7 @@ import { filterProjectsByBusinessScope } from '@/lib/businessProjectScope';
 import { useNativeCamera } from '@/hooks/useNativeCamera';
 import { dataUrlToFile, saveDocument } from '@/lib/documentStorage';
 import { buildMoveSummary, type MoveSummary } from '@/lib/projectMoveSummary';
+import { applyCountedFilter } from '@/lib/countedExpense';
 
 interface BusinessProjectsProps {
   onRefreshExpenses?: () => void;
@@ -217,10 +218,12 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
       setMoveSummaryLoading(true);
       try {
         const [expensesRes, sourcesRes] = await Promise.all([
-          (supabase.from('expenses') as any)
-            .select('amount, payment_source, expense_nature, deleted_at')
-            .eq('project_id', target.id)
-            .eq('user_id', user.id),
+          applyCountedFilter(
+            (supabase.from('expenses') as any)
+              .select('amount, payment_source, expense_nature, deleted_at')
+              .eq('project_id', target.id)
+              .eq('user_id', user.id),
+          ),
           (supabase.from('custom_payment_sources') as any)
             .select('id, name, business_profile_id')
             .eq('user_id', user.id),
