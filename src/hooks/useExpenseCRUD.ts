@@ -616,6 +616,8 @@ export const useExpenseCRUD = ({
     } catch (error) {
       console.error('Error adding expense:', error);
       const msg = error instanceof Error ? error.message : '';
+      // Poruka s gumbom "Pokušaj ponovno" je već prikazana — ne dupliraj je.
+      if ((error as any)?.__handled) throw error;
       if (msg.includes('description')) {
         showError(t('feedback.missingDescription'));
       } else {
