@@ -157,6 +157,13 @@ export const useProjects = () => {
     }
   }, [user, authReady, canFetch, isLocalMode, t, activeBusinessProfileId]);
 
+  // Personal mode shows ONLY personal projects (company projects live inside
+  // their company). Business mode keeps the server-side scoping above.
+  const visibleProjects = useMemo(
+    () => (activeBusinessProfileId ? projects : filterProjectsByPersonalScope(projects)),
+    [projects, activeBusinessProfileId],
+  );
+
   // Hydrate from cache instantly on mount / context change
   useEffect(() => {
     if (isLocalMode) return;
