@@ -13,6 +13,7 @@ import {
   getExpensesSource,
   __resetExpensesSourceForTests,
 } from '@/lib/expenseSourceMark';
+import { runWithTransientRetry } from '@/lib/expenseFetchRetry';
 
 // ─── in-memory zamjena za IndexedDB ─────────────────────────────────────────
 const makeBackend = () => {
@@ -117,6 +118,49 @@ describe('paralelne stranice', () => {
     });
     expect(res.sessionLost).toBe(false);
     expect(res.rows).toEqual([1, 2, 3, 4, 5]);
+  });
+
+  it('najviše dvije stranice radi paralelno', async () => {
+    let active = 0;
+    let maxActive = 0;
+    const res = await loadPagesInParallel<number>({
+      pageSize: 1,
+      concurrency: 2,
+      isSessionAlive: () => true,
+      fetchPage: async (from, withCount) => {
+        active += 1;
+        maxActive = Math.max(maxActive, active);
+        await new Promise(r => setTimeout(r, 2));
+        active -= 1;
+        return { rows: [from], count: withCount ? 5 : null };
+      },
+    });
+    expect(res.rows).toEqual([0, 1, 2, 3, 4]);
+    expect(maxActive).toBe(2);
+  });
+
+  it('ponavlja samo palu stranicu i čuva već dohvaćene retke', async () => {
+    const calls: number[] = [];
+    const failures = new Set([2]);
+    const fetchPage = (from: number, withCount: boolean) => runWithTransientRetry(
+      async () => {
+        calls.push(from);
+        if (failures.delete(from)) throw new TypeError('Failed to fetch');
+        return { rows: [from, from + 1], count: withCount ? 6 : null };
+      },
+      { delays: [0], sleep: async () => {} },
+    ).then(({ result }) => result);
+
+    const res = await loadPagesInParallel<number>({
+      pageSize: 2,
+      fetchPage,
+      isSessionAlive: () => true,
+      concurrency: 2,
+    });
+    expect(res.rows).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(calls.filter(from => from === 0)).toHaveLength(1);
+    expect(calls.filter(from => from === 2)).toHaveLength(2);
+    expect(calls.filter(from => from === 4)).toHaveLength(1);
   });
 
   it('odjava usred paralelnog dohvata ne vraća krnji skup', async () => {

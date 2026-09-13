@@ -10,8 +10,11 @@
  * Modul je bez ovisnosti (osim DOM API-ja) kako bi bio izravno testabilan.
  */
 
-/** Razuman rok za dohvate Početne. */
-export const HOME_FETCH_TIMEOUT_MS = 20_000;
+/** Rok za manje dohvate Početne. */
+export const HOME_FETCH_TIMEOUT_MS = 30_000;
+
+/** Rok za cijeli straničeni dohvat transakcija, ne za pojedinu stranicu. */
+export const EXPENSES_FETCH_TIMEOUT_MS = 90_000;
 
 export class FetchTimeoutError extends Error {
   constructor(ms: number) {
@@ -46,4 +49,33 @@ export function withTimeout<T>(
   return Promise.race([fn(controller.signal), timeout]).finally(() => {
     if (timer) clearTimeout(timer);
   }) as Promise<T>;
+}
+
+/**
+ * Rok koji nakon aborta čeka da se podložni zahtjev stvarno zatvori.
+ * Koristi se za veliki dohvat transakcija kako novi single-flight zahtjev ne
+ * bi krenuo dok API sloj još drži vezu prethodnog zahtjeva.
+ */
+export function withTimeoutAndDrain<T>(
+  fn: (signal: AbortSignal) => Promise<T>,
+  ms: number,
+): Promise<T> {
+  const controller = new AbortController();
+  let timedOut = false;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const task = fn(controller.signal);
+
+  return new Promise<T>((resolve, reject) => {
+    timer = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, ms);
+
+    task.then(
+      (value) => timedOut ? reject(new FetchTimeoutError(ms)) : resolve(value),
+      (error) => timedOut ? reject(new FetchTimeoutError(ms)) : reject(error),
+    );
+  }).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
 }

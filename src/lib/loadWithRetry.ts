@@ -17,9 +17,30 @@ import {
 } from '@/lib/expenseFetchRetry';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { getBuildStamp } from '@/lib/buildStamp';
-import { withTimeout, HOME_FETCH_TIMEOUT_MS } from '@/lib/fetchTimeout';
+import { withTimeoutAndDrain, HOME_FETCH_TIMEOUT_MS } from '@/lib/fetchTimeout';
 import { beginWeakFetch, endWeakFetch } from '@/lib/weakConnection';
 import i18next from 'i18next';
+
+const inFlightLoads = new Map<string, Promise<unknown>>();
+
+/**
+ * Spaja istovremene zahtjeve istog imena. Pozivatelji dijele isti rezultat,
+ * pa fokus, ručno osvježavanje i retry ne mogu otvoriti paralelne kopije.
+ */
+export function runSingleFlight<T>(name: string, load: () => Promise<T>): Promise<T> {
+  const current = inFlightLoads.get(name) as Promise<T> | undefined;
+  if (current) return current;
+
+  const promise = load().finally(() => {
+    if (inFlightLoads.get(name) === promise) inFlightLoads.delete(name);
+  });
+  inFlightLoads.set(name, promise);
+  return promise;
+}
+
+export function __resetInFlightLoadsForTests(): void {
+  inFlightLoads.clear();
+}
 
 /** Poruka koju korisnik vidi TEK nakon iscrpljenih ponavljanja. */
 export const NETWORK_FETCH_FALLBACK = 'Nema veze s poslužiteljem — podaci nisu osvježeni';
@@ -41,12 +62,20 @@ export async function loadWithRetry<T>(
   fn: (signal: AbortSignal) => Promise<T>,
   options: { timeoutMs?: number } = {},
 ): Promise<T> {
+  return runSingleFlight(name, () => loadWithRetryInternal(name, fn, options));
+}
+
+async function loadWithRetryInternal<T>(
+  name: string,
+  fn: (signal: AbortSignal) => Promise<T>,
+  options: { timeoutMs?: number },
+): Promise<T> {
   const startedAt = Date.now();
   const timeoutMs = options.timeoutMs ?? HOME_FETCH_TIMEOUT_MS;
   let weak = false;
   try {
     const { result, attempts } = await runWithTransientRetry(
-      () => withTimeout(fn, timeoutMs),
+      () => withTimeoutAndDrain(fn, timeoutMs),
       {
         onRetry: () => {
           // Prvo ponavljanje pali JEDNU tihu traku umjesto crvene poruke.

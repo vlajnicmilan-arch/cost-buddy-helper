@@ -22,9 +22,14 @@ vi.mock('@/lib/expenseFetchRetry', async () => {
   };
 });
 
-import { withTimeout, FetchTimeoutError, HOME_FETCH_TIMEOUT_MS } from '@/lib/fetchTimeout';
+import {
+  withTimeout,
+  FetchTimeoutError,
+  HOME_FETCH_TIMEOUT_MS,
+  EXPENSES_FETCH_TIMEOUT_MS,
+} from '@/lib/fetchTimeout';
 import { classifyFetchFailure } from '@/lib/expenseFetchRetry';
-import { loadWithRetry } from '@/lib/loadWithRetry';
+import { loadWithRetry, runSingleFlight, __resetInFlightLoadsForTests } from '@/lib/loadWithRetry';
 import {
   beginWeakFetch,
   endWeakFetch,
@@ -39,11 +44,13 @@ beforeEach(() => {
   logDiagnostic.mockClear();
   __resetWeakConnection();
   __resetFeedbackDedup();
+  __resetInFlightLoadsForTests();
 });
 
 describe('rok na dohvat', () => {
-  it('rok je razuman (20 s), ne minutama', () => {
-    expect(HOME_FETCH_TIMEOUT_MS).toBe(20_000);
+  it('rokovi su 30 s za Početnu i 90 s za cijeli dohvat transakcija', () => {
+    expect(HOME_FETCH_TIMEOUT_MS).toBe(30_000);
+    expect(EXPENSES_FETCH_TIMEOUT_MS).toBe(90_000);
   });
 
   it('zahtjev koji visi prekida se i prijavljuje kao prolazni timeout', async () => {
@@ -91,6 +98,16 @@ describe('rok na dohvat', () => {
 });
 
 describe('dohvat novčanika', () => {
+  it('drugi poziv istog imena dijeli postojeći zahtjev', async () => {
+    let resolveLoad: ((value: string[]) => void) | undefined;
+    const fn = vi.fn(() => new Promise<string[]>((resolve) => { resolveLoad = resolve; }));
+    const first = runSingleFlight('same', fn);
+    const second = runSingleFlight('same', fn);
+    expect(fn).toHaveBeenCalledTimes(1);
+    resolveLoad?.(['ok']);
+    await expect(Promise.all([first, second])).resolves.toEqual([['ok'], ['ok']]);
+  });
+
   it('staje nakon 3 pokušaja, bez crvene poruke', async () => {
     const fn = vi.fn(async () => {
       throw new TypeError('Failed to fetch');
