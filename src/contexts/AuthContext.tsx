@@ -8,6 +8,7 @@ import { flushPendingTermsAcceptance } from '@/lib/termsAcceptance';
 import { toDayKey } from '@/lib/dayKey';
 import { markOnce } from '@/lib/bootTiming';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { pickStableUser } from '@/lib/stableAuthIdentity';
 
 interface AuthContextValue {
   user: User | null;
@@ -171,7 +172,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       setSession(validatedSession);
-      setUser(validatedSession?.user ?? null);
+      setUser(prev => pickStableUser(prev, validatedSession?.user ?? null));
       setLoading(false);
       initialSessionCheckedRef.current = true;
       setAuthReady(true);
