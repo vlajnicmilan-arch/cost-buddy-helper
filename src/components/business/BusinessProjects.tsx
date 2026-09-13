@@ -632,10 +632,34 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {renderMoveSummary()}
           <AlertDialogFooter>
             <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
             <AlertDialogAction onClick={() => { if (moveTarget) void handleMoveProject(moveTarget); }}>
               {t('projects.move', 'Premjesti')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm return company → personal */}
+      <AlertDialog open={!!returnTarget} onOpenChange={(o) => { if (!o) setReturnTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('projects.returnToPersonal', 'Vrati u osobno')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                'projects.confirmReturnToPersonal',
+                'Projekt {{project}} vraća se u osobno zajedno s fazama, troškovima i ljudima.',
+                { project: returnTarget?.name ?? '' },
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {renderMoveSummary()}
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (returnTarget) void handleReturnToPersonal(returnTarget); }}>
+              {t('projects.returnToPersonal', 'Vrati u osobno')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
