@@ -305,12 +305,14 @@ export const ScannedDataPreview = ({
 
         {/* PDV modul je uklonjen — više se ne prikazuje ni izračunava. */}
 
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div>
+        {/* Datum mora stati CIJELI (dd.MM.yyyy.) i na 360 px — zato puna širina
+            na uskim ekranima, dvije kolone tek od sm naviše. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+          <div className="min-w-0">
             <span className="text-muted-foreground">{t('common.amount')}:</span>
             <p className="font-bold text-lg">€{(scannedData.amount ?? 0).toFixed(2)}</p>
           </div>
-          <div>
+          <div className="min-w-0">
             <span className="text-muted-foreground">{t('common.date')}:</span>
             <Input
               type="date"
@@ -319,8 +321,11 @@ export const ScannedDataPreview = ({
                 onDateOrTimeEdited?.();
                 onScannedDataChange({ ...scannedData, date: e.target.value || null });
               }}
-              className="mt-1 h-10 rounded-lg text-sm"
+              className="mt-1 h-10 rounded-lg text-sm w-full min-w-0"
             />
+            {scannedData.date ? (
+              <p className="mt-1 text-xs text-muted-foreground">{formatDateHr(scannedData.date)}</p>
+            ) : null}
             {(() => {
               const iso = scannedData.issued_at_iso;
               if (!iso) return null;
