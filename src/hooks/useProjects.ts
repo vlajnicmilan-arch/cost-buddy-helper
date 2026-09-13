@@ -400,7 +400,11 @@ export const useProjects = () => {
   };
 
   return {
-    projects,
+    // Personal mode lists ONLY personal projects; company projects live inside
+    // their company. Business mode keeps its server-side scoping.
+    projects: visibleProjects,
+    /** Unfiltered list — name resolution only (old expenses on company projects). */
+    allProjects: projects,
     loading,
     addProject,
     updateProject,
