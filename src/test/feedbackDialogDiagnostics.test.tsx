@@ -62,12 +62,23 @@ const renderDialog = (defaultType: 'bug' | 'idea' | 'question' = 'bug') =>
     </MemoryRouter>,
   );
 
+class ResizeObserverPolyfill {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
 describe('FeedbackDialog — dijagnostika', () => {
   beforeEach(() => {
     state.submittedPayload = null;
     Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 384 });
     Object.defineProperty(window, 'innerHeight', { writable: true, configurable: true, value: 800 });
     Object.defineProperty(window, 'devicePixelRatio', { writable: true, configurable: true, value: 2 });
+    Object.defineProperty(window, 'ResizeObserver', { writable: true, configurable: true, value: ResizeObserverPolyfill });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('tip bug → kvačica za konzolu je uključena po zadanom', () => {
