@@ -27,6 +27,8 @@ import { applyTemplateToProject } from '@/lib/projectTemplateApply';
 import { filterProjectsByBusinessScope } from '@/lib/businessProjectScope';
 import { useNativeCamera } from '@/hooks/useNativeCamera';
 import { dataUrlToFile, saveDocument } from '@/lib/documentStorage';
+import { buildMoveSummary, type MoveSummary } from '@/lib/projectMoveSummary';
+import { isCountedExpenseRow } from '@/lib/countedExpense';
 
 interface BusinessProjectsProps {
   onRefreshExpenses?: () => void;
@@ -60,6 +62,9 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
   const [loadingPersonal, setLoadingPersonal] = useState(false);
   const [importingIds, setImportingIds] = useState<Set<string>>(new Set());
   const [moveTarget, setMoveTarget] = useState<any | null>(null);
+  const [returnTarget, setReturnTarget] = useState<any | null>(null);
+  const [moveSummary, setMoveSummary] = useState<MoveSummary | null>(null);
+  const [moveSummaryLoading, setMoveSummaryLoading] = useState(false);
   const { profiles: businessProfiles } = useBusinessProfiles();
   const activeCompanyName =
     businessProfiles.find(p => p.id === activeBusinessProfileId)?.name ?? t('business.company', 'tvrtku');
@@ -174,6 +179,111 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
       setMoveTarget(null);
     }
   };
+
+  /**
+   * Return (not copy) a company project back to personal. Mirror RPC of the
+   * move above; balances of wallets are untouched — only the scope changes.
+   */
+  const handleReturnToPersonal = async (project: any) => {
+    if (!user) return;
+    setImportingIds(prev => new Set(prev).add(project.id));
+    try {
+      const { error } = await (supabase.rpc as any)('move_project_to_personal', {
+        p_project_id: project.id,
+      });
+      if (error) throw error;
+      showSuccess(t('projects.returnedToPersonal', 'Projekt vraćen u osobno'));
+      refetch();
+      fetchAllStats();
+      onRefreshExpenses?.();
+    } catch (err) {
+      console.error('Error returning project to personal:', err);
+      showError(t('common.error'));
+    } finally {
+      setImportingIds(prev => { const n = new Set(prev); n.delete(project.id); return n; });
+      setReturnTarget(null);
+    }
+  };
+
+  /**
+   * Sažetak prije potvrde: koliko troškova i koliki iznos mijenja pregled, iz
+   * kojih su novčanika plaćeni i je li koji novčanik iz druge strane.
+   * Novčanici se čitaju BEZ obzira na aktivni doseg — ime mora biti točno.
+   */
+  useEffect(() => {
+    const target = moveTarget ?? returnTarget;
+    if (!target || !user) { setMoveSummary(null); return; }
+    let cancelled = false;
+    const load = async () => {
+      setMoveSummaryLoading(true);
+      try {
+        const [expensesRes, sourcesRes] = await Promise.all([
+          (supabase.from('expenses') as any)
+            .select('amount, payment_source, expense_nature, deleted_at, status')
+            .eq('project_id', target.id)
+            .eq('user_id', user.id),
+          (supabase.from('custom_payment_sources') as any)
+            .select('id, name, business_profile_id')
+            .eq('user_id', user.id),
+        ]);
+        if (cancelled) return;
+        setMoveSummary(
+          buildMoveSummary(
+            (expensesRes.data || []).filter((e: any) => isCountedExpenseRow(e)),
+            sourcesRes.data || [],
+            moveTarget ? activeBusinessProfileId : null,
+            t('paymentSources.cash', 'Gotovina'),
+          ),
+        );
+      } catch (err) {
+        console.error('Error building move summary:', err);
+        if (!cancelled) setMoveSummary(null);
+      } finally {
+        if (!cancelled) setMoveSummaryLoading(false);
+      }
+    };
+    void load();
+    return () => { cancelled = true; };
+  }, [moveTarget, returnTarget, user, activeBusinessProfileId, t]);
+
+  /** Pregled troškova i novčanika prije potvrde premještanja. */
+  const renderMoveSummary = () => {
+    if (moveSummaryLoading) {
+      return (
+        <p className="text-sm text-muted-foreground">{t('common.loading', 'Učitavanje...')}</p>
+      );
+    }
+    if (!moveSummary || moveSummary.count === 0) return null;
+    return (
+      <div className="rounded-lg border bg-muted/40 p-3 space-y-2 text-sm">
+        <p className="font-medium">
+          {t('projects.moveSummary.expenses', '{{count}} troškova, ukupno {{total}} €', {
+            count: moveSummary.count,
+            total: moveSummary.total.toFixed(2),
+          })}
+        </p>
+        <ul className="space-y-1">
+          {moveSummary.lines.map((line) => (
+            <li key={line.key} className="flex items-start justify-between gap-2 min-w-0">
+              <span className="truncate">{line.name}</span>
+              <span className="shrink-0 text-muted-foreground">
+                {line.count} · {line.total.toFixed(2)} €
+              </span>
+            </li>
+          ))}
+        </ul>
+        {moveSummary.hasCrossScope && (
+          <p className="text-muted-foreground">
+            {t(
+              'projects.moveSummary.crossScope',
+              'Troškovi ostaju vezani na novčanik iz kojeg su plaćeni. Stanje nijednog novčanika se ne mijenja.',
+            )}
+          </p>
+        )}
+      </div>
+    );
+  };
+
 
   const handleCloseFullScreen = () => {
     setDetailDialogOpen(false);
@@ -366,6 +476,7 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
                   onEdit={(p) => { setEditingProject(p); setDialogOpen(true); }}
                   onDelete={(id) => { setProjectToDelete(id); setDeleteConfirmOpen(true); }}
                   onClick={(p) => { setSelectedProject(p); setDetailDialogOpen(true); }}
+                  onReturnToPersonal={(p) => setReturnTarget(p)}
                 />
               </motion.div>
             ))}
@@ -560,10 +671,34 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {renderMoveSummary()}
           <AlertDialogFooter>
             <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
             <AlertDialogAction onClick={() => { if (moveTarget) void handleMoveProject(moveTarget); }}>
               {t('projects.move', 'Premjesti')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm return company → personal */}
+      <AlertDialog open={!!returnTarget} onOpenChange={(o) => { if (!o) setReturnTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('projects.returnToPersonal', 'Vrati u osobno')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                'projects.confirmReturnToPersonal',
+                'Projekt {{project}} vraća se u osobno zajedno s fazama, troškovima i ljudima.',
+                { project: returnTarget?.name ?? '' },
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {renderMoveSummary()}
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (returnTarget) void handleReturnToPersonal(returnTarget); }}>
+              {t('projects.returnToPersonal', 'Vrati u osobno')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,5 +1,5 @@
 import { Project, ProjectWithOwnership, PROJECT_STATUS_LABELS, PROJECT_ROLE_LABELS } from '@/types/project';
-import { Pencil, Trash2, Users, Calendar, Target, Briefcase, Activity, Clock, Archive, ArchiveRestore, MoreVertical } from 'lucide-react';
+import { Pencil, Trash2, Users, Calendar, Target, Briefcase, Activity, Clock, Archive, ArchiveRestore, MoreVertical, ArrowRightLeft } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +37,8 @@ interface ProjectCardProps {
   isArchived?: boolean;
   onClick: (project: ProjectWithOwnership) => void;
   onMigrateToBusiness?: (project: ProjectWithOwnership) => void;
+  /** Povratak projekta iz tvrtke u osobno (samo za projekt koji pripada tvrtki). */
+  onReturnToPersonal?: (project: ProjectWithOwnership) => void;
   /**
    * Owner-readonly (downgrade): owner action items in dropdown become disabled + toast.
    * When omitted, the card auto-derives read-only state from `project` via useProjectAccessLevel.
@@ -57,6 +59,7 @@ export const ProjectCard = ({
   isArchived,
   onClick,
   onMigrateToBusiness,
+  onReturnToPersonal,
   isReadOnly: isReadOnlyProp
 }: ProjectCardProps) => {
   const { formatAmount } = useCurrency();
@@ -386,6 +389,20 @@ export const ProjectCard = ({
                 >
                   <Briefcase className="w-4 h-4 mr-2" />
                   {t('projects.migrateToBusiness', 'Premjesti u poslovni mod')}
+                </DropdownMenuItem>
+              )}
+              {onReturnToPersonal && !!project.business_profile_id && (
+                <DropdownMenuItem
+                  disabled={isReadOnly}
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    setActionsOpen(false);
+                    if (!guard()) return;
+                    onReturnToPersonal(project);
+                  }}
+                >
+                  <ArrowRightLeft className="w-4 h-4 mr-2" />
+                  {t('projects.returnToPersonal', 'Vrati u osobno')}
                 </DropdownMenuItem>
               )}
               {onArchive && (

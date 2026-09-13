@@ -8,6 +8,13 @@
       "when": 1789326529922,
       "tag": "0000_move_project_to_business_profile",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789328987628,
+      "tag": "0001_move_project_to_personal",
+      "breakpoints": true
     }
   ]
 }
