@@ -70,6 +70,15 @@ describe('businessProjectScope', () => {
     expect(filterProjectsByBusinessScope(PROJECTS, null)).toHaveLength(3);
     expect(filterProjectsByBusinessScope(PROJECTS, 'biz-1').map((p) => p.id)).toEqual(['p1']);
   });
+
+  it('personal scope shows only projects without a company', () => {
+    expect(filterProjectsByPersonalScope(PROJECTS).map((p) => p.id)).toEqual(['p2']);
+  });
+
+  it('personal scope keeps shared projects joined personally, drops business ones', () => {
+    expect(isProjectInPersonalScope({ isOwner: false, member_context: 'personal' })).toBe(true);
+    expect(isProjectInPersonalScope({ isOwner: false, member_context: 'business' })).toBe(false);
+  });
 });
 
 describe('useCollaboratorOverview scoping', () => {
