@@ -134,7 +134,7 @@ export const useExpenseFetch = () => {
     }
   }, [user, isLocalMode]);
 
-  const fetchExpenses = useCallback(async (sharedIdsOverride?: Set<string>) => runSingleFlight('expenses', async () => {
+  const fetchExpenses = useCallback(async (sharedIdsOverride?: Set<string>) => runSingleFlight(`expenses:${user?.id ?? 'anon'}`, async () => {
     // Cloud dohvat se NE smije pokrenuti dok se ne zna je li korisnik
     // prijavljen — inače upit ide kao `anon` i RLS puca.
     if (!isLocalMode && !authReady) return;

@@ -17,7 +17,7 @@ import {
 } from '@/lib/expenseFetchRetry';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { getBuildStamp } from '@/lib/buildStamp';
-import { withTimeout, HOME_FETCH_TIMEOUT_MS } from '@/lib/fetchTimeout';
+import { withTimeoutAndDrain, HOME_FETCH_TIMEOUT_MS } from '@/lib/fetchTimeout';
 import { beginWeakFetch, endWeakFetch } from '@/lib/weakConnection';
 import i18next from 'i18next';
 
@@ -75,7 +75,7 @@ async function loadWithRetryInternal<T>(
   let weak = false;
   try {
     const { result, attempts } = await runWithTransientRetry(
-      () => withTimeout(fn, timeoutMs),
+      () => withTimeoutAndDrain(fn, timeoutMs),
       {
         onRetry: () => {
           // Prvo ponavljanje pali JEDNU tihu traku umjesto crvene poruke.
