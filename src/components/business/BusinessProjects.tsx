@@ -437,6 +437,7 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
                   onEdit={(p) => { setEditingProject(p); setDialogOpen(true); }}
                   onDelete={(id) => { setProjectToDelete(id); setDeleteConfirmOpen(true); }}
                   onClick={(p) => { setSelectedProject(p); setDetailDialogOpen(true); }}
+                  onReturnToPersonal={(p) => setReturnTarget(p)}
                 />
               </motion.div>
             ))}
