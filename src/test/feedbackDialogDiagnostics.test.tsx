@@ -116,7 +116,7 @@ describe('FeedbackDialog — dijagnostika', () => {
     fireEvent.change(screen.getByRole('textbox'), {
       target: { value: 'Nešto ne radi' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /Send/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Pošalji/i }));
 
     await waitFor(() => expect(state.submittedPayload).not.toBeNull());
     expect(state.submittedPayload?.console_tail).toBeDefined();
