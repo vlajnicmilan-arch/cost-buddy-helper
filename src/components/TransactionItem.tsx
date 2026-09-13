@@ -528,6 +528,7 @@ export const TransactionItem = React.memo((props: TransactionItemProps) => {
     prev.expense.bank_match_status === next.expense.bank_match_status &&
     prev.expense.possible_duplicate_of === next.expense.possible_duplicate_of &&
     prev.expense.needs_explanation === next.expense.needs_explanation &&
+    (prev.expense as any).pending_sync === (next.expense as any).pending_sync &&
     prev.contextLookup === next.contextLookup &&
     prev.onDelete === next.onDelete &&
     prev.onClick === next.onClick
