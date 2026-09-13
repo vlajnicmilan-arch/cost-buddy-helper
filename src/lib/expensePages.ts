@@ -79,18 +79,24 @@ export async function loadPagesInParallel<T>(
     if (!isSessionAlive()) return { rows: [], sessionLost: true };
     const rest = new Array<FetchedPage<T>>(ranges.length);
     let nextIndex = 0;
+    let workerError: unknown;
     const worker = async () => {
-      while (nextIndex < ranges.length) {
+      while (nextIndex < ranges.length && workerError === undefined) {
         const index = nextIndex;
         nextIndex += 1;
         if (!isSessionAlive()) return;
-        rest[index] = await fetchPage(ranges[index].from, false);
-        const loaded = first.rows.length + rest.reduce((sum, page) => sum + (page?.rows.length ?? 0), 0);
-        progress(loaded);
+        try {
+          rest[index] = await fetchPage(ranges[index].from, false);
+          const loaded = first.rows.length + rest.reduce((sum, page) => sum + (page?.rows.length ?? 0), 0);
+          progress(loaded);
+        } catch (error) {
+          workerError = error;
+        }
       }
     };
     const workerCount = Math.max(1, Math.min(concurrency, ranges.length));
     await Promise.all(Array.from({ length: workerCount }, () => worker()));
+    if (workerError !== undefined) throw workerError;
     if (!isSessionAlive()) return { rows: [], sessionLost: true };
     const all = concatPagesInOrder(first.rows, rest.map(p => p.rows));
     progress(all.length);

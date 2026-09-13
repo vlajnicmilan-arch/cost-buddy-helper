@@ -194,7 +194,7 @@ export const useExpenseFetch = () => {
             if (error) throw error;
             return { rows: (data as any[]) || [], count: count ?? null };
             }, {
-              delays: [1000, 3000],
+              delays: [1000],
               onRetry: (info, attempt) => {
                 pageRetryCount += 1;
                 weakShown = true;
@@ -239,8 +239,9 @@ export const useExpenseFetch = () => {
           return rows;
         };
 
+        let allData: any[];
         try {
-          var allData = await withTimeoutAndDrain(loadAllPages, EXPENSES_FETCH_TIMEOUT_MS);
+          allData = await withTimeoutAndDrain(loadAllPages, EXPENSES_FETCH_TIMEOUT_MS);
         } catch (retryError) {
           if (weakShown) endWeakFetch('expenses', 'failed');
           throw retryError;
