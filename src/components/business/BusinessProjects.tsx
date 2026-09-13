@@ -324,8 +324,8 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
             className="gap-1.5 rounded-xl min-w-0"
             onClick={() => { setImportDialogOpen(true); fetchPersonalProjects(); }}
           >
-            <Download className="w-4 h-4 shrink-0" />
-            <span className="truncate">{t('projects.importPersonal', 'Uvezi')}</span>
+            <ArrowRightLeft className="w-4 h-4 shrink-0" />
+            <span className="truncate">{t('projects.movePersonal', 'Premjesti')}</span>
           </Button>
           <Button
             size="sm"
