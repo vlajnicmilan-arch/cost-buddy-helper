@@ -10,8 +10,11 @@
  * Modul je bez ovisnosti (osim DOM API-ja) kako bi bio izravno testabilan.
  */
 
-/** Razuman rok za dohvate Početne. */
-export const HOME_FETCH_TIMEOUT_MS = 20_000;
+/** Rok za manje dohvate Početne. */
+export const HOME_FETCH_TIMEOUT_MS = 30_000;
+
+/** Rok za cijeli straničeni dohvat transakcija, ne za pojedinu stranicu. */
+export const EXPENSES_FETCH_TIMEOUT_MS = 90_000;
 
 export class FetchTimeoutError extends Error {
   constructor(ms: number) {

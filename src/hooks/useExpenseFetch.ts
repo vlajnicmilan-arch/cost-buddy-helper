@@ -7,7 +7,7 @@ import { useStorage } from '@/contexts/StorageContext';
 import { showError, showSuccess, showWarning } from '@/hooks/useStatusFeedback';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { runWithTransientRetry, classifyFetchFailure } from '@/lib/expenseFetchRetry';
-import { withTimeout } from '@/lib/fetchTimeout';
+import { withTimeout, EXPENSES_FETCH_TIMEOUT_MS } from '@/lib/fetchTimeout';
 import { beginWeakFetch, endWeakFetch } from '@/lib/weakConnection';
 import { isSessionGone, shouldWarnOnRetry } from '@/lib/sessionGone';
 
@@ -25,6 +25,7 @@ import { loadPagesInParallel } from '@/lib/expensePages';
 import { markExpensesSource } from '@/lib/expenseSourceMark';
 import { readExpenseSnapshot, writeExpenseSnapshot } from '@/lib/storage/expenseSnapshot';
 import { buildExpenseScopeFilter, belongsToMyScope, type ScopeContext } from '@/lib/expenseScope';
+import { runSingleFlight } from '@/lib/loadWithRetry';
 
 // v3: bumped after the explicit-column select (lista više ne nosi teška
 // polja poput bank_raw_line) — stari v2 snapshot se jednostavno ignorira.
@@ -57,6 +58,7 @@ export const useExpenseFetch = () => {
   const [loading, setLoading] = useState(initialExpenses.length === 0);
   const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const hydratedKeyRef = useRef<string | null>(initialExpenses.length > 0 ? initialExpensesKey : null);
+  const snapshotHydrationRef = useRef<Promise<void>>(Promise.resolve());
   // Kept in a ref so the realtime handler always sees the current shared set
   // without re-subscribing the channel on every shared-source change.
   const sharedIdsRef = useRef<Set<string>>(new Set());
@@ -132,7 +134,7 @@ export const useExpenseFetch = () => {
     }
   }, [user, isLocalMode]);
 
-  const fetchExpenses = useCallback(async (sharedIdsOverride?: Set<string>) => {
+  const fetchExpenses = useCallback(async (sharedIdsOverride?: Set<string>) => runSingleFlight('expenses', async () => {
     // Cloud dohvat se NE smije pokrenuti dok se ne zna je li korisnik
     // prijavljen — inače upit ide kao `anon` i RLS puca.
     if (!isLocalMode && !authReady) return;
@@ -163,10 +165,8 @@ export const useExpenseFetch = () => {
         };
         const orFilter = buildExpenseScopeFilter(scopeCtx);
 
-        // Paginated fetch to bypass Supabase 1000-row limit.
-        // Wrapped in a transient-failure retry: a dropped page (mobile
-        // network hiccup, 5xx) must not surface as a red error before we
-        // have actually tried again.
+        // Jedan rok obuhvaća cijeli logički dohvat. Pojedina stranica se
+        // ponavlja na mjestu, pa uspješne stranice ostaju sačuvane.
         const pageSize = 1000;
         const startedAt = Date.now();
         fetchStartedAtRef.current = startedAt;
@@ -175,10 +175,12 @@ export const useExpenseFetch = () => {
 
         let sessionLost = false;
 
-        // Rok po stranici: zahtjev koji visi prekida se i pušta retry da
-        // preuzme, umjesto da korisnik čeka minutama.
-        const fetchPage = async (from: number, withCount: boolean) =>
-          withTimeout(async (signal) => {
+        let weakShown = false;
+        let pageRetryCount = 0;
+        const loadAllPages = async (signal: AbortSignal): Promise<any[]> => {
+          const fetchPage = async (from: number, withCount: boolean) => {
+            const pageStartedAt = Date.now();
+            const outcome = await runWithTransientRetry(async () => {
             let query = supabase
               .from('expenses')
               .select(EXPENSE_LIST_SELECT, withCount ? { count: 'exact' } : undefined)
@@ -191,11 +193,38 @@ export const useExpenseFetch = () => {
             const { data, error, count } = await query;
             if (error) throw error;
             return { rows: (data as any[]) || [], count: count ?? null };
-          });
+            }, {
+              delays: [1000, 3000],
+              onRetry: (info, attempt) => {
+                pageRetryCount += 1;
+                weakShown = true;
+                beginWeakFetch('expenses');
+                logDiagnostic({
+                  event: 'expense_fetch_retried',
+                  severity: 'warning',
+                  details: {
+                    cause: info.kind,
+                    http_status: info.status ?? null,
+                    attempt,
+                    page: Math.floor(from / pageSize) + 1,
+                    rows_so_far: rowsSoFar,
+                    duration_ms: Date.now() - startedAt,
+                  },
+                });
+              },
+            });
+            logDiagnostic({
+              event: 'expense_fetch_page',
+              severity: 'info',
+              details: {
+                page: Math.floor(from / pageSize) + 1,
+                rows: outcome.result.rows.length,
+                ms: Date.now() - pageStartedAt,
+              },
+            });
+            return outcome.result;
+          };
 
-        const loadAllPages = async (): Promise<any[]> => {
-          // Prva stranica nosi ukupan broj redaka (count: exact); preostale
-          // stranice idu istovremeno, uz istu zaštitu od odjave.
           const { rows, sessionLost: lost } = await loadPagesInParallel<any>({
             pageSize,
             fetchPage,
@@ -204,39 +233,19 @@ export const useExpenseFetch = () => {
               rowsSoFar = n;
               fetchRowsRef.current = n;
             },
+            concurrency: 2,
           });
           if (lost) sessionLost = true;
           return rows;
         };
 
-        let weakShown = false;
-        let expensesRetryOutcome: { result: any[]; attempts: number };
         try {
-          expensesRetryOutcome = await runWithTransientRetry(loadAllPages, {
-          onRetry: (info, attempt) => {
-            // Povratak iz pozadine na Androidu prekine zahtjev u tijeku iako
-            // internet radi — umjesto niza poruka pali se jedna tiha traka.
-            weakShown = true;
-            beginWeakFetch('expenses');
-            logDiagnostic({
-              event: 'expense_fetch_retried',
-              severity: 'warning',
-              details: {
-                cause: info.kind,
-                http_status: info.status ?? null,
-                attempt,
-                rows_so_far: rowsSoFar,
-                duration_ms: Date.now() - startedAt,
-              },
-            });
-          },
-          });
+          var allData = await withTimeout(loadAllPages, EXPENSES_FETCH_TIMEOUT_MS);
         } catch (retryError) {
           if (weakShown) endWeakFetch('expenses', 'failed');
           throw retryError;
         }
         if (weakShown) endWeakFetch('expenses', 'recovered');
-        const { result: allData, attempts } = expensesRetryOutcome;
 
         // Odjava usred straničenja: ne pišemo krnji skup u state/cache.
         if (sessionLost) {
@@ -244,14 +253,14 @@ export const useExpenseFetch = () => {
           return;
         }
 
-        if (attempts > 1) {
+        if (pageRetryCount > 0) {
 
           logDiagnostic({
             event: 'expense_fetch_retried',
             severity: 'info',
             details: {
               cause: 'recovered',
-              attempts,
+              attempts: pageRetryCount + 1,
               rows_so_far: allData.length,
               duration_ms: Date.now() - startedAt,
             },
@@ -376,7 +385,7 @@ export const useExpenseFetch = () => {
       hydratedKeyRef.current = cacheKey;
       setLoading(false);
     }
-  }, [user, isLocalMode, authReady]);
+  }), [user, isLocalMode, authReady]);
 
   const parseExpense = useCallback((raw: Record<string, unknown>): Expense => ({
     ...(raw as unknown as Expense),
@@ -418,7 +427,7 @@ export const useExpenseFetch = () => {
       // može postojati — crtamo odmah, puni dohvat ide u pozadini.
       const userId = user.id;
       let cancelled = false;
-      void (async () => {
+      snapshotHydrationRef.current = (async () => {
         const snapshot = await readExpenseSnapshot<Expense>(userId);
         if (cancelled || !snapshot || snapshot.length === 0) return;
         if (hydratedKeyRef.current === key) return;
@@ -441,6 +450,8 @@ export const useExpenseFetch = () => {
     if (!isLocalMode && !authReady) return;
     let cancelled = false;
     (async () => {
+      await snapshotHydrationRef.current;
+      if (cancelled) return;
       const { sharedIds } = await fetchOwnedSources();
       if (cancelled) return;
       await fetchExpenses(sharedIds);

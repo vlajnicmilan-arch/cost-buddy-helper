@@ -53,16 +53,18 @@ export interface LoadPagesOptions<T> {
   isSessionAlive: () => boolean;
   /** Napredak (broj dosad prikupljenih redaka). */
   onProgress?: (rows: number) => void;
+  /** Najveći broj istovremenih stranica. */
+  concurrency?: number;
 }
 
 /**
- * Prva stranica sekvencijalno (nosi `count`), preostale istovremeno.
+ * Prva stranica sekvencijalno (nosi `count`), preostale uz ograničenu paralelnost.
  * Kad `count` nije poznat, nastavlja sekvencijalno kao i dosad.
  */
 export async function loadPagesInParallel<T>(
   opts: LoadPagesOptions<T>,
 ): Promise<{ rows: T[]; sessionLost: boolean }> {
-  const { pageSize, fetchPage, isSessionAlive, onProgress } = opts;
+  const { pageSize, fetchPage, isSessionAlive, onProgress, concurrency = 2 } = opts;
   const progress = (n: number) => onProgress?.(n);
 
   if (!isSessionAlive()) return { rows: [], sessionLost: true };
@@ -75,7 +77,20 @@ export async function loadPagesInParallel<T>(
 
   if (ranges.length > 0) {
     if (!isSessionAlive()) return { rows: [], sessionLost: true };
-    const rest = await Promise.all(ranges.map(r => fetchPage(r.from, false)));
+    const rest = new Array<FetchedPage<T>>(ranges.length);
+    let nextIndex = 0;
+    const worker = async () => {
+      while (nextIndex < ranges.length) {
+        const index = nextIndex;
+        nextIndex += 1;
+        if (!isSessionAlive()) return;
+        rest[index] = await fetchPage(ranges[index].from, false);
+        const loaded = first.rows.length + rest.reduce((sum, page) => sum + (page?.rows.length ?? 0), 0);
+        progress(loaded);
+      }
+    };
+    const workerCount = Math.max(1, Math.min(concurrency, ranges.length));
+    await Promise.all(Array.from({ length: workerCount }, () => worker()));
     if (!isSessionAlive()) return { rows: [], sessionLost: true };
     const all = concatPagesInOrder(first.rows, rest.map(p => p.rows));
     progress(all.length);
