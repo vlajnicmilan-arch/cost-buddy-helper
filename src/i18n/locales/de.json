@@ -3930,7 +3930,8 @@
     "incomeVsExpenses": "Einnahmen: {{income}} | Ausgaben: {{expenses}}"
   },
   "offline": {
-    "noConnection": "Keine Internetverbindung — einige Funktionen funktionieren möglicherweise nicht"
+    "noConnection": "Keine Internetverbindung — einige Funktionen funktionieren möglicherweise nicht",
+    "weakConnection": "Schwache Verbindung — aktualisiere…"
   },
   "toasts": {
     "error": "Fehler",

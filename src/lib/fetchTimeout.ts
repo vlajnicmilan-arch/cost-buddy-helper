@@ -1,0 +1,49 @@
+/**
+ * Rok (timeout) za dohvate Početne.
+ *
+ * Na slaboj vezi (Android koji u pozadini zamrzne mrežu) zahtjev zna visjeti
+ * minutama prije nego pukne — u dnevniku je zabilježen dohvat budžeta od
+ * ~413 s. Zahtjev koji prekorači rok prekidamo (AbortController) i bacamo
+ * grešku tipa "timeout", koju postojeći `runWithTransientRetry` prepoznaje
+ * kao prolaznu i tiho ponavlja.
+ *
+ * Modul je bez ovisnosti (osim DOM API-ja) kako bi bio izravno testabilan.
+ */
+
+/** Razuman rok za dohvate Početne. */
+export const HOME_FETCH_TIMEOUT_MS = 20_000;
+
+export class FetchTimeoutError extends Error {
+  constructor(ms: number) {
+    super(`Request timed out after ${ms}ms`);
+    this.name = 'TimeoutError';
+  }
+}
+
+/**
+ * Pokreće `fn` uz rok. `fn` dobiva `AbortSignal` koji se prekida kad rok
+ * istekne — Supabase upiti ga primaju preko `.abortSignal(signal)`. Ako neki
+ * poziv signal ne prima, `Promise.race` svejedno završi čekanje.
+ */
+export function withTimeout<T>(
+  fn: (signal: AbortSignal) => Promise<T>,
+  ms: number = HOME_FETCH_TIMEOUT_MS,
+): Promise<T> {
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      try {
+        controller.abort();
+      } catch {
+        /* abort je best-effort */
+      }
+      reject(new FetchTimeoutError(ms));
+    }, ms);
+  });
+
+  return Promise.race([fn(controller.signal), timeout]).finally(() => {
+    if (timer) clearTimeout(timer);
+  }) as Promise<T>;
+}

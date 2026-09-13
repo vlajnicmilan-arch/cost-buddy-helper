@@ -32,6 +32,7 @@ import { LockScreen } from "@/components/LockScreen";
 import { TutorialOverlay } from "@/components/tutorial";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { WeakConnectionBanner } from "@/components/WeakConnectionBanner";
 import { useStatusBar } from "@/hooks/useStatusBar";
 import { useDeepLinks } from "@/hooks/useDeepLinks";
 import { CookieConsentBanner } from "@/components/CookieConsentBanner";
@@ -192,6 +193,7 @@ const RouteAwareGlobalOverlays = () => {
     <>
       <ModuleThemeProvider />
       <OfflineBanner />
+      <WeakConnectionBanner />
       <StatusFeedback />
       <PWAUpdatePrompt />
       <TutorialOverlay />
