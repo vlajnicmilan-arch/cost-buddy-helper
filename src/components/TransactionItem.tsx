@@ -321,6 +321,14 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
                 </TooltipContent>
               </Tooltip>
             )}
+            {(expense as any).pending_sync && (
+              <Badge
+                variant="outline"
+                className="text-[9px] py-0 px-1 h-4 border-muted-foreground/30 text-muted-foreground shrink-0"
+              >
+                {t('feedback.sendingExpense', 'Šalje se…')}
+              </Badge>
+            )}
             {expense.bank_match_status === 'pending_bank' && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -520,6 +528,7 @@ export const TransactionItem = React.memo((props: TransactionItemProps) => {
     prev.expense.bank_match_status === next.expense.bank_match_status &&
     prev.expense.possible_duplicate_of === next.expense.possible_duplicate_of &&
     prev.expense.needs_explanation === next.expense.needs_explanation &&
+    (prev.expense as any).pending_sync === (next.expense as any).pending_sync &&
     prev.contextLookup === next.contextLookup &&
     prev.onDelete === next.onDelete &&
     prev.onClick === next.onClick
