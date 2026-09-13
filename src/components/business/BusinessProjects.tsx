@@ -259,23 +259,23 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
       {view === 'projects' && (
         <>
       {/* Header */}
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <FolderKanban className="w-5 h-5 text-primary" />
-          {t('nav.projects', 'Projekti')}
+      <div className="flex items-center justify-between gap-2 flex-wrap w-full min-w-0 overflow-x-hidden">
+        <h2 className="text-lg font-semibold flex items-center gap-2 min-w-0">
+          <FolderKanban className="w-5 h-5 text-primary shrink-0" />
+          <span className="truncate">{t('nav.projects', 'Projekti')}</span>
         </h2>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full min-w-0 sm:w-auto">
           {businessProjects.length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-1.5 rounded-xl border-primary/40 text-primary hover:bg-primary/10"
+                  className="gap-1.5 rounded-xl border-primary/40 text-primary hover:bg-primary/10 min-w-0"
                   title={t('projects.quickPhoto.title', 'Brzi unos računa')}
                 >
-                  <Zap className="w-4 h-4" />
-                  {t('projects.quickPhoto.button', 'Brzi račun')}
+                  <Zap className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{t('projects.quickPhoto.button', 'Brzi račun')}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="z-[70]">
@@ -296,42 +296,42 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5 rounded-xl"
+              className="gap-1.5 rounded-xl min-w-0"
               onClick={() => { setStandupProject(null); setStandupOpen(true); }}
               title={t('projects.standup.title', 'Dnevni izvještaj')}
             >
-              <Mic className="w-4 h-4" />
-              {t('projects.standup.button', 'Dnevni izvještaj')}
+              <Mic className="w-4 h-4 shrink-0" />
+              <span className="truncate">{t('projects.standup.button', 'Dnevni izvještaj')}</span>
             </Button>
           )}
           {businessProjects.length > 0 && (
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5 rounded-xl"
+              className="gap-1.5 rounded-xl min-w-0"
               onClick={() => { setWorkLogProjectId(null); setWorkLogPickerOpen(true); }}
               title={t('workLog.newEntry', 'Novi dnevni zapis')}
             >
-              <BookOpen className="w-4 h-4" />
-              {t('workLog.quickAction', 'Dnevni zapis')}
+              <BookOpen className="w-4 h-4 shrink-0" />
+              <span className="truncate">{t('workLog.quickAction', 'Dnevni zapis')}</span>
             </Button>
           )}
           <Button
             variant="outline"
             size="sm"
-            className="gap-1.5 rounded-xl"
+            className="gap-1.5 rounded-xl min-w-0"
             onClick={() => { setImportDialogOpen(true); fetchPersonalProjects(); }}
           >
-            <Download className="w-4 h-4" />
-            {t('projects.importPersonal', 'Uvezi')}
+            <Download className="w-4 h-4 shrink-0" />
+            <span className="truncate">{t('projects.importPersonal', 'Uvezi')}</span>
           </Button>
           <Button
             size="sm"
-            className="gap-1.5 rounded-xl"
+            className="gap-1.5 rounded-xl shrink-0 order-first sm:order-last"
             onClick={() => { setEditingProject(null); setDialogOpen(true); }}
           >
-            <Plus className="w-4 h-4" />
-            {t('projects.new', 'Novi')}
+            <Plus className="w-4 h-4 shrink-0" />
+            <span className="truncate">{t('projects.new', 'Novi')}</span>
           </Button>
         </div>
       </div>
