@@ -65,7 +65,7 @@ export const FeedbackDialog = ({ open, onOpenChange, defaultType = 'idea' }: Fee
   const [message, setMessage] = useState('');
   const [email, setEmail] = useState('');
   const [rating, setRating] = useState<number | null>(null);
-  const [includeDiagnostics, setIncludeDiagnostics] = useState(false);
+  const [includeConsoleLogs, setIncludeConsoleLogs] = useState(defaultType === 'bug');
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -88,6 +88,7 @@ export const FeedbackDialog = ({ open, onOpenChange, defaultType = 'idea' }: Fee
   useEffect(() => {
     if (open) {
       setType(defaultType);
+      setIncludeConsoleLogs(defaultType === 'bug');
       if (user?.email) setEmail(user.email);
     } else {
       setTimeout(() => {
