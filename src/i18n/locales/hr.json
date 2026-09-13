@@ -1131,6 +1131,13 @@
     "emailPlaceholder": "npr. ime@primjer.hr",
     "contractAmendment": {
       "unilateral": "{{n}} jednostrano"
+    },
+    "returnToPersonal": "Vrati u osobno",
+    "confirmReturnToPersonal": "Projekt {{project}} vraća se u osobno zajedno s fazama, troškovima i ljudima.",
+    "returnedToPersonal": "Projekt vraćen u osobno",
+    "moveSummary": {
+      "expenses": "{{count}} troškova, ukupno {{total}} €",
+      "crossScope": "Troškovi ostaju vezani na novčanik iz kojeg su plaćeni. Stanje nijednog novčanika se ne mijenja."
     }
   },
   "estimates": {

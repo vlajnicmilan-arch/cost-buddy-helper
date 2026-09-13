@@ -1127,6 +1127,13 @@
     "emailPlaceholder": "z. B. name@beispiel.de",
     "contractAmendment": {
       "unilateral": "{{n}} einseitig"
+    },
+    "returnToPersonal": "Zurück zu privat",
+    "confirmReturnToPersonal": "Projekt {{project}} wird samt Phasen, Ausgaben und Personen zurück in den privaten Bereich verschoben.",
+    "returnedToPersonal": "Projekt zurück in den privaten Bereich verschoben",
+    "moveSummary": {
+      "expenses": "{{count}} Ausgaben, insgesamt {{total}} €",
+      "crossScope": "Ausgaben bleiben mit der Geldbörse verknüpft, aus der sie bezahlt wurden. Kein Kontostand ändert sich."
     }
   },
   "estimates": {

@@ -1127,6 +1127,13 @@
     "emailPlaceholder": "e.g. name@example.com",
     "contractAmendment": {
       "unilateral": "{{n}} unilateral"
+    },
+    "returnToPersonal": "Move back to personal",
+    "confirmReturnToPersonal": "Project {{project}} will be moved back to personal together with its phases, expenses and people.",
+    "returnedToPersonal": "Project moved back to personal",
+    "moveSummary": {
+      "expenses": "{{count}} expenses, {{total}} € in total",
+      "crossScope": "Expenses stay linked to the wallet they were paid from. No wallet balance changes."
     }
   },
   "estimates": {
