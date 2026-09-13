@@ -37,6 +37,8 @@ interface ProjectCardProps {
   isArchived?: boolean;
   onClick: (project: ProjectWithOwnership) => void;
   onMigrateToBusiness?: (project: ProjectWithOwnership) => void;
+  /** Povratak projekta iz tvrtke u osobno (samo za projekt koji pripada tvrtki). */
+  onReturnToPersonal?: (project: ProjectWithOwnership) => void;
   /**
    * Owner-readonly (downgrade): owner action items in dropdown become disabled + toast.
    * When omitted, the card auto-derives read-only state from `project` via useProjectAccessLevel.
