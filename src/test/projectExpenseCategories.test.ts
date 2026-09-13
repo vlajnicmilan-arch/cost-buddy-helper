@@ -64,8 +64,8 @@ describe('(c) promjena projekta prazni nevažeću kategoriju', () => {
 describe('(d) pred-odabir projekta pri skenu', () => {
   const p = (id: string, status: string) => ({ id, status });
 
-  it('jedan aktivan projekt → pred-odabran', () => {
-    expect(pickPreselectedProject([p('a', 'active'), p('b', 'completed')], null)).toBe('a');
+  it('jedan aktivan projekt → BEZ pred-odabira', () => {
+    expect(pickPreselectedProject([p('a', 'active'), p('b', 'completed')], null)).toBeNull();
   });
 
   it('dva aktivna → prazno', () => {
