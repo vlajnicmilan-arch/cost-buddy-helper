@@ -7065,7 +7065,10 @@
       "done": "Auszahlung erfasst",
       "open": "Auszahlen",
       "shortfallFrom": "Unterbezahlt aus {{month}}: {{amount}}",
-      "earlierPeriod": "einem früheren Zeitraum"
+      "earlierPeriod": "einem früheren Zeitraum",
+      "period": "Zeitraum",
+      "pickPeriod": "Zeitraum wählen",
+      "calcFromHours": "Aus Stunden berechnen"
     },
     "payoutVoided": "storniert",
     "payoutVoidReason": "Grund",
