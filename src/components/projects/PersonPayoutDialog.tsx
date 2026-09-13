@@ -27,11 +27,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { CalendarIcon, Loader2, RefreshCw } from 'lucide-react';
+import { format } from 'date-fns';
+import type { DateRange } from 'react-day-picker';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { usePersonPayout } from '@/hooks/usePersonPayout';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
+import {
+  previewPersonPeriod,
+  type EngagementPeriodPreview,
+} from '@/lib/personPayoutPreview';
 import {
   allocateFifo,
   payableObligations,
