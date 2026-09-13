@@ -29,8 +29,14 @@ export const useProjects = () => {
   const hydratedKeyRef = useRef<string | null>(initialCached && initialCached.length > 0 ? initialKey : null);
 
   const isLocalMode = !user;
+  // Ovisnosti po id-u: nova referenca `user` pri osvježenju tokena ne smije
+  // pokrenuti novi dohvat projekata.
+  const userRef = useRef(user);
+  userRef.current = user;
+  const userId = user?.id ?? null;
 
   const fetchProjects = useCallback(async () => {
+    const user = userRef.current;
     // Brana: u oblačnom načinu ne kreći dok prijava nije razriješena.
     if (!isLocalMode && !canFetch) return;
     // Silent revalidate when we already have cached data for this context
@@ -156,7 +162,7 @@ export const useProjects = () => {
       hydratedKeyRef.current = cacheKey;
       setLoading(false);
     }
-  }, [user, authReady, canFetch, isLocalMode, t, activeBusinessProfileId]);
+  }, [userId, authReady, canFetch, isLocalMode, t, activeBusinessProfileId]);
 
   // Personal mode shows ONLY personal projects (company projects live inside
   // their company). Business mode keeps the server-side scoping above.
