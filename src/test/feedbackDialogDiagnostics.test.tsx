@@ -2,7 +2,7 @@
  * Dijalog povratne informacije uvijek šalje osnovnu dijagnostiku,
  * a zapis konzole samo kad je kvačica uključena.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
