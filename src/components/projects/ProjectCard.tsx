@@ -391,6 +391,20 @@ export const ProjectCard = ({
                   {t('projects.migrateToBusiness', 'Premjesti u poslovni mod')}
                 </DropdownMenuItem>
               )}
+              {onReturnToPersonal && !!project.business_profile_id && (
+                <DropdownMenuItem
+                  disabled={isReadOnly}
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    setActionsOpen(false);
+                    if (!guard()) return;
+                    onReturnToPersonal(project);
+                  }}
+                >
+                  <ArrowRightLeft className="w-4 h-4 mr-2" />
+                  {t('projects.returnToPersonal', 'Vrati u osobno')}
+                </DropdownMenuItem>
+              )}
               {onArchive && (
                 <DropdownMenuItem
                   disabled={isReadOnly}
