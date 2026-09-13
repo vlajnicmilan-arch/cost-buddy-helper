@@ -47,8 +47,8 @@ const Projects = () => {
 
   useEffect(() => {
     const check = async () => {
-      if (!user) { setHasMemberships(false); return; }
-       if (hasProjectsAccess) { setHasMemberships(true); return; }
+      if (!user) { setHasMemberships(false); setOwnedProjectCount(0); return; }
+      if (hasProjectsAccess) { setHasMemberships(true); }
       // Vlasnik projekta NIJE u project_members — bez ove provjere bi mu se
       // pri hladnom ulasku nudio paywall iako ima što vidjeti.
       const [members, owned] = await Promise.all([
@@ -61,7 +61,9 @@ const Projects = () => {
           .select('id', { count: 'exact', head: true })
           .eq('user_id', user.id),
       ]);
-      setHasMemberships(((members.count || 0) + (owned.count || 0)) > 0);
+      const ownedCount = owned.count || 0;
+      setOwnedProjectCount(ownedCount);
+      setHasMemberships(((members.count || 0) + ownedCount) > 0);
     };
     check();
   }, [user, hasProjectsAccess]);
