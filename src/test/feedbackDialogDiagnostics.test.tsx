@@ -20,6 +20,10 @@ vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({ user: state.user }),
 }));
 
+vi.mock('@/hooks/useBackButton', () => ({
+  useBackButton: vi.fn(),
+}));
+
 vi.mock('@/hooks/useStatusFeedback', () => ({
   showSuccess: vi.fn(),
   showError: vi.fn(),
