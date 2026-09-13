@@ -3938,7 +3938,8 @@
     "incomeVsExpenses": "Prihodi: {{income}} | Rashodi: {{expenses}}"
   },
   "offline": {
-    "noConnection": "Nema internetske veze — neke funkcije možda neće raditi"
+    "noConnection": "Nema internetske veze — neke funkcije možda neće raditi",
+    "weakConnection": "Veza je slaba — osvježavam…"
   },
   "toasts": {
     "error": "Greška",

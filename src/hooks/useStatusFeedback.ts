@@ -13,6 +13,7 @@ import {
   currentRoute,
   RAW_ERROR_REPLACEMENT,
 } from '@/lib/rawErrorGuard';
+import { isWeakConnectionActive } from '@/lib/weakConnection';
 import i18next from 'i18next';
 
 /**
@@ -101,8 +102,21 @@ function resolveDuration(severity: FeedbackSeverity, module: NoteModule, message
   return computeDuration('success', message);
 }
 
+/** Mrežne poruke koje se potiskuju dok je tiha traka slabe veze na ekranu. */
+function isNetworkMessage(message?: string): boolean {
+  if (!message) return false;
+  if (isRawTechnicalMessage(message)) return true;
+  return /nema veze|veza s poslu|connection|poslužitelj/i.test(message);
+}
+
 function show(type: FeedbackType, rawMessage?: string, options?: FeedbackOptions) {
   let message = rawMessage;
+
+  // Jedna tiha traka umjesto niza crvenih poruka: dok dohvati Početne tiho
+  // ponavljaju pokušaj, pojedinačne mrežne obavijesti se ne prikazuju.
+  if (type !== 'success' && isWeakConnectionActive() && isNetworkMessage(rawMessage)) {
+    return;
+  }
 
   // Središnja zaštita: tehnički tekst ("Failed to fetch", ime iznimke) ne ide
   // korisniku — zamjenjuje se rečenicom, a original završi u dijagnostici.

@@ -10,6 +10,7 @@ import { tr } from '@/lib/errorMessages';
 import { instantCache } from '@/lib/instantCache';
 import { useAppResume } from '@/hooks/useAppResume';
 import { isSessionGone } from '@/lib/sessionGone';
+import { loadWithRetry } from '@/lib/loadWithRetry';
 
 const paymentSourcesCacheKey = (
   userId: string | undefined,
@@ -86,6 +87,9 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
 
 
     try {
+      // Dohvat ide kroz zajednički prolazni retry (najviše 3 pokušaja, rastući
+      // razmak) uz rok — bez nekontrolirane petlje ponovnih pokušaja.
+      const loadSources = async (signal: AbortSignal) => {
       // Fetch own payment sources filtered by business context
       let ownQuery = supabase
         .from('custom_payment_sources' as any)
@@ -104,7 +108,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
         ownQuery = ownQuery.is('business_profile_id', null);
       }
 
-      const { data: ownSources, error: ownError } = await ownQuery;
+      const { data: ownSources, error: ownError } = await ownQuery.abortSignal(signal);
 
       if (ownError) throw ownError;
 
@@ -114,7 +118,8 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       const { data: memberships, error: memberError } = await supabase
         .from('payment_source_members' as any)
         .select('payment_source_id, role')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .abortSignal(signal);
 
       if (memberError) throw memberError;
 
@@ -203,6 +208,11 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       });
 
 
+        return sourcesWithCards;
+      };
+
+      const sourcesWithCards = await loadWithRetry('payment_sources', loadSources);
+
       if (isStale()) return;
 
       const finalSources = sourcesWithCards as CustomPaymentSource[];
@@ -243,17 +253,10 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       }
 
       if (isTransient || isAuthError) {
-        // Graceful degrade: don't toast, don't clear state. Silent background retry once.
-        console.warn('[PaymentSources] Transient fetch error, retrying silently:', errMsg);
-        try {
-          const { logDiagnostic } = await import('@/lib/diagnosticLogger');
-          logDiagnostic({
-            event: 'payment_sources_fetch_transient_error',
-            severity: 'warning',
-            details: { message: errMsg, status: status ?? null, is_auth: isAuthError },
-          });
-        } catch {}
-        setTimeout(() => fetchCustomPaymentSources(), 800);
+        // Ponavljanja su već iscrpljena u `loadWithRetry` (koji piše
+        // payment_sources_fetch_retried / _failed). Ovdje samo tiho stajemo:
+        // podaci ostaju na ekranu, bez crvene poruke i bez nove petlje.
+        console.warn('[PaymentSources] Transient fetch error, giving up quietly:', errMsg);
         return;
       }
 

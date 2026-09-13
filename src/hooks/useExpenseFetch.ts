@@ -7,6 +7,8 @@ import { useStorage } from '@/contexts/StorageContext';
 import { showError, showSuccess, showWarning } from '@/hooks/useStatusFeedback';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { runWithTransientRetry, classifyFetchFailure } from '@/lib/expenseFetchRetry';
+import { withTimeout } from '@/lib/fetchTimeout';
+import { beginWeakFetch, endWeakFetch } from '@/lib/weakConnection';
 import { isSessionGone, shouldWarnOnRetry } from '@/lib/sessionGone';
 
 import i18n from '@/i18n';
@@ -173,19 +175,23 @@ export const useExpenseFetch = () => {
 
         let sessionLost = false;
 
-        const fetchPage = async (from: number, withCount: boolean) => {
-          let query = supabase
-            .from('expenses')
-            .select(EXPENSE_LIST_SELECT, withCount ? { count: 'exact' } : undefined)
-            .order('date', { ascending: false })
-            .range(from, from + pageSize - 1);
+        // Rok po stranici: zahtjev koji visi prekida se i pušta retry da
+        // preuzme, umjesto da korisnik čeka minutama.
+        const fetchPage = async (from: number, withCount: boolean) =>
+          withTimeout(async (signal) => {
+            let query = supabase
+              .from('expenses')
+              .select(EXPENSE_LIST_SELECT, withCount ? { count: 'exact' } : undefined)
+              .order('date', { ascending: false })
+              .range(from, from + pageSize - 1)
+              .abortSignal(signal);
 
-          if (orFilter) query = query.or(orFilter);
+            if (orFilter) query = query.or(orFilter);
 
-          const { data, error, count } = await query;
-          if (error) throw error;
-          return { rows: (data as any[]) || [], count: count ?? null };
-        };
+            const { data, error, count } = await query;
+            if (error) throw error;
+            return { rows: (data as any[]) || [], count: count ?? null };
+          });
 
         const loadAllPages = async (): Promise<any[]> => {
           // Prva stranica nosi ukupan broj redaka (count: exact); preostale
@@ -203,14 +209,15 @@ export const useExpenseFetch = () => {
           return rows;
         };
 
-        const { result: allData, attempts } = await runWithTransientRetry(loadAllPages, {
+        let weakShown = false;
+        let expensesRetryOutcome: { result: any[]; attempts: number };
+        try {
+          expensesRetryOutcome = await runWithTransientRetry(loadAllPages, {
           onRetry: (info, attempt) => {
             // Povratak iz pozadine na Androidu prekine zahtjev u tijeku iako
-            // internet radi — prvi pokušaj je tih dok je uređaj online.
-            const online = typeof navigator === 'undefined' ? true : navigator.onLine !== false;
-            if ((info.kind === 'network' || info.kind === 'timeout') && shouldWarnOnRetry(attempt, online)) {
-              showWarning(tr('errors.fetch.retrying', 'Nema veze s internetom — pokušavam ponovno'));
-            }
+            // internet radi — umjesto niza poruka pali se jedna tiha traka.
+            weakShown = true;
+            beginWeakFetch('expenses');
             logDiagnostic({
               event: 'expense_fetch_retried',
               severity: 'warning',
@@ -223,7 +230,13 @@ export const useExpenseFetch = () => {
               },
             });
           },
-        });
+          });
+        } catch (retryError) {
+          if (weakShown) endWeakFetch('expenses', 'failed');
+          throw retryError;
+        }
+        if (weakShown) endWeakFetch('expenses', 'recovered');
+        const { result: allData, attempts } = expensesRetryOutcome;
 
         // Odjava usred straničenja: ne pišemo krnji skup u state/cache.
         if (sessionLost) {

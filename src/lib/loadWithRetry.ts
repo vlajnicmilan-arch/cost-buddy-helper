@@ -17,6 +17,8 @@ import {
 } from '@/lib/expenseFetchRetry';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { getBuildStamp } from '@/lib/buildStamp';
+import { withTimeout, HOME_FETCH_TIMEOUT_MS } from '@/lib/fetchTimeout';
+import { beginWeakFetch, endWeakFetch } from '@/lib/weakConnection';
 import i18next from 'i18next';
 
 /** Poruka koju korisnik vidi TEK nakon iscrpljenih ponavljanja. */
@@ -36,11 +38,24 @@ function trSafe(key: string, defaultValue: string): string {
  */
 export async function loadWithRetry<T>(
   name: string,
-  fn: () => Promise<T>,
+  fn: (signal: AbortSignal) => Promise<T>,
+  options: { timeoutMs?: number } = {},
 ): Promise<T> {
   const startedAt = Date.now();
+  const timeoutMs = options.timeoutMs ?? HOME_FETCH_TIMEOUT_MS;
+  let weak = false;
   try {
-    const { result, attempts } = await runWithTransientRetry(fn);
+    const { result, attempts } = await runWithTransientRetry(
+      () => withTimeout(fn, timeoutMs),
+      {
+        onRetry: () => {
+          // Prvo ponavljanje pali JEDNU tihu traku umjesto crvene poruke.
+          weak = true;
+          beginWeakFetch(name);
+        },
+      },
+    );
+    if (weak) endWeakFetch(name, 'recovered');
     if (attempts > 1) {
       logDiagnostic({
         event: `${name}_fetch_retried`,
@@ -54,6 +69,7 @@ export async function loadWithRetry<T>(
     }
     return result;
   } catch (error) {
+    if (weak) endWeakFetch(name, 'failed');
     const info = classifyFetchFailure(error);
     logDiagnostic({
       event: `${name}_fetch_failed`,
