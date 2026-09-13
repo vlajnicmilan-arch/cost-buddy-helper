@@ -99,7 +99,10 @@ describe('FeedbackDialog — dijagnostika', () => {
       target: { value: 'Nešto ne radi' },
     });
     // isključi konzolu
-    screen.getByRole('switch').click();
+    fireEvent.click(screen.getByRole('switch'));
+    await waitFor(() => {
+      expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+    });
     fireEvent.click(screen.getByRole('button', { name: /Pošalji/i }));
 
     await waitFor(() => expect(state.submittedPayload).not.toBeNull());
