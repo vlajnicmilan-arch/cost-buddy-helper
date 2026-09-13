@@ -86,6 +86,14 @@ export async function saveExpenseWithItems<T = Record<string, unknown>>(
     };
   } catch (error) {
     if (weak) endWeakFetch('expense_save', 'failed');
+    // Broj pokušaja za dijagnostiku: ponavljanje se dogodilo samo ako je
+    // `onRetry` upalio tihu traku.
+    try {
+      (error as any).saveAttempts = weak ? 2 : 1;
+      (error as any).saveMs = Date.now() - startedAt;
+    } catch {
+      /* neki throwani objekti nisu proširivi */
+    }
     throw error;
   }
 }
