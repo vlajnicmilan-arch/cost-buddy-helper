@@ -494,8 +494,8 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
         <DialogContent className="max-w-md max-h-[70vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Download className="w-5 h-5 text-primary" />
-              {t('projects.importFromPersonal', 'Uvezi projekt iz osobnih financija')}
+              <ArrowRightLeft className="w-5 h-5 text-primary" />
+              {t('projects.moveFromPersonal', 'Premjesti projekt iz osobnih u {{company}}', { company: activeCompanyName })}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-2 mt-2">
@@ -505,7 +505,7 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
               </div>
             ) : personalProjects.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
-                {t('projects.noPersonalProjects', 'Nemate osobnih projekata za uvoz.')}
+                {t('projects.noPersonalProjectsToMove', 'Nemate osobnih projekata za premještanje.')}
               </p>
             ) : (
               personalProjects.map((project) => (
@@ -527,14 +527,14 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
                     variant="outline"
                     className="shrink-0 gap-1 rounded-lg"
                     disabled={importingIds.has(project.id)}
-                    onClick={() => handleImportProject(project)}
+                    onClick={() => setMoveTarget(project)}
                   >
                     {importingIds.has(project.id) ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
-                      <Download className="w-3.5 h-3.5" />
+                      <ArrowRightLeft className="w-3.5 h-3.5" />
                     )}
-                    {t('common.import', 'Uvezi')}
+                    {t('projects.move', 'Premjesti')}
                   </Button>
                 </div>
               ))
@@ -542,6 +542,28 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Confirm move personal → company */}
+      <AlertDialog open={!!moveTarget} onOpenChange={(o) => { if (!o) setMoveTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('projects.move', 'Premjesti')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                'projects.confirmMove',
+                'Projekt {{project}} premješta se u {{company}} zajedno s fazama, troškovima i ljudima.',
+                { project: moveTarget?.name ?? '', company: activeCompanyName },
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (moveTarget) void handleMoveProject(moveTarget); }}>
+              {t('projects.move', 'Premjesti')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Daily Standup Sheet */}
       <DailyStandupSheet
