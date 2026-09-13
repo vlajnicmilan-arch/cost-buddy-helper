@@ -143,33 +143,30 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
     }
   };
 
-  const handleImportProject = async (project: any) => {
+  /**
+   * Move (not copy) a personal project into the active company. One atomic RPC
+   * moves the project, its expenses, linked incoming invoices and engagements;
+   * milestones/documents/members follow via project_id.
+   */
+  const handleMoveProject = async (project: any) => {
     if (!user || !activeBusinessProfileId) return;
     setImportingIds(prev => new Set(prev).add(project.id));
     try {
-      const { error } = await supabase
-        .from('projects')
-        .insert({
-          user_id: user.id,
-          name: project.name,
-          description: project.description,
-          icon: project.icon,
-          color: project.color,
-          status: project.status,
-          total_budget: project.total_budget,
-          start_date: project.start_date,
-          end_date: project.end_date,
-          business_profile_id: activeBusinessProfileId,
-        });
+      const { error } = await (supabase.rpc as any)('move_project_to_business_profile', {
+        p_project_id: project.id,
+        p_business_profile_id: activeBusinessProfileId,
+      });
       if (error) throw error;
-      showSuccess(`Projekt "${project.name}" uvezen`);
+      setPersonalProjects(prev => prev.filter(p => p.id !== project.id));
+      showSuccess(t('projects.moved', 'Projekt premješten u tvrtku'));
       refetch();
       onRefreshExpenses?.();
     } catch (err) {
-      console.error('Error importing project:', err);
+      console.error('Error moving project:', err);
       showError(t('common.error'));
     } finally {
       setImportingIds(prev => { const n = new Set(prev); n.delete(project.id); return n; });
+      setMoveTarget(null);
     }
   };
 
