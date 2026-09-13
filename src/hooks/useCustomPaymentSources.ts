@@ -12,6 +12,20 @@ import { useAppResume } from '@/hooks/useAppResume';
 import { isSessionGone } from '@/lib/sessionGone';
 import { loadWithRetry } from '@/lib/loadWithRetry';
 
+/**
+ * DIJELJENJE DOHVATA MEĐU INSTANCAMA
+ *
+ * 33 komponente koriste ovaj hook. Bez dijeljenja svaka instanca vodi vlastiti
+ * lanac upita (novčanici → kartice → članovi), pa se na Početnoj skupi na
+ * desetke istih zahtjeva. Rezultat se zato kratko pamti po dosegu
+ * (user_id + poslovni profil + uključeni osobni izvori), a istovremeni pozivi
+ * dijele isto obećanje kroz `loadWithRetry` (ključ = isti doseg).
+ */
+const SOURCES_SHARE_TTL_MS = 5000;
+const recentSourcesByScope = new Map<string, { at: number; data: CustomPaymentSource[] }>();
+
+export const __resetPaymentSourcesShareForTests = () => recentSourcesByScope.clear();
+
 const paymentSourcesCacheKey = (
   userId: string | undefined,
   businessProfileId: string | null | undefined,
