@@ -384,205 +384,234 @@ export const useExpenseCRUD = ({
         };
         const insertPayload = normalizeExpensePayload(basePayload, writerIntent);
 
-        const { data, error } = await supabase
-          .from('expenses')
-          .insert(insertPayload as any)
-          .select()
-          .single();
+        // Stavke računa putuju u ISTOM pozivu (nema drugog kruga).
+        const itemsPayload = (items ?? []).map((item) => ({
+          name: item.name,
+          quantity: item.quantity ?? 1,
+          unit_price: item.unit_price ?? null,
+          total_price: item.total_price,
+        }));
 
-        if (error) {
-          // Idempotency: uniq_recurring_per_day (recurring auto-gen). Drugi paralelni
-          // pokušaj za isti dan/pravilo je odbijen na DB razini — tretiraj kao no-op.
-          if (error.code === '23505' && (normalizedExpense as any).recurring_transaction_id) {
-            console.log('[ExpenseCRUD] recurring already generated for this day, skipping', {
-              recurring_transaction_id: (normalizedExpense as any).recurring_transaction_id,
-              date: normalizedExpense.date,
-            });
-            return;
-          }
-          // Idempotency: isti client_request_id je već upisan (dupli klik ili
-          // retry). Vrati POSTOJEĆI redak umjesto da stvaraš drugi.
-          if (error.code === '23505' && (normalizedExpense as any).client_request_id) {
-            const { data: existing } = await supabase
-              .from('expenses')
-              .select('*')
-              .eq('user_id', user.id)
-              .eq('client_request_id', (normalizedExpense as any).client_request_id)
-              .maybeSingle();
-            console.warn('[ExpenseCRUD] duplicate client_request_id — vraćam postojeći zapis', {
-              client_request_id: (normalizedExpense as any).client_request_id,
-              expense_id: existing?.id ?? null,
-            });
-            return existing ? ({ ...existing, date: new Date(existing.date) } as unknown as Expense) : undefined;
-          }
-          console.error('Supabase insert error details:', { error, code: error.code, message: error.message, details: error.details });
-          throw error;
-        }
-        console.log('✅ Expense saved to DB:', data?.id, 'project_id:', data?.project_id ?? 'NULL');
-
-        // BUG 1 remediation — clock-skew osigurač.
-        // manual_entry stavlja event_at s klijentskog sata. Ako je sat pomaknut
-        // (posebno unatrag), event_at bi mogao pasti PRIJE sidra i tiho
-        // reproducirati baš bug koji ovim popravljamo. Ne blokiramo insert —
-        // samo pišemo warning event u app_diagnostics_logs kad je razlika
-        // između klijentskog event_at i serverskog created_at > 5 minuta.
-        if (writerIntent === 'manual_entry' && data?.created_at && (insertPayload as any).event_at) {
-          try {
-            const clientMs = new Date((insertPayload as any).event_at).getTime();
-            const serverMs = new Date(data.created_at).getTime();
-            if (Number.isFinite(clientMs) && Number.isFinite(serverMs)) {
-              const skewSeconds = Math.round((clientMs - serverMs) / 1000);
-              if (Math.abs(skewSeconds) > 300) {
-                const { logDiagnostic } = await import('@/lib/diagnosticLogger');
-                logDiagnostic({
-                  event: 'manual_entry_clock_skew',
-                  severity: 'warning',
-                  details: {
-                    event_at: (insertPayload as any).event_at,
-                    created_at: data.created_at,
-                    skew_seconds: skewSeconds,
-                    expense_id: data.id,
-                  },
-                });
-              }
-            }
-          } catch {
-            /* telemetry only — never blocks the write */
-          }
-        }
-
-
-        // Funnel: log first_transaction (idempotent — DB unique index dedups).
-        import('@/lib/funnelTracking')
-          .then(({ logFunnelEvent }) => logFunnelEvent('first_transaction', {
-            type: normalizedExpense.type,
-            has_project: !!normalizedExpense.project_id,
-            has_budget: !!normalizedExpense.budget_id,
-          }))
-          .catch(() => {});
-
-        if (items && items.length > 0 && data) {
-          const { error: itemsError } = await supabase.from('receipt_items').insert(items.map(item => ({
-            expense_id: data.id,
-            name: item.name,
-            quantity: item.quantity || 1,
-            unit_price: item.unit_price || null,
-            total_price: item.total_price
-          })));
-          // Diagnostic trail so future silent failures are visible.
-          try {
-            await supabase.from('app_diagnostics_logs').insert([{
-              session_id: 'expense-crud',
-              event: itemsError ? 'receipt_items_insert_error' : 'receipt_items_insert_success',
-              route: typeof window !== 'undefined' ? window.location.pathname : null,
-              user_id: user.id,
-              app_version: (import.meta as any).env?.VITE_APP_VERSION ?? 'unknown',
-              device_info: {},
-              severity: itemsError ? 'error' : 'info',
+        const { saveExpenseWithItems, releaseSaveId } = await import('@/lib/expenseSave');
+        const saveStartedAt = Date.now();
+        const logSaveTiming = (
+          outcome: 'ok' | 'retry_ok' | 'failed',
+          attempts: number,
+          rpcMs: number,
+          message?: string,
+        ) => {
+          void import('@/lib/diagnosticLogger')
+            .then(({ logDiagnostic }) => logDiagnostic({
+              event: 'expense_save_timing',
+              severity: 'info',
               details: {
-                expense_id: data.id,
-                items_received: items.length,
-                error_code: itemsError?.code ?? null,
-                error_message: itemsError?.message ?? null,
+                outcome,
+                attempts,
+                rpc_ms: rpcMs,
+                total_ms: Date.now() - saveStartedAt,
+                items: itemsPayload.length,
+                route: typeof window !== 'undefined' ? window.location.pathname : null,
+                message: (message || '').slice(0, 200),
               },
-            }]);
-          } catch { /* best-effort */ }
-          if (itemsError) {
-            console.error('[ExpenseCRUD] receipt_items insert failed:', itemsError);
-            // Re-throw so UI shows error instead of silent "success" without artikli.
-            throw itemsError;
-          }
-        }
-
-        // Owner-loan auto-creation: business expense paid from a personal source.
-        // Awaited so the debt entry exists before the UI refetches & closes the dialog —
-        // otherwise the company view appears empty even though the expense was saved.
-        const expenseBpId = (normalizedExpense as any).business_profile_id || activeBusinessProfileId || null;
-        // 'material' = korisnik je izričito rekao da ovo NIJE pozajmica.
-        const skipOwnerLoan = (normalizedExpense as any).owner_funding_choice === 'material';
-        if (expenseBpId && data && !isPendingMemberTransaction && !skipOwnerLoan) {
-          try {
-            await createOwnerLoanIfCrossMode({
-              expenseId: data.id,
-              userId: user.id,
-              businessProfileId: expenseBpId,
-              paymentSource: canonicalPaymentSource,
-              amount: normalizedExpense.amount,
-              description: normalizedExpense.description,
-            });
-          } catch (e) {
-            console.error('Owner-loan creation failed:', e);
-          }
-        }
-
-        // Notifications (fire-and-forget, don't block) — uses notifyHelper for reliable delivery + diagnostic trail
-        if (isPendingMemberTransaction && normalizedExpense.income_source_id && data) {
-          invokeNotifyFunction({
-            functionName: 'notify-pending-transaction',
-            body: { expense_id: data.id, income_source_id: normalizedExpense.income_source_id },
-          });
-        }
-        if (normalizedExpense.project_id && data) {
-          invokeNotifyFunction({
-            functionName: 'notify-project-transaction',
-            body: { expense_id: data.id, project_id: normalizedExpense.project_id, action: 'created' },
-          });
-        }
-        if (normalizedExpense.note && normalizedExpense.income_source_id && data) {
-          invokeNotifyFunction({
-            functionName: 'notify-note-added',
-            body: { expense_id: data.id, income_source_id: normalizedExpense.income_source_id, note: normalizedExpense.note },
-          });
-        }
-
-        const newExpense: Expense = {
-          ...data,
-          date: new Date(data.date),
-          category: data.category as Category,
-          type: data.type as TransactionType,
-          payment_source: (data.payment_source || 'cash') as PaymentSource,
-          income_source_id: data.income_source_id,
-          payment_source_card_id: data.payment_source_card_id,
-          expense_nature: (data.expense_nature as 'regular' | 'extraordinary') || undefined
+            }))
+            .catch(() => { /* dijagnostika nikad ne blokira spremanje */ });
         };
 
-        // Optimistic prepend + sort by date desc kako bi `allExpenses[0]`
-        // odmah odražavao najnoviju transakciju (Bug 2: guided "last entry"
-        // kartica). Realtime grana već radi isto sortiranje.
-        setExpenses(prev => {
-          const next = [newExpense, ...prev];
+        // Optimistični prikaz: redak se u popisu vidi odmah, s tihom oznakom
+        // "šalje se…". Saldo novčanika se dira TEK po potvrdi servera.
+        const optimisticExpense = {
+          ...(insertPayload as any),
+          id: clientExpenseId,
+          date: new Date(normalizedExpense.date),
+          category: normalizedExpense.category as Category,
+          type: normalizedExpense.type as TransactionType,
+          payment_source: canonicalPaymentSource as PaymentSource,
+          pending_sync: true,
+        } as unknown as Expense;
+
+        const sortByDateDesc = (list: Expense[]) => {
+          const next = [...list];
           next.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
           return next;
-        });
+        };
+        const addOptimistic = () => setExpenses(prev => (
+          prev.some(e => e.id === clientExpenseId) ? prev : sortByDateDesc([optimisticExpense, ...prev])
+        ));
+        const removeOptimistic = () => setExpenses(prev => prev.filter(e => e.id !== clientExpenseId));
 
-        const savedIncomeSourceId = data.income_source_id || normalizedExpense.income_source_id;
-        // Preračun salda NE blokira zatvaranje dijaloga (Simptom A: 7 s čekanja
-        // uz aktivan gumb → 9 duplikata). Fire-and-forget + `onBalanceUpdated`
-        // invalidacija; prikaz se osvježi kad podaci stignu.
-        void (async () => {
-          try {
-            await updateBalance(canonicalPaymentSource, normalizedExpense.amount, normalizedExpense.type);
-            if (normalizedExpense.type === 'transfer' && savedIncomeSourceId) {
-              await updateBalance(savedIncomeSourceId, normalizedExpense.amount, 'income');
+        const applySaved = async (data: any): Promise<Expense> => {
+          console.log('✅ Expense saved to DB:', data?.id, 'project_id:', data?.project_id ?? 'NULL');
+
+          // BUG 1 remediation — clock-skew osigurač (samo telemetrija).
+          if (writerIntent === 'manual_entry' && data?.created_at && (insertPayload as any).event_at) {
+            try {
+              const clientMs = new Date((insertPayload as any).event_at).getTime();
+              const serverMs = new Date(data.created_at).getTime();
+              if (Number.isFinite(clientMs) && Number.isFinite(serverMs)) {
+                const skewSeconds = Math.round((clientMs - serverMs) / 1000);
+                if (Math.abs(skewSeconds) > 300) {
+                  void import('@/lib/diagnosticLogger')
+                    .then(({ logDiagnostic }) => logDiagnostic({
+                      event: 'manual_entry_clock_skew',
+                      severity: 'warning',
+                      details: {
+                        event_at: (insertPayload as any).event_at,
+                        created_at: data.created_at,
+                        skew_seconds: skewSeconds,
+                        expense_id: data.id,
+                      },
+                    }))
+                    .catch(() => {});
+                }
+              }
+            } catch {
+              /* telemetry only — never blocks the write */
             }
-          } catch (e) {
-            console.error('Balance update failed (non-blocking):', e);
-          } finally {
-            onBalanceUpdated?.();
           }
-        })();
-        if (normalizedExpense.type === 'expense') {
-          checkBudgetAlerts(normalizedExpense.category, normalizedExpense.amount, normalizedExpense.date);
-          emitAvatarEvent('neutral', 'Zapisano! 📝');
-        }
-        if (normalizedExpense.type === 'income') emitAvatarEvent('happy', 'Super! Novi prihod zabilježen! 💰');
 
-        if (isPendingMemberTransaction) {
-          showSuccess(t('feedback.pendingSent'));
-        } else {
-          showSuccess(normalizedExpense.type === 'income' ? t('feedback.incomeAdded') : t('feedback.expenseAdded'));
+          // Funnel: log first_transaction (idempotent — DB unique index dedups).
+          import('@/lib/funnelTracking')
+            .then(({ logFunnelEvent }) => logFunnelEvent('first_transaction', {
+              type: normalizedExpense.type,
+              has_project: !!normalizedExpense.project_id,
+              has_budget: !!normalizedExpense.budget_id,
+            }))
+            .catch(() => {});
+
+          // Owner-loan auto-creation: business expense paid from a personal source.
+          const expenseBpId = (normalizedExpense as any).business_profile_id || activeBusinessProfileId || null;
+          const skipOwnerLoan = (normalizedExpense as any).owner_funding_choice === 'material';
+          if (expenseBpId && data && !isPendingMemberTransaction && !skipOwnerLoan) {
+            try {
+              await createOwnerLoanIfCrossMode({
+                expenseId: data.id,
+                userId: user.id,
+                businessProfileId: expenseBpId,
+                paymentSource: canonicalPaymentSource,
+                amount: normalizedExpense.amount,
+                description: normalizedExpense.description,
+              });
+            } catch (e) {
+              console.error('Owner-loan creation failed:', e);
+            }
+          }
+
+          // Notifications (fire-and-forget, don't block)
+          if (isPendingMemberTransaction && normalizedExpense.income_source_id && data) {
+            invokeNotifyFunction({
+              functionName: 'notify-pending-transaction',
+              body: { expense_id: data.id, income_source_id: normalizedExpense.income_source_id },
+            });
+          }
+          if (normalizedExpense.project_id && data) {
+            invokeNotifyFunction({
+              functionName: 'notify-project-transaction',
+              body: { expense_id: data.id, project_id: normalizedExpense.project_id, action: 'created' },
+            });
+          }
+          if (normalizedExpense.note && normalizedExpense.income_source_id && data) {
+            invokeNotifyFunction({
+              functionName: 'notify-note-added',
+              body: { expense_id: data.id, income_source_id: normalizedExpense.income_source_id, note: normalizedExpense.note },
+            });
+          }
+
+          const newExpense: Expense = {
+            ...data,
+            date: new Date(data.date),
+            category: data.category as Category,
+            type: data.type as TransactionType,
+            payment_source: (data.payment_source || 'cash') as PaymentSource,
+            income_source_id: data.income_source_id,
+            payment_source_card_id: data.payment_source_card_id,
+            expense_nature: (data.expense_nature as 'regular' | 'extraordinary') || undefined
+          };
+
+          // Optimistični redak se zamjenjuje serverskim (oznaka "šalje se…" nestaje).
+          setExpenses(prev => sortByDateDesc([
+            newExpense,
+            ...prev.filter(e => e.id !== clientExpenseId && e.id !== newExpense.id),
+          ]));
+
+          const savedIncomeSourceId = data.income_source_id || normalizedExpense.income_source_id;
+          // Saldo se ažurira TEK po potvrdi servera; motor salda se ne mijenja.
+          void (async () => {
+            try {
+              await updateBalance(canonicalPaymentSource, normalizedExpense.amount, normalizedExpense.type);
+              if (normalizedExpense.type === 'transfer' && savedIncomeSourceId) {
+                await updateBalance(savedIncomeSourceId, normalizedExpense.amount, 'income');
+              }
+            } catch (e) {
+              console.error('Balance update failed (non-blocking):', e);
+            } finally {
+              onBalanceUpdated?.();
+            }
+          })();
+          if (normalizedExpense.type === 'expense') {
+            checkBudgetAlerts(normalizedExpense.category, normalizedExpense.amount, normalizedExpense.date);
+            emitAvatarEvent('neutral', 'Zapisano! 📝');
+          }
+          if (normalizedExpense.type === 'income') emitAvatarEvent('happy', 'Super! Novi prihod zabilježen! 💰');
+
+          if (isPendingMemberTransaction) {
+            showSuccess(t('feedback.pendingSent'));
+          } else {
+            showSuccess(normalizedExpense.type === 'income' ? t('feedback.incomeAdded') : t('feedback.expenseAdded'));
+          }
+          return newExpense;
+        };
+
+        // JEDAN mrežni krug: trošak + stavke u jednoj transakciji, rok 10 s,
+        // jedan siguran ponovni pokušaj (isti id → bez duplikata).
+        const attemptSave = async (): Promise<Expense | undefined> => {
+          addOptimistic();
+          try {
+            const { row, attempts, outcome, rpcMs } = await saveExpenseWithItems<any>(
+              insertPayload as any,
+              itemsPayload,
+            );
+            logSaveTiming(outcome, attempts, rpcMs);
+            releaseSaveId(saveSignature);
+            return await applySaved(row);
+          } catch (err: any) {
+            removeOptimistic();
+            // Recurring auto-gen: isti dan/pravilo je već upisan — no-op.
+            if (err?.code === '23505' && (normalizedExpense as any).recurring_transaction_id) {
+              logSaveTiming('ok', err?.saveAttempts ?? 1, err?.saveMs ?? 0, 'recurring_duplicate');
+              return undefined;
+            }
+            // Isti client_request_id (dupli klik) — vrati POSTOJEĆI zapis.
+            if (err?.code === '23505' && (normalizedExpense as any).client_request_id) {
+              const { data: existing } = await supabase
+                .from('expenses')
+                .select('*')
+                .eq('user_id', user.id)
+                .eq('client_request_id', (normalizedExpense as any).client_request_id)
+                .maybeSingle();
+              if (existing) {
+                logSaveTiming('ok', err?.saveAttempts ?? 1, err?.saveMs ?? 0, 'client_request_duplicate');
+                releaseSaveId(saveSignature);
+                return await applySaved(existing);
+              }
+            }
+            logSaveTiming('failed', err?.saveAttempts ?? 1, err?.saveMs ?? 0, err?.message);
+            throw err;
+          }
+        };
+
+        try {
+          return await attemptSave();
+        } catch (err: any) {
+          // Jasna poruka umjesto beskonačnog vrtuljka; gumb ponavlja ISTI id.
+          showError(t('feedback.saveFailed'), {
+            action: {
+              label: t('feedback.saveRetry'),
+              onClick: () => { void attemptSave().catch(() => { /* poruka se ponovno prikazuje */ }); },
+            },
+          });
+          try { (err as any).__handled = true; } catch { /* noop */ }
+          throw err;
         }
-        return newExpense;
       }
     } catch (error) {
       console.error('Error adding expense:', error);
