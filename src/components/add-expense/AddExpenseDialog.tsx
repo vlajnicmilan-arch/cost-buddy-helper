@@ -41,9 +41,13 @@ import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
 import { useScanBusinessRouting } from '@/hooks/useScanBusinessRouting';
 import {
   resolveReceiptBusinessRouting,
-  isPersonalSourceForProfile,
   type OwnerFundingChoice,
 } from '@/lib/receiptBusinessRouting';
+import {
+  resolveExpenseBusinessProfileId,
+  shouldOfferOwnerFundingChoice,
+  paymentSourceToCustomId,
+} from '@/lib/expenseBusinessAttribution';
 import { buildKrugFields } from '@/lib/krugExpenseFields';
 import { getFreeTransactionLimitPeriod } from '@/lib/freeTransactionLimit';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
@@ -421,6 +425,19 @@ export const AddExpenseDialog = ({
     return getCategoriesForProjectType(type).map((c) => ({ id: c.id, name: c.name }));
   }, [selectedProjectId, projects]);
 
+  // Pripadnost tvrtki slijedi ODABRANI projekt; bez projekta ostaje današnji
+  // izvor (aktivni poslovni profil). Popis projekata se ne mijenja.
+  const attributedBusinessProfileId = useMemo(
+    () =>
+      resolveExpenseBusinessProfileId({
+        selectedProjectId,
+        projects,
+        fallbackBusinessProfileId: effectiveBusinessProfileId,
+      }),
+    [selectedProjectId, projects, effectiveBusinessProfileId],
+  );
+
+
   const handleMerchantChange = useCallback((value: string) => {
     setMerchantName(value);
     // Skip AI categorization for transfers — category is system-reserved
@@ -744,9 +761,13 @@ export const AddExpenseDialog = ({
 
   const acceptScannedData = async () => {
     if (!scannedData || isSaving || isSavingRef.current) return;
-    // Cilj spremanja: aktivni poslovni profil, ili profil prepoznat sa skena
-    // (OIB kupca / potvrđena ponuda po imenu). Nikad obrnuto.
-    const saveBusinessProfileId = effectiveBusinessProfileId || scanTargetProfileId;
+    // Cilj spremanja: tvrtka ODABRANOG projekta; bez projekta aktivni poslovni
+    // profil ili profil prepoznat sa skena (OIB kupca / potvrđena ponuda).
+    const saveBusinessProfileId = resolveExpenseBusinessProfileId({
+      selectedProjectId,
+      projects,
+      fallbackBusinessProfileId: effectiveBusinessProfileId || scanTargetProfileId,
+    });
     // Krug attach guard — parity s manual putom: nema skrivenog defaulta.
     if (!saveBusinessProfileId && krugId && krugPrivacy == null) {
       showError(
@@ -831,11 +852,12 @@ export const AddExpenseDialog = ({
       const tipNote = tipAmount > 0 ? `Napojnica: €${tipAmount.toFixed(2)}` : '';
       const finalType: TransactionType = isTransfer ? 'transfer' : (isIncome ? 'income' : 'expense');
       // Izbor knjiženja bilježimo SAMO kad je trošak stvarno poslovni i plaćen
-      // osobnim izvorom; inače polje ostaje prazno (staro ponašanje).
-      const personalSourceForTarget = isPersonalSourceForProfile({
-        customPaymentSourceId: scannedData.custom_payment_source_id,
+      // osobnim izvorom (ili izvorom druge tvrtke); inače polje ostaje prazno.
+      const personalSourceForTarget = shouldOfferOwnerFundingChoice({
+        expenseBusinessProfileId: saveBusinessProfileId,
+        customPaymentSourceId:
+          scannedData.custom_payment_source_id ?? paymentSourceToCustomId(finalPaymentSource),
         sources: customPaymentSources,
-        targetBusinessProfileId: saveBusinessProfileId,
       });
       const scanFundingChoiceForSave =
         saveBusinessProfileId && personalSourceForTarget && !isTransfer && !isIncome
@@ -1271,7 +1293,7 @@ export const AddExpenseDialog = ({
         milestone_id: selectedProjectId ? (selectedMilestoneId || null) : null,
         budget_id: selectedBudgetId || undefined,
         expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
-        business_profile_id: effectiveBusinessProfileId || null,
+        business_profile_id: attributedBusinessProfileId,
         currency: selectedSourceCurrencyCode !== primaryCurrency.code ? selectedSourceCurrencyCode : null,
         // WS2b — Krug parity za installment create granu (isti helper kao manual/scan).
         ...buildKrugFields(effectiveBusinessProfileId, krugId, krugPrivacy),
@@ -1320,7 +1342,19 @@ export const AddExpenseDialog = ({
       collaborator_id: selectedProjectId ? collaboratorId : null,
       is_advance: selectedProjectId ? isAdvance : false,
       linked_advance_ids: (selectedProjectId && !isAdvance && linkedAdvanceIds.length > 0) ? linkedAdvanceIds : [],
-      business_profile_id: effectiveBusinessProfileId || null,
+      business_profile_id: attributedBusinessProfileId,
+      // Poslovni trošak plaćen osobnim izvorom (ili izvorom druge tvrtke):
+      // bilježimo izbor knjiženja; zadano je pozajmica vlasnika (kao dosad).
+      owner_funding_choice:
+        type !== 'transfer' &&
+        type !== 'income' &&
+        shouldOfferOwnerFundingChoice({
+          expenseBusinessProfileId: attributedBusinessProfileId,
+          customPaymentSourceId: paymentSourceToCustomId(paymentSource),
+          sources: customPaymentSources,
+        })
+          ? (fundingChoice === 'material' ? 'material' : 'owner_loan')
+          : null,
       currency: selectedSourceCurrencyCode !== primaryCurrency.code ? selectedSourceCurrencyCode : null,
       income_source_id: type === 'transfer' ? (transferDestination || undefined) : undefined,
       // Krug WS1 — personal-only kontekst.
@@ -1489,15 +1523,16 @@ export const AddExpenseDialog = ({
                 onRoutingUndo={undoScanRouting}
                 onRoutingAcceptOffer={acceptScanRoutingOffer}
                 onRoutingDeclineOffer={declineScanRoutingOffer}
-                showFundingChoice={
-                  !effectiveBusinessProfileId &&
-                  !!scanTargetProfileId &&
-                  isPersonalSourceForProfile({
-                    customPaymentSourceId: scannedData.custom_payment_source_id,
-                    sources: customPaymentSources,
-                    targetBusinessProfileId: scanTargetProfileId,
-                  })
-                }
+                showFundingChoice={shouldOfferOwnerFundingChoice({
+                  expenseBusinessProfileId: resolveExpenseBusinessProfileId({
+                    selectedProjectId,
+                    projects,
+                    fallbackBusinessProfileId: effectiveBusinessProfileId || scanTargetProfileId,
+                  }),
+                  customPaymentSourceId:
+                    scannedData.custom_payment_source_id ?? paymentSourceToCustomId(paymentSource),
+                  sources: customPaymentSources,
+                })}
                 fundingChoice={fundingChoice}
                 onFundingChoiceChange={(choice) => {
                   setFundingChoice(choice);
