@@ -493,10 +493,18 @@ export const useExpenseFetch = () => {
     (async () => {
       await snapshotHydrationRef.current;
       if (cancelled) return;
+      // Instanca koja se montira dok je potpuni dohvat za istog korisnika još
+      // svjež ne kreće u mrežu — prikazuje snimku. Vrijedi SAMO za ovaj
+      // početni efekt; refetch/fokus/realtime/spremanje ga zaobilaze.
+      if (!isLocalMode && isExpensesFresh(userId)) {
+        setLoading(false);
+        return;
+      }
       const { sharedIds } = await fetchOwnedSources();
       if (cancelled) return;
       await fetchExpenses(sharedIds);
     })();
+
     return () => {
       cancelled = true;
     };
