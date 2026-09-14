@@ -243,6 +243,7 @@ Deno.serve(async (req) => {
         soap_action: (report.steps as any)?.wsdl?.soapAction ?? null,
         p12_mac_verified: report.p12_mac_verified ?? null,
         p12_unlock_path: report.p12_unlock_path ?? null,
+        variants: variants.map((v) => ({
           variant: v.variant,
           http_status: v.http_status ?? null,
           conclusion: v.conclusion,
