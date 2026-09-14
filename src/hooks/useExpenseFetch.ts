@@ -34,6 +34,8 @@ import { markExpensesSource } from '@/lib/expenseSourceMark';
 import { readExpenseSnapshot, writeExpenseSnapshot } from '@/lib/storage/expenseSnapshot';
 import { buildExpenseScopeFilter, belongsToMyScope, type ScopeContext } from '@/lib/expenseScope';
 import { runSingleFlight } from '@/lib/loadWithRetry';
+import { isExpensesFresh, markExpensesFetched } from '@/lib/expensesFreshness';
+
 
 // v3: bumped after the explicit-column select (lista više ne nosi teška
 // polja poput bank_raw_line) — stari v2 snapshot se jednostavno ignorira.
@@ -317,7 +319,9 @@ export const useExpenseFetch = () => {
         setExpenses(mapped);
         instantCache.write(cacheKey, mapped);
         markExpensesSource('network');
+        markExpensesFetched(user.id);
         void writeExpenseSnapshot(user.id, mapped);
+
 
       }
     } catch (error) {
