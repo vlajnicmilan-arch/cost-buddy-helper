@@ -61,13 +61,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           flushPendingConsents(nextSession.user.id);
         }
 
+        // Svako osvježenje tokena bilježimo: zahtjevi poslani prije njega
+        // smiju se ponoviti odmah, bez čekanja razmaka i bez žute trake.
+        if ((event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') && nextSession) {
+          markTokenRefreshed();
+        }
+
         // Only mark loading=false / authReady=true after the initial
         // getSession() resolves below. Premature flips cause downstream
         // hooks to fire fetches before the session is restored.
         if (initialSessionCheckedRef.current) {
           setLoading(false);
+          markTokenReady();
           setAuthReady(true);
         }
+
 
         // Track login device info exactly once per signed-in user.
         if (event === 'SIGNED_IN' && nextSession?.user) {
@@ -193,7 +201,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(prev => pickStableUser(prev, validatedSession?.user ?? null));
       setLoading(false);
       initialSessionCheckedRef.current = true;
+      markTokenReady();
       setAuthReady(true);
+      logDiagnostic({
+        event: 'auth_token_ready',
+        severity: 'info',
+        details: {
+          ms_since_boot: Math.round(performance.now()),
+          refreshed: didRefresh,
+          hasSession: !!validatedSession,
+        },
+      });
+
 
       if (validatedSession?.user) {
         flushPendingConsents(validatedSession.user.id);
