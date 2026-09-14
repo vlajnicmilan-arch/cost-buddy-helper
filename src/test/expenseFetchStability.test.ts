@@ -5,7 +5,7 @@ const SOURCE = readFileSync('src/hooks/useExpenseFetch.ts', 'utf8');
 
 describe('stabilnost velikog dohvata transakcija', () => {
   it('jedan rok od 90 s obuhvaća cijeli dohvat, ne pojedinu stranicu', () => {
-    expect(SOURCE).toContain('withTimeoutAndDrain(loadAllPages, EXPENSES_FETCH_TIMEOUT_MS)');
+    expect(SOURCE).toContain('withTimeoutAndDrain(loadAllPages, EXPENSES_FETCH_TIMEOUT_MS');
     expect(SOURCE).not.toMatch(/fetchPage[\s\S]{0,200}withTimeout/);
   });
 

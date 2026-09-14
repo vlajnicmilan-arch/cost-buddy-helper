@@ -19,6 +19,14 @@ import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { getBuildStamp } from '@/lib/buildStamp';
 import { withTimeoutAndDrain, HOME_FETCH_TIMEOUT_MS } from '@/lib/fetchTimeout';
 import { beginWeakFetch, endWeakFetch } from '@/lib/weakConnection';
+import {
+  getTokenReadyAt,
+  startedBeforeTokenReady,
+  subscribeTokenRefresh,
+  tokenAgeSeconds,
+  waitedForAuthMs,
+  StaleTokenError,
+} from '@/lib/authTokenReady';
 import i18next from 'i18next';
 
 const inFlightLoads = new Map<string, Promise<unknown>>();
@@ -77,11 +85,30 @@ async function loadWithRetryInternal<T>(
   const startedAt = Date.now();
   const timeoutMs = options.timeoutMs ?? HOME_FETCH_TIMEOUT_MS;
   let weak = false;
+  let preAuthRetry = false;
   try {
     const { result, attempts } = await runWithTransientRetry(
-      () => withTimeoutAndDrain(fn, timeoutMs),
+      () =>
+        withTimeoutAndDrain(fn, timeoutMs, {
+          // Zahtjev poslan prije nego je token bio spreman ne čeka rok:
+          // čim se token osvježi, prekidamo ga i ponavljamo s novim.
+          cancel:
+            getTokenReadyAt() === null
+              ? (trigger) => subscribeTokenRefresh(() => trigger(new StaleTokenError()))
+              : undefined,
+        }),
       {
+        // Pad zbog starog tokena ponavlja se odmah, bez razmaka.
+        sleep: (ms) =>
+          startedBeforeTokenReady(startedAt)
+            ? Promise.resolve()
+            : new Promise<void>((r) => setTimeout(r, ms)),
         onRetry: () => {
+          if (startedBeforeTokenReady(startedAt)) {
+            // Nije mrežni problem — samo smo pretekli osvježenje tokena.
+            preAuthRetry = true;
+            return;
+          }
           // Prvo ponavljanje pali JEDNU tihu traku umjesto crvene poruke.
           weak = true;
           beginWeakFetch(name);
@@ -97,6 +124,9 @@ async function loadWithRetryInternal<T>(
           cause: 'recovered',
           attempts,
           duration_ms: Date.now() - startedAt,
+          pre_auth: preAuthRetry,
+          waited_for_auth_ms: waitedForAuthMs(startedAt),
+          token_age_s: tokenAgeSeconds(),
         },
       });
     }
@@ -112,12 +142,15 @@ async function loadWithRetryInternal<T>(
         http_status: info.status ?? null,
         message: (info.message || '').slice(0, 200),
         duration_ms: Date.now() - startedAt,
+        waited_for_auth_ms: waitedForAuthMs(startedAt),
+        token_age_s: tokenAgeSeconds(),
         build: getBuildStamp(),
       },
     });
     throw error;
   }
 }
+
 
 /** Ljudska poruka za konačni pad: mrežni uzrok dobiva svoj tekst. */
 export function fetchFailureMessage(error: unknown, fallback: string): string {

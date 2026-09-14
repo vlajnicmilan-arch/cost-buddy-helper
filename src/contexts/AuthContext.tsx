@@ -9,6 +9,7 @@ import { toDayKey } from '@/lib/dayKey';
 import { markOnce } from '@/lib/bootTiming';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { pickStableUser } from '@/lib/stableAuthIdentity';
+import { isTokenValid, markTokenRefreshed, markTokenReady } from '@/lib/authTokenReady';
 
 interface AuthContextValue {
   user: User | null;
@@ -60,13 +61,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           flushPendingConsents(nextSession.user.id);
         }
 
+        // Svako osvježenje tokena bilježimo: zahtjevi poslani prije njega
+        // smiju se ponoviti odmah, bez čekanja razmaka i bez žute trake.
+        if ((event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') && nextSession) {
+          markTokenRefreshed();
+        }
+
         // Only mark loading=false / authReady=true after the initial
         // getSession() resolves below. Premature flips cause downstream
         // hooks to fire fetches before the session is restored.
         if (initialSessionCheckedRef.current) {
           setLoading(false);
+          markTokenReady();
           setAuthReady(true);
         }
+
 
         // Track login device info exactly once per signed-in user.
         if (event === 'SIGNED_IN' && nextSession?.user) {
@@ -126,14 +135,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         severity: 'info',
         details: { durationMs: Date.now() - authStartedAt, hasSession: !!existing },
       });
+      // TOKEN SPREMAN = authReady. Spremljena sesija s isteklim (ili skoro
+      // isteklim) tokenom prvo se osvježi — inače hookovi pucaju zahtjeve sa
+      // starim tokenom i oni vise do roka.
+      let validatedSession = existing;
+      let didRefresh = false;
+      if (existing && !isTokenValid(existing.expires_at)) {
+        try {
+          const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession();
+          if (!refreshErr && refreshed?.session) {
+            validatedSession = refreshed.session;
+            didRefresh = true;
+            markTokenRefreshed();
+          }
+        } catch {
+          // Pad osvježenja = ponašanje kao dosad (isSessionGone put netaknut).
+        }
+      }
       // Validate the restored session against the backend. A locally cached
       // JWT remains "valid" (signature OK, not expired) even after the
       // backend user has been hard-deleted, which would otherwise let the
       // app keep treating that ghost session as logged in and route the
       // user straight into onboarding. `getUser()` hits the Auth server and
       // returns an error (user_not_found / invalid token) in that case.
-      let validatedSession = existing;
-      if (existing?.user) {
+      if (validatedSession?.user) {
+
         const getUserStartedAt = Date.now();
         try {
           const { data: userData, error: userErr } = await supabase.auth.getUser();
@@ -175,7 +201,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(prev => pickStableUser(prev, validatedSession?.user ?? null));
       setLoading(false);
       initialSessionCheckedRef.current = true;
+      markTokenReady();
       setAuthReady(true);
+      logDiagnostic({
+        event: 'auth_token_ready',
+        severity: 'info',
+        details: {
+          ms_since_boot: Math.round(performance.now()),
+          refreshed: didRefresh,
+          hasSession: !!validatedSession,
+        },
+      });
+
 
       if (validatedSession?.user) {
         flushPendingConsents(validatedSession.user.id);
