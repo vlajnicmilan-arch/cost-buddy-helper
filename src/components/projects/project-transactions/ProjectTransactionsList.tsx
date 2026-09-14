@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { FileText, Search, Printer, User, Target, TrendingUp, TrendingDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
@@ -102,6 +103,7 @@ export const ProjectTransactionsList = ({
           {filteredExpenses.map((expense) => {
             const categoryInfo = resolveCategory(expense.category, customCategories);
             const isIncome = expense.type === 'income';
+            const isOwnerLoan = !isIncome && (expense as any).owner_funding_choice === 'owner_loan';
             const milestoneName = getMilestoneName(expense.milestone_id);
             const authorId = expense.submitted_by || expense.user_id;
             const authorName = profiles[authorId] || 'Član';
@@ -139,6 +141,18 @@ export const ProjectTransactionsList = ({
                           ? t('transactions.regular', 'Redovan')
                           : t('transactions.extraordinary', 'Vanredan')}
                       </Badge>
+                    )}
+                    {isOwnerLoan && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-amber-500/40 text-amber-600 dark:text-amber-400 shrink-0">
+                            🪙 {t('transactions.ownerLoanBadge', 'Pozajmica')}
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          <p className="text-xs">{t('transactions.ownerLoanTooltip', 'Poslovni trošak plaćen iz osobnog računa — kreirana pozajmica vlasnika')}</p>
+                        </TooltipContent>
+                      </Tooltip>
                     )}
                   </div>
 
