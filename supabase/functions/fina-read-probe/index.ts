@@ -150,9 +150,11 @@ Deno.serve(async (req) => {
   const httpStatuses: number[] = [];
 
   try {
-    const key: KeyMaterial = loadFinaKey();
+    const key: KeyMaterial = await loadFinaKey();
     const oib = Deno.env.get("FINA_BUYER_OIB")!.trim();
     report.certificate = { subject: key.subject, serial: key.serial };
+    report.p12_mac_verified = key.macVerified;
+    report.p12_unlock_path = key.unlockPath;
     const client = createFinaClient(key);
 
     // ---- WSDL + schemas -------------------------------------------------
@@ -500,6 +502,8 @@ Deno.serve(async (req) => {
         count: (report as any).list_before?.count ?? null,
         status_before: (report as any).status_change?.status_before ?? null,
         status_after: (report as any).status_change?.status_after ?? null,
+        p12_mac_verified: (report as any).p12_mac_verified ?? null,
+        p12_unlock_path: (report as any).p12_unlock_path ?? null,
         http_statuses: httpStatuses,
         error: report.error ?? null,
       },
