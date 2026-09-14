@@ -118,15 +118,19 @@ interface DedupEntry {
 const dedupMap = new Map<string, DedupEntry>();
 
 const buildSignature = (row: DiagnosticEventRow): string => {
-  const msg = (row.details && typeof row.details === 'object' && 'message' in row.details)
-    ? String((row.details as any).message ?? '')
-    : '';
+  const detailField = (key: string): string =>
+    (row.details && typeof row.details === 'object' && key in row.details)
+      ? String((row.details as any)[key] ?? '')
+      : '';
+  const msg = detailField('message');
   // Include action for performance_metric so different slow actions don't collapse
-  const action = (row.details && typeof row.details === 'object' && 'action' in row.details)
-    ? String((row.details as any).action ?? '')
-    : '';
-  return `${row.event}::${row.severity}::${row.route ?? ''}::${msg.slice(0, 200)}::${action}`;
+  const action = detailField('action');
+  // Include page so paginated events (expense_fetch_page 1/2/3) stay separate
+  // rows; a repeat of the SAME page still collapses with `count`.
+  const page = detailField('page');
+  return `${row.event}::${row.severity}::${row.route ?? ''}::${msg.slice(0, 200)}::${action}::${page}`;
 };
+
 
 const cleanupDedup = (now: number) => {
   for (const [key, entry] of dedupMap) {

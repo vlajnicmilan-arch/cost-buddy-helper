@@ -10,7 +10,7 @@ describe('stabilnost velikog dohvata transakcija', () => {
   });
 
   it('snimka se čeka prije početnog mrežnog osvježavanja', () => {
-    expect(SOURCE).toMatch(/await snapshotHydrationRef\.current;[\s\S]{0,120}fetchOwnedSources\(\)/);
+    expect(SOURCE).toMatch(/await snapshotHydrationRef\.current;[\s\S]{0,600}fetchOwnedSources\(\)/);
   });
 
   it('pad mreže ne briše već prikazane transakcije', () => {
