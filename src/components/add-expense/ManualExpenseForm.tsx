@@ -68,6 +68,8 @@ interface ManualExpenseFormProps {
   onFirstPaymentDateChange: (value: string) => void;
   // Project/Budget
   projects: { id: string; name: string; color?: string | null; icon?: string | null; project_type?: string | null; business_profile_id?: string | null }[];
+  /** Nazivi tvrtki za grupiranje popisa projekata. */
+  businessProfiles?: { id: string; name: string }[];
   budgets: { id: string; name: string; color?: string | null; icon?: string | null; is_active?: boolean | null }[];
   selectedProjectId: string | null;
   onSelectedProjectIdChange: (id: string | null) => void;
@@ -443,6 +445,7 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
             <AttachmentBar
               showProject={projectsModuleEnabled && props.projects.length > 0}
               projects={props.projects}
+        businessProfiles={props.businessProfiles}
               selectedProjectId={props.selectedProjectId}
               onSelectedProjectIdChange={props.onSelectedProjectIdChange}
               showBudget={props.type === 'expense' && props.budgets.length > 0}

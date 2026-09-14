@@ -59,6 +59,8 @@ interface ScannedDataPreviewProps {
   customPaymentSources: CustomPaymentSource[];
   customCategories: CustomCategory[];
   projects: { id: string; name: string; color?: string | null; icon?: string | null; project_type?: string | null; business_profile_id?: string | null }[];
+  /** Nazivi tvrtki za grupiranje popisa projekata. */
+  businessProfiles?: { id: string; name: string }[];
   budgets: { id: string; name: string; color?: string | null; icon?: string | null; is_active?: boolean | null }[];
   selectedProjectId: string | null;
   onSelectedProjectIdChange: (id: string | null) => void;
@@ -366,6 +368,7 @@ export const ScannedDataPreview = ({
         <AttachmentBar
           showProject={(projects?.length ?? 0) > 0}
           projects={projects}
+          businessProfiles={businessProfiles}
           selectedProjectId={selectedProjectId}
           onSelectedProjectIdChange={handleProjectChange}
           showBudget={(budgets?.length ?? 0) > 0}
