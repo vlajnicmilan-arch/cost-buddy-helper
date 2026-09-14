@@ -296,6 +296,8 @@ export const useExpenseFetch = () => {
               attempts: pageRetryCount + 1,
               rows_so_far: allData.length,
               duration_ms: Date.now() - startedAt,
+              waited_for_auth_ms: waitedForAuthMs(startedAt),
+              token_age_s: tokenAgeSeconds(),
             },
           });
         }
