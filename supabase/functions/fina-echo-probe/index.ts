@@ -95,9 +95,11 @@ Deno.serve(async (req) => {
   if (dump) report.envelopes = envelopes;
 
   try {
-    const key = loadFinaKey();
+    const key = await loadFinaKey();
     const oib = Deno.env.get("FINA_BUYER_OIB")!.trim();
     report.certificate = { subject: key.subject, issuer: key.issuer, serial: key.serial };
+    report.p12_mac_verified = key.macVerified;
+    report.p12_unlock_path = key.unlockPath;
 
     const client = createFinaClient(key);
 
@@ -239,7 +241,8 @@ Deno.serve(async (req) => {
         wsdl_address_host_overridden: report.wsdl_address_host_overridden ?? false,
         wsdl_status: (report.steps as any)?.wsdl?.http_status ?? null,
         soap_action: (report.steps as any)?.wsdl?.soapAction ?? null,
-        results: variants.map((v) => ({
+        p12_mac_verified: report.p12_mac_verified ?? null,
+        p12_unlock_path: report.p12_unlock_path ?? null,
           variant: v.variant,
           http_status: v.http_status ?? null,
           conclusion: v.conclusion,

@@ -69,73 +69,9 @@ export function checkFinaSecrets(): Response | null {
   return null;
 }
 
-export interface KeyMaterial {
-  certPem: string;
-  keyPem: string;
-  certDerB64: string;
-  subject: string;
-  serial: string;
-  issuer: string;
-  pkcs8Der: Uint8Array;
-}
+export type { KeyMaterial } from "./p12.ts";
+export { loadP12, loadFinaKey } from "./p12.ts";
 
-export function loadP12(p12B64: string, password: string): KeyMaterial {
-  const der = forge.util.decode64(p12B64);
-  const asn1 = forge.asn1.fromDer(der, { parseAllBytes: false });
-  const p12 = forge.pkcs12.pkcs12FromAsn1(asn1, password);
-
-
-  const certBags =
-    p12.getBags({ bagType: forge.pki.oids.certBag })[forge.pki.oids.certBag] ?? [];
-  const keyBags =
-    p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag })[
-      forge.pki.oids.pkcs8ShroudedKeyBag
-    ] ??
-    p12.getBags({ bagType: forge.pki.oids.keyBag })[forge.pki.oids.keyBag] ??
-    [];
-
-  const key = keyBags[0]?.key;
-  if (!key) throw new Error("p12 contains no private key");
-
-  const certs = certBags.map((b: any) => b.cert).filter(Boolean);
-  const cert =
-    certs.find((c: any) => c.publicKey?.n?.equals?.((key as any).n)) ?? certs[0];
-  if (!cert) throw new Error("p12 contains no certificate");
-
-  const certPem = forge.pki.certificateToPem(cert);
-  const keyPem = forge.pki.privateKeyToPem(key);
-  const certDerB64 = forge.util.encode64(
-    forge.asn1.toDer(forge.pki.certificateToAsn1(cert)).getBytes(),
-  );
-  const pkcs8Pem = forge.pki.privateKeyInfoToPem(
-    forge.pki.wrapRsaPrivateKey(forge.pki.privateKeyToAsn1(key)),
-  );
-  const pkcs8B64 = pkcs8Pem.replace(/-----[^-]+-----|\s+/g, "");
-  const bin = atob(pkcs8B64);
-  const pkcs8Der = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) pkcs8Der[i] = bin.charCodeAt(i);
-
-  return {
-    certPem,
-    keyPem,
-    certDerB64,
-    subject: cert.subject.attributes
-      .map((a: any) => `${a.shortName ?? a.name}=${a.value}`)
-      .join(", "),
-    issuer: cert.issuer.attributes
-      .map((a: any) => `${a.shortName ?? a.name}=${a.value}`)
-      .join(", "),
-    serial: String(cert.serialNumber),
-    pkcs8Der,
-  };
-}
-
-export function loadFinaKey(): KeyMaterial {
-  return loadP12(
-    Deno.env.get("FINA_P12_B64")!.replace(/\s+/g, ""),
-    Deno.env.get("FINA_P12_PASSWORD")!,
-  );
-}
 
 /** mTLS client that trusts the Fina RDC chain and the Fina DEMO chain. */
 export function createFinaClient(key: KeyMaterial): unknown {
