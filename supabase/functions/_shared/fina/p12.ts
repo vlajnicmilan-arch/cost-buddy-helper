@@ -132,6 +132,93 @@ interface RawBags {
   pkcs8Bin: string | null;
 }
 
+interface P12OpenDetails {
+  unlock_path: "webcrypto" | "forge";
+  keybag_alg_oid: string | null;
+  kdf_oid: string | null;
+  prf_oid: string | null;
+  scheme_oid: string | null;
+  key_iterations: number | null;
+}
+
+function inspectP12Open(derBin: string): P12OpenDetails {
+  const pfx = asn1.fromDer(derBin, { parseAllBytes: false });
+  const authSafeCI = pfx.value[1];
+  const authSafe = asn1.fromDer(rawBytes(authSafeCI.value[1].value[0]));
+
+  for (const ci of authSafe.value) {
+    if (oidOf(ci.value[0]) !== OID.data) continue;
+    const safeBags = asn1.fromDer(rawBytes(ci.value[1].value[0])).value;
+    for (const bag of safeBags) {
+      if (oidOf(bag.value[0]) !== OID.pkcs8ShroudedKeyBag) continue;
+      const algId = bag.value[1].value[0].value[0];
+      const keybagAlgOid = oidOf(algId.value[0]);
+      if (classifyEncryptionAlgorithm(keybagAlgOid) !== "pbes2") {
+        return {
+          unlock_path: "forge",
+          keybag_alg_oid: keybagAlgOid,
+          kdf_oid: null,
+          prf_oid: null,
+          scheme_oid: null,
+          key_iterations: null,
+        };
+      }
+
+      const params = algId.value[1];
+      const kdf = params.value[0];
+      const kdfParams = kdf.value[1];
+      let prfOid: string | null = null;
+      for (const extra of kdfParams.value.slice(2)) {
+        if (extra.type === asn1.Type.SEQUENCE) prfOid = oidOf(extra.value[0]);
+      }
+      return {
+        unlock_path: "webcrypto",
+        keybag_alg_oid: keybagAlgOid,
+        kdf_oid: oidOf(kdf.value[0]),
+        prf_oid: prfOid,
+        scheme_oid: oidOf(params.value[1].value[0]),
+        key_iterations: intOf(kdfParams.value[1]),
+      };
+    }
+  }
+
+  return {
+    unlock_path: "forge",
+    keybag_alg_oid: null,
+    kdf_oid: null,
+    prf_oid: null,
+    scheme_oid: null,
+    key_iterations: null,
+  };
+}
+
+async function recordP12Open(details: P12OpenDetails): Promise<void> {
+  try {
+    const url = Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    if (!url || !serviceKey) return;
+    const response = await fetch(`${url}/rest/v1/app_diagnostics_logs`, {
+      method: "POST",
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({
+        event: "fina_p12_open",
+        session_id: "fina-p12-open",
+        user_id: null,
+        severity: "info",
+        details,
+      }),
+    });
+    await response.arrayBuffer();
+  } catch {
+    // Diagnostics must never alter certificate opening behaviour.
+  }
+}
+
 /**
  * Walk the PKCS#12 structure and return the certificate DERs and the
  * (decrypted) PrivateKeyInfo. MAC is NOT verified on this path — the file
@@ -244,6 +331,7 @@ function loadP12WithForge(derBin: string, password: string): KeyMaterial {
 
 export async function loadP12(p12B64: string, password: string): Promise<KeyMaterial> {
   const derBin = forge.util.decode64(p12B64);
+  await recordP12Open(inspectP12Open(derBin));
 
   let bags: RawBags;
   try {
