@@ -413,6 +413,8 @@ export const useExpenseFetch = () => {
           rows_so_far: fetchRowsRef.current,
           duration_ms: fetchStartedAtRef.current ? Date.now() - fetchStartedAtRef.current : null,
           message: info.message.slice(0, 200),
+          waited_for_auth_ms: fetchStartedAtRef.current ? waitedForAuthMs(fetchStartedAtRef.current) : 0,
+          token_age_s: tokenAgeSeconds(),
         },
       });
 
