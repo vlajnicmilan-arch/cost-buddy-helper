@@ -2,10 +2,17 @@
 // Extracted verbatim from the K2 Echo probe — behaviour must not change.
 import forge from "npm:node-forge@1.3.1";
 import { serialize, digestBase64, bytesToBase64, type XmlNode } from "./c14n.ts";
-import { FINA_CA_PEM } from "./finaCa.ts";
+import { FINA_CA_PEM, FINA_DEMO_CA_PEM } from "./finaCa.ts";
+import { resolveFinaEndpoint } from "./endpoint.ts";
 
-export const ENDPOINT =
-  "https://webservisi.fina.hr/B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService";
+const RESOLVED_ENDPOINT = resolveFinaEndpoint(
+  (globalThis as any).Deno?.env?.get?.("FINA_ENDPOINT") ?? null,
+);
+
+/** Service address: FINA_ENDPOINT when set and https, otherwise production. */
+export const ENDPOINT = RESOLVED_ENDPOINT.endpoint;
+export const ENDPOINT_SOURCE = RESOLVED_ENDPOINT.source;
+export const ENDPOINT_ERROR = RESOLVED_ENDPOINT.error ?? null;
 
 export const WSSE_NS =
   "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd";
@@ -129,10 +136,10 @@ export function loadFinaKey(): KeyMaterial {
   );
 }
 
-/** mTLS client that trusts the Fina RDC chain. */
+/** mTLS client that trusts the Fina RDC chain and the Fina DEMO chain. */
 export function createFinaClient(key: KeyMaterial): unknown {
   return (Deno as any).createHttpClient({
-    caCerts: [FINA_CA_PEM],
+    caCerts: [FINA_CA_PEM, FINA_DEMO_CA_PEM],
     cert: key.certPem,
     key: key.keyPem,
   });
