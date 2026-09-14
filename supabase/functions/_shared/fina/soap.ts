@@ -81,8 +81,9 @@ export interface KeyMaterial {
 
 export function loadP12(p12B64: string, password: string): KeyMaterial {
   const der = forge.util.decode64(p12B64);
-  const asn1 = forge.asn1.fromDer(der);
+  const asn1 = forge.asn1.fromDer(der, { parseAllBytes: false });
   const p12 = forge.pkcs12.pkcs12FromAsn1(asn1, password);
+
 
   const certBags =
     p12.getBags({ bagType: forge.pki.oids.certBag })[forge.pki.oids.certBag] ?? [];
