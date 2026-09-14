@@ -18,6 +18,7 @@ import {
   getLocalExpenses,
 } from '@/lib/storage/indexedDB';
 import { createOwnerLoanIfCrossMode, syncOwnerLoanForExpense, deleteOwnerLoanForExpense } from '@/lib/ownerLoanLogic';
+import { resolveSavedBusinessProfileId } from '@/lib/expenseBusinessAttribution';
 import { invokeNotifyFunction } from '@/lib/notifyHelper';
 import {
   normalizePaymentSourceWithDbFallback,
@@ -255,7 +256,7 @@ export const useExpenseCRUD = ({
         const { getBankLinkedSourceIds } = await import('@/lib/bankLinkedSources');
         const bankLinkedSourceIds = await getBankLinkedSourceIds(
           user.id,
-          (normalizedExpense as any).business_profile_id || activeBusinessProfileId || null,
+          resolveSavedBusinessProfileId(normalizedExpense as any, activeBusinessProfileId),
         );
 
         // Foundation Plan Val 1: normalize payment_source to canonical form
@@ -334,7 +335,9 @@ export const useExpenseCRUD = ({
           expense_nature: normalizedExpense.expense_nature || null,
           status: isPendingMemberTransaction ? 'pending' : 'approved',
           submitted_by: isPendingMemberTransaction ? user.id : null,
-          business_profile_id: (normalizedExpense as any).business_profile_id || activeBusinessProfileId || null,
+          // Pripadnost tvrtki: trošak s projektom nosi konačnu vrijednost
+          // (uključujući NULL za osobni projekt) — aktivni profil je ne mijenja.
+          business_profile_id: resolveSavedBusinessProfileId(normalizedExpense as any, activeBusinessProfileId),
           currency: (normalizedExpense as any).currency || null,
           bank_match_status: bankMatchStatus,
           recurring_transaction_id: (normalizedExpense as any).recurring_transaction_id || null,
@@ -479,7 +482,7 @@ export const useExpenseCRUD = ({
             .catch(() => {});
 
           // Owner-loan auto-creation: business expense paid from a personal source.
-          const expenseBpId = (normalizedExpense as any).business_profile_id || activeBusinessProfileId || null;
+          const expenseBpId = resolveSavedBusinessProfileId(normalizedExpense as any, activeBusinessProfileId);
           const skipOwnerLoan = (normalizedExpense as any).owner_funding_choice === 'material';
           if (expenseBpId && data && !isPendingMemberTransaction && !skipOwnerLoan) {
             try {
@@ -797,7 +800,7 @@ export const useExpenseCRUD = ({
         }
 
         // Sync owner-loan when business expense edited
-        const updatedBpId = (expense as any).business_profile_id || activeBusinessProfileId || null;
+        const updatedBpId = resolveSavedBusinessProfileId(expense as any, activeBusinessProfileId);
         if (updatedBpId && user) {
           syncOwnerLoanForExpense({
             expenseId: expense.id,
