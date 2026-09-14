@@ -55,27 +55,42 @@ export function withTimeout<T>(
  * Rok koji nakon aborta čeka da se podložni zahtjev stvarno zatvori.
  * Koristi se za veliki dohvat transakcija kako novi single-flight zahtjev ne
  * bi krenuo dok API sloj još drži vezu prethodnog zahtjeva.
+ *
+ * `opts.cancel` omogućuje prijevremeni prekid izvana (npr. token je u međuvremenu
+ * osvježen, pa zahtjev sa starim tokenom nema smisla čekati do roka).
  */
 export function withTimeoutAndDrain<T>(
   fn: (signal: AbortSignal) => Promise<T>,
   ms: number,
+  opts: { cancel?: (trigger: (reason: Error) => void) => () => void } = {},
 ): Promise<T> {
   const controller = new AbortController();
-  let timedOut = false;
+  let failure: Error | null = null;
   let timer: ReturnType<typeof setTimeout> | null = null;
+  let unsubscribe: (() => void) | null = null;
   const task = fn(controller.signal);
 
   return new Promise<T>((resolve, reject) => {
-    timer = setTimeout(() => {
-      timedOut = true;
-      controller.abort();
-    }, ms);
+    const fail = (reason: Error) => {
+      if (failure) return;
+      failure = reason;
+      try {
+        controller.abort();
+      } catch {
+        /* abort je best-effort */
+      }
+    };
+
+    timer = setTimeout(() => fail(new FetchTimeoutError(ms)), ms);
+    unsubscribe = opts.cancel ? opts.cancel(fail) : null;
 
     task.then(
-      (value) => timedOut ? reject(new FetchTimeoutError(ms)) : resolve(value),
-      (error) => timedOut ? reject(new FetchTimeoutError(ms)) : reject(error),
+      (value) => (failure ? reject(failure) : resolve(value)),
+      (error) => reject(failure ?? error),
     );
   }).finally(() => {
     if (timer) clearTimeout(timer);
+    if (unsubscribe) unsubscribe();
   });
 }
+
