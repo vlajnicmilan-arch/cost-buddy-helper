@@ -508,7 +508,7 @@ export const useExpenseFetch = () => {
     return () => {
       cancelled = true;
     };
-  }, [fetchOwnedSources, fetchExpenses, authReady, isLocalMode]);
+  }, [fetchOwnedSources, fetchExpenses, authReady, isLocalMode, userId]);
 
   // Svježina na povratku u fokus / mrežu — dashboard i novčanik brojke se
   // tiho usklade sa serverskom istinom (loading se ne pali nakon hidracije).
