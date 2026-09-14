@@ -1499,6 +1499,7 @@ export const AddExpenseDialog = ({
                 customPaymentSources={customPaymentSources}
                 customCategories={customCategories}
                 projects={projects}
+                businessProfiles={ownBusinessProfiles}
                 budgets={budgets}
                 selectedProjectId={selectedProjectId}
                 onSelectedProjectIdChange={handleSelectedProjectIdChange}
@@ -1575,6 +1576,7 @@ export const AddExpenseDialog = ({
               firstPaymentDate={firstPaymentDate}
               onFirstPaymentDateChange={setFirstPaymentDate}
               projects={projects}
+              businessProfiles={ownBusinessProfiles}
               showFundingChoice={shouldOfferOwnerFundingChoice({
                 expenseBusinessProfileId: attributedBusinessProfileId,
                 customPaymentSourceId: paymentSourceToCustomId(paymentSource),

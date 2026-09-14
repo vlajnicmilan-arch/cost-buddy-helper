@@ -119,6 +119,7 @@ export const ScannedDataPreview = ({
   customPaymentSources,
   customCategories,
   projects,
+  businessProfiles,
   budgets,
   selectedProjectId,
   onSelectedProjectIdChange,
