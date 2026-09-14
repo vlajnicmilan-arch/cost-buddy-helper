@@ -268,7 +268,12 @@ export const useExpenseFetch = () => {
 
         let allData: any[];
         try {
-          allData = await withTimeoutAndDrain(loadAllPages, EXPENSES_FETCH_TIMEOUT_MS);
+          allData = await withTimeoutAndDrain(loadAllPages, EXPENSES_FETCH_TIMEOUT_MS, {
+            cancel:
+              getTokenReadyAt() === null
+                ? (trigger) => subscribeTokenRefresh(() => trigger(new StaleTokenError()))
+                : undefined,
+          });
         } catch (retryError) {
           if (weakShown) endWeakFetch('expenses', 'failed');
           throw retryError;
