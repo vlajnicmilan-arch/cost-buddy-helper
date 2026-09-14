@@ -41,6 +41,8 @@ interface AttachmentBarProps {
   // Projekt
   showProject?: boolean;
   projects?: Option[];
+  /** Nazivi tvrtki za grupiranje popisa projekata (Osobno / po tvrtki). */
+  businessProfiles?: { id: string; name: string }[];
   selectedProjectId?: string | null;
   onSelectedProjectIdChange?: (id: string | null) => void;
 
