@@ -5,7 +5,6 @@ import { PaymentSource, PAYMENT_SOURCES } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { CardLookup } from '@/components/CardLookup';
 import { useTranslation } from 'react-i18next';
-import { useAppState } from '@/contexts/AppStateContext';
 import { PaymentSourceOptions } from './PaymentSourceOptions';
 
 interface PaymentSourceSelectorProps {
@@ -15,6 +14,8 @@ interface PaymentSourceSelectorProps {
   selectedCardId: string | null;
   onSelectedCardIdChange: (id: string | null) => void;
   customPaymentSources: CustomPaymentSource[];
+  /** Popis razvrstan po vlasništvu (Osobno / tvrtka), bez odluke o pozajmici. */
+  groupByOwnerScope?: boolean;
 }
 
 export const PaymentSourceSelector = ({
@@ -24,9 +25,9 @@ export const PaymentSourceSelector = ({
   selectedCardId,
   onSelectedCardIdChange,
   customPaymentSources,
+  groupByOwnerScope = false,
 }: PaymentSourceSelectorProps) => {
   const { t } = useTranslation();
-  const { activeBusinessProfileId } = useAppState();
 
   return (
     <div className="space-y-3">
@@ -81,24 +82,11 @@ export const PaymentSourceSelector = ({
             customPaymentSources={customPaymentSources}
             currentValue={paymentSource}
             showBalance
-            showLoanGroup
+            showLoanGroup={!groupByOwnerScope}
+            groupByOwnerScope={groupByOwnerScope}
           />
         </SelectContent>
       </Select>
-
-      {/* Business-mode hint: personal source selected → owner loan will be created */}
-      {(() => {
-        if (!activeBusinessProfileId) return null;
-        const selected = customPaymentSources.find(s => s.id === paymentSource);
-        if (!selected) return null;
-        if (selected.business_profile_id === activeBusinessProfileId) return null;
-        return (
-          <div className="text-xs rounded-lg px-3 py-2 bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 flex items-start gap-2">
-            <span aria-hidden>🪙</span>
-            <span>{t('business.payment.willCreateOwnerLoan', 'Bit će zabilježeno kao pozajmica vlasnika prema tvrtki.')}</span>
-          </div>
-        );
-      })()}
 
       {/* Card Selection */}
       {(() => {

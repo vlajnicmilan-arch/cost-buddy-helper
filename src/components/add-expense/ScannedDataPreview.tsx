@@ -21,6 +21,7 @@ import type { KrugSelectorPrivacy } from '@/components/krug/KrugSelector';
 import { AttachmentBar } from './AttachmentBar';
 import { MilestoneSelectRow } from './MilestoneSelectRow';
 import { ReceiptBusinessRoutingPanel } from './ReceiptBusinessRoutingPanel';
+import { OwnerFundingChoiceBlock } from './OwnerFundingChoiceBlock';
 import type { OwnerFundingChoice } from '@/lib/receiptBusinessRouting';
 
 
@@ -57,7 +58,7 @@ interface ScannedDataPreviewProps {
   receiptImages: string[];
   customPaymentSources: CustomPaymentSource[];
   customCategories: CustomCategory[];
-  projects: { id: string; name: string; color?: string | null; icon?: string | null; project_type?: string | null }[];
+  projects: { id: string; name: string; color?: string | null; icon?: string | null; project_type?: string | null; business_profile_id?: string | null }[];
   budgets: { id: string; name: string; color?: string | null; icon?: string | null; is_active?: boolean | null }[];
   selectedProjectId: string | null;
   onSelectedProjectIdChange: (id: string | null) => void;
@@ -482,9 +483,6 @@ export const ScannedDataPreview = ({
           onUndo={() => onRoutingUndo?.()}
           onAcceptOffer={() => onRoutingAcceptOffer?.()}
           onDeclineOffer={() => onRoutingDeclineOffer?.()}
-          showFundingChoice={showFundingChoice}
-          fundingChoice={fundingChoice}
-          onFundingChoiceChange={(c) => onFundingChoiceChange?.(c)}
         />
 
         {/* Payment source selector */}
@@ -520,6 +518,7 @@ export const ScannedDataPreview = ({
               <PaymentSourceOptions
                 customPaymentSources={customPaymentSources}
                 customValuePrefix="custom:"
+                groupByOwnerScope
                 currentValue={
                   scannedData.custom_payment_source_id
                     ? `custom:${scannedData.custom_payment_source_id}`
@@ -529,21 +528,13 @@ export const ScannedDataPreview = ({
             </SelectContent>
           </Select>
 
-          {/* Business-mode hint: personal source selected → owner loan will be created */}
-          {(() => {
-            if (!activeBusinessProfileId) return null;
-            const selectedId = scannedData.custom_payment_source_id;
-            if (!selectedId) return null;
-            const selected = customPaymentSources.find(s => s.id === selectedId);
-            if (!selected) return null;
-            if (selected.business_profile_id === activeBusinessProfileId) return null;
-            return (
-              <div className="text-xs rounded-lg px-3 py-2 bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 flex items-start gap-2">
-                <span aria-hidden>🪙</span>
-                <span>{t('business.payment.willCreateOwnerLoan', 'Bit će zabilježeno kao pozajmica vlasnika prema tvrtki.')}</span>
-              </div>
-            );
-          })()}
+          {/* „Kako knjižiti?" — isti blok kao u ručnom unosu. */}
+          {showFundingChoice && (
+            <OwnerFundingChoiceBlock
+              value={fundingChoice === 'material' ? 'material' : 'owner_loan'}
+              onChange={(choice) => onFundingChoiceChange?.(choice)}
+            />
+          )}
 
           {/* Card selector for custom source */}
           {scannedData.custom_payment_source_id && (() => {

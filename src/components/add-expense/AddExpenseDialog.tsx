@@ -242,10 +242,12 @@ export const AddExpenseDialog = ({
   const { scanning, scanReceipt, scanMultipleReceipts, uploadReceiptImage } = useReceiptScanner();
   const { takePhoto: nativeTakePhoto, pickFromGallery: nativePickFromGallery, isNative } = useNativeCamera();
   const { formatAmount, currency: primaryCurrency, multiCurrencyEnabled } = useCurrency();
-  const { customPaymentSources, loading: customPaymentSourcesLoading, refetch: refetchPaymentSources } = useCustomPaymentSources({ includePersonal: true });
+  const { customPaymentSources, loading: customPaymentSourcesLoading, refetch: refetchPaymentSources } = useCustomPaymentSources({ includePersonal: true, allScopes: true });
   const { customIncomeCategories, addCustomIncomeCategory, refetch: refetchIncomeCategories } = useCustomIncomeCategories();
   const { customCategories, addCustomCategory, refetch: refetchCustomCategories } = useCustomCategories();
-  const { projects } = useProjects();
+  // JEDAN popis projekata: unos nudi sve korisnikove projekte (Osobno / po
+  // tvrtki), bez obzira na pogled. Atribucija i dalje ide po odabranom projektu.
+  const { allProjects: projects } = useProjects();
   const { budgets } = useBudgets();
   const { createPlan: createInstallmentPlan } = useInstallments();
   const { hasAccess } = useFeatureAccess();
@@ -1573,6 +1575,13 @@ export const AddExpenseDialog = ({
               firstPaymentDate={firstPaymentDate}
               onFirstPaymentDateChange={setFirstPaymentDate}
               projects={projects}
+              showFundingChoice={shouldOfferOwnerFundingChoice({
+                expenseBusinessProfileId: attributedBusinessProfileId,
+                customPaymentSourceId: paymentSourceToCustomId(paymentSource),
+                sources: customPaymentSources,
+              })}
+              fundingChoice={fundingChoice === 'material' ? 'material' : 'owner_loan'}
+              onFundingChoiceChange={setFundingChoice}
               budgets={budgets}
               selectedProjectId={selectedProjectId}
               onSelectedProjectIdChange={handleSelectedProjectIdChange}

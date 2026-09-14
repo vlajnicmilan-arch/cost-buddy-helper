@@ -121,14 +121,14 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
   }, [expense.payment_source]);
 
   // Owner-loan: business expense paid from a personal source
-  const isOwnerLoan = useMemo(() => {
-    if ((expense as any).owner_funding_choice === 'material') return false;
-    return Boolean(
-      (expense as any).business_profile_id &&
-      customSource &&
-      !(customSource as any).business_profile_id
-    );
-  }, [expense, customSource]);
+  // Oznaka visi ISKLJUČIVO o korisnikovoj odluci pri unosu; nikad se ne
+  // izvodi iz izvora plaćanja i nikad ne stoji na prihodu/prijenosu.
+  const isOwnerLoan = useMemo(
+    () =>
+      (expense as any).owner_funding_choice === 'owner_loan' &&
+      expense.type === 'expense',
+    [expense],
+  );
 
   /** Poslovni trošak iz osobnog izvora koji je korisnik proglasio materijalnim. */
   const isMaterialFunding = (expense as any).owner_funding_choice === 'material';

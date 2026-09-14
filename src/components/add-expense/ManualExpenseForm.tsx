@@ -19,6 +19,7 @@ import { ReceiptCaptureButtons } from './ReceiptCaptureButtons';
 import { AdvanceLinkSection } from './AdvanceLinkSection';
 import { QuickAddCategoryInline } from './QuickAddCategoryInline';
 import { PaymentSourceSelector } from './PaymentSourceSelector';
+import { OwnerFundingChoiceBlock, OwnerFundingChoiceValue } from './OwnerFundingChoiceBlock';
 import { PaymentSourceOptions } from './PaymentSourceOptions';
 import { ExpenseItemsList } from './ExpenseItemsList';
 import { AttachmentBar } from './AttachmentBar';
@@ -47,6 +48,10 @@ interface ManualExpenseFormProps {
   selectedCardId: string | null;
   onSelectedCardIdChange: (id: string | null) => void;
   customPaymentSources: CustomPaymentSource[];
+  /** „Kako knjižiti?" — firmin trošak plaćen osobnim novčanikom. */
+  showFundingChoice?: boolean;
+  fundingChoice?: OwnerFundingChoiceValue;
+  onFundingChoiceChange?: (choice: OwnerFundingChoiceValue) => void;
   // Transfer destination
   transferDestination: string | null;
   onTransferDestinationChange: (value: string | null) => void;
@@ -62,7 +67,7 @@ interface ManualExpenseFormProps {
   firstPaymentDate: string;
   onFirstPaymentDateChange: (value: string) => void;
   // Project/Budget
-  projects: { id: string; name: string; color?: string | null; icon?: string | null; project_type?: string | null }[];
+  projects: { id: string; name: string; color?: string | null; icon?: string | null; project_type?: string | null; business_profile_id?: string | null }[];
   budgets: { id: string; name: string; color?: string | null; icon?: string | null; is_active?: boolean | null }[];
   selectedProjectId: string | null;
   onSelectedProjectIdChange: (id: string | null) => void;
@@ -276,7 +281,15 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
         selectedCardId={props.selectedCardId}
         onSelectedCardIdChange={props.onSelectedCardIdChange}
         customPaymentSources={props.customPaymentSources}
+        groupByOwnerScope
       />
+
+      {props.showFundingChoice && props.type !== 'transfer' && (
+        <OwnerFundingChoiceBlock
+          value={props.fundingChoice === 'material' ? 'material' : 'owner_loan'}
+          onChange={(choice) => props.onFundingChoiceChange?.(choice)}
+        />
+      )}
 
       {/* Transfer Destination */}
       {props.type === 'transfer' && (

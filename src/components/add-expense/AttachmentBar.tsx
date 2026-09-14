@@ -22,6 +22,8 @@ import { FolderKanban, PiggyBank, Users, User, Check, X, Plus } from 'lucide-rea
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { useMyKrugs } from '@/hooks/useKrug';
+import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
+import { groupByBusinessScope } from '@/lib/scopeGrouping';
 import { useModuleGate } from '@/hooks/useModuleGate';
 
 export type KrugPrivacy = 'personal' | 'shared';
@@ -32,6 +34,8 @@ interface Option {
   color?: string | null;
   icon?: string | null;
   is_active?: boolean | null;
+  /** Vlasništvo stavke — koristi ga grupiranje popisa (Osobno / tvrtka). */
+  business_profile_id?: string | null;
 }
 
 interface AttachmentBarProps {
@@ -196,6 +200,8 @@ interface PanelListProps {
   onSelect: (id: string) => void;
   fallbackIcon: string;
   onClose: () => void;
+  /** Kad je zadano, popis se prikazuje razvrstan po dosegu umjesto ravno. */
+  groups?: { key: string; label: string; items: Option[] }[];
 }
 
 const PanelList = ({
@@ -206,8 +212,10 @@ const PanelList = ({
   onSelect,
   fallbackIcon,
   onClose,
+  groups,
 }: PanelListProps) => {
   const styles = toneStyles[tone];
+  const sections = groups ?? [{ key: 'all', label: '', items: options }];
   return (
     <div className="flex flex-col max-h-[320px]">
       <div className="px-3 py-2 border-b border-border/50">
@@ -216,7 +224,14 @@ const PanelList = ({
         </div>
       </div>
       <div className="overflow-y-auto py-1">
-        {options.map((opt) => {
+        {sections.map((section) => (
+        <div key={section.key}>
+        {section.label && (
+          <div className="px-3 py-1 text-[11px] uppercase tracking-wide text-muted-foreground/70 font-semibold">
+            {section.label}
+          </div>
+        )}
+        {section.items.map((opt) => {
           const isSelected = selectedId === opt.id;
           const color = opt.color || 'hsl(var(--primary))';
           return (
@@ -244,6 +259,8 @@ const PanelList = ({
             </button>
           );
         })}
+        </div>
+        ))}
       </div>
     </div>
   );
@@ -253,6 +270,7 @@ export const AttachmentBar = (props: AttachmentBarProps) => {
   const { t } = useTranslation();
   const [openChip, setOpenChip] = useState<ChipTone | null>(null);
   const { data: krugs = [] } = useMyKrugs();
+  const { profiles: businessProfiles } = useBusinessProfiles();
   const { requestModule } = useModuleGate();
 
   const projects = props.projects ?? [];
@@ -267,6 +285,12 @@ export const AttachmentBar = (props: AttachmentBarProps) => {
   const selectedProject = projects.find((p) => p.id === props.selectedProjectId) ?? null;
   const selectedBudget = budgets.find((b) => b.id === props.selectedBudgetId) ?? null;
   const selectedKrug = krugs.find((k) => k.id === props.krugId) ?? null;
+
+  // JEDAN popis projekata: Osobno, pa svaka tvrtka po imenu.
+  const projectGroups = groupByBusinessScope(projects, businessProfiles, {
+    personal: t('common.personalScope', 'Osobno'),
+    unknownCompany: t('common.companyScope', 'Tvrtka'),
+  });
 
   const close = () => setOpenChip(null);
   const krugStyles = toneStyles.krug;
@@ -289,6 +313,7 @@ export const AttachmentBar = (props: AttachmentBarProps) => {
             tone="project"
             title={t('transactions.assignToProject', 'Pridruži projektu')}
             options={projects}
+            groups={projectGroups.length > 1 ? projectGroups : undefined}
             selectedId={props.selectedProjectId ?? null}
             onSelect={(id) => {
               props.onSelectedProjectIdChange?.(id);
