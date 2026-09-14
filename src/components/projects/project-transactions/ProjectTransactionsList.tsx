@@ -142,6 +142,18 @@ export const ProjectTransactionsList = ({
                           : t('transactions.extraordinary', 'Vanredan')}
                       </Badge>
                     )}
+                    {isOwnerLoan && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-amber-500/40 text-amber-600 dark:text-amber-400 shrink-0">
+                            🪙 {t('transactions.ownerLoanBadge', 'Pozajmica')}
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          <p className="text-xs">{t('transactions.ownerLoanTooltip', 'Poslovni trošak plaćen iz osobnog računa — kreirana pozajmica vlasnika')}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-1 mt-0.5 text-[11px] text-muted-foreground leading-tight">
