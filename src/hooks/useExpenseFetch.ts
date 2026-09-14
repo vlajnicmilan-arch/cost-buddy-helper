@@ -211,13 +211,20 @@ export const useExpenseFetch = () => {
             return { rows: (data as any[]) || [], count: count ?? null };
             }, {
               delays: [1000],
+              sleep: (ms) =>
+                startedBeforeTokenReady(startedAt)
+                  ? Promise.resolve()
+                  : new Promise<void>((r) => setTimeout(r, ms)),
               onRetry: (info, attempt) => {
                 pageRetryCount += 1;
-                weakShown = true;
-                beginWeakFetch('expenses');
+                const preAuth = startedBeforeTokenReady(startedAt);
+                if (!preAuth) {
+                  weakShown = true;
+                  beginWeakFetch('expenses');
+                }
                 logDiagnostic({
                   event: 'expense_fetch_retried',
-                  severity: 'warning',
+                  severity: preAuth ? 'info' : 'warning',
                   details: {
                     cause: info.kind,
                     http_status: info.status ?? null,
@@ -225,9 +232,13 @@ export const useExpenseFetch = () => {
                     page: Math.floor(from / pageSize) + 1,
                     rows_so_far: rowsSoFar,
                     duration_ms: Date.now() - startedAt,
+                    pre_auth: preAuth,
+                    waited_for_auth_ms: waitedForAuthMs(startedAt),
+                    token_age_s: tokenAgeSeconds(),
                   },
                 });
               },
+
             });
             logDiagnostic({
               event: 'expense_fetch_page',
