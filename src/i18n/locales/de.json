@@ -125,7 +125,9 @@
     "actions": "Aktionen",
     "ok": "OK",
     "scrollLeft": "Nach links scrollen",
-    "scrollRight": "Nach rechts scrollen"
+    "scrollRight": "Nach rechts scrollen",
+    "personalScope": "Privat",
+    "companyScope": "Firma"
   },
   "aiInsights": {
     "title": "KI-Einblicke"
@@ -2021,7 +2023,9 @@
       "choiceMaterial": "Materialaufwand",
       "choiceMaterialHint": "Firmenausgabe ohne Darlehen.",
       "choicePersonal": "Nein, das ist privat",
-      "choicePersonalHint": "Bleibt im privaten Profil."
+      "choicePersonalHint": "Bleibt im privaten Profil.",
+      "fundingBlockTitle": "Wie verbuchen?",
+      "choiceMaterialCompany": "Materialaufwand der Firma"
     }
   },
   "summary": {

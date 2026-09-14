@@ -30,7 +30,8 @@ const paymentSourcesCacheKey = (
   userId: string | undefined,
   businessProfileId: string | null | undefined,
   includePersonal: boolean,
-) => `paymentSources:v1:${userId || 'anon'}:${businessProfileId || 'personal'}:${includePersonal ? 'incl' : 'excl'}`;
+  allScopes = false,
+) => `paymentSources:v1:${userId || 'anon'}:${allScopes ? 'all' : businessProfileId || 'personal'}:${includePersonal ? 'incl' : 'excl'}`;
 
 
 interface UseCustomPaymentSourcesOptions {
@@ -46,11 +47,17 @@ interface UseCustomPaymentSourcesOptions {
    * `null` = osobni izvori. Nedefinirano = aktivni kontekst.
    */
   businessProfileIdOverride?: string | null;
+  /**
+   * Svi korisnikovi novčanici, bez obzira na aktivni poslovni profil.
+   * Koristi ga unos troška: izvor plaćanja se bira iz JEDNOG popisa
+   * (Osobno / po tvrtki), jer pripadnost troška određuje projekt, ne pogled.
+   */
+  allScopes?: boolean;
 }
 
 export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions = {}) => {
   const { t } = useTranslation();
-  const { includePersonal = false, businessProfileIdOverride } = options;
+  const { includePersonal = false, businessProfileIdOverride, allScopes = false } = options;
   const { user, authReady } = useAuth();
   const { storageMode } = useStorage();
   const { onPaymentSourcesReordered, emitPaymentSourcesReordered, activeBusinessProfileId } = useAppState();
@@ -60,7 +67,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
   // Ovisnosti idu po `user?.id`, ne po objektu: auth događaji (osvježenje
   // tokena, povratak u prvi plan) inače mijenjaju referencu i pokreću dohvat.
   const userId = user?.id ?? null;
-  const initialKey = paymentSourcesCacheKey(user?.id, readProfileId, includePersonal);
+  const initialKey = paymentSourcesCacheKey(user?.id, readProfileId, includePersonal, allScopes);
   const initialCached = user ? instantCache.read<CustomPaymentSource[]>(initialKey) : null;
   const [customPaymentSources, setCustomPaymentSources] = useState<CustomPaymentSource[]>(initialCached || []);
   const [loading, setLoading] = useState(!initialCached || initialCached.length === 0);
@@ -102,7 +109,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
     const mySeq = ++fetchSeqRef.current;
     const isStale = () => mySeq !== fetchSeqRef.current;
 
-    const scopeKey = `payment_sources:${userId}:${readProfileId || 'personal'}:${includePersonal ? 'incl' : 'excl'}`;
+    const scopeKey = `payment_sources:${userId}:${allScopes ? 'all' : readProfileId || 'personal'}:${includePersonal ? 'incl' : 'excl'}`;
     const shared = recentSourcesByScope.get(scopeKey);
     if (shared && Date.now() - shared.at < SOURCES_SHARE_TTL_MS) {
       setCustomPaymentSources(shared.data);
@@ -122,7 +129,9 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
         .eq('user_id', userId)
         .order('sort_order', { ascending: true });
 
-      if (readProfileId) {
+      if (allScopes) {
+        // Bez filtra po profilu — popis nabraja sve novčanike korisnika.
+      } else if (readProfileId) {
         if (includePersonal) {
           // Business mode + cross-mode flow: include both business + personal sources
           ownQuery = ownQuery.or(`business_profile_id.eq.${readProfileId},business_profile_id.is.null`);
@@ -245,10 +254,10 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       setCustomPaymentSources(finalSources);
       if (!isLocalMode && userId) {
         instantCache.write(
-          paymentSourcesCacheKey(userId, readProfileId, includePersonal),
+          paymentSourcesCacheKey(userId, readProfileId, includePersonal, allScopes),
           finalSources,
         );
-        hydratedKeyRef.current = paymentSourcesCacheKey(userId, readProfileId, includePersonal);
+        hydratedKeyRef.current = paymentSourcesCacheKey(userId, readProfileId, includePersonal, allScopes);
       }
     } catch (error) {
       // A stale fetch (deps changed mid-flight) is not an error — silently skip.
@@ -292,12 +301,12 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
     } finally {
       if (!isStale()) setLoading(false);
     }
-  }, [userId, isLocalMode, readProfileId, includePersonal, authReady]);
+  }, [userId, isLocalMode, readProfileId, includePersonal, allScopes, authReady]);
 
   // Hydrate from cache instantly when context changes
   useEffect(() => {
     if (isLocalMode || !userId) return;
-    const key = paymentSourcesCacheKey(userId, readProfileId, includePersonal);
+    const key = paymentSourcesCacheKey(userId, readProfileId, includePersonal, allScopes);
     const cached = instantCache.read<CustomPaymentSource[]>(key);
     if (cached && cached.length > 0) {
       setCustomPaymentSources(cached);
@@ -306,7 +315,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
     } else {
       hydratedKeyRef.current = null;
     }
-  }, [userId, readProfileId, includePersonal, isLocalMode]);
+  }, [userId, readProfileId, includePersonal, allScopes, isLocalMode]);
 
   useEffect(() => {
     fetchCustomPaymentSources();

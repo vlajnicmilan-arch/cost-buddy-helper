@@ -7,6 +7,8 @@ import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { PAYMENT_SOURCE_GROUPS, PAYMENT_SOURCES } from '@/types/expense';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
+import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
+import { groupByBusinessScope } from '@/lib/scopeGrouping';
 
 interface PaymentSourceOptionsProps {
   customPaymentSources: CustomPaymentSource[];
@@ -18,6 +20,11 @@ interface PaymentSourceOptionsProps {
   showBalance?: boolean;
   /** Show business vs personal-loan grouping. */
   showLoanGroup?: boolean;
+  /**
+   * Popis SVIH novčanika razvrstanih po vlasništvu (Osobno / tvrtka).
+   * Popis samo nabraja izvore — odluka o pozajmici živi u zasebnom bloku.
+   */
+  groupByOwnerScope?: boolean;
   /** Hide the standard-sources section entirely (e.g. when calling code wants only custom). */
   hideStandard?: boolean;
   /** Prefix added to custom source ids when used as SelectItem values. Some callers use 'custom:' prefix. */
@@ -35,24 +42,39 @@ export const PaymentSourceOptions = ({
   excludeId,
   showBalance = false,
   showLoanGroup = false,
+  groupByOwnerScope = false,
   hideStandard = false,
   customValuePrefix = 'custom:',
 }: PaymentSourceOptionsProps) => {
   const { t } = useTranslation();
   const { activeBusinessProfileId } = useAppState();
   const { currency: primaryCurrency } = useCurrency();
+  const { profiles: businessProfiles } = useBusinessProfiles();
 
-  const businessSources = (activeBusinessProfileId && showLoanGroup)
+  const scopeGroups = groupByOwnerScope
+    ? groupByBusinessScope(
+        customPaymentSources.filter((s) => s.id !== excludeId),
+        businessProfiles,
+        {
+          personal: t('common.personalScope', 'Osobno'),
+          unknownCompany: t('common.companyScope', 'Tvrtka'),
+        },
+      )
+    : [];
+
+  const businessSources = (activeBusinessProfileId && showLoanGroup && !groupByOwnerScope)
     ? customPaymentSources.filter((s) => s.business_profile_id === activeBusinessProfileId)
     : customPaymentSources;
-  const personalLoanSources = (activeBusinessProfileId && showLoanGroup)
+  const personalLoanSources = (activeBusinessProfileId && showLoanGroup && !groupByOwnerScope)
     ? customPaymentSources.filter((s) => !s.business_profile_id)
     : [];
 
   const filteredBusiness = businessSources.filter((s) => s.id !== excludeId);
   const filteredLoan = personalLoanSources.filter((s) => s.id !== excludeId);
 
-  const hasCustom = filteredBusiness.length > 0 || filteredLoan.length > 0;
+  const hasCustom = groupByOwnerScope
+    ? scopeGroups.some((g) => g.items.length > 0)
+    : filteredBusiness.length > 0 || filteredLoan.length > 0;
 
   // Standard expanded by default if user has no custom or current value is a standard id.
   const isStandardSelected = !!currentValue
@@ -70,7 +92,42 @@ export const PaymentSourceOptions = ({
 
   return (
     <>
-      {filteredBusiness.length > 0 && (
+      {groupByOwnerScope && scopeGroups.map((group) => (
+        <div key={group.key}>
+          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            {group.label}
+          </div>
+          {group.items.map((source) => {
+            const isViewer = source.myRole === 'viewer';
+            return (
+              <SelectItem key={source.id} value={`${customValuePrefix}${source.id}`} disabled={isViewer}>
+                <div className="flex items-center gap-2">
+                  <span
+                    className="w-5 h-5 rounded-full flex items-center justify-center text-xs"
+                    style={{ backgroundColor: source.color + '20', color: source.color }}
+                  >
+                    {source.icon}
+                  </span>
+                  <span>{source.name}</span>
+                  {isViewer && (
+                    <Badge variant="outline" className="text-[10px] py-0 px-1.5 ml-1">
+                      {t('paymentSources.viewerOnly', 'samo pregled')}
+                    </Badge>
+                  )}
+                  {showBalance && (
+                    <span className="text-xs text-muted-foreground ml-auto">
+                      {(CURRENCIES.find((c) => c.code === source.currency)?.symbol || primaryCurrency.symbol)}
+                      {source.balance.toFixed(2)}
+                    </span>
+                  )}
+                </div>
+              </SelectItem>
+            );
+          })}
+        </div>
+      ))}
+
+      {!groupByOwnerScope && filteredBusiness.length > 0 && (
         <>
           <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
             {activeBusinessProfileId && showLoanGroup
@@ -108,7 +165,7 @@ export const PaymentSourceOptions = ({
         </>
       )}
 
-      {filteredLoan.length > 0 && (
+      {!groupByOwnerScope && filteredLoan.length > 0 && (
         <>
           <div className="px-2 py-1.5 mt-1 text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide flex items-center gap-1.5">
             <span>🪙</span>

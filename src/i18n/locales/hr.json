@@ -125,7 +125,9 @@
     "actions": "Akcije",
     "ok": "U redu",
     "scrollLeft": "Pomakni lijevo",
-    "scrollRight": "Pomakni desno"
+    "scrollRight": "Pomakni desno",
+    "personalScope": "Osobno",
+    "companyScope": "Tvrtka"
   },
   "aiInsights": {
     "title": "AI uvidi"
@@ -2026,7 +2028,9 @@
       "choiceMaterial": "Materijalni trošak",
       "choiceMaterialHint": "Trošak firme bez pozajmice.",
       "choicePersonal": "Ne, ovo je osobno",
-      "choicePersonalHint": "Ostaje u osobnom profilu."
+      "choicePersonalHint": "Ostaje u osobnom profilu.",
+      "fundingBlockTitle": "Kako knjižiti?",
+      "choiceMaterialCompany": "Materijalni trošak firme"
     }
   },
   "summary": {

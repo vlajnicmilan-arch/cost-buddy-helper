@@ -125,7 +125,9 @@
     "actions": "Actions",
     "ok": "OK",
     "scrollLeft": "Scroll left",
-    "scrollRight": "Scroll right"
+    "scrollRight": "Scroll right",
+    "personalScope": "Personal",
+    "companyScope": "Company"
   },
   "aiInsights": {
     "title": "AI insights"
@@ -2021,7 +2023,9 @@
       "choiceMaterial": "Material expense",
       "choiceMaterialHint": "Company expense without a loan.",
       "choicePersonal": "No, this is personal",
-      "choicePersonalHint": "Stays in the personal profile."
+      "choicePersonalHint": "Stays in the personal profile.",
+      "fundingBlockTitle": "How to book it?",
+      "choiceMaterialCompany": "Company material expense"
     }
   },
   "summary": {
