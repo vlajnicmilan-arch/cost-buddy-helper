@@ -22,7 +22,6 @@ import { FolderKanban, PiggyBank, Users, User, Check, X, Plus } from 'lucide-rea
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { useMyKrugs } from '@/hooks/useKrug';
-import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
 import { groupByBusinessScope } from '@/lib/scopeGrouping';
 import { useModuleGate } from '@/hooks/useModuleGate';
 
@@ -270,10 +269,10 @@ export const AttachmentBar = (props: AttachmentBarProps) => {
   const { t } = useTranslation();
   const [openChip, setOpenChip] = useState<ChipTone | null>(null);
   const { data: krugs = [] } = useMyKrugs();
-  const { profiles: businessProfiles } = useBusinessProfiles();
   const { requestModule } = useModuleGate();
 
   const projects = props.projects ?? [];
+  const businessProfiles = props.businessProfiles ?? [];
   const budgets = (props.budgets ?? []).filter((b) => b.is_active !== false);
 
   const showProject = props.showProject !== false && projects.length > 0;
