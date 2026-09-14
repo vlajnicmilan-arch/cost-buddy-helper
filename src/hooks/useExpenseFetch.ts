@@ -9,6 +9,14 @@ import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { runWithTransientRetry, classifyFetchFailure } from '@/lib/expenseFetchRetry';
 import { withTimeoutAndDrain, EXPENSES_FETCH_TIMEOUT_MS } from '@/lib/fetchTimeout';
 import { beginWeakFetch, endWeakFetch } from '@/lib/weakConnection';
+import {
+  getTokenReadyAt,
+  startedBeforeTokenReady,
+  subscribeTokenRefresh,
+  tokenAgeSeconds,
+  waitedForAuthMs,
+  StaleTokenError,
+} from '@/lib/authTokenReady';
 import { isSessionGone, shouldWarnOnRetry } from '@/lib/sessionGone';
 
 import i18n from '@/i18n';
