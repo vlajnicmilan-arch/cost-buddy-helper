@@ -126,14 +126,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         severity: 'info',
         details: { durationMs: Date.now() - authStartedAt, hasSession: !!existing },
       });
+      // TOKEN SPREMAN = authReady. Spremljena sesija s isteklim (ili skoro
+      // isteklim) tokenom prvo se osvježi — inače hookovi pucaju zahtjeve sa
+      // starim tokenom i oni vise do roka.
+      let validatedSession = existing;
+      let didRefresh = false;
+      if (existing && !isTokenValid(existing.expires_at)) {
+        try {
+          const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession();
+          if (!refreshErr && refreshed?.session) {
+            validatedSession = refreshed.session;
+            didRefresh = true;
+            markTokenRefreshed();
+          }
+        } catch {
+          // Pad osvježenja = ponašanje kao dosad (isSessionGone put netaknut).
+        }
+      }
       // Validate the restored session against the backend. A locally cached
       // JWT remains "valid" (signature OK, not expired) even after the
       // backend user has been hard-deleted, which would otherwise let the
       // app keep treating that ghost session as logged in and route the
       // user straight into onboarding. `getUser()` hits the Auth server and
       // returns an error (user_not_found / invalid token) in that case.
-      let validatedSession = existing;
-      if (existing?.user) {
+      if (validatedSession?.user) {
+
         const getUserStartedAt = Date.now();
         try {
           const { data: userData, error: userErr } = await supabase.auth.getUser();
