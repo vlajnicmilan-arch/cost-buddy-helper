@@ -41,7 +41,6 @@ import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
 import { useScanBusinessRouting } from '@/hooks/useScanBusinessRouting';
 import {
   resolveReceiptBusinessRouting,
-  isPersonalSourceForProfile,
   type OwnerFundingChoice,
 } from '@/lib/receiptBusinessRouting';
 import {
