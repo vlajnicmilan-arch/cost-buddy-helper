@@ -16,6 +16,8 @@ import {
 } from "../_shared/fina/wsdl.ts";
 import {
   ENDPOINT,
+  ENDPOINT_SOURCE,
+  ENDPOINT_ERROR,
   COMPONENTS_NS,
   buildSignedEnvelope,
   checkFinaSecrets,
@@ -27,6 +29,7 @@ import {
   snippet,
   type SignOptions,
 } from "../_shared/fina/soap.ts";
+import { resolveAgainstEndpoint } from "../_shared/fina/endpoint.ts";
 
 type Variant = "V1" | "V2" | "V3" | "V4";
 
@@ -80,7 +83,13 @@ Deno.serve(async (req) => {
     // No body / invalid JSON — dump stays off.
   }
 
-  const report: Record<string, unknown> = { endpoint: ENDPOINT, steps: {}, variants: [] };
+  const report: Record<string, unknown> = {
+    endpoint: ENDPOINT,
+    endpoint_source: ENDPOINT_SOURCE,
+    ...(ENDPOINT_ERROR ? { endpoint_error: ENDPOINT_ERROR } : {}),
+    steps: {},
+    variants: [],
+  };
   const steps = report.steps as Record<string, unknown>;
   const envelopes: Record<string, string> = {};
   if (dump) report.envelopes = envelopes;
@@ -140,7 +149,9 @@ Deno.serve(async (req) => {
     try {
       const loc = findSchemaLocation(wsdlText, part.namespace);
       if (loc) {
-        const url = new URL(loc, `${ENDPOINT}?wsdl`).toString();
+        const resolved = resolveAgainstEndpoint(loc, ENDPOINT);
+        if (resolved.hostOverridden) report.wsdl_address_host_overridden = true;
+        const url = resolved.url;
         const res = await fetch(url, { client } as RequestInit);
         const schema = await res.text();
         steps.schema = {
@@ -223,6 +234,9 @@ Deno.serve(async (req) => {
       severity: accepted ? "info" : "error",
       details: {
         accepted_variant: accepted?.variant ?? null,
+        endpoint: ENDPOINT,
+        endpoint_source: ENDPOINT_SOURCE,
+        wsdl_address_host_overridden: report.wsdl_address_host_overridden ?? false,
         wsdl_status: (report.steps as any)?.wsdl?.http_status ?? null,
         soap_action: (report.steps as any)?.wsdl?.soapAction ?? null,
         results: variants.map((v) => ({

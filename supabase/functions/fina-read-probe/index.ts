@@ -22,6 +22,8 @@ import {
 } from "../_shared/fina/wsdl.ts";
 import {
   ENDPOINT,
+  ENDPOINT_SOURCE,
+  ENDPOINT_ERROR,
   COMPONENTS_NS,
   buildSignedEnvelope,
   checkFinaSecrets,
@@ -34,6 +36,7 @@ import {
   type KeyMaterial,
   type SignOptions,
 } from "../_shared/fina/soap.ts";
+import { resolveAgainstEndpoint } from "../_shared/fina/endpoint.ts";
 
 const V1: SignOptions = { hash: "SHA-256", signTimestamp: true, keyInfo: "bst" };
 
@@ -137,6 +140,8 @@ Deno.serve(async (req) => {
 
   const report: Record<string, unknown> = {
     endpoint: ENDPOINT,
+    endpoint_source: ENDPOINT_SOURCE,
+    ...(ENDPOINT_ERROR ? { endpoint_error: ENDPOINT_ERROR } : {}),
     mode: inspect ? "inspect" : raw ? "raw" : "read",
     filter: filterMode,
   };
@@ -159,13 +164,17 @@ Deno.serve(async (req) => {
     const schemaDocs: Array<{ url: string; http_status: number }> = [];
     for (const loc of allSchemaLocations(wsdlText)) {
       try {
-        const url = new URL(loc.location, `${ENDPOINT}?wsdl`).toString();
+        const resolvedLoc = resolveAgainstEndpoint(loc.location, ENDPOINT);
+        if (resolvedLoc.hostOverridden) report.wsdl_address_host_overridden = true;
+        const url = resolvedLoc.url;
         const res = await fetch(url, { client } as RequestInit);
         const text = await res.text();
         schemas.push(text);
         schemaDocs.push({ url, http_status: res.status });
         for (const nested of allSchemaLocations(text)) {
-          const nurl = new URL(nested.location, url).toString();
+          const resolvedNested = resolveAgainstEndpoint(nested.location, ENDPOINT, url);
+          if (resolvedNested.hostOverridden) report.wsdl_address_host_overridden = true;
+          const nurl = resolvedNested.url;
           if (schemaDocs.some((d) => d.url === nurl)) continue;
           const nres = await fetch(nurl, { client } as RequestInit);
           schemas.push(await nres.text());
@@ -484,6 +493,9 @@ Deno.serve(async (req) => {
       user_id: null,
       severity: report.error ? "error" : "info",
       details: {
+        endpoint: ENDPOINT,
+        endpoint_source: ENDPOINT_SOURCE,
+        wsdl_address_host_overridden: report.wsdl_address_host_overridden ?? false,
         mode: report.mode,
         count: (report as any).list_before?.count ?? null,
         status_before: (report as any).status_change?.status_before ?? null,
