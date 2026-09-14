@@ -9,6 +9,7 @@ import { toDayKey } from '@/lib/dayKey';
 import { markOnce } from '@/lib/bootTiming';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { pickStableUser } from '@/lib/stableAuthIdentity';
+import { isTokenValid, markTokenRefreshed, markTokenReady } from '@/lib/authTokenReady';
 
 interface AuthContextValue {
   user: User | null;
