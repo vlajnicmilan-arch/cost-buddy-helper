@@ -30,7 +30,7 @@ import {
   StatementWalletSuggestionDialog,
   type StatementWalletQuestion,
 } from '@/components/import/StatementWalletSuggestionDialog';
-import { pickStatementSource } from '@/lib/mail/statementSourceMatch';
+import { pickStatementSource, matchSourceByAccountIdentifier } from '@/lib/mail/statementSourceMatch';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import {
   useStatementSourceMemory,
