@@ -24,7 +24,7 @@ import { savePayload as saveReviewPayload, hasResumableReview, clearDraft as cle
 import { findLateCardMatches } from '@/lib/importReview/lateCardMatch';
 import { lookupFingerprintStates, type ExecutorSupabaseClient } from '@/lib/importReview/executor';
 import type { ImportReviewPayload, ImportReviewRow, ManualCandidateInfo, TransferTargetOption } from '@/lib/importReview/types';
-import { checkAccountIdentity } from '@/lib/importReview/accountIdentityGuard';
+import { checkAccountIdentity, maskAccountIdentity } from '@/lib/importReview/accountIdentityGuard';
 import { AccountIdentityMismatchDialog } from '@/components/import/AccountIdentityMismatchDialog';
 import {
   StatementWalletSuggestionDialog,
