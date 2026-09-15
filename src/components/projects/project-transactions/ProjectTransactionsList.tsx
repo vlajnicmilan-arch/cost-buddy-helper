@@ -103,7 +103,7 @@ export const ProjectTransactionsList = ({
           {filteredExpenses.map((expense) => {
             const categoryInfo = resolveCategory(expense.category, customCategories);
             const isIncome = expense.type === 'income';
-            const isOwnerLoan = !isIncome && (expense as any).owner_funding_choice === 'owner_loan';
+            const isOwnerLoan = expense.type === 'expense' && expense.owner_funding_choice === 'owner_loan';
             const milestoneName = getMilestoneName(expense.milestone_id);
             const authorId = expense.submitted_by || expense.user_id;
             const authorName = profiles[authorId] || 'Član';

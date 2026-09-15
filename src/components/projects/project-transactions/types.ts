@@ -15,6 +15,7 @@ export interface ProjectExpense {
   is_advance?: boolean | null;
   collaborator_id?: string | null;
   linked_advance_ids?: string[] | null;
+  owner_funding_choice?: string | null;
 }
 
 export interface ProjectTransactionFilterState {
