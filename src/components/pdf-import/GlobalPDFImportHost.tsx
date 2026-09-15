@@ -552,6 +552,27 @@ export const GlobalPDFImportHost = () => {
     const accountIdentifier = sanitizeIban(result.account_iban) || null;
     const rowCount = result.transactions.filter(tx => tx.is_statement_total !== true).length;
 
+    // 1b. IZRAVNA POTVRDA IZ ODABRANOG NOVČANIKA — identitet upisan NA SAMOM
+    // odabranom novčaniku podudara se s identitetom izvoda. Deterministički,
+    // neovisno o opsegu popisa novčanika, pravilima i bank-syncu.
+    const selectedIdentity = checkAccountIdentity(
+      result.account_iban,
+      source.account_identifier,
+    );
+    if (selectedIdentity.status === 'match') {
+      walletAskHandledRef.current = true;
+      try {
+        logDiagnostic('import_wallet_confirmed', {
+          detected_bank: bankName,
+          has_iban: !!accountIdentifier,
+          source_id: source.id,
+          rows: rowCount,
+          reason: 'selected_wallet_identifier',
+        });
+      } catch {}
+      return false;
+    }
+
     const fromBank = accountIdentifier && user?.id
       ? await suggestSourceFromBankAccounts(user.id, accountIdentifier)
       : null;
