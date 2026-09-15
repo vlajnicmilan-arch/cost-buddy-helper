@@ -24,13 +24,13 @@ import { savePayload as saveReviewPayload, hasResumableReview, clearDraft as cle
 import { findLateCardMatches } from '@/lib/importReview/lateCardMatch';
 import { lookupFingerprintStates, type ExecutorSupabaseClient } from '@/lib/importReview/executor';
 import type { ImportReviewPayload, ImportReviewRow, ManualCandidateInfo, TransferTargetOption } from '@/lib/importReview/types';
-import { checkAccountIdentity } from '@/lib/importReview/accountIdentityGuard';
+import { checkAccountIdentity, maskAccountIdentity } from '@/lib/importReview/accountIdentityGuard';
 import { AccountIdentityMismatchDialog } from '@/components/import/AccountIdentityMismatchDialog';
 import {
   StatementWalletSuggestionDialog,
   type StatementWalletQuestion,
 } from '@/components/import/StatementWalletSuggestionDialog';
-import { pickStatementSource } from '@/lib/mail/statementSourceMatch';
+import { pickStatementSource, matchSourceByAccountIdentifier } from '@/lib/mail/statementSourceMatch';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import {
   useStatementSourceMemory,
@@ -552,6 +552,27 @@ export const GlobalPDFImportHost = () => {
     const accountIdentifier = sanitizeIban(result.account_iban) || null;
     const rowCount = result.transactions.filter(tx => tx.is_statement_total !== true).length;
 
+    // 1b. IZRAVNA POTVRDA IZ ODABRANOG NOVČANIKA — identitet upisan NA SAMOM
+    // odabranom novčaniku podudara se s identitetom izvoda. Deterministički,
+    // neovisno o opsegu popisa novčanika, pravilima i bank-syncu.
+    const selectedIdentity = checkAccountIdentity(
+      result.account_iban,
+      source.account_identifier,
+    );
+    if (selectedIdentity.status === 'match') {
+      walletAskHandledRef.current = true;
+      try {
+        logDiagnostic('import_wallet_confirmed', {
+          detected_bank: bankName,
+          has_iban: !!accountIdentifier,
+          source_id: source.id,
+          rows: rowCount,
+          reason: 'selected_wallet_identifier',
+        });
+      } catch {}
+      return false;
+    }
+
     const fromBank = accountIdentifier && user?.id
       ? await suggestSourceFromBankAccounts(user.id, accountIdentifier)
       : null;
@@ -601,7 +622,20 @@ export const GlobalPDFImportHost = () => {
       canSaveIdentifier,
       noReadInfo: !accountIdentifier && !bankName,
     });
-    try { logDiagnostic('import_wallet_unconfirmed_asked', { detected_bank: bankName, has_iban: !!accountIdentifier, source_id: source.id, rows: rowCount }); } catch {}
+    try {
+      logDiagnostic('import_wallet_unconfirmed_asked', {
+        detected_bank: bankName,
+        has_iban: !!accountIdentifier,
+        source_id: source.id,
+        rows: rowCount,
+        // Uzrok promašaja: je li popis uopće nosio podudarni novčanik.
+        sources_considered: customPaymentSources.length,
+        any_identifier_match: !!matchSourceByAccountIdentifier(accountIdentifier, customPaymentSources),
+        selected_has_identifier: selectedHasIdentity,
+        // MASKIRANO — nikad pun IBAN.
+        statement_identifier_masked: accountIdentifier ? maskAccountIdentity(accountIdentifier) : null,
+      });
+    } catch {}
     return true;
   };
 
