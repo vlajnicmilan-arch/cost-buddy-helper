@@ -58,7 +58,8 @@ export function amountTokens(amount: number): string[] {
   return Array.from(out);
 }
 
-function lineHasAmount(line: string, tokens: readonly string[]): boolean {
+/** Izdvojeno (bez promjene ponašanja) — dijeli ga i `valueFromText.ts`. */
+export function lineHasAmount(line: string, tokens: readonly string[]): boolean {
   return tokens.some((tok) => {
     const re = new RegExp(`(^|[^\\d])${escapeRe(tok)}($|[^\\d])`);
     return re.test(line);

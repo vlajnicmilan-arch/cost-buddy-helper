@@ -6269,6 +6269,7 @@
     "cancelRule": "Nije prijenos — uvezi po predznaku",
     "cancelTransfer": "Nije prijenos",
     "pendingReservations": "rezervacije (još nisu proknjižene): {{count}}",
+    "dateReviewRows": "provjeri datum — nije uvezeno (datum izvan razdoblja izvoda): {{count}}",
     "plannedSummaryV2": "{{merges}} spajanja · {{news}} novih · {{transfers}} prijenosa · {{skipped}} preskočeno",
     "confirmedSummaryV2": "Spojeno {{merged}}, dodano {{inserted}}, prijenosa {{transfers}}, preskočeno {{skipped}}.",
     "confirmedSummaryV3": "Spojeno {{merged}}, dodano {{inserted}}, prijenosa {{transfers}}, preskočeno {{skipped}} (već postoji: {{existing}}).",
