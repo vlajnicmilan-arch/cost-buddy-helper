@@ -622,7 +622,20 @@ export const GlobalPDFImportHost = () => {
       canSaveIdentifier,
       noReadInfo: !accountIdentifier && !bankName,
     });
-    try { logDiagnostic('import_wallet_unconfirmed_asked', { detected_bank: bankName, has_iban: !!accountIdentifier, source_id: source.id, rows: rowCount }); } catch {}
+    try {
+      logDiagnostic('import_wallet_unconfirmed_asked', {
+        detected_bank: bankName,
+        has_iban: !!accountIdentifier,
+        source_id: source.id,
+        rows: rowCount,
+        // Uzrok promašaja: je li popis uopće nosio podudarni novčanik.
+        sources_considered: customPaymentSources.length,
+        any_identifier_match: !!matchSourceByAccountIdentifier(accountIdentifier, customPaymentSources),
+        selected_has_identifier: selectedHasIdentity,
+        // MASKIRANO — nikad pun IBAN.
+        statement_identifier_masked: accountIdentifier ? maskAccountIdentity(accountIdentifier) : null,
+      });
+    } catch {}
     return true;
   };
 
