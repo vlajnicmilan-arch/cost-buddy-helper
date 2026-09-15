@@ -16,6 +16,8 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface CategoryTransactionsDialogProps {
   open: boolean;
@@ -315,9 +317,23 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
 
                         {/* Main Content */}
                         <div className="flex-1 min-w-0 mr-2">
-                          <p className="font-medium text-foreground truncate text-sm leading-tight">
-                            {expense.merchant_name || expense.description}
-                          </p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="min-w-0 font-medium text-foreground truncate text-sm leading-tight">
+                              {expense.merchant_name || expense.description}
+                            </p>
+                            {expense.type === 'expense' && expense.owner_funding_choice === 'owner_loan' && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-amber-500/40 text-amber-600 dark:text-amber-400 shrink-0">
+                                    🪙 {t('transactions.ownerLoanBadge', 'Pozajmica')}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs">
+                                  <p className="text-xs">{t('transactions.ownerLoanTooltip', 'Poslovni trošak plaćen iz osobnog računa — kreirana pozajmica vlasnika')}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
                           <div className="flex items-center gap-1 mt-0.5 text-[11px] text-muted-foreground leading-tight">
                             <span className="truncate">{paymentInfo.icon} {paymentInfo.name}</span>
                           </div>

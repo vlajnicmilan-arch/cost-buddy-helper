@@ -26,6 +26,7 @@ interface ProjectExpense {
   is_advance?: boolean | null;
   collaborator_id?: string | null;
   linked_advance_ids?: string[] | null;
+  owner_funding_choice?: string | null;
 }
 
 interface ProjectStats {
@@ -66,7 +67,7 @@ export const useProjectStats = (projectId: string | null, totalBudget: number) =
         if (!isIdentityAlive(user.id)) return;
         const { data, error } = await (supabase
           .from('expenses')
-          .select('id, user_id, amount, description, category, date, type, milestone_id, status, submitted_by, expense_nature, payment_source, is_advance, collaborator_id, linked_advance_ids') as any)
+          .select('id, user_id, amount, description, category, date, type, milestone_id, status, submitted_by, expense_nature, payment_source, is_advance, collaborator_id, linked_advance_ids, owner_funding_choice') as any)
           .eq('project_id', projectId)
           .eq('status', 'approved')
           .order('date', { ascending: false })
