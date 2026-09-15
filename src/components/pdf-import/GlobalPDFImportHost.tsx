@@ -186,6 +186,9 @@ export const GlobalPDFImportHost = () => {
       // decision: pending doesn't get anchored — it re-appears once settled
       // with a stable running-balance).
       .filter(tx => tx.is_pending !== true)
+      // Datum nije prošao branu razdoblja — redak se NE gubi (broji se i
+      // prikazuje u sažetku), ali ne ulazi u knjige bez korisnikove ruke.
+      .filter(tx => tx.date_needs_review !== true)
       .map(tx => ({
         // Za rate koristi due_date_override (mjesec naplate) kako bi mjesečni
         // izvještaj sjeo na pravi mjesec. Original date čuvamo u opisu nije
@@ -1061,6 +1064,9 @@ export const GlobalPDFImportHost = () => {
         availableTargets,
         pendingReservations: (pdfImport.result?.transactions ?? []).filter(
           (tx) => tx.is_pending === true && tx.is_statement_total !== true,
+        ).length,
+        dateReviewRows: (pdfImport.result?.transactions ?? []).filter(
+          (tx) => tx.date_needs_review === true && tx.is_statement_total !== true,
         ).length,
         // Saldo s papira (mail izvod) — jedina bankovna istina kad izvor nema
         // redak u bank_accounts. Executor ga koristi samo tada.

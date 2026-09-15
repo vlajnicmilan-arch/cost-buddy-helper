@@ -13,7 +13,8 @@ import {
   type RawLineSource,
 } from "../_shared/statement/rawLineMatch.ts";
 import { markPendingTransactions } from "./pendingSection.ts";
-import { guardStatementDates, normalizePeriod } from "../_shared/statement/datePeriodGuard.ts";
+import { guardStatementDate, normalizePeriod } from "../_shared/statement/datePeriodGuard.ts";
+import { applyTextValues } from "../_shared/statement/valueFromText.ts";
 import {
   blockYieldFailure,
   buildBlockContext,
@@ -853,13 +854,63 @@ DOSLOVAN REDAK (raw_line):
       console.warn(`WARN: dropped ${droppedInvalidDate} transaction(s) with invalid/unrecognised date format`);
     }
 
-    // BRANA NA DATUM STAVKE — razdoblje izvatka je jedini sudac.
-    // Model zna zamijeniti dan i mjesec (02.09. → 2026-02-09). Ispravak je
-    // dopušten SAMO zamjenom dana i mjeseca; što ne stane u razdoblje, ne ide
-    // tiho u knjige. Bez razdoblja brana miruje.
     const guardPeriod = normalizePeriod(statementBalance.periodFrom, statementBalance.periodTo);
-    const dateGuard = guardStatementDates(transactions, guardPeriod);
-    transactions = dateGuard.rows;
+
+    // VRIJEDNOST IZ TEKSTA — datum stavke dolazi iz samog dokumenta kad izvod
+    // ima tekstualni sloj. Sidro sparivanja je IZNOS (AI-datum se ne čita), a
+    // preuzima se samo iz JEDNOZNAČNOG retka. Skenovi bez teksta → AI put.
+    if (sourceLines.length > 0) {
+      const values = applyTextValues(
+        sourceLines,
+        transactions.map((t: any) => ({ amount: t.amount })),
+        guardPeriod,
+      );
+      let fromText = 0;
+      transactions.forEach((t: any, i: number) => {
+        const v = values[i];
+        t.amount_confirmed_by_text = v.amountConfirmed;
+        if (v.dateSource === 'statement_text' && v.date) {
+          if (v.date !== t.date) t.date_from_ai = t.date;
+          t.date = v.date;
+          t.date_source = 'statement_text';
+          fromText += 1;
+        } else {
+          t.date_source = 'ai';
+        }
+      });
+      console.log(`value_from_text: ${fromText}/${transactions.length} datuma preuzeto iz teksta izvoda`);
+    } else {
+      transactions.forEach((t: any) => { t.date_source = 'ai'; });
+    }
+
+    // BRANA NA DATUM STAVKE — razdoblje izvatka je jedini sudac, ali SAMO za
+    // retke čiji datum još dolazi iz AI prepisa. Datum pročitan iz dokumenta
+    // prolazi po definiciji. Zaustavljeni redak se NE briše u tišini: ostaje
+    // označen (`date_needs_review`) i ne ulazi u knjige bez korisnikove ruke.
+    const guardCorrections: Array<{ index: number; original: string; corrected: string; description: string | null; amount: number | null }> = [];
+    const guardBlocked: Array<{ index: number; original: string; swapped: string | null; description: string | null; amount: number | null }> = [];
+    if (guardPeriod) {
+      transactions = transactions.map((t: any, index: number) => {
+        if (t.date_source === 'statement_text') return t;
+        const original = typeof t.date === 'string' ? t.date.trim() : '';
+        const description = typeof t.description === 'string' ? t.description : null;
+        const amount = typeof t.amount === 'number' && Number.isFinite(t.amount) ? t.amount : null;
+        const verdict = guardStatementDate(t.date, guardPeriod);
+        if (verdict.kind === 'ok') return t;
+        if (verdict.kind === 'corrected') {
+          guardCorrections.push({ index, original, corrected: verdict.date, description, amount });
+          return { ...t, date: verdict.date, date_corrected_from: original };
+        }
+        guardBlocked.push({ index, original, swapped: verdict.swapped, description, amount });
+        return {
+          ...t,
+          date_needs_review: true,
+          date_block_reason: 'outside_statement_period',
+          date_original: original,
+        };
+      });
+    }
+    const dateGuard = { corrections: guardCorrections, blocked: guardBlocked };
     if (guardPeriod && (dateGuard.corrections.length > 0 || dateGuard.blocked.length > 0)) {
       console.warn(
         `statement_date_guard: ${dateGuard.corrections.length} ispravljeno, ${dateGuard.blocked.length} zaustavljeno (razdoblje ${guardPeriod.from}..${guardPeriod.to})`,
@@ -984,8 +1035,9 @@ DOSLOVAN REDAK (raw_line):
     const holderName = sanitizeText((statementData as any).holder_name) || null;
     const statementDueDate = normalizeDate((statementData as any).statement_due_date);
     // Exclude statement-total rows from income/expense sums to avoid double counting
-    const totalIncome = statementData.total_income || transactions.filter((t: any) => t.type === 'income' && !t.is_statement_total).reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
-    const totalExpenses = statementData.total_expenses || transactions.filter((t: any) => t.type === 'expense' && !t.is_statement_total).reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+    // Zaustavljeni redci (`date_needs_review`) ne ulaze u knjige pa ne ulaze ni u zbrojeve.
+    const totalIncome = statementData.total_income || transactions.filter((t: any) => t.type === 'income' && !t.is_statement_total && !t.date_needs_review).reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+    const totalExpenses = statementData.total_expenses || transactions.filter((t: any) => t.type === 'expense' && !t.is_statement_total && !t.date_needs_review).reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
 
 
     // Group transactions by card if multiple cards detected

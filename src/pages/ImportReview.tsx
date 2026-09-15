@@ -1339,6 +1339,11 @@ const ImportReview = () => {
               {t('importReview.pendingReservations', { count: payload.pendingReservations })}
             </p>
           )}
+          {(payload.dateReviewRows ?? 0) > 0 && (
+            <p className="text-xs text-amber-600 dark:text-amber-400 text-center" data-testid="date-review-rows">
+              {t('importReview.dateReviewRows', { count: payload.dateReviewRows })}
+            </p>
+          )}
           {blockerMessages.length > 0 && !summary.canConfirm && (
             <div
               className="rounded-lg border border-destructive/60 bg-destructive/5 p-2 space-y-1"

@@ -155,6 +155,12 @@ export interface ImportReviewPayload {
    * ne smiju tiho izgubiti: broj se prikazuje u sažetku uvoza.
    */
   readonly pendingReservations?: number;
+  /**
+   * Redci koje je brana datuma zaustavila (datum izvan razdoblja izvoda). Ne
+   * ulaze u knjige i nisu predodabrani, ali se ne smiju tiho izgubiti —
+   * njihov broj stoji u sažetku uvoza („provjeri datum").
+   */
+  readonly dateReviewRows?: number;
   /** Wallets the user can pick as transfer destinations. */
   readonly availableTargets: readonly TransferTargetOption[];
   /**
