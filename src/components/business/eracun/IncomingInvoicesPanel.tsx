@@ -70,12 +70,14 @@ export const IncomingInvoicesPanel = ({ initialFilter = 'unpaid', initialHighlig
   const { user } = useAuth();
   const { activeBusinessProfileId } = useAppState();
   const { companyOib } = useActiveCompanyOib();
-  const { addExpense } = useExpenses();
+  const { addExpense, allExpenses } = useExpenses();
   const { customPaymentSources } = useCustomPaymentSources();
   const { guard } = useWriteGuard({ kind: 'module', feature: 'business_module' });
+  const { allProjects } = useProjects();
+  const { profiles: businessProfiles } = useBusinessProfiles();
   const {
     invoices, loading, existingFingerprints,
-    saveBatch, undoBatch, markPaid, markCollected, deleteInvoice, setPlaceLabel, refetch,
+    saveBatch, undoBatch, markPaid, markCollected, deleteInvoice, setPlaceLabel, setAccountingCategory, refetch,
   } = useIncomingInvoices();
 
   /**
