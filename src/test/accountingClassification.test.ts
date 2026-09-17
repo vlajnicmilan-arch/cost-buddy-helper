@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   deriveMaterialExpenseFlag,
   isAccountingCategory,
+  isAccountingHandoverInvoice,
   isAccountingRelevantInvoice,
+  resolveInvoiceBusinessProfileId,
   suggestAccountingCategory,
 } from '@/lib/eracun/accountingClassification';
 
