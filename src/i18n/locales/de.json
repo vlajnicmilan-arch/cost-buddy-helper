@@ -6473,6 +6473,19 @@
     },
     "title": "Eingangsrechnungen (E-Rechnung)",
     "menuDesc": "E-Rechnungs-XML importieren und als bezahlt markieren",
+    "accounting": {
+      "label": "Buchungskategorie",
+      "pick": "Kategorie wählen",
+      "suggestion": "Vorschlag: {{label}}",
+      "categoryProject": "Projektzugehörigkeit",
+      "categoryTool": "Werkzeug",
+      "categoryFixedAsset": "Anlagevermögen",
+      "materialExpense": "Materialaufwand",
+      "materialExpenseHint": "Aus privater Quelle bezahlt — der Buchhalter führt dies als Materialaufwand.",
+      "saved": "Kategorie gespeichert",
+      "saveFailed": "Kategorie konnte nicht gespeichert werden: {{reason}}",
+      "savedRefreshFailed": "Die Kategorie wurde gespeichert, aber die Liste konnte nicht aktualisiert werden."
+    },
     "reject": {
       "unsupported_currency": "Währung {{currency}} wird nicht unterstützt — nur EUR.",
       "missing_total": "Gesamtbetrag in der Datei nicht gefunden.",

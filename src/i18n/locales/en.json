@@ -6473,6 +6473,19 @@
     },
     "title": "Incoming invoices (e-Invoice)",
     "menuDesc": "Import e-Invoice XML files and mark them paid",
+    "accounting": {
+      "label": "Accounting category",
+      "pick": "Choose category",
+      "suggestion": "Suggestion: {{label}}",
+      "categoryProject": "Project allocation",
+      "categoryTool": "Tool",
+      "categoryFixedAsset": "Fixed assets",
+      "materialExpense": "material expense",
+      "materialExpenseHint": "Paid from a personal source — the accountant books this as a material expense.",
+      "saved": "Category saved",
+      "saveFailed": "Saving the category failed: {{reason}}",
+      "savedRefreshFailed": "The category was saved, but refreshing the list failed."
+    },
     "reject": {
       "unsupported_currency": "Currency {{currency}} is not supported — only EUR is.",
       "missing_total": "Total amount not found in the file.",
