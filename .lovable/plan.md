@@ -1,129 +1,69 @@
-# F1 — Knjigovodstvena kategorija na ulaznom računu
+# F2 — Prekidač „Predajem ulazne račune knjigovođi" (po tvrtki)
 
-Prvi korak pripreme za knjigovođu: ulazni račun dobiva jednu knjigovodstvenu
-oznaku, a kad je oznaka „pripadnost projektu" — i stvarnu vezu na projekt.
-Slaganje i izvoz paketa nisu u ovom opsegu.
+Cilj: priprema za knjigovođu (F1 blok kategorije) vidi se samo za tvrtke kojima je vlasnik uključio predaju računa knjigovođi. Isključeno = kao da pripreme nema.
 
-## Što korisnik dobiva
+## 1. Baza (additivna migracija)
 
-- Na ulaznom računu izbor kategorije: **pripadnost projektu**, **alat**,
-  **osnovna sredstva**.
-- Kad odabere „pripadnost projektu", otvara se **postojeći izbornik projekata**
-  (isti koji se koristi pri unosu troška — `AttachmentBar`, chip „Projekt", s
-  grupiranjem po osobnom/tvrtkama). Nema novog izbornika. Za „alat" i „osnovna
-  sredstva" nema odabira projekta.
-- Pripisivanje projektu je moguće na **bilo kojem** ulaznom računu, ne samo na
-  onom koji glasi na tvrtku — tipično kad je posao plaćen privatnom karticom
-  ili gotovinom.
-- Aplikacija nudi prijedlog kategorije; jedan dodir potvrđuje ga, drugi mijenja.
-  Bez prijedloga izbor je i dalje otvoren — ništa se ne blokira.
-- Uz kategoriju se prikazuje oznaka **materijalni trošak** kad je takav račun
-  plaćen iz privatnog izvora. Nju korisnik ne bira — sama slijedi iz plaćanja.
+`business_profiles` dobiva jedan stupac:
 
-## Tko ulazi u pripremu za knjigovođu
+- `accounting_handover_enabled boolean NOT NULL DEFAULT false`
 
-```text
-račun glasi na korisnikovu tvrtku (OIB/ime kupca)   -> poslovni
-ILI je pripisan projektu koji pripada tvrtki        -> poslovni
-inače (ni firma, ni poslovni projekt)               -> osobni, izvan pripreme
-```
+Bez rušenja, bez preimenovanja, bez promjene tipova. Postojeće RLS politike na `business_profiles` pokrivaju novi stupac (vlasnik čita/piše svoj profil) — nove politike se ne dodaju.
 
-Jedno mjesto odluke: čista funkcija `isAccountingRelevantInvoice` u novoj
-datoteci `src/lib/eracun/accountingClassification.ts`. Osobni računi ostaju
-nepromijenjeni — bez izbora kategorije i bez oznaka.
+## 2. Prekidač u postavkama tvrtke
 
-## Gdje se pojavljuje u sučelju
+Mjesto: postojeći ekran „Podaci o tvrtki" (`BusinessProfileView`, otvara se iz Poslovno → Više → Podaci o tvrtki).
 
-1. **Polica ulaznih računa** (`IncomingInvoicesPanel`): u retku računa redak s
-   kategorijom — badge kad je postavljena, „Odaberi kategoriju" kad nije. Dodir
-   otvara izbornik s tri stavke; prijedlog je označen kao „prijedlog".
-   Odabir „pripadnost projektu" odmah prikazuje postojeći chip za projekt.
-2. Odabir projekta je dostupan i kad račun nije usmjeren na tvrtku — chip je
-   vidljiv na svakom ulaznom računu.
-3. Oznaka **materijalni trošak** stoji pored kategorije kao neaktivan badge s
-   objašnjenjem podrijetla.
-4. Pregled računa iz maila (`MailReviewList`) dobiva isti izbor samo ako to ne
-   mijenja tijek spremanja; inače ostaje samo na polici (navest ću u izvještaju).
+Nova kartica na dnu, ispod „Kontakt", u istom rukopisu kao ostale kartice:
 
-## Podaci
+- naslov kartice: „Knjigovodstvo"
+- redak s `Switch`: „Predajem ulazne račune knjigovođi" + kratak opis „Kad je uključeno, na ulaznim računima ove tvrtke prikazuje se knjigovodstvena kategorija."
 
-`incoming_invoices` danas **nema** `project_id` (provjereno u shemi). Jedna
-additivna migracija, bez ijednog rušenja:
+Prekidač radi neovisno o „Uredi" načinu — jedan dodir odmah sprema (`update` na `business_profiles`), jer nije tekstualno polje. Nakon uspjeha `showSuccess`, lokalno stanje se osvježava.
 
-- `accounting_category text NULL` + CHECK (`project`, `tool`, `fixed_asset`)
-- `accounting_category_source text NULL` (`ai` | `user`)
-- `accounting_category_set_at timestamptz NULL`
-- `project_id uuid NULL REFERENCES public.projects(id) ON DELETE SET NULL`
-  + indeks
+## 3. Uvjet vidljivosti F1 bloka
 
-Oznaka „materijalni trošak" se **ne sprema** — izvodi se pri prikazu.
-RLS: postojeće politike nad `incoming_invoices` pokrivaju nove stupce; nove
-politike se ne dodaju.
+Mjerodavna tvrtka računa = `invoice.business_profile_id`, a ako ga nema — `business_profile_id` pripisanog projekta (isto pravilo kao F1).
 
-## Kako se izvodi „materijalni trošak"
+U `src/lib/eracun/accountingClassification.ts` dodaje se čista funkcija:
 
-Postoji već sve potrebno:
+- `resolveInvoiceBusinessProfileId(invoice, projects)` — izdvaja već postojeću logiku odabira mjerodavne tvrtke (koristi je i `deriveMaterialExpenseFlag`, bez promjene ponašanja),
+- `isAccountingHandoverInvoice(invoice, projects, profiles)` — `isAccountingRelevantInvoice(...) && profiles.find(mjerodavna)?.accounting_handover_enabled === true`.
 
-- račun nosi `business_profile_id`, sad i `project_id`, te `paid_expense_id`,
-- trošak nosi izvor plaćanja (`custom:<uuid>` ili gotovina),
-- `isPersonalSourceForProfile` već odlučuje je li izvor privatan u odnosu na
-  tvrtku.
+`isAccountingRelevantInvoice`, `suggestAccountingCategory` i `deriveMaterialExpenseFlag` zadržavaju postojeće potpise i ponašanje — prekidač je dodatni sloj iznad, ne izmjena F1 logike.
 
-```text
-račun nije poslovni (ni firma ni poslovni projekt) -> bez oznake
-račun nije plaćen                                  -> bez oznake (nije poznato)
-plaćen iz izvora te tvrtke                         -> bez oznake
-plaćen iz privatnog izvora ili gotovine            -> "materijalni trošak"
-```
+U `InvoiceRow.tsx`: cijeli F1 blok (Select kategorije, izbornik projekta, značka „materijalni trošak") renderira se samo kad `isAccountingHandoverInvoice` vrati `true`. Sve ostalo u retku ostaje nepromijenjeno.
 
-Mjerodavna tvrtka je tvrtka računa, a ako je nema — tvrtka pripisanog projekta.
-Izvedba: čista funkcija `deriveMaterialExpenseFlag` u istoj novoj datoteci, bez
-mrežnog poziva, nad već učitanim izvorima plaćanja i troškovima.
+## 4. Čitanje postavke na mjestu prikaza
 
-## Prijedlog kategorije
+`IncomingInvoicesPanel` već dohvaća profile kroz `useBusinessProfiles()`. Taj hook se dopunjuje: `select` dobiva `accounting_handover_enabled`, a `BusinessProfileLite` novo polje istog imena. Panel ga prosljeđuje u `InvoiceRow` kroz postojeći prop `businessProfiles` (proširen tip), bez novog dohvata i bez novog hooka.
 
-- `parse-receipt` dobiva u odgovoru novo neobavezno polje
-  `accounting_category` (jedna od tri vrijednosti ili `null`). Postojeća polja i
-  ponašanje skena ostaju identična.
-- Za račune koji ne prolaze kroz sken (eRačun XML, mail) prijedlog daje čista
-  funkcija `suggestAccountingCategory` iz dobavljača i stavki računa (alat/oprema
-  → „alat"; trajno sredstvo iznad praga → „osnovna sredstva"; inače
-  „pripadnost projektu"). Bez dodatnog AI poziva i bez troška.
-- Prijedlog se nikad ne sprema sam; sprema se tek kad ga korisnik potvrdi
-  (`source = 'user'`) ili kad dolazi izravno sa skena (`'ai'`, uz oznaku
-  prijedloga). Odabir projekta uvijek traži korisnikovu potvrdu.
+## 5. Utjecaj na oba puta
 
-## Greške pri spremanju
+- **Polica ulaznih računa** (`IncomingInvoicesPanel` → `InvoiceRow`): jedino mjesto gdje F1 blok postoji — uvjet djeluje ovdje.
+- **Pregled iz maila**: provjereno pretragom — knjigovodstvena kategorija se nigdje u mail pregledu ne prikazuje (jedini kod izvan police je neobavezno polje `accounting_category` koje `parse-receipt` vraća kao prijedlog). Mail put se ne dira; kad jednom dobije prikaz kategorije, koristit će istu funkciju `isAccountingHandoverInvoice`.
 
-Upis ide kroz `useIncomingInvoices` (novi `setAccountingCategory`, koji u istom
-pozivu sprema i `project_id`). Pri padu: zapis u `app_diagnostics_logs` s
-pozvanom radnjom, `invoice_id`, doslovnim `code`/`message` iz baze i build
-žigom; korisniku prevedena poruka kroz `describeInvoiceDbError` — nikad
-generička. Ako bi zapis prošao a osvježenje palo, poruka izričito kaže oboje.
+## 6. Greške
 
-## Tehnički detalji
+Pad upisa ili čitanja postavke: zapis u `app_diagnostics_logs` kroz postojeći `logDiagnostic` — radnja (`business_profiles.setAccountingHandover`), `business_profile_id`, doslovni `code`/`message` iz baze, build žig; korisniku prevedena poruka kroz `describeDbError` (nikad generička). Ako je upis prošao a osvježenje palo, poruka izričito kaže oboje.
 
-Dirano:
+## 7. Prijevodi i testovi
 
-- migracija: `accounting_category`, `accounting_category_source`,
-  `accounting_category_set_at`, `project_id` + CHECK, FK i indeks
-- `src/lib/eracun/accountingClassification.ts` (novo): popis kategorija,
-  `suggestAccountingCategory`, `isAccountingRelevantInvoice`,
-  `deriveMaterialExpenseFlag`
-- `src/hooks/useIncomingInvoices.ts`: nova polja u tipu + `setAccountingCategory`
-- `src/components/business/eracun/IncomingInvoicesPanel.tsx` (612 redaka): redak
-  računa se ionako dira, pa se **izdvaja** u `InvoiceRow.tsx` bez promjene
-  ponašanja; funkcionalno se dodaje samo blok kategorije/projekta/oznake.
-  Izdvojeno i funkcionalno bit će odvojeno navedeno u izvještaju.
-- ponovna uporaba `AttachmentBar` (chip „Projekt") — bez izmjene njegovog
-  ponašanja; po potrebi samo prosljeđivanje propova
-- `supabase/functions/parse-receipt/index.ts`: jedno neobavezno izlazno polje
-- prijevodi hr/en/de
-- testovi: prijedlog kategorije; pravilo „poslovni" (firma / poslovni projekt /
-  osobni); izvedena oznaka (plaćeno/neplaćeno, privatni/poslovni izvor);
-  spremanje veze na projekt
+hr/en/de ključevi: `business.accounting.handoverTitle`, `business.accounting.handoverLabel`, `business.accounting.handoverDesc`, `business.accounting.handoverSaveFailed`, `business.accounting.handoverSavedRefreshFailed`.
 
-Ne dira se: motor salda i anchor, `expenses` i put spremanja troška, uvoz
-izvoda, dedup/otisak, `business_debts` i owner-loan logika, atribucija troška,
-RLS, scanner tijek, izvoz/paket za knjigovođu, mail knjigovođi, čišćenje slike,
-glavni prekidač. Ne objavljuje se.
+Testovi (vitest): `isAccountingHandoverInvoice` — tvrtka s uključenim prekidačem → true; ista tvrtka isključeno → false; račun bez tvrtke ali s poslovnim projektom čija tvrtka ima prekidač → true; osobni račun → false; nepoznata tvrtka → false. Plus izvorni čuvar da `InvoiceRow` blok stoji iza tog uvjeta.
+
+## Dirnute datoteke (predviđeno)
+
+- nova migracija u `drizzle/migrations/` (+ regeneriran `types.ts` alatom)
+- `src/components/business/BusinessProfileView.tsx`
+- `src/hooks/useBusinessProfiles.ts`
+- `src/lib/eracun/accountingClassification.ts`
+- `src/components/business/eracun/IncomingInvoicesPanel.tsx` (prosljeđivanje polja)
+- `src/components/business/eracun/InvoiceRow.tsx` (uvjet oko F1 bloka)
+- `src/i18n/locales/hr.json`, `en.json`, `de.json`
+- `src/test/accountingClassification.test.ts` (+ po potrebi novi test)
+
+## NIJE dirano
+
+Mjesečni pregled/paket (B), zip originala i čišćenje slike (C), mail knjigovođi; logika kategorije i „materijalni trošak" iz F1; motor salda i anchor; `expenses` i put spremanja troška; uvoz izvoda, dedup/otisak; owner-loan; RLS politike; scanner tijek; atribucija troška; `client.ts`. Ne objavljuje se.
