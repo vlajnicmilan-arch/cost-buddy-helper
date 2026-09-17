@@ -198,7 +198,8 @@ export const InvoiceRow = ({
                 <SelectItem value="fixed_asset">{categoryLabel('fixed_asset')}</SelectItem>
               </SelectContent>
             </Select>
-            {materialExpense && (
+            )}
+            {showAccounting && materialExpense && (
               <Badge
                 variant="outline"
                 className="text-[10px]"
