@@ -36,6 +36,13 @@
       "when": 1789672664516,
       "tag": "0004_business_profile_accounting_handover",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789674278791,
+      "tag": "0005_accounting_handover_periods",
+      "breakpoints": true
     }
   ]
 }

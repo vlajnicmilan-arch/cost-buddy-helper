@@ -5,3 +5,4 @@
 - [x] Prikazati oznaku „Pozajmica” dosljedno u svim odobrenim popisima transakcija
 
 - [x] Datum transakcije iz teksta izvoda (valueFromText) umjesto AI-prijepisa
+- [x] Mjesečni paket za knjigovođu (PDF + Excel + status predano)
