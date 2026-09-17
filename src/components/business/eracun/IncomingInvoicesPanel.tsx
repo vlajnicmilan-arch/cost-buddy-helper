@@ -35,13 +35,17 @@ import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useWriteGuard } from '@/hooks/useWriteGuard';
 import { useIncomingInvoices, type IncomingInvoice } from '@/hooks/useIncomingInvoices';
 import { useActiveCompanyOib } from '@/hooks/useActiveCompanyOib';
+import { useProjects } from '@/hooks/useProjects';
+import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
 import { daysUntilDue } from '@/lib/eracun/sortInvoices';
 import { describeDbError, describeInvoiceDbError } from '@/lib/eracun/dbError';
+import type { AccountingCategory } from '@/lib/eracun/accountingClassification';
 import { EracunImportDialog } from './EracunImportDialog';
 import { MarkPaidDialog, type MarkPaidResult } from './MarkPaidDialog';
 import { MarkCollectedDialog, type MarkCollectedResult } from './MarkCollectedDialog';
 import { PaymentMatchReview } from './PaymentMatchReview';
 import { LinkExistingExpenseDialog } from './LinkExistingExpenseDialog';
+import { InvoiceRow } from './InvoiceRow';
 import { useEracunExpenseMatch } from '@/hooks/useEracunExpenseMatch';
 
 type Filter = 'unpaid' | 'overdue' | 'paid' | 'all';
@@ -274,36 +278,63 @@ export const IncomingInvoicesPanel = ({ initialFilter = 'unpaid', initialHighlig
     }
   }, [placeTarget, placeDraft, setPlaceLabel, t]);
 
-  const dueBadge = (invoice: IncomingInvoice) => {
+  // --- F1: knjigovodstvena kategorija na razini računa ---
+  const projectOptions = useMemo(
+    () => allProjects.map((p) => ({
+      id: p.id,
+      name: p.name,
+      color: p.color ?? null,
+      icon: p.icon ?? null,
+      business_profile_id: p.business_profile_id ?? null,
+    })),
+    [allProjects],
+  );
+  const businessProfileOptions = useMemo(
+    () => businessProfiles.map((p) => ({ id: p.id, name: p.name })),
+    [businessProfiles],
+  );
+  const paymentSourceLites = useMemo(
+    () => customPaymentSources.map((s: any) => ({ id: s.id as string, business_profile_id: s.business_profile_id ?? null })),
+    [customPaymentSources],
+  );
+  const paidSourceFor = useCallback(
+    (inv: IncomingInvoice): string | null => {
+      if (!inv.paid_expense_id) return null;
+      const expense = allExpenses.find((e: any) => e.id === inv.paid_expense_id);
+      return (expense as any)?.payment_source ?? null;
+    },
+    [allExpenses],
+  );
 
-    if (invoice.paid_at) {
-      return (
-        <Badge variant="outline" className="text-[10px] gap-1">
-          <CheckCircle2 className="w-3 h-3" />
-          {t('eracun.list.paidOn', 'Plaćeno {{date}}', {
-            date: format(new Date(invoice.paid_at), 'd. MMM yyyy', { locale: hr }),
-          })}
-        </Badge>
-      );
-    }
-    const days = daysUntilDue(invoice.due_date, new Date());
-    if (days === null) {
-      return <Badge variant="secondary" className="text-[10px]">{t('eracun.list.noDue', 'Bez dospijeća')}</Badge>;
-    }
-    if (days < 0) {
-      return (
-        <Badge variant="destructive" className="text-[10px] gap-1">
-          <AlertTriangle className="w-3 h-3" />
-          {t('eracun.list.overdue', 'Kasni {{n}} d', { n: Math.abs(days) })}
-        </Badge>
-      );
-    }
-    return (
-      <Badge variant="secondary" className="text-[10px]">
-        {t('eracun.list.dueIn', 'Za {{n}} d', { n: days })}
-      </Badge>
-    );
-  };
+  /**
+   * Spremanje kategorije/projekta. Razlog pada se prevodi kroz
+   * `describeInvoiceDbError` — nikad generička poruka. Ako je zapis prošao
+   * a osvježenje palo, poruka izričito kaže oboje.
+   */
+  const handleAccountingChange = useCallback(async (
+    inv: IncomingInvoice,
+    category: AccountingCategory,
+    projectId: string | null,
+  ) => {
+    await guard(async () => {
+      try {
+        await setAccountingCategory(inv.id, category, projectId, 'user');
+        showSuccess(t('eracun.accounting.saved', 'Kategorija je spremljena'));
+      } catch (err) {
+        console.error('[eRacun] setAccountingCategory failed', err, { invoiceId: inv.id });
+        if (err instanceof Error && err.message === 'refresh_failed') {
+          showError(t('eracun.accounting.savedRefreshFailed', 'Kategorija je spremljena, ali osvježavanje popisa nije uspjelo.'));
+          return;
+        }
+        showError(t('eracun.accounting.saveFailed', 'Spremanje kategorije nije uspjelo: {{reason}}', {
+          reason: describeInvoiceDbError(err, {
+            supplier: inv.supplier_name,
+            invoiceNumber: inv.invoice_number,
+          }, t('eracun.error.unknownDb', 'Nepoznata greška baze')),
+        }));
+      }
+    });
+  }, [guard, setAccountingCategory, t]);
 
   return (
     <div className="space-y-3 w-full min-w-0 overflow-x-hidden">
