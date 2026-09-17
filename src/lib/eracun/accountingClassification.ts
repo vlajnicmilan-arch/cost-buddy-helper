@@ -103,7 +103,7 @@ export const suggestAccountingCategory = (
     return 'fixed_asset';
   }
   if (containsAny(text, TOOL_KEYWORDS)) return 'tool';
-  if (containsAny(text, FIXED_ASSET_KEYWORDS)) return 'fixed_asset';
+  // Signal sredstva ispod praga (i sve bez signala) → najsigurniji prijedlog je projekt.
   return 'project';
 };
 
