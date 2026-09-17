@@ -171,7 +171,8 @@ export const InvoiceRow = ({
                 {inv.place_label?.trim() || t('eracun.list.placeNone', 'Bez oznake')}
               </span>
             </button>
-            {/* F1 — kategorija; izbor je moguć na bilo kojem ulaznom računu. */}
+            {/* F1 — kategorija; F2 — samo za tvrtku s uključenom predajom knjigovođi. */}
+            {showAccounting && (
             <Select
               value={accountingCategory ?? ''}
               onValueChange={(v) => {
