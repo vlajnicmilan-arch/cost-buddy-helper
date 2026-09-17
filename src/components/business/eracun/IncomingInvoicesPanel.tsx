@@ -35,13 +35,17 @@ import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useWriteGuard } from '@/hooks/useWriteGuard';
 import { useIncomingInvoices, type IncomingInvoice } from '@/hooks/useIncomingInvoices';
 import { useActiveCompanyOib } from '@/hooks/useActiveCompanyOib';
+import { useProjects } from '@/hooks/useProjects';
+import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
 import { daysUntilDue } from '@/lib/eracun/sortInvoices';
 import { describeDbError, describeInvoiceDbError } from '@/lib/eracun/dbError';
+import type { AccountingCategory } from '@/lib/eracun/accountingClassification';
 import { EracunImportDialog } from './EracunImportDialog';
 import { MarkPaidDialog, type MarkPaidResult } from './MarkPaidDialog';
 import { MarkCollectedDialog, type MarkCollectedResult } from './MarkCollectedDialog';
 import { PaymentMatchReview } from './PaymentMatchReview';
 import { LinkExistingExpenseDialog } from './LinkExistingExpenseDialog';
+import { InvoiceRow } from './InvoiceRow';
 import { useEracunExpenseMatch } from '@/hooks/useEracunExpenseMatch';
 
 type Filter = 'unpaid' | 'overdue' | 'paid' | 'all';
@@ -66,12 +70,14 @@ export const IncomingInvoicesPanel = ({ initialFilter = 'unpaid', initialHighlig
   const { user } = useAuth();
   const { activeBusinessProfileId } = useAppState();
   const { companyOib } = useActiveCompanyOib();
-  const { addExpense } = useExpenses();
+  const { addExpense, allExpenses } = useExpenses();
   const { customPaymentSources } = useCustomPaymentSources();
   const { guard } = useWriteGuard({ kind: 'module', feature: 'business_module' });
+  const { allProjects } = useProjects();
+  const { profiles: businessProfiles } = useBusinessProfiles();
   const {
     invoices, loading, existingFingerprints,
-    saveBatch, undoBatch, markPaid, markCollected, deleteInvoice, setPlaceLabel, refetch,
+    saveBatch, undoBatch, markPaid, markCollected, deleteInvoice, setPlaceLabel, setAccountingCategory, refetch,
   } = useIncomingInvoices();
 
   /**
@@ -274,36 +280,63 @@ export const IncomingInvoicesPanel = ({ initialFilter = 'unpaid', initialHighlig
     }
   }, [placeTarget, placeDraft, setPlaceLabel, t]);
 
-  const dueBadge = (invoice: IncomingInvoice) => {
+  // --- F1: knjigovodstvena kategorija na razini računa ---
+  const projectOptions = useMemo(
+    () => allProjects.map((p) => ({
+      id: p.id,
+      name: p.name,
+      color: p.color ?? null,
+      icon: p.icon ?? null,
+      business_profile_id: p.business_profile_id ?? null,
+    })),
+    [allProjects],
+  );
+  const businessProfileOptions = useMemo(
+    () => businessProfiles.map((p) => ({ id: p.id, name: p.name })),
+    [businessProfiles],
+  );
+  const paymentSourceLites = useMemo(
+    () => customPaymentSources.map((s: any) => ({ id: s.id as string, business_profile_id: s.business_profile_id ?? null })),
+    [customPaymentSources],
+  );
+  const paidSourceFor = useCallback(
+    (inv: IncomingInvoice): string | null => {
+      if (!inv.paid_expense_id) return null;
+      const expense = allExpenses.find((e: any) => e.id === inv.paid_expense_id);
+      return (expense as any)?.payment_source ?? null;
+    },
+    [allExpenses],
+  );
 
-    if (invoice.paid_at) {
-      return (
-        <Badge variant="outline" className="text-[10px] gap-1">
-          <CheckCircle2 className="w-3 h-3" />
-          {t('eracun.list.paidOn', 'Plaćeno {{date}}', {
-            date: format(new Date(invoice.paid_at), 'd. MMM yyyy', { locale: hr }),
-          })}
-        </Badge>
-      );
-    }
-    const days = daysUntilDue(invoice.due_date, new Date());
-    if (days === null) {
-      return <Badge variant="secondary" className="text-[10px]">{t('eracun.list.noDue', 'Bez dospijeća')}</Badge>;
-    }
-    if (days < 0) {
-      return (
-        <Badge variant="destructive" className="text-[10px] gap-1">
-          <AlertTriangle className="w-3 h-3" />
-          {t('eracun.list.overdue', 'Kasni {{n}} d', { n: Math.abs(days) })}
-        </Badge>
-      );
-    }
-    return (
-      <Badge variant="secondary" className="text-[10px]">
-        {t('eracun.list.dueIn', 'Za {{n}} d', { n: days })}
-      </Badge>
-    );
-  };
+  /**
+   * Spremanje kategorije/projekta. Razlog pada se prevodi kroz
+   * `describeInvoiceDbError` — nikad generička poruka. Ako je zapis prošao
+   * a osvježenje palo, poruka izričito kaže oboje.
+   */
+  const handleAccountingChange = useCallback(async (
+    inv: IncomingInvoice,
+    category: AccountingCategory,
+    projectId: string | null,
+  ) => {
+    await guard(async () => {
+      try {
+        await setAccountingCategory(inv.id, category, projectId, 'user');
+        showSuccess(t('eracun.accounting.saved', 'Kategorija je spremljena'));
+      } catch (err) {
+        console.error('[eRacun] setAccountingCategory failed', err, { invoiceId: inv.id });
+        if (err instanceof Error && err.message === 'refresh_failed') {
+          showError(t('eracun.accounting.savedRefreshFailed', 'Kategorija je spremljena, ali osvježavanje popisa nije uspjelo.'));
+          return;
+        }
+        showError(t('eracun.accounting.saveFailed', 'Spremanje kategorije nije uspjelo: {{reason}}', {
+          reason: describeInvoiceDbError(err, {
+            supplier: inv.supplier_name,
+            invoiceNumber: inv.invoice_number,
+          }, t('eracun.error.unknownDb', 'Nepoznata greška baze')),
+        }));
+      }
+    });
+  }, [guard, setAccountingCategory, t]);
 
   return (
     <div className="space-y-3 w-full min-w-0 overflow-x-hidden">
@@ -402,124 +435,24 @@ export const IncomingInvoicesPanel = ({ initialFilter = 'unpaid', initialHighlig
       ) : (
         <div className="space-y-2">
           {visible.map((inv) => (
-            <div
+            <InvoiceRow
               key={inv.id}
-              data-incoming-invoice-id={inv.id}
-              className={`p-3 rounded-lg border bg-card ${inv.id === initialHighlightInvoiceId ? 'ring-2 ring-primary' : ''}`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">
-                    {inv.counterparty_name || inv.supplier_name || inv.counterparty_oib || inv.supplier_oib}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground truncate">
-                    {invoiceNumberLabel(inv.invoice_number)}
-                    {inv.issue_date ? ` · ${t('eracun.list.issued', 'izdan')} ${format(new Date(inv.issue_date), 'd. MMM yyyy', { locale: hr })}` : ''}
-                    {inv.due_date ? ` · ${t('eracun.list.due', 'dospijeće')} ${format(new Date(inv.due_date), 'd. MMM yyyy', { locale: hr })}` : ''}
-                  </p>
-                  <div className="mt-1 flex flex-wrap items-center gap-1">
-                    {dueBadge(inv)}
-                    <button
-                      type="button"
-                      onClick={() => { setPlaceTarget(inv); setPlaceDraft(inv.place_label ?? ''); }}
-                      className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground min-h-[24px] max-w-full"
-                      aria-label={t('eracun.list.placeEdit', 'Uredi oznaku mjesta')}
-                    >
-                      <MapPin className="w-3 h-3 shrink-0" />
-                      <span className="truncate">
-                        {inv.place_label?.trim() || t('eracun.list.placeNone', 'Bez oznake')}
-                      </span>
-                    </button>
-                  </div>
-
-                  {!inv.paid_at && Number(inv.settled_amount ?? 0) > 0 && (
-                    <p className="text-[11px] text-muted-foreground mt-1">
-                      {t('eracun.match.settledOf', 'Plaćeno {{paid}} od {{total}}', {
-                        paid: formatAmount(Number(inv.settled_amount)),
-                        total: formatAmount(Number(inv.total_amount)),
-                      })}
-                    </p>
-                  )}
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="font-semibold text-sm">{formatAmount(Number(inv.total_amount))}</p>
-                  {/* PDV je poslovni podatak: u osobnom kontekstu se ne prikazuje
-                      (podatak se i dalje sprema, samo se ne renderira). */}
-                  {!isPersonal && inv.vat_amount != null && (
-                    <p className="text-[10px] text-muted-foreground">
-                      {t('eracun.list.vat', 'PDV')} {formatAmount(Number(inv.vat_amount))}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Odvezivanje mora biti dostupno i na plaćenom računu. */}
-              {(inv.direction ?? 'in') === 'in' && expenseMatch.linksForInvoice(inv.id).length > 0 && (
-                <div className="flex justify-end mt-2">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-muted-foreground"
-                    onClick={() => { setLinkPrecheck(false); setLinkTarget(inv); }}
-                  >
-                    <Link2 className="w-3.5 h-3.5 mr-1" />
-                    {t('eracun.linkExpense.linkedCount', 'Povezano ({{n}})', {
-                      n: expenseMatch.linksForInvoice(inv.id).length,
-                    })}
-                  </Button>
-                </div>
-              )}
-
-              {!inv.paid_at && (
-                <div className="flex flex-wrap justify-end gap-2 mt-2">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-muted-foreground"
-                    onClick={() => guard(() => handleDelete(inv))}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                  {/* Namjerna asimetrija: ulazni račun na „Plaćeno" stvara trošak,
-                      izlazni na „Naplaćeno" bilježi samo datum — prihod dolazi iz
-                      uvoza bankovnog izvoda. Ne izjednačavati ta dva toka. */}
-                  {(inv.direction ?? 'in') === 'in' ? (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => { setLinkPrecheck(false); setLinkTarget(inv); }}
-                      >
-                        <Link2 className="w-3.5 h-3.5 mr-1" />
-                        {t('eracun.linkExpense.open', 'Poveži s troškom')}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          // Pretprovjera: ako postoji kandidat, prvo ponudi povezivanje —
-                          // stvaranje novog troška ovdje bi isti novac zapisalo dvaput.
-                          if (expenseMatch.suggestionsForInvoice(inv.id).length > 0) {
-                            setLinkPrecheck(true);
-                            setLinkTarget(inv);
-                            return;
-                          }
-                          setPayTarget(inv);
-                        }}
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                        {t('eracun.list.markPaid', 'Plaćeno')}
-                      </Button>
-                    </>
-                  ) : (
-                    <Button size="sm" variant="outline" onClick={() => setCollectTarget(inv)}>
-                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                      {t('eracun.list.markCollected', 'Naplaćeno')}
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
+              invoice={inv}
+              highlighted={inv.id === initialHighlightInvoiceId}
+              isPersonal={isPersonal}
+              linksCount={expenseMatch.linksForInvoice(inv.id).length}
+              hasLinkSuggestions={expenseMatch.suggestionsForInvoice(inv.id).length > 0}
+              onEditPlace={(i) => { setPlaceTarget(i); setPlaceDraft(i.place_label ?? ''); }}
+              onOpenLink={(i, precheck) => { setLinkPrecheck(precheck); setLinkTarget(i); }}
+              onPay={setPayTarget}
+              onCollect={setCollectTarget}
+              onDelete={(i) => guard(() => handleDelete(i))}
+              projects={projectOptions}
+              businessProfiles={businessProfileOptions}
+              paymentSources={paymentSourceLites}
+              paidExpensePaymentSource={paidSourceFor(inv)}
+              onAccountingChange={handleAccountingChange}
+            />
           ))}
         </div>
       )}

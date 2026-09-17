@@ -2572,6 +2572,9 @@ export type Database = {
       }
       incoming_invoices: {
         Row: {
+          accounting_category: string | null
+          accounting_category_set_at: string | null
+          accounting_category_source: string | null
           business_profile_id: string | null
           counterparty_name: string | null
           counterparty_oib: string | null
@@ -2592,6 +2595,7 @@ export type Database = {
           paid_expense_id: string | null
           payment_reference: string | null
           place_label: string | null
+          project_id: string | null
           settled_amount: number
           source_filename: string | null
           supplier_name: string | null
@@ -2602,6 +2606,9 @@ export type Database = {
           vat_amount: number | null
         }
         Insert: {
+          accounting_category?: string | null
+          accounting_category_set_at?: string | null
+          accounting_category_source?: string | null
           business_profile_id?: string | null
           counterparty_name?: string | null
           counterparty_oib?: string | null
@@ -2622,6 +2629,7 @@ export type Database = {
           paid_expense_id?: string | null
           payment_reference?: string | null
           place_label?: string | null
+          project_id?: string | null
           settled_amount?: number
           source_filename?: string | null
           supplier_name?: string | null
@@ -2632,6 +2640,9 @@ export type Database = {
           vat_amount?: number | null
         }
         Update: {
+          accounting_category?: string | null
+          accounting_category_set_at?: string | null
+          accounting_category_source?: string | null
           business_profile_id?: string | null
           counterparty_name?: string | null
           counterparty_oib?: string | null
@@ -2652,6 +2663,7 @@ export type Database = {
           paid_expense_id?: string | null
           payment_reference?: string | null
           place_label?: string | null
+          project_id?: string | null
           settled_amount?: number
           source_filename?: string | null
           supplier_name?: string | null
@@ -2674,6 +2686,13 @@ export type Database = {
             columns: ["paid_expense_id"]
             isOneToOne: false
             referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incoming_invoices_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]

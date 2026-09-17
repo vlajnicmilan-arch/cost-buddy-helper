@@ -12,6 +12,8 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { sortIncomingInvoices } from '@/lib/eracun/sortInvoices';
 import { describeDbError } from '@/lib/eracun/dbError';
 import { showError } from '@/hooks/useStatusFeedback';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
+import type { AccountingCategory, AccountingCategorySource } from '@/lib/eracun/accountingClassification';
 import i18n from '@/i18n';
 import type { EracunInsertRow } from '@/lib/eracun/intakeBatch';
 import { useAppResume } from '@/hooks/useAppResume';
@@ -43,6 +45,12 @@ export interface IncomingInvoice {
   source_filename: string | null;
   /** Korisnikova oznaka mjesta (npr. „Split"/„Solin") — uči se iz potvrde. */
   place_label: string | null;
+  /** F1 — knjigovodstvena kategorija na razini računa (project/tool/fixed_asset). */
+  accounting_category: string | null;
+  accounting_category_source: string | null;
+  accounting_category_set_at: string | null;
+  /** F1 — stvarna veza na projekt kad je kategorija „pripadnost projektu". */
+  project_id: string | null;
   created_at: string;
 
 }
@@ -54,9 +62,10 @@ export const useIncomingInvoices = () => {
   const [loading, setLoading] = useState(true);
   const hydratedRef = useRef(false);
 
-  const fetchInvoices = useCallback(async () => {
-    if (!authReady) return;
-    if (!user) { setInvoices([]); setLoading(false); return; }
+  /** Dohvat računa. Vraća `true` kad je popis osvježen — pozivatelj može razlikovati „spremljeno, ali osvježenje palo". */
+  const fetchInvoices = useCallback(async (): Promise<boolean> => {
+    if (!authReady) return false;
+    if (!user) { setInvoices([]); setLoading(false); return true; }
     // Prvi dohvat smije pokazati loading; pozadinska osvježenja su tiha.
     if (!hydratedRef.current) setLoading(true);
     let query = supabase
@@ -72,11 +81,12 @@ export const useIncomingInvoices = () => {
       console.error('[IncomingInvoices] fetch failed', error);
       showError(`${i18n.t('eracun.import.loadFailed', 'Učitavanje ulaznih računa nije uspjelo: {{reason}}', { reason: describeDbError(error) })}`);
       setLoading(false);
-      return;
+      return false;
     }
     setInvoices(sortIncomingInvoices((data ?? []) as unknown as IncomingInvoice[]));
     hydratedRef.current = true;
     setLoading(false);
+    return true;
   }, [user, authReady, activeBusinessProfileId]);
 
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
@@ -158,6 +168,48 @@ export const useIncomingInvoices = () => {
     await fetchInvoices();
   }, [fetchInvoices]);
 
+  /**
+   * F1 — knjigovodstvena kategorija (+ veza na projekt za „pripadnost projektu").
+   * Pri padu upisa ostavlja trag u `app_diagnostics_logs` (radnja, invoice_id,
+   * doslovan code/message, build žig) i baca izvornu grešku — pozivatelj je
+   * prevodi kroz `describeInvoiceDbError`, nikad generičkom porukom.
+   * Ako upis prođe, a osvježenje popisa padne, baca `refresh_failed` — poruka
+   * mora izričito reći oboje.
+   */
+  const setAccountingCategory = useCallback(async (
+    invoiceId: string,
+    category: AccountingCategory,
+    projectId: string | null,
+    source: AccountingCategorySource,
+  ) => {
+    const { error } = await supabase
+      .from('incoming_invoices' as any)
+      .update({
+        accounting_category: category,
+        accounting_category_source: source,
+        accounting_category_set_at: new Date().toISOString(),
+        project_id: category === 'project' ? projectId : null,
+      } as any)
+      .eq('id', invoiceId);
+    if (error) {
+      logDiagnostic({
+        event: 'invoice_accounting_category_failed',
+        severity: 'error',
+        details: {
+          action: 'incoming_invoices.setAccountingCategory',
+          invoice_id: invoiceId,
+          db_code: (error as { code?: string })?.code ?? null,
+          db_message: (error as { message?: string })?.message ?? String(error),
+        },
+      });
+      throw error;
+    }
+    const refreshed = await fetchInvoices();
+    if (!refreshed) throw new Error('refresh_failed');
+  }, [fetchInvoices]);
+
+
+
 
 
   return {
@@ -173,6 +225,6 @@ export const useIncomingInvoices = () => {
     markCollected,
     deleteInvoice,
     setPlaceLabel,
-
+    setAccountingCategory,
   };
 };

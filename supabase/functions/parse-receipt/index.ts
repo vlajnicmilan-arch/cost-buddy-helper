@@ -461,11 +461,19 @@ ${paymentSourcesContext}${cardMatchingRules}${customCategoriesContext}
   "is_installment": false,
   "installment_count": null,
   "installment_amount": null,
+  "accounting_category": null,
   "items": [
     {"name": "MLIJEKO DUKAT 1L", "quantity": 2, "unit_price": 1.29, "total_price": 2.58},
     {"name": "KRUH BIJELI", "quantity": 1, "unit_price": null, "total_price": 1.50}
   ]
 }
+
+KNJIGOVODSTVENA KATEGORIJA (neobavezno, samo prijedlog):
+- accounting_category: jedna od "project" | "tool" | "fixed_asset" | null
+- "tool" — potrošni alat i pribor (bušilica, svrdla, ručni alat...)
+- "fixed_asset" — trajno sredstvo veće vrijednosti (stroj, vozilo, računalo, oprema...)
+- "project" — trošak koji najvjerojatnije pripada nekom projektu (materijal, usluge za gradilište...)
+- Ako nisi siguran → null (korisnik bira ručno; prijedlog nikad nije obvezujući)
 
 PRIMJER ZA DOPUNU/TRANSFER:
 {
@@ -749,6 +757,11 @@ Vrati SAMO JSON bez dodatnog teksta.`;
         is_installment: receiptData.is_installment || false,
         installment_count: receiptData.installment_count || null,
         installment_amount: receiptData.installment_amount != null ? (Number(receiptData.installment_amount) || 0) : null,
+        // F1 — neobavezan prijedlog knjigovodstvene kategorije; klijent ga
+        // prikazuje kao prijedlog, ne sprema se sam.
+        accounting_category: ['project', 'tool', 'fixed_asset'].includes(receiptData.accounting_category)
+          ? receiptData.accounting_category
+          : null,
         items: sanitizedItems,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

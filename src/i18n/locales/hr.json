@@ -6486,6 +6486,19 @@
     },
     "title": "Ulazni računi (eRačun)",
     "menuDesc": "Uvezi XML eRačune i označi ih plaćenima",
+    "accounting": {
+      "label": "Knjigovodstvena kategorija",
+      "pick": "Odaberi kategoriju",
+      "suggestion": "Prijedlog: {{label}}",
+      "categoryProject": "Pripadnost projektu",
+      "categoryTool": "Alat",
+      "categoryFixedAsset": "Osnovna sredstva",
+      "materialExpense": "materijalni trošak",
+      "materialExpenseHint": "Plaćeno iz privatnog izvora — knjigovođa to vodi kao materijalni trošak.",
+      "saved": "Kategorija je spremljena",
+      "saveFailed": "Spremanje kategorije nije uspjelo: {{reason}}",
+      "savedRefreshFailed": "Kategorija je spremljena, ali osvježavanje popisa nije uspjelo."
+    },
     "reject": {
       "unsupported_currency": "Valuta {{currency}} nije podržana — podržan je samo EUR.",
       "missing_total": "Ukupan iznos nije pronađen u datoteci.",
