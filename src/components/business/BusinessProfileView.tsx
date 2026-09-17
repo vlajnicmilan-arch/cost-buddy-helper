@@ -55,6 +55,8 @@ interface ProfileData {
   court_registry: string | null;
   legal_form: string | null;
   is_active: boolean;
+  /** F2 — „Predajem ulazne račune knjigovođi" za ovu tvrtku. */
+  accounting_handover_enabled: boolean;
 }
 
 export const BusinessProfileView = () => {
