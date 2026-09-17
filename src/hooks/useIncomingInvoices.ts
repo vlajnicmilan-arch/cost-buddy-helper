@@ -43,6 +43,12 @@ export interface IncomingInvoice {
   source_filename: string | null;
   /** Korisnikova oznaka mjesta (npr. „Split"/„Solin") — uči se iz potvrde. */
   place_label: string | null;
+  /** F1 — knjigovodstvena kategorija na razini računa (project/tool/fixed_asset). */
+  accounting_category: string | null;
+  accounting_category_source: string | null;
+  accounting_category_set_at: string | null;
+  /** F1 — stvarna veza na projekt kad je kategorija „pripadnost projektu". */
+  project_id: string | null;
   created_at: string;
 
 }
@@ -54,9 +60,10 @@ export const useIncomingInvoices = () => {
   const [loading, setLoading] = useState(true);
   const hydratedRef = useRef(false);
 
-  const fetchInvoices = useCallback(async () => {
-    if (!authReady) return;
-    if (!user) { setInvoices([]); setLoading(false); return; }
+  /** Dohvat računa. Vraća `true` kad je popis osvježen — pozivatelj može razlikovati „spremljeno, ali osvježenje palo". */
+  const fetchInvoices = useCallback(async (): Promise<boolean> => {
+    if (!authReady) return false;
+    if (!user) { setInvoices([]); setLoading(false); return true; }
     // Prvi dohvat smije pokazati loading; pozadinska osvježenja su tiha.
     if (!hydratedRef.current) setLoading(true);
     let query = supabase
@@ -72,11 +79,12 @@ export const useIncomingInvoices = () => {
       console.error('[IncomingInvoices] fetch failed', error);
       showError(`${i18n.t('eracun.import.loadFailed', 'Učitavanje ulaznih računa nije uspjelo: {{reason}}', { reason: describeDbError(error) })}`);
       setLoading(false);
-      return;
+      return false;
     }
     setInvoices(sortIncomingInvoices((data ?? []) as unknown as IncomingInvoice[]));
     hydratedRef.current = true;
     setLoading(false);
+    return true;
   }, [user, authReady, activeBusinessProfileId]);
 
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
