@@ -46,6 +46,7 @@ import { MarkCollectedDialog, type MarkCollectedResult } from './MarkCollectedDi
 import { PaymentMatchReview } from './PaymentMatchReview';
 import { LinkExistingExpenseDialog } from './LinkExistingExpenseDialog';
 import { InvoiceRow } from './InvoiceRow';
+import { HandoverBar } from './HandoverBar';
 import { useEracunExpenseMatch } from '@/hooks/useEracunExpenseMatch';
 
 type Filter = 'unpaid' | 'overdue' | 'paid' | 'all';
@@ -422,6 +423,22 @@ export const IncomingInvoicesPanel = ({ initialFilter = 'unpaid', initialHighlig
       )}
 
 
+
+      {/* B — mjesečni paket za knjigovođu; traka se sama skriva kad tvrtka
+          nema uključen prekidač „predajem knjigovođi". */}
+      {!isPersonal && direction === 'in' && (
+        <HandoverBar
+          invoices={incoming}
+          projects={projectOptions}
+          businessProfiles={businessProfileOptions}
+          paymentSources={paymentSourceLites}
+          businessProfileId={activeBusinessProfileId}
+          paidExpensePaymentSource={(id) => {
+            const inv = incoming.find((i) => i.id === id);
+            return inv ? paidSourceFor(inv) : null;
+          }}
+        />
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-8">

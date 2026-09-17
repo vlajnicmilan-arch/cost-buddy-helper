@@ -181,6 +181,8 @@ export const EXPORT_REGISTRY: Record<string, TableRule> = {
 
   // — Biznis —
   business_profiles: direct(),
+  // Zapis „mjesec predan knjigovođi" — korisnikov trag, ide u izvoz.
+  accounting_handover_periods: direct(),
   business_premises: direct(),
   business_debts: direct(),
   cash_registers: direct(),

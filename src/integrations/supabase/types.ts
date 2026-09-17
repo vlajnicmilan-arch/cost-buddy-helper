@@ -65,6 +65,47 @@ export type Database = {
         }
         Relationships: []
       }
+      accounting_handover_periods: {
+        Row: {
+          business_profile_id: string
+          created_at: string
+          id: string
+          invoice_count: number
+          period: string
+          submitted_at: string
+          total_amount: number
+          user_id: string
+        }
+        Insert: {
+          business_profile_id: string
+          created_at?: string
+          id?: string
+          invoice_count?: number
+          period: string
+          submitted_at?: string
+          total_amount?: number
+          user_id: string
+        }
+        Update: {
+          business_profile_id?: string
+          created_at?: string
+          id?: string
+          invoice_count?: number
+          period?: string
+          submitted_at?: string
+          total_amount?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounting_handover_periods_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       activation_nudge_log: {
         Row: {
           day_number: number

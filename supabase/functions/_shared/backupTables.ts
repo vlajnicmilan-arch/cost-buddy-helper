@@ -5,6 +5,7 @@
 // sustav ne može vjerodostojno vratiti. krug_act_dedup ostaje vani (interno).
 // Regeneriraj: bun scripts/generate-backup-tables.mjs
 export const BACKUP_TABLES: readonly string[] = [
+  "accounting_handover_periods",
   "ai_action_log",
   "ai_proposed_actions",
   "anchor_audit",

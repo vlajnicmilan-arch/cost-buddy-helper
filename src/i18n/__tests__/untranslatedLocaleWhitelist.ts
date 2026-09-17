@@ -130,6 +130,7 @@ export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, s
     "collaborators.project": "Projekt is the same word in DE",
     "collaboratorPayment.project": "Projekt is the same word in DE",
     "people.add.failedEngagement": "Projekt is the same word in DE",
+    "eracun.handover.colProject": "Projekt is the same word in DE",
 
     "mailReview.field.iban": "IBAN je međunarodna kratica — identična na svim jezicima",
 
