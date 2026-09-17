@@ -34,8 +34,10 @@ import type { IncomingInvoice } from '@/hooks/useIncomingInvoices';
 import {
   deriveMaterialExpenseFlag,
   isAccountingCategory,
+  isAccountingHandoverInvoice,
   suggestAccountingCategory,
   type AccountingCategory,
+  type AccountingProfileLite,
   type PaymentSourceLite,
   type ProjectLite,
 } from '@/lib/eracun/accountingClassification';
@@ -59,7 +61,8 @@ interface InvoiceRowProps {
   onDelete: (inv: IncomingInvoice) => void;
   /** F1 — projekti za postojeći izbornik, grupirani po tvrtki. */
   projects: InvoiceProjectOption[];
-  businessProfiles: { id: string; name: string }[];
+  /** F2 — uz naziv nosi i prekidač „Predajem ulazne račune knjigovođi". */
+  businessProfiles: (AccountingProfileLite & { name: string })[];
   /** F1 — izvori plaćanja (za izvedenu oznaku „materijalni trošak"). */
   paymentSources: PaymentSourceLite[];
   /** F1 — `payment_source` troška kojim je račun plaćen (ako je poznat). */
@@ -127,6 +130,8 @@ export const InvoiceRow = ({
     ? inv.accounting_category
     : null;
   const suggestion = accountingCategory ? null : suggestAccountingCategory(inv);
+  // F2 — priprema za knjigovođu radi samo za tvrtku s uključenim prekidačem.
+  const showAccounting = isAccountingHandoverInvoice(inv, projects, businessProfiles);
   const materialExpense = deriveMaterialExpenseFlag({
     invoice: inv,
     paidExpensePaymentSource,
@@ -168,7 +173,8 @@ export const InvoiceRow = ({
                 {inv.place_label?.trim() || t('eracun.list.placeNone', 'Bez oznake')}
               </span>
             </button>
-            {/* F1 — kategorija; izbor je moguć na bilo kojem ulaznom računu. */}
+            {/* F1 — kategorija; F2 — samo za tvrtku s uključenom predajom knjigovođi. */}
+            {showAccounting && (
             <Select
               value={accountingCategory ?? ''}
               onValueChange={(v) => {
@@ -194,7 +200,8 @@ export const InvoiceRow = ({
                 <SelectItem value="fixed_asset">{categoryLabel('fixed_asset')}</SelectItem>
               </SelectContent>
             </Select>
-            {materialExpense && (
+            )}
+            {showAccounting && materialExpense && (
               <Badge
                 variant="outline"
                 className="text-[10px]"
@@ -206,7 +213,7 @@ export const InvoiceRow = ({
           </div>
 
           {/* F1 — za „pripadnost projektu" postojeći izbornik projekata. */}
-          {accountingCategory === 'project' && projects.length > 0 && (
+          {showAccounting && accountingCategory === 'project' && projects.length > 0 && (
             <div className="mt-2">
               <AttachmentBar
                 showProject

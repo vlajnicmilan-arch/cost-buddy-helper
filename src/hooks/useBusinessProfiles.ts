@@ -7,6 +7,8 @@ export interface BusinessProfileLite {
   name: string;
   /** OIB tvrtke — koristi ga usmjeravanje skena računa po OIB-u kupca. */
   oib: string | null;
+  /** F2 — „Predajem ulazne račune knjigovođi" za ovu tvrtku. */
+  accounting_handover_enabled: boolean;
 }
 
 /**
@@ -28,14 +30,15 @@ export const useBusinessProfiles = () => {
     try {
       const { data, error } = await supabase
         .from('business_profiles')
-        .select('id, company_name, oib')
+        .select('id, company_name, oib, accounting_handover_enabled')
         .eq('user_id', user.id)
         .order('company_name', { ascending: true });
       if (error) throw error;
-      setProfiles(((data || []) as Array<{ id: string; company_name: string; oib: string | null }>).map(p => ({
+      setProfiles(((data || []) as Array<{ id: string; company_name: string; oib: string | null; accounting_handover_enabled?: boolean | null }>).map(p => ({
         id: p.id,
         name: p.company_name,
         oib: p.oib ?? null,
+        accounting_handover_enabled: p.accounting_handover_enabled === true,
       })));
     } catch (err) {
       console.error('[useBusinessProfiles] fetch failed', err);

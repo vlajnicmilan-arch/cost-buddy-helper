@@ -49,6 +49,40 @@ export const isAccountingRelevantInvoice = (
   return !!project?.business_profile_id;
 };
 
+/**
+ * Mjerodavna tvrtka računa: tvrtka računa, a ako je nema — tvrtka pripisanog
+ * projekta. Izdvojeno iz `deriveMaterialExpenseFlag` bez promjene ponašanja.
+ */
+export const resolveInvoiceBusinessProfileId = (
+  invoice: AccountingInvoiceLike,
+  projects: readonly ProjectLite[],
+): string | null =>
+  invoice.business_profile_id ??
+  projects.find((p) => p.id === invoice.project_id)?.business_profile_id ??
+  null;
+
+/** Poslovni profil s prekidačem predaje računa knjigovođi. */
+export interface AccountingProfileLite {
+  id: string;
+  accounting_handover_enabled?: boolean | null;
+}
+
+/**
+ * F2 — priprema za knjigovođu radi samo za tvrtke kojima je vlasnik uključio
+ * prekidač „Predajem ulazne račune knjigovođi". Sloj IZNAD F1 pravila:
+ * `isAccountingRelevantInvoice` ostaje nepromijenjen.
+ */
+export const isAccountingHandoverInvoice = (
+  invoice: AccountingInvoiceLike,
+  projects: readonly ProjectLite[],
+  profiles: readonly AccountingProfileLite[],
+): boolean => {
+  if (!isAccountingRelevantInvoice(invoice, projects)) return false;
+  const businessProfileId = resolveInvoiceBusinessProfileId(invoice, projects);
+  if (!businessProfileId) return false;
+  return profiles.find((p) => p.id === businessProfileId)?.accounting_handover_enabled === true;
+};
+
 // --- Prijedlog kategorije (deterministički, bez AI poziva) ---
 
 /** Nazivi stavki/opisi koji upućuju na alat (potrošni alat i pribor). */
@@ -141,10 +175,7 @@ export const deriveMaterialExpenseFlag = (input: MaterialExpenseInput): boolean 
   if (!isAccountingRelevantInvoice(invoice, projects)) return false;
   if (!invoice.paid_at || !paidExpensePaymentSource) return false;
 
-  const targetBusinessProfileId =
-    invoice.business_profile_id ??
-    projects.find((p) => p.id === invoice.project_id)?.business_profile_id ??
-    null;
+  const targetBusinessProfileId = resolveInvoiceBusinessProfileId(invoice, projects);
   if (!targetBusinessProfileId) return false;
 
   // Gotovina je uvijek privatni izvor — firma nema gotovinski račun u aplikaciji.

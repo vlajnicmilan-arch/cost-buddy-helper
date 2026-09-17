@@ -934,6 +934,7 @@ export type Database = {
       }
       business_profiles: {
         Row: {
+          accounting_handover_enabled: boolean
           activity_code: string | null
           activity_description: string | null
           address: string | null
@@ -969,6 +970,7 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          accounting_handover_enabled?: boolean
           activity_code?: string | null
           activity_description?: string | null
           address?: string | null
@@ -1004,6 +1006,7 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          accounting_handover_enabled?: boolean
           activity_code?: string | null
           activity_description?: string | null
           address?: string | null

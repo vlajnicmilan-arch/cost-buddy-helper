@@ -10,6 +10,9 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { APP_VERSION } from '@/lib/version';
+import { describeDbError } from '@/lib/eracun/dbError';
 import { useTranslation } from 'react-i18next';
 
 const ProfileField = ({ label, value, field, editing, formValue, onUpdate }: { 
@@ -55,6 +58,8 @@ interface ProfileData {
   court_registry: string | null;
   legal_form: string | null;
   is_active: boolean;
+  /** F2 — „Predajem ulazne račune knjigovođi" za ovu tvrtku. */
+  accounting_handover_enabled: boolean;
 }
 
 export const BusinessProfileView = () => {
@@ -80,9 +85,79 @@ export const BusinessProfileView = () => {
           setProfile(data as ProfileData);
           setForm(data as ProfileData);
         }
+        if (error) {
+          logDiagnostic({
+            event: 'business_profile_read_failed',
+            severity: 'error',
+            details: {
+              action: 'business_profiles.read',
+              business_profile_id: activeBusinessProfileId,
+              db_code: error.code ?? null,
+              db_message: error.message ?? null,
+              app_version: APP_VERSION,
+            },
+          });
+          showError(t('business.accounting.handoverSaveFailed', 'Spremanje postavke nije uspjelo: {{reason}}', {
+            reason: describeDbError(error),
+          }));
+        }
         setLoading(false);
       });
-  }, [activeBusinessProfileId, user]);
+  }, [activeBusinessProfileId, user, t]);
+
+  /**
+   * F2 — prekidač „Predajem ulazne račune knjigovođi": jedan dodir sprema
+   * odmah, neovisno o „Uredi" načinu (nije tekstualno polje).
+   */
+  const handleAccountingHandover = async (next: boolean) => {
+    if (!profile?.id) return;
+    const { error } = await supabase
+      .from('business_profiles')
+      .update({ accounting_handover_enabled: next })
+      .eq('id', profile.id);
+
+    if (error) {
+      logDiagnostic({
+        event: 'business_profile_accounting_handover_failed',
+        severity: 'error',
+        details: {
+          action: 'business_profiles.setAccountingHandover',
+          business_profile_id: profile.id,
+          db_code: error.code ?? null,
+          db_message: error.message ?? null,
+          app_version: APP_VERSION,
+        },
+      });
+      showError(t('business.accounting.handoverSaveFailed', 'Spremanje postavke nije uspjelo: {{reason}}', {
+        reason: describeDbError(error),
+      }));
+      return;
+    }
+
+    setProfile({ ...profile, accounting_handover_enabled: next });
+    setForm(prev => ({ ...prev, accounting_handover_enabled: next }));
+    // Popis tvrtki (i uvjet vidljivosti na računima) čita isto polje.
+    try {
+      window.dispatchEvent(new Event('business-profiles-changed'));
+      showSuccess(t('toasts.profileUpdated'));
+    } catch (refreshError) {
+      logDiagnostic({
+        event: 'business_profile_accounting_handover_refresh_failed',
+        severity: 'warning',
+        details: {
+          action: 'business_profiles.setAccountingHandover.refresh',
+          business_profile_id: profile.id,
+          db_message: describeDbError(refreshError),
+          app_version: APP_VERSION,
+        },
+      });
+      showError(t(
+        'business.accounting.handoverSavedRefreshFailed',
+        'Postavka je spremljena, ali osvježavanje podataka nije uspjelo: {{reason}}',
+        { reason: describeDbError(refreshError) },
+      ));
+    }
+  };
 
   const handleSave = async () => {
     if (!profile?.id) return;
@@ -241,6 +316,32 @@ export const BusinessProfileView = () => {
           {F("Email", profile.email, "email")}
           {F("Telefon", profile.phone, "phone")}
           {F("Web stranica", profile.website, "website")}
+        </CardContent>
+      </Card>
+
+      {/* F2 — predaja ulaznih računa knjigovođi (po tvrtki) */}
+      <Card className="border-none shadow-sm">
+        <CardHeader className="p-3 pb-1">
+          <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            {t('business.accounting.handoverTitle', 'Knjigovodstvo')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-3 pt-1">
+          <div className="flex items-center justify-between gap-3 min-h-[44px]">
+            <div className="min-w-0">
+              <p className="text-sm font-medium">
+                {t('business.accounting.handoverLabel', 'Predajem ulazne račune knjigovođi')}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                {t('business.accounting.handoverDesc', 'Kad je uključeno, na ulaznim računima ove tvrtke prikazuje se knjigovodstvena kategorija.')}
+              </p>
+            </div>
+            <Switch
+              checked={!!profile.accounting_handover_enabled}
+              onCheckedChange={handleAccountingHandover}
+              aria-label={t('business.accounting.handoverLabel', 'Predajem ulazne račune knjigovođi')}
+            />
+          </div>
         </CardContent>
       </Card>
 

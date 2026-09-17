@@ -3375,6 +3375,13 @@
     "incomeAdded": "Income added"
   },
   "business": {
+    "accounting": {
+      "handoverTitle": "Accounting",
+      "handoverLabel": "I hand incoming invoices to my accountant",
+      "handoverDesc": "When enabled, incoming invoices of this company show the accounting category.",
+      "handoverSaveFailed": "Saving the setting failed: {{reason}}",
+      "handoverSavedRefreshFailed": "The setting was saved, but refreshing the data failed: {{reason}}"
+    },
     "payment": {
       "businessAccountsGroup": "Business accounts",
       "personalAccountsGroup": "Personal accounts (loan)",

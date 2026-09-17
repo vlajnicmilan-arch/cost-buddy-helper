@@ -292,7 +292,12 @@ export const IncomingInvoicesPanel = ({ initialFilter = 'unpaid', initialHighlig
     [allProjects],
   );
   const businessProfileOptions = useMemo(
-    () => businessProfiles.map((p) => ({ id: p.id, name: p.name })),
+    () => businessProfiles.map((p) => ({
+      id: p.id,
+      name: p.name,
+      // F2 — prekidač „Predajem ulazne račune knjigovođi" (uvjet vidljivosti F1 bloka).
+      accounting_handover_enabled: p.accounting_handover_enabled,
+    })),
     [businessProfiles],
   );
   const paymentSourceLites = useMemo(

@@ -3236,6 +3236,13 @@
     "incomeAdded": "Einnahme hinzugefügt"
   },
   "business": {
+    "accounting": {
+      "handoverTitle": "Buchhaltung",
+      "handoverLabel": "Ich übergebe Eingangsrechnungen an die Buchhaltung",
+      "handoverDesc": "Wenn aktiviert, wird bei Eingangsrechnungen dieses Unternehmens die Buchhaltungskategorie angezeigt.",
+      "handoverSaveFailed": "Speichern der Einstellung fehlgeschlagen: {{reason}}",
+      "handoverSavedRefreshFailed": "Die Einstellung wurde gespeichert, aber die Aktualisierung der Daten ist fehlgeschlagen: {{reason}}"
+    },
     "payment": {
       "businessAccountsGroup": "Geschäftskonten",
       "personalAccountsGroup": "Persönliche Konten (Darlehen)",

@@ -3244,6 +3244,13 @@
     "incomeAdded": "Prihod dodan"
   },
   "business": {
+    "accounting": {
+      "handoverTitle": "Knjigovodstvo",
+      "handoverLabel": "Predajem ulazne račune knjigovođi",
+      "handoverDesc": "Kad je uključeno, na ulaznim računima ove tvrtke prikazuje se knjigovodstvena kategorija.",
+      "handoverSaveFailed": "Spremanje postavke nije uspjelo: {{reason}}",
+      "handoverSavedRefreshFailed": "Postavka je spremljena, ali osvježavanje podataka nije uspjelo: {{reason}}"
+    },
     "payment": {
       "businessAccountsGroup": "Poslovni računi",
       "personalAccountsGroup": "Osobni računi (pozajmica)",
