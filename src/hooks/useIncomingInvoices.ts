@@ -225,6 +225,6 @@ export const useIncomingInvoices = () => {
     markCollected,
     deleteInvoice,
     setPlaceLabel,
-
+    setAccountingCategory,
   };
 };
