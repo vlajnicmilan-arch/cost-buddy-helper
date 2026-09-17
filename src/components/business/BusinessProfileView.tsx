@@ -319,6 +319,32 @@ export const BusinessProfileView = () => {
         </CardContent>
       </Card>
 
+      {/* F2 — predaja ulaznih računa knjigovođi (po tvrtki) */}
+      <Card className="border-none shadow-sm">
+        <CardHeader className="p-3 pb-1">
+          <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            {t('business.accounting.handoverTitle', 'Knjigovodstvo')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-3 pt-1">
+          <div className="flex items-center justify-between gap-3 min-h-[44px]">
+            <div className="min-w-0">
+              <p className="text-sm font-medium">
+                {t('business.accounting.handoverLabel', 'Predajem ulazne račune knjigovođi')}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                {t('business.accounting.handoverDesc', 'Kad je uključeno, na ulaznim računima ove tvrtke prikazuje se knjigovodstvena kategorija.')}
+              </p>
+            </div>
+            <Switch
+              checked={!!profile.accounting_handover_enabled}
+              onCheckedChange={handleAccountingHandover}
+              aria-label={t('business.accounting.handoverLabel', 'Predajem ulazne račune knjigovođi')}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       {editing && (
         <Button variant="outline" className="w-full text-xs" onClick={() => { setEditing(false); setForm(profile); }}>
           Odustani
