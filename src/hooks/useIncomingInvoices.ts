@@ -12,6 +12,8 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { sortIncomingInvoices } from '@/lib/eracun/sortInvoices';
 import { describeDbError } from '@/lib/eracun/dbError';
 import { showError } from '@/hooks/useStatusFeedback';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
+import type { AccountingCategory, AccountingCategorySource } from '@/lib/eracun/accountingClassification';
 import i18n from '@/i18n';
 import type { EracunInsertRow } from '@/lib/eracun/intakeBatch';
 import { useAppResume } from '@/hooks/useAppResume';
@@ -165,6 +167,48 @@ export const useIncomingInvoices = () => {
     if (error) throw error;
     await fetchInvoices();
   }, [fetchInvoices]);
+
+  /**
+   * F1 — knjigovodstvena kategorija (+ veza na projekt za „pripadnost projektu").
+   * Pri padu upisa ostavlja trag u `app_diagnostics_logs` (radnja, invoice_id,
+   * doslovan code/message, build žig) i baca izvornu grešku — pozivatelj je
+   * prevodi kroz `describeInvoiceDbError`, nikad generičkom porukom.
+   * Ako upis prođe, a osvježenje popisa padne, baca `refresh_failed` — poruka
+   * mora izričito reći oboje.
+   */
+  const setAccountingCategory = useCallback(async (
+    invoiceId: string,
+    category: AccountingCategory,
+    projectId: string | null,
+    source: AccountingCategorySource,
+  ) => {
+    const { error } = await supabase
+      .from('incoming_invoices' as any)
+      .update({
+        accounting_category: category,
+        accounting_category_source: source,
+        accounting_category_set_at: new Date().toISOString(),
+        project_id: category === 'project' ? projectId : null,
+      } as any)
+      .eq('id', invoiceId);
+    if (error) {
+      logDiagnostic({
+        event: 'invoice_accounting_category_failed',
+        severity: 'error',
+        details: {
+          action: 'incoming_invoices.setAccountingCategory',
+          invoice_id: invoiceId,
+          db_code: (error as { code?: string })?.code ?? null,
+          db_message: (error as { message?: string })?.message ?? String(error),
+        },
+      });
+      throw error;
+    }
+    const refreshed = await fetchInvoices();
+    if (!refreshed) throw new Error('refresh_failed');
+  }, [fetchInvoices]);
+
+
 
 
 
