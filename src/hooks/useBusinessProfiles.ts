@@ -7,6 +7,8 @@ export interface BusinessProfileLite {
   name: string;
   /** OIB tvrtke — koristi ga usmjeravanje skena računa po OIB-u kupca. */
   oib: string | null;
+  /** F2 — „Predajem ulazne račune knjigovođi" za ovu tvrtku. */
+  accounting_handover_enabled: boolean;
 }
 
 /**

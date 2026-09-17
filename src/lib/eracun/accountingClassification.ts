@@ -175,10 +175,7 @@ export const deriveMaterialExpenseFlag = (input: MaterialExpenseInput): boolean 
   if (!isAccountingRelevantInvoice(invoice, projects)) return false;
   if (!invoice.paid_at || !paidExpensePaymentSource) return false;
 
-  const targetBusinessProfileId =
-    invoice.business_profile_id ??
-    projects.find((p) => p.id === invoice.project_id)?.business_profile_id ??
-    null;
+  const targetBusinessProfileId = resolveInvoiceBusinessProfileId(invoice, projects);
   if (!targetBusinessProfileId) return false;
 
   // Gotovina je uvijek privatni izvor — firma nema gotovinski račun u aplikaciji.
