@@ -178,3 +178,57 @@ describe('isAccountingCategory', () => {
     expect(isAccountingCategory(42)).toBe(false);
   });
 });
+
+describe('isAccountingHandoverInvoice (F2)', () => {
+  const COMPANY = '11111111-1111-4111-8111-111111111111';
+  const OTHER = '22222222-2222-4222-8222-222222222222';
+  const PROJECT_BUSINESS = '33333333-3333-4333-8333-333333333333';
+  const projects = [
+    { id: PROJECT_BUSINESS, business_profile_id: COMPANY },
+    { id: '44444444-4444-4444-8444-444444444444', business_profile_id: null },
+  ];
+  const on = [{ id: COMPANY, accounting_handover_enabled: true }];
+  const off = [{ id: COMPANY, accounting_handover_enabled: false }];
+
+  it('tvrtka s uključenim prekidačem → true', () => {
+    expect(isAccountingHandoverInvoice({ business_profile_id: COMPANY }, projects, on)).toBe(true);
+  });
+
+  it('isključen prekidač → false', () => {
+    expect(isAccountingHandoverInvoice({ business_profile_id: COMPANY }, projects, off)).toBe(false);
+  });
+
+  it('račun bez tvrtke ali s poslovnim projektom te tvrtke → true', () => {
+    expect(
+      isAccountingHandoverInvoice({ business_profile_id: null, project_id: PROJECT_BUSINESS }, projects, on),
+    ).toBe(true);
+  });
+
+  it('osobni račun (bez tvrtke i bez poslovnog projekta) → false', () => {
+    expect(isAccountingHandoverInvoice({ business_profile_id: null, project_id: null }, projects, on)).toBe(false);
+  });
+
+  it('nepoznata tvrtka u popisu profila → false', () => {
+    expect(isAccountingHandoverInvoice({ business_profile_id: OTHER }, projects, on)).toBe(false);
+  });
+});
+
+describe('resolveInvoiceBusinessProfileId', () => {
+  const COMPANY = '11111111-1111-4111-8111-111111111111';
+  const PROJECT_BUSINESS = '33333333-3333-4333-8333-333333333333';
+  const projects = [{ id: PROJECT_BUSINESS, business_profile_id: COMPANY }];
+
+  it('tvrtka računa ima prednost pred tvrtkom projekta', () => {
+    expect(resolveInvoiceBusinessProfileId({ business_profile_id: COMPANY, project_id: null }, projects)).toBe(COMPANY);
+  });
+
+  it('bez tvrtke računa uzima tvrtku projekta', () => {
+    expect(
+      resolveInvoiceBusinessProfileId({ business_profile_id: null, project_id: PROJECT_BUSINESS }, projects),
+    ).toBe(COMPANY);
+  });
+
+  it('bez oboje → null', () => {
+    expect(resolveInvoiceBusinessProfileId({ business_profile_id: null, project_id: null }, projects)).toBe(null);
+  });
+});
