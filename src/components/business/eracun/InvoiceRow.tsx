@@ -130,6 +130,8 @@ export const InvoiceRow = ({
     ? inv.accounting_category
     : null;
   const suggestion = accountingCategory ? null : suggestAccountingCategory(inv);
+  // F2 — priprema za knjigovođu radi samo za tvrtku s uključenim prekidačem.
+  const showAccounting = isAccountingHandoverInvoice(inv, projects, businessProfiles);
   const materialExpense = deriveMaterialExpenseFlag({
     invoice: inv,
     paidExpensePaymentSource,
@@ -211,7 +213,7 @@ export const InvoiceRow = ({
           </div>
 
           {/* F1 — za „pripadnost projektu" postojeći izbornik projekata. */}
-          {accountingCategory === 'project' && projects.length > 0 && (
+          {showAccounting && accountingCategory === 'project' && projects.length > 0 && (
             <div className="mt-2">
               <AttachmentBar
                 showProject
