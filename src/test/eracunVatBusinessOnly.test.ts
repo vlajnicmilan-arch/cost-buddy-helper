@@ -11,9 +11,13 @@ const read = (p: string) => readFileSync(resolve(process.cwd(), p), 'utf8');
  */
 describe('eRacun — PDV samo u poslovnom profilu', () => {
   const panel = read('src/components/business/eracun/IncomingInvoicesPanel.tsx');
+  // Redak računa je izdvojen u InvoiceRow.tsx bez promjene ponašanja — PDV
+  // prikaz živi tamo.
+  const row = read('src/components/business/eracun/InvoiceRow.tsx');
+  const rowSources = panel + row;
 
   it('PDV redak je uvjetovan poslovnim kontekstom', () => {
-    expect(panel).toMatch(/\{!isPersonal && inv\.vat_amount != null && \(/);
+    expect(rowSources).toMatch(/\{!isPersonal && (inv|invoice)\.vat_amount != null && \(/);
   });
 
   it('osobni kontekst se i dalje izvodi iz izostanka biznis profila', () => {
@@ -24,7 +28,7 @@ describe('eRacun — PDV samo u poslovnom profilu', () => {
     const widget = read('src/components/business/eracun/IncomingInvoicesWidget.tsx');
     expect(widget).not.toMatch(/vat_amount/);
     // Jedini blok: uvjet + formatiranje iznosa u istom retku prikaza.
-    const vatRenders = panel.match(/vat_amount/g) ?? [];
+    const vatRenders = rowSources.match(/vat_amount/g) ?? [];
     expect(vatRenders.length).toBe(2);
   });
 });

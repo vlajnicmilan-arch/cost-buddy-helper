@@ -40,10 +40,12 @@ describe('eRacun — osobni kontekst nema biznis alate', () => {
   });
 
   it('ulazni alati ostaju bezuvjetni', () => {
-    expect(panel).toMatch(/eracun\.linkExpense\.open/);
-    expect(panel).toMatch(/eracun\.list\.markPaid/);
-    expect(panel).toMatch(/eracun\.list\.placeEdit/);
-    expect(panel).not.toMatch(/!isPersonal[^\n]*linkExpense/);
+    // Gumbi retka su izdvojeni u InvoiceRow.tsx bez promjene ponašanja.
+    const row = read('src/components/business/eracun/InvoiceRow.tsx');
+    expect(row).toMatch(/eracun\.linkExpense\.open/);
+    expect(row).toMatch(/eracun\.list\.markPaid/);
+    expect(row).toMatch(/eracun\.list\.placeEdit/);
+    expect(row).not.toMatch(/!isPersonal[^\n]*linkExpense/);
   });
 
   it('widget u osobnom skriva „Duguju mi" i mijenja naslov', () => {
