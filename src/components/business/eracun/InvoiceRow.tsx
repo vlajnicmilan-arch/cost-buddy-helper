@@ -34,8 +34,10 @@ import type { IncomingInvoice } from '@/hooks/useIncomingInvoices';
 import {
   deriveMaterialExpenseFlag,
   isAccountingCategory,
+  isAccountingHandoverInvoice,
   suggestAccountingCategory,
   type AccountingCategory,
+  type AccountingProfileLite,
   type PaymentSourceLite,
   type ProjectLite,
 } from '@/lib/eracun/accountingClassification';
@@ -59,7 +61,8 @@ interface InvoiceRowProps {
   onDelete: (inv: IncomingInvoice) => void;
   /** F1 — projekti za postojeći izbornik, grupirani po tvrtki. */
   projects: InvoiceProjectOption[];
-  businessProfiles: { id: string; name: string }[];
+  /** F2 — uz naziv nosi i prekidač „Predajem ulazne račune knjigovođi". */
+  businessProfiles: (AccountingProfileLite & { name: string })[];
   /** F1 — izvori plaćanja (za izvedenu oznaku „materijalni trošak"). */
   paymentSources: PaymentSourceLite[];
   /** F1 — `payment_source` troška kojim je račun plaćen (ako je poznat). */
