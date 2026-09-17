@@ -1,90 +1,111 @@
-# B — Mjesečni paket za knjigovođu (PDF + Excel)
+# C — ZIP originala uz mjesečni paket za knjigovođu
 
-Za tvrtku s uključenim prekidačem „predajem knjigovođi" korisnik odabere mjesec i dobije
-uredan pregled ulaznih računa za predaju — jednom kao PDF (za čitanje), jednom kao Excel
-(za obradu) — te mjesec označi kao „predano".
+Uz PDF i Excel pregled (B), korisnik može preuzeti i ZIP s originalnim dokumentom
+svakog računa iz tog istog paketa. Nazivi datoteka poklapaju se s popisom u pregledu.
 
-## Što ulazi u paket (točan uvjet)
+## Zaključak provjere: C je izvediv s onim što se već čuva
 
-Račun ulazi kad vrijedi sve:
+Provjereno u kodu i u bazi:
 
-1. `isAccountingHandoverInvoice(invoice, projects, profiles) === true` (F2 pravilo, samo se čita).
-2. Mjerodavna tvrtka računa = odabrana tvrtka.
-3. Razdoblje po DATUMU RAČUNA: `issue_date` unutar odabranog mjeseca (plaćanje je nebitno).
-   Račun bez `issue_date` ne ulazi, ali se prikazuje u odjeljku „bez datuma — provjeri".
-4. Račun NIJE stigao službenim eRačun/FINA kanalom.
+- Ulazni računi dolaze s dva puta. eRačun XML uvoz (105 redaka, svi s `import_batch_id`) —
+  ti su ionako izvan paketa (FINA pravilo iz B). Mail-put: 66 redaka bez `import_batch_id`.
+- Za svih 66 mail-računa postoji veza do originala: `document_links`
+  (`target_type = 'incoming_invoice'`, `target_id` = račun) → `document_ingest_items` →
+  `inbound_attachments.storage_path`, datoteka u privatnom spremniku `inbound-mail`.
+  Pokrivenost je 66/66 — nijedan račun iz paketa nema „nema originala".
+- Svi ti privici su PDF (`mime_sniffed = 'pdf'`, 56 s deklariranim `application/pdf`);
+  u cijelom spremniku trenutno nema nijedne slike (99 pdf, 3 xml, 1 zip, 6 nepoznato).
+  Datoteke se ne brišu nakon obrade (370 objekata, od 9. kolovoza do danas).
+- Korisnik svoje privitke smije čitati izravno s klijenta — RLS politika
+  „Users read own inbound mail objects" na `storage.objects` dopušta `SELECT` kad je prvi
+  segment putanje njegov `auth.uid()`.
 
-**Podrijetlo — potvrđeno u bazi.** Ulazne račune pune dva puta:
-- eRačun XML uvoz (`src/lib/eracun/intakeBatch.ts`) — jedini upisuje `import_batch_id`
-  (uuid serije) i `source_filename` (`…​.xml`). U bazi: 105 takvih redaka, svi s oba polja.
-- dokumenti iz maila/skena — oba polja su `NULL` (56 redaka).
+Dakle: **ništa novo ne treba spremati, ne dira se tijek unosa ni scanner.** ZIP se slaže
+klijentski od postojećih PDF-ova.
 
-Uvjet isključenja je zato: `import_batch_id IS NULL` (eRačun serija isključena). Za sigurnost
-se uz to gleda i `source_filename` koji završava na `.xml`. Oba uvjeta ide u jednu čistu
-funkciju `isFinaOriginInvoice(invoice)` da postoji jedno mjesto istine.
+Jedna iskrena posljedica te provjere: **korak čišćenja slike danas nema ulaza.** Fotke s
+telefona idu kroz scanner u troškove (`receipts`), ne u ulazne račune; račun postane ulazni
+račun samo kroz eRačun XML ili mail. Slika bi u paket ušla tek kad netko pošalje fotografiju
+na mail-adresu. Zato se čišćenje gradi kao put koji se **uključi kad slika stvarno dođe**
+(vidi dolje), a ne kao glavni dio posla — bez izmišljanja novog toka unosa.
 
-## Sadržaj pregleda
+## Što radi gumb
 
-Po računu: dobavljač + OIB, broj računa, datum računa (+ dospijeće), osnovica, PDV, ukupno,
-način plaćanja, kategorija, „materijalni trošak" (izvedeno, ne sprema se), projekt (naziv).
+Na traci „Predaja knjigovodstvu" (`HandoverBar`) dolazi treći gumb **ZIP originala**, uz
+PDF i Excel. Isti skup računa (`selectHandoverInvoices`, ista tvrtka i mjesec), isti redoslijed.
 
-- Osnovica i PDV po stopama iz `items[].vatPercent` / `lineAmount` (potvrđeno: stavke nose
-  `vatPercent`, npr. 0 i 25). Kad stavki nema, koristi se `total_amount` i `vat_amount`, a
-  stopa se vodi kao „nerazvrstano".
-- Način plaćanja: iz troška povezanog kroz `paid_expense_id` (isti izvor kao značka
-  „materijalni trošak"); neplaćen račun → „nije plaćeno".
-- Grupirano po kategoriji; unutar „pripadnost projektu" još po projektu. Zbroj po skupini,
-  rekapitulacija PDV-a po stopama i ukupno.
+Naziv datoteke u zipu = redni broj iz pregleda + dobavljač + iznos, npr.
+`03 - Konzum d.d. - 124,50.pdf`; naziv se čisti od znakova koje datotečni sustav ne trpi,
+duplikati dobivaju sufiks. Sam zip: `predaja-knjigovodstvu-<tvrtka>-<YYYY-MM>.zip`
+kroz postojeći `buildReportFileName`.
 
-## Gdje u aplikaciji
+Uz dokumente ide i `popis.txt` (isti redci i nazivi kao u pregledu) da knjigovođa odmah
+vidi što je u paketu.
 
-Bez nove navigacije. Na postojećoj polici ulaznih računa (Poslovno → „Ulazni računi
-(eRačun)", `IncomingInvoicesPanel`) dolazi traka „Predaja knjigovodstvu" s izborom mjeseca
-(◀ rujan 2026 ▶), brojem računa u paketu, gumbima **PDF** i **Excel** te gumbom
-**Označi kao predano** (s datumom predaje kad je već predano). Traka je vidljiva samo kad
-aktivna tvrtka ima uključen prekidač.
+## Obrada po računu
 
-## Kako se rade datoteke
+1. **Original je PDF** (današnji slučaj) — uzima se kakav jest, bez ponovne obrade,
+   samo se preimenuje.
+2. **Original je slika** — čisti se u sken i pretvara u PDF (jedna stranica).
+3. **Više privitaka istog računa** — spajaju se u jedan višestranični PDF (slike kao
+   stranice; ako su i PDF-ovi, spajaju se redom kroz `pdf-lib` samo ako je potrebno —
+   inače se uzima prvi PDF i ostali se navode u popisu).
 
-Klijentski, bez edge funkcije i bez novih biblioteka:
-- PDF: `jspdf` + `jspdf-autotable` kroz postojeći `pdfReportKit` (zaglavlje, podnožje,
-  brendiranje) — isti obrazac kao `projectFinancePdfExport.ts`. Biblioteka se učitava lijeno.
-- Excel: `write-excel-file` kroz isti lijeni uvoz kao `src/lib/export/excelWorkbook.ts`;
-  listovi „Računi" (jedan redak po računu) i „Rekapitulacija".
-- Spremanje kroz postojeći `fileExport.ts` (radi i u nativnoj ljusci).
+### Čišćenje slike — klijentski, bez AI i bez teške knjižnice
 
-## Status „predano"
+Sve na `<canvas>`, u jednoj novoj čistoj datoteci `src/lib/eracun/scanCleanup.ts`:
 
-Nova mala tablica `accounting_handover_periods`: `id`, `user_id`, `business_profile_id`,
-`period` (`YYYY-MM`), `submitted_at`, `invoice_count`, `total_amount`, `created_at`;
-jedinstveno po (`user_id`, `business_profile_id`, `period`). Additivno, nova tablica,
-RLS `auth.uid() = user_id` + GRANT-ovi po pravilu projekta; ništa postojeće se ne mijenja.
-Označavanje je upis retka; ponovni klik na već predano razdoblje pita za potvrdu (bez
-dvostruke predaje). Izvoz datoteka radi neovisno o statusu.
+1. smanjenje na najviše ~2000 px po duljoj stranici,
+2. siva slika + procjena pozadine kliznim prozorom (lokalni prosjek) → dijeljenje slike
+   pozadinom, čime nestaju sjene i neravnomjerno svjetlo,
+3. nalaženje ruba računa: rubovi po redcima/stupcima (gdje prestaje pozadina) → izrez
+   pravokutnika s malom marginom; ako rub nije pouzdan, izrez se preskače i slika ostaje cijela,
+4. zadano **crno-bijelo** (lokalni prag, Sauvola-stil nad istim prozorom), **siva** kao opcija,
+5. rezultat → JPEG/PNG → stranica u PDF-u kroz postojeći `jspdf` (`addImage`).
 
-## Greške
+Bez novih knjižnica, bez WASM-a, bez AI poziva. Teške petlje rade nad umanjenom slikom,
+pa je obrada reda desetinke sekunde po fotografiji.
 
-Pad upisa/čitanja statusa → `logDiagnostic` (radnja `accounting_handover_periods.markSubmitted`,
-id tvrtke i razdoblje, doslovan `code`/`message` iz baze, build žig) + prevedena poruka kroz
-`describeDbError`. Ako je upis prošao a osvježenje palo, poruka izričito kaže oboje.
+### ZIP
+
+Postojeći **`jszip`** (već u `package.json`, ^3.10.1), klijentski, lijeni `import()`.
+Spremanje kroz postojeći `fileExport.ts` (radi i u nativnoj ljusci), isto kao PDF/Excel u B.
+
+## Greške i izvještaj korisniku
+
+Paket se uvijek složi za ostale račune. Za svaki problematičan račun:
+
+- nema poveznice na original ili datoteka se ne može preuzeti → redak u popisu
+  „bez originala — provjeri",
+- obrada slike padne → original se stavlja u zip **neobrađen** i redak ide u
+  „neuspjela obrada — provjeri".
+
+Na kraju: prevedena poruka s brojem uključenih i brojem problematičnih računa (nikad
+generička), a svaki pad se zapisuje u `app_diagnostics_logs` (radnja
+`accounting_handover_zip.buildEntry`, id računa, doslovan `code`/`message`, build žig)
+kroz postojeći `logDiagnostic` + `describeDbError`. Popis problematičnih računa ide i
+u `popis.txt` u zipu.
 
 ## Tehnički dio
 
 Nove datoteke:
-- `src/lib/eracun/handoverPackage.ts` — čiste funkcije: `isFinaOriginInvoice`,
-  `selectHandoverInvoices(invoices, projects, profiles, profileId, period)`,
-  `groupHandoverInvoices` (po kategoriji/projektu), `vatRecap` (po stopama), `packageTotals`.
-- `src/lib/eracun/handoverPdfExport.ts`, `src/lib/eracun/handoverExcelExport.ts` — izlazi.
-- `src/hooks/useAccountingHandoverPeriods.ts` — čitanje i upis statusa.
-- `src/components/business/eracun/HandoverBar.tsx` — traka s mjesecom, izvozima i statusom.
-- Testovi: odabir računa (FINA isključen, razdoblje po `issue_date`, prekidač), grupiranje,
-  PDV rekapitulacija po stopama, zbrojevi.
+- `src/lib/eracun/handoverOriginals.ts` — čiste funkcije: `originalFileName(row, index)`
+  (čišćenje naziva, razrješenje duplikata), `planZipEntries(rows, links)`,
+  `classifyOriginal(mime, path)` (pdf / slika / nepoznato).
+- `src/lib/eracun/scanCleanup.ts` — čišćenje slike (canvas), `cleanScanToImage`,
+  s čistim pod-funkcijama nad nizovima piksela radi testiranja.
+- `src/lib/eracun/handoverZipExport.ts` — dohvat originala (`document_links` →
+  `document_ingest_items` → `inbound_attachments`, download iz `inbound-mail`),
+  obrada, `jszip`, spremanje kroz `fileExport`.
+- `src/hooks/useInvoiceOriginals.ts` — čitanje poveznica original ↔ račun za skup računa.
+- Testovi: nazivi datoteka i duplikati, plan zip unosa, razvrstavanje PDF/slika,
+  pragovi i izrez nad malim sintetičkim nizom piksela, ponašanje kad originala nema.
 
-Dirano uz to: `IncomingInvoicesPanel.tsx` (umetanje trake), i18n `hr/en/de`
-(`eracun.handover.*`), jedna additivna migracija.
+Dirano uz to: `HandoverBar.tsx` (treći gumb i poruka o rezultatu), i18n `hr/en/de`
+(`eracun.handover.zip.*`). **Bez migracije** — ne dodaje se nijedno polje ni tablica.
 
 ## Izvan opsega — ne dira se
 
-Zip originala i čišćenje slike, mail knjigovođi, F1 logika i prekidač (samo se čitaju),
-motor salda i anchor, `expenses` i put spremanja troška, uvoz izvoda, dedup/otisak,
-owner-loan, postojeće RLS politike, scanner tijek, atribucija troška. Ne objavljuje se.
+Mail knjigovođi, mjesečni pregled B osim dodanog gumba, F1/F2 logika (samo se čita),
+scanner i tijek unosa troška, motor salda i anchor, `expenses`, uvoz izvoda, dedup/otisak,
+owner-loan, RLS politike, atribucija troška, `client.ts`, `.env`. Ne objavljuje se.
