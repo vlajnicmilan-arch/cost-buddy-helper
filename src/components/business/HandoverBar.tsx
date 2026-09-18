@@ -87,13 +87,16 @@ export const HandoverBar = ({ businessProfileId }: HandoverBarProps) => {
 
   const unknownReason = t('accounting.handover.unknownError', 'Nepoznata greška');
 
-  const categoryLabel = useCallback((expense: HandoverExpenseLike): string => {
-    const category = resolveExpenseAccountingCategory(expense);
+  const categoryValueLabel = useCallback((category: string): string => {
     if (category === 'project') return t('accounting.handover.categoryProject', 'Pripadnost projektu');
     if (category === 'tool') return t('accounting.handover.categoryTool', 'Alat');
     if (category === 'fixed_asset') return t('accounting.handover.categoryFixedAsset', 'Osnovna sredstva');
     return t('accounting.handover.categoryUnset', 'Bez kategorije');
   }, [t]);
+
+  const categoryLabel = useCallback((expense: HandoverExpenseLike): string =>
+    categoryValueLabel(resolveExpenseAccountingCategory(expense)),
+  [categoryValueLabel]);
 
   const paymentLabel = useCallback((expense: HandoverExpenseLike): string => {
     const source = expense.payment_source;
