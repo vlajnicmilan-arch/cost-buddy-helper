@@ -12,6 +12,7 @@ import { EditTransactionDialog } from '@/components/EditTransactionDialog';
 import { ImportBatchDialog } from '@/components/ImportBatchDialog';
 import { TransactionItem } from '@/components/TransactionItem';
 import { BankConnection } from '@/components/BankConnection';
+import { HandoverBar } from '@/components/business/HandoverBar';
 import { ParsedTransaction } from '@/lib/csvParsers';
 import { useTranslation } from 'react-i18next';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
@@ -105,6 +106,9 @@ export const BusinessTransactions = ({ expenses, onAddClick, onScanClick, addAct
 
   return (
     <div className="space-y-3">
+      {/* Predaja knjigovodstvu — sama se skriva kad tvrtka nema uključen prekidač. */}
+      <HandoverBar businessProfileId={activeBusinessProfileId} />
+
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />

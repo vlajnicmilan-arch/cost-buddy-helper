@@ -1812,6 +1812,7 @@ export type Database = {
       }
       expenses: {
         Row: {
+          accounting_category: string | null
           ai_extracted: boolean | null
           amount: number
           balance_after: number | null
@@ -1878,6 +1879,7 @@ export type Database = {
           worker_payout_id: string | null
         }
         Insert: {
+          accounting_category?: string | null
           ai_extracted?: boolean | null
           amount: number
           balance_after?: number | null
@@ -1944,6 +1946,7 @@ export type Database = {
           worker_payout_id?: string | null
         }
         Update: {
+          accounting_category?: string | null
           ai_extracted?: boolean | null
           amount?: number
           balance_after?: number | null
@@ -7334,6 +7337,7 @@ export type Database = {
       apply_split_override: {
         Args: { p_expense_id: string; p_overrides: Json }
         Returns: {
+          accounting_category: string | null
           ai_extracted: boolean | null
           amount: number
           balance_after: number | null

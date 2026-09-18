@@ -28,6 +28,7 @@
 export const EXPENSE_LIST_COLUMNS = [
   'id',
   'user_id',
+  'accounting_category',
   'amount',
   'description',
   'category',

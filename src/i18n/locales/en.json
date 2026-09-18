@@ -6461,6 +6461,41 @@
     "aiReceipt": "AI from receipt",
     "habit": "Recognized from habit"
   },
+  "accounting": {
+    "handover": {
+    "title": "Accountant handover",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "count": "{{count}} receipts to hand over",
+    "missingDateCount": "{{count}} without date — check",
+    "submittedAt": "Submitted {{date}}",
+    "markSubmitted": "Mark as submitted",
+    "confirmTitle": "Month already submitted",
+    "confirmDesc": "Mark {{period}} as submitted again?",
+    "submitted": "Month marked as submitted",
+    "submittedRefreshFailed": "Handover saved, but refreshing failed.",
+    "submitFailed": "Marking the handover failed: {{reason}}",
+    "exportFailed": "File generation failed: {{reason}}",
+    "zipOriginals": "ZIP of originals",
+    "zipDone": "ZIP of originals is ready",
+    "zipProblems": "ZIP is ready, but {{count}} receipts have no original — check the list.",
+    "problemNoFile": "no image — check",
+    "problemProcessing": "processing failed — check",
+    "categoryProject": "Project allocation",
+    "categoryTool": "Tools",
+    "categoryFixedAsset": "Fixed assets",
+    "categoryUnset": "No category",
+    "projectUnset": "No project",
+    "paymentCash": "Cash",
+    "paymentCard": "Card / account",
+    "materialExpense": "material expense",
+    "categoryLabel": "Accounting category",
+    "categorySaved": "Category saved",
+    "categorySavedRefreshFailed": "Category saved, but refreshing the list failed.",
+    "categorySaveFailed": "Saving the category failed: {{reason}}",
+    "unknownError": "Unknown error"
+    }
+  },
   "eracun": {
     "importButton": "Load e-Invoice (XML)",
     "warning": {

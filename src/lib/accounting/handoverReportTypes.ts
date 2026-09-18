@@ -1,6 +1,7 @@
 /**
- * B — zajednički oblik podataka za PDF i Excel izlaz paketa za knjigovođu.
+ * Predaja knjigovođi — zajednički oblik podataka za PDF i Excel izlaz paketa.
  * Oba izlaza prikazuju ISTI sadržaj; ovdje su samo tipovi, bez logike.
+ * Oblici redaka su nepromijenjeni od prvotnog izvoza.
  */
 import type { VatRateRow, HandoverTotals } from './handoverPackage';
 
@@ -37,6 +38,6 @@ export interface HandoverReportData {
   groups: HandoverGroupView[];
   vatRecap: VatRateRow[];
   totals: HandoverTotals;
-  /** Računi za predaju bez datuma računa — samo za provjeru. */
+  /** Troškovi za predaju bez datuma — samo za provjeru. */
   missingDate: HandoverRowView[];
 }
