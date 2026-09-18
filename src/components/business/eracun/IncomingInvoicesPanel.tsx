@@ -275,40 +275,6 @@ export const IncomingInvoicesPanel = ({ initialFilter = 'unpaid', initialHighlig
     }
   }, [placeTarget, placeDraft, setPlaceLabel, t]);
 
-  return (expense as any)?.payment_source ?? null;
-    },
-    [allExpenses],
-  );
-
-  /**
-   * Spremanje kategorije/projekta. Razlog pada se prevodi kroz
-   * `describeInvoiceDbError` — nikad generička poruka. Ako je zapis prošao
-   * a osvježenje palo, poruka izričito kaže oboje.
-   */
-  const handleAccountingChange = useCallback(async (
-    inv: IncomingInvoice,
-    category: AccountingCategory,
-    projectId: string | null,
-  ) => {
-    await guard(async () => {
-      try {
-        await setAccountingCategory(inv.id, category, projectId, 'user');
-        showSuccess(t('eracun.accounting.saved', 'Kategorija je spremljena'));
-      } catch (err) {
-        console.error('[eRacun] setAccountingCategory failed', err, { invoiceId: inv.id });
-        if (err instanceof Error && err.message === 'refresh_failed') {
-          showError(t('eracun.accounting.savedRefreshFailed', 'Kategorija je spremljena, ali osvježavanje popisa nije uspjelo.'));
-          return;
-        }
-        showError(t('eracun.accounting.saveFailed', 'Spremanje kategorije nije uspjelo: {{reason}}', {
-          reason: describeInvoiceDbError(err, {
-            supplier: inv.supplier_name,
-            invoiceNumber: inv.invoice_number,
-          }, t('eracun.error.unknownDb', 'Nepoznata greška baze')),
-        }));
-      }
-    });
-  }, [guard, setAccountingCategory, t]);
 
   return (
     <div className="space-y-3 w-full min-w-0 overflow-x-hidden">
