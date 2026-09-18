@@ -153,7 +153,7 @@ export const HandoverBar = ({ businessProfileId }: HandoverBarProps) => {
       totals: packageTotals(selection.included),
       missingDate: selection.missingDate.map(toRow),
     };
-  }, [selection, projects, profile, periodLabel, period, toRow, categoryLabel, t]);
+  }, [selection, projects, profile, periodLabel, period, toRow, categoryValueLabel, t]);
 
   const runExport = useCallback(async (kind: 'pdf' | 'excel') => {
     setBusy(true);
