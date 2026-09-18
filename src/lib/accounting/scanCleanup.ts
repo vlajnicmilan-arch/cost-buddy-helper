@@ -144,7 +144,7 @@ export const cleanupReceiptImage = async (
  * i vrati PDF bajtove.
  */
 export const imageDataUrlToPdfBytes = async (dataUrl: string): Promise<Uint8Array> => {
-  const { jsPDF } = await import('jspdf');
+  const { jsPDF } = await import('@/lib/loadJsPdf').then((m) => m.loadJsPdf());
   const img = await loadImage(dataUrl);
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();
