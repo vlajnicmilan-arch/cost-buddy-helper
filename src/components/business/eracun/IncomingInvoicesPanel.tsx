@@ -35,18 +35,14 @@ import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useWriteGuard } from '@/hooks/useWriteGuard';
 import { useIncomingInvoices, type IncomingInvoice } from '@/hooks/useIncomingInvoices';
 import { useActiveCompanyOib } from '@/hooks/useActiveCompanyOib';
-import { useProjects } from '@/hooks/useProjects';
-import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
 import { daysUntilDue } from '@/lib/eracun/sortInvoices';
 import { describeDbError, describeInvoiceDbError } from '@/lib/eracun/dbError';
-import type { AccountingCategory } from '@/lib/eracun/accountingClassification';
 import { EracunImportDialog } from './EracunImportDialog';
 import { MarkPaidDialog, type MarkPaidResult } from './MarkPaidDialog';
 import { MarkCollectedDialog, type MarkCollectedResult } from './MarkCollectedDialog';
 import { PaymentMatchReview } from './PaymentMatchReview';
 import { LinkExistingExpenseDialog } from './LinkExistingExpenseDialog';
 import { InvoiceRow } from './InvoiceRow';
-import { HandoverBar } from './HandoverBar';
 import { useEracunExpenseMatch } from '@/hooks/useEracunExpenseMatch';
 
 type Filter = 'unpaid' | 'overdue' | 'paid' | 'all';
@@ -71,14 +67,12 @@ export const IncomingInvoicesPanel = ({ initialFilter = 'unpaid', initialHighlig
   const { user } = useAuth();
   const { activeBusinessProfileId } = useAppState();
   const { companyOib } = useActiveCompanyOib();
-  const { addExpense, allExpenses } = useExpenses();
+  const { addExpense } = useExpenses();
   const { customPaymentSources } = useCustomPaymentSources();
   const { guard } = useWriteGuard({ kind: 'module', feature: 'business_module' });
-  const { allProjects } = useProjects();
-  const { profiles: businessProfiles } = useBusinessProfiles();
   const {
     invoices, loading, existingFingerprints,
-    saveBatch, undoBatch, markPaid, markCollected, deleteInvoice, setPlaceLabel, setAccountingCategory, refetch,
+    saveBatch, undoBatch, markPaid, markCollected, deleteInvoice, setPlaceLabel, refetch,
   } = useIncomingInvoices();
 
   /**
@@ -281,35 +275,7 @@ export const IncomingInvoicesPanel = ({ initialFilter = 'unpaid', initialHighlig
     }
   }, [placeTarget, placeDraft, setPlaceLabel, t]);
 
-  // --- F1: knjigovodstvena kategorija na razini računa ---
-  const projectOptions = useMemo(
-    () => allProjects.map((p) => ({
-      id: p.id,
-      name: p.name,
-      color: p.color ?? null,
-      icon: p.icon ?? null,
-      business_profile_id: p.business_profile_id ?? null,
-    })),
-    [allProjects],
-  );
-  const businessProfileOptions = useMemo(
-    () => businessProfiles.map((p) => ({
-      id: p.id,
-      name: p.name,
-      // F2 — prekidač „Predajem ulazne račune knjigovođi" (uvjet vidljivosti F1 bloka).
-      accounting_handover_enabled: p.accounting_handover_enabled,
-    })),
-    [businessProfiles],
-  );
-  const paymentSourceLites = useMemo(
-    () => customPaymentSources.map((s: any) => ({ id: s.id as string, business_profile_id: s.business_profile_id ?? null })),
-    [customPaymentSources],
-  );
-  const paidSourceFor = useCallback(
-    (inv: IncomingInvoice): string | null => {
-      if (!inv.paid_expense_id) return null;
-      const expense = allExpenses.find((e: any) => e.id === inv.paid_expense_id);
-      return (expense as any)?.payment_source ?? null;
+  return (expense as any)?.payment_source ?? null;
     },
     [allExpenses],
   );
@@ -424,21 +390,6 @@ export const IncomingInvoicesPanel = ({ initialFilter = 'unpaid', initialHighlig
 
 
 
-      {/* B — mjesečni paket za knjigovođu; traka se sama skriva kad tvrtka
-          nema uključen prekidač „predajem knjigovođi". */}
-      {!isPersonal && direction === 'in' && (
-        <HandoverBar
-          invoices={incoming}
-          projects={projectOptions}
-          businessProfiles={businessProfileOptions}
-          paymentSources={paymentSourceLites}
-          businessProfileId={activeBusinessProfileId}
-          paidExpensePaymentSource={(id) => {
-            const inv = incoming.find((i) => i.id === id);
-            return inv ? paidSourceFor(inv) : null;
-          }}
-        />
-      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-8">
@@ -469,11 +420,6 @@ export const IncomingInvoicesPanel = ({ initialFilter = 'unpaid', initialHighlig
               onPay={setPayTarget}
               onCollect={setCollectTarget}
               onDelete={(i) => guard(() => handleDelete(i))}
-              projects={projectOptions}
-              businessProfiles={businessProfileOptions}
-              paymentSources={paymentSourceLites}
-              paidExpensePaymentSource={paidSourceFor(inv)}
-              onAccountingChange={handleAccountingChange}
             />
           ))}
         </div>
