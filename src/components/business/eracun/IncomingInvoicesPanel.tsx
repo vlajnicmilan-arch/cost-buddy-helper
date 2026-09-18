@@ -36,7 +36,7 @@ import { useWriteGuard } from '@/hooks/useWriteGuard';
 import { useIncomingInvoices, type IncomingInvoice } from '@/hooks/useIncomingInvoices';
 import { useActiveCompanyOib } from '@/hooks/useActiveCompanyOib';
 import { daysUntilDue } from '@/lib/eracun/sortInvoices';
-import { describeDbError, describeInvoiceDbError } from '@/lib/eracun/dbError';
+import { describeDbError } from '@/lib/eracun/dbError';
 import { EracunImportDialog } from './EracunImportDialog';
 import { MarkPaidDialog, type MarkPaidResult } from './MarkPaidDialog';
 import { MarkCollectedDialog, type MarkCollectedResult } from './MarkCollectedDialog';
