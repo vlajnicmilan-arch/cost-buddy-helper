@@ -15,7 +15,7 @@
  */
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
-import i18n from '@/i18n';
+
 import { supabase } from '@/integrations/supabase/client';
 import { exportFile, type ExportMode } from '@/lib/fileExport';
 import { buildReportFileName } from '@/lib/reportDesign';
@@ -155,7 +155,7 @@ export const exportHandoverOriginalsZip = async (
         problems.push({ expenseId: expense.id, supplier, reason: 'no_file' });
         logDiagnostic({
           event: 'accounting_handover_zip_original_missing',
-          severity: 'warn',
+          severity: 'warning',
           details: { expense_id: expense.id, reason: 'no_file' },
         });
         continue;
@@ -189,21 +189,21 @@ export const exportHandoverOriginalsZip = async (
   zip.file('popis.txt', listing.join('\n'));
 
   const blob = await zip.generateAsync({ type: 'blob' });
-  const fileName = buildReportFileName({
+  const fileName = `${buildReportFileName({
     type: `predaja-knjigovodstvu-originali-${companyName}`,
     period,
-    ext: 'zip',
-  });
+    ext: 'pdf',
+  }).replace(/\.pdf$/, '')}.zip`;
   const exported = await exportFile(blob, fileName, mode);
 
   if (packed === 0 && expenses.length > 0) {
     logDiagnostic({
       event: 'accounting_handover_zip_empty',
-      severity: 'warn',
+      severity: 'warning',
       details: { period, requested: expenses.length },
     });
   }
 
-  void i18n;
+  
   return { exported, packed, problems };
 };
