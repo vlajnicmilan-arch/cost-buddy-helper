@@ -40,6 +40,7 @@ export interface HandoverExpenseLike {
   project_id?: string | null;
   owner_funding_choice?: string | null;
   accounting_category?: string | null;
+  status?: string | null;
 }
 
 export interface HandoverProjectLite {
