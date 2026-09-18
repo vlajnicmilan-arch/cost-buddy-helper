@@ -6474,6 +6474,41 @@
     "aiReceipt": "AI iz računa",
     "habit": "Prepoznato po navici"
   },
+  "accounting": {
+    "handover": {
+    "title": "Predaja knjigovodstvu",
+    "prevMonth": "Prethodni mjesec",
+    "nextMonth": "Sljedeći mjesec",
+    "count": "{{count}} računa za predaju",
+    "missingDateCount": "{{count}} bez datuma — provjeri",
+    "submittedAt": "Predano {{date}}",
+    "markSubmitted": "Označi predano",
+    "confirmTitle": "Mjesec je već predan",
+    "confirmDesc": "Želiš li ponovno označiti {{period}} kao predano?",
+    "submitted": "Mjesec je označen kao predan",
+    "submittedRefreshFailed": "Predaja je spremljena, ali osvježavanje nije uspjelo.",
+    "submitFailed": "Označavanje predaje nije uspjelo: {{reason}}",
+    "exportFailed": "Izrada datoteke nije uspjela: {{reason}}",
+    "zipOriginals": "ZIP originala",
+    "zipDone": "ZIP originala je spreman",
+    "zipProblems": "ZIP je spreman, ali {{count}} računa nema original — provjeri popis.",
+    "problemNoFile": "bez slike — provjeri",
+    "problemProcessing": "neuspjela obrada — provjeri",
+    "categoryProject": "Pripadnost projektu",
+    "categoryTool": "Alat",
+    "categoryFixedAsset": "Osnovna sredstva",
+    "categoryUnset": "Bez kategorije",
+    "projectUnset": "Bez projekta",
+    "paymentCash": "Gotovina",
+    "paymentCard": "Kartica / račun",
+    "materialExpense": "materijalni trošak",
+    "categoryLabel": "Knjigovodstvena kategorija",
+    "categorySaved": "Kategorija je spremljena",
+    "categorySavedRefreshFailed": "Kategorija je spremljena, ali osvježavanje popisa nije uspjelo.",
+    "categorySaveFailed": "Spremanje kategorije nije uspjelo: {{reason}}",
+    "unknownError": "Nepoznata greška"
+    }
+  },
   "eracun": {
     "importButton": "Učitaj eRačun (XML)",
     "warning": {
