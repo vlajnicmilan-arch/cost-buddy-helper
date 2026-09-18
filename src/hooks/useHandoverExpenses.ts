@@ -7,6 +7,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { isCountedExpenseRow } from '@/lib/countedExpense';
 import { useAuth } from '@/hooks/useAuth';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { describeDbError } from '@/lib/eracun/dbError';
