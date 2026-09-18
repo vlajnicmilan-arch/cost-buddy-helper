@@ -138,7 +138,7 @@ export const HandoverBar = ({ businessProfileId }: HandoverBarProps) => {
             projects.find((p) => p.id === g.projectId)?.name
             ?? t('accounting.handover.projectUnset', 'Bez projekta')
           }`
-        : categoryLabel(g.kind === 'unset' ? { accounting_category: null } : { accounting_category: g.kind }),
+        : categoryValueLabel(g.kind === 'unset' ? 'unset' : g.kind),
       rows: g.expenses.map(toRow),
       total: g.total,
       vat: g.vat,
