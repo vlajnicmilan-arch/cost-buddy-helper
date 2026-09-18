@@ -18,7 +18,7 @@ const SELECT_COLUMNS = [
   'id', 'type', 'merchant_name', 'description', 'date', 'amount', 'currency',
   'vat_amount', 'vat_rate', 'payment_source', 'category', 'receipt_url',
   'deleted_at', 'invoice_id', 'business_profile_id', 'project_id',
-  'owner_funding_choice', 'accounting_category',
+  'owner_funding_choice', 'accounting_category', 'status',
 ].join(', ');
 
 export interface SetExpenseAccountingCategoryInput {
@@ -48,7 +48,8 @@ export const useHandoverExpenses = (businessProfileId: string | null) => {
         .not('receipt_url', 'is', null)
         .order('date', { ascending: false });
       if (error) throw error;
-      setExpenses((data ?? []) as unknown as HandoverExpenseLike[]);
+      // Predaja broji iste retke kao ostatak aplikacije (null = approved).
+      setExpenses(((data ?? []) as unknown as HandoverExpenseLike[]).filter(isCountedExpenseRow));
     } catch (err) {
       logDiagnostic({
         event: 'accounting_handover_expenses_fetch_failed',
