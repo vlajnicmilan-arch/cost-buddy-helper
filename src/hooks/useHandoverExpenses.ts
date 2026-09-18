@@ -14,13 +14,6 @@ import { describeDbError } from '@/lib/eracun/dbError';
 import { getBuildStamp } from '@/lib/buildStamp';
 import type { HandoverExpenseLike } from '@/lib/accounting/handoverPackage';
 
-const SELECT_COLUMNS = [
-  'id', 'type', 'merchant_name', 'description', 'date', 'amount', 'currency',
-  'vat_amount', 'vat_rate', 'payment_source', 'category', 'receipt_url',
-  'deleted_at', 'invoice_id', 'business_profile_id', 'project_id',
-  'owner_funding_choice', 'accounting_category', 'status',
-].join(', ');
-
 export interface SetExpenseAccountingCategoryInput {
   expenseId: string;
   category: 'tool' | 'fixed_asset' | null;
@@ -41,7 +34,12 @@ export const useHandoverExpenses = (businessProfileId: string | null) => {
       // Predaja broji iste retke kao ostatak aplikacije (null = approved).
       const { data, error } = await applyCountedFilter(supabase
         .from('expenses')
-        .select(SELECT_COLUMNS)
+        .select(
+          'id, type, merchant_name, description, date, amount, currency, '
+          + 'vat_amount, vat_rate, payment_source, category, receipt_url, '
+          + 'deleted_at, invoice_id, business_profile_id, project_id, '
+          + 'owner_funding_choice, accounting_category, status',
+        )
         .eq('user_id', user.id)
         .eq('type', 'expense')
         .is('deleted_at', null)
