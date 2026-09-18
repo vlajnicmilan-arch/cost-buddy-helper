@@ -7,7 +7,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { isCountedExpenseRow } from '@/lib/countedExpense';
+import { applyCountedFilter } from '@/lib/countedExpense';
 import { useAuth } from '@/hooks/useAuth';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { describeDbError } from '@/lib/eracun/dbError';
@@ -38,7 +38,8 @@ export const useHandoverExpenses = (businessProfileId: string | null) => {
     }
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // Predaja broji iste retke kao ostatak aplikacije (null = approved).
+      const { data, error } = await applyCountedFilter(supabase
         .from('expenses')
         .select(SELECT_COLUMNS)
         .eq('user_id', user.id)
@@ -46,10 +47,9 @@ export const useHandoverExpenses = (businessProfileId: string | null) => {
         .is('deleted_at', null)
         .is('invoice_id', null)
         .not('receipt_url', 'is', null)
-        .order('date', { ascending: false });
+        .order('date', { ascending: false }));
       if (error) throw error;
-      // Predaja broji iste retke kao ostatak aplikacije (null = approved).
-      setExpenses(((data ?? []) as unknown as HandoverExpenseLike[]).filter(isCountedExpenseRow));
+      setExpenses((data ?? []) as unknown as HandoverExpenseLike[]);
     } catch (err) {
       logDiagnostic({
         event: 'accounting_handover_expenses_fetch_failed',
