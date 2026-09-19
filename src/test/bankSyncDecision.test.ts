@@ -144,7 +144,9 @@ describe('(c) maska kartice', () => {
 });
 
 describe('(e) kartica pripada drugom novčaniku', () => {
-  it('redak se ne upisuje, nego traži potvrdu', () => {
+  // Od točke 3: kartica drugog VLASTITOG novčanika jednoznačno određuje
+  // odredište, pa se redak upisuje kao prijenos s obje strane.
+  it('jednoznačna kartica drugog novčanika → prijenos, ne „traži potvrdu"', () => {
     const tx: EBTransactionLike = {
       entry_reference: 'BOOKED-X',
       transaction_amount: { amount: '50.00', currency: 'EUR' },
@@ -154,12 +156,11 @@ describe('(e) kartica pripada drugom novčaniku', () => {
       creditor: { name: 'AIRCASH 416598******1542' },
     };
     const d = decideBankSyncRow(tx, ctx);
-    expect(d.action).toBe('skip');
-    expect(d.reason).toBe('card_source_mismatch');
-    expect(d.transferCandidate?.counterpartSourceId).toBe(SRC_REVOLUT);
-    const decision = d.raw.decision as Record<string, unknown>;
-    expect(decision.needs_confirmation).toBe(true);
-    expect(decision.sync_payment_source_id).toBe(SRC_TZ);
+    expect(d.action).toBe('upsert');
+    expect(d.type).toBe('transfer');
+    expect(d.transfer?.signal).toBe('card');
+    expect(d.transfer?.paymentSource).toBe(`custom:${SRC_TZ}`);
+    expect(d.transfer?.incomeSourceId).toBe(SRC_REVOLUT);
   });
 
   it('kartica ovog novčanika → upisuje se i nosi payment_source_card_id', () => {
