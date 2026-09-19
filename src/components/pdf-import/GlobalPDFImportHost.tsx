@@ -1091,18 +1091,40 @@ export const GlobalPDFImportHost = () => {
         });
         const preselected = preselect.kind === 'own_transfer' ? preselect : null;
         if (tx.type === 'transfer' || preselected) {
+          const rowPair = pairInfoFor(
+            tx.amount,
+            dateIso,
+            fp,
+            rowDirection.direction,
+            preselected?.counterpartSourceId ?? null,
+          );
+          if (rowPair.match.kind === 'same_row') {
+            return {
+              ...baseRow,
+              classification: { kind: 'new' as const, existsByFingerprint: true, deletedByFingerprint: false },
+            };
+          }
+          const pairedTarget =
+            rowPair.match.kind === 'pair'
+              ? (rowPair.match.payerWalletId === sourceId
+                  ? rowPair.match.receiverWalletId
+                  : rowPair.match.payerWalletId)
+              : null;
           return {
             ...baseRow,
             classification: {
               kind: 'transfer' as const,
-              targetIncomeSourceId: preselected?.counterpartSourceId ?? '',
+              targetIncomeSourceId: preselected?.counterpartSourceId ?? pairedTarget ?? '',
               ruleId: null,
               // Predznak s izvoda (sačuvan u pdfPostProcess) → opis → null.
               direction: rowDirection.direction,
-              origin: preselected ? ('counterpart' as const) : ('keyword' as const),
+              origin: preselected
+                ? ('counterpart' as const)
+                : (rowPair.match.kind === 'pair' ? ('counterpart' as const) : ('keyword' as const)),
               ...(preselected ? { counterpartSignal: preselected.signal } : {}),
               directionSource: rowDirection.source,
               directionConflict: rowDirection.conflict,
+              ...rowPair.fields,
             },
           };
         }
