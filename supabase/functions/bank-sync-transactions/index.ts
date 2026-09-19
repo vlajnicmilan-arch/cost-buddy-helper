@@ -477,8 +477,42 @@ Deno.serve(async (req) => {
       }
 
 
+      // Prijenos između dva korisnikova novčanika — JEDAN redak, obje strane.
+      if (decision.transfer) {
+        const { error: trErr } = await admin.from("expenses").insert({
+          user_id: userId,
+          amount: absAmount,
+          description,
+          category: "other",
+          type: "transfer",
+          date: new Date(txDate).toISOString(),
+          payment_source: decision.transfer.paymentSource,
+          income_source_id: decision.transfer.incomeSourceId,
+          payment_source_card_id: decision.paymentSourceCardId,
+          currency: tx.transaction_amount?.currency || account.currency || "EUR",
+          business_profile_id: account.business_profile_id,
+          bank_transaction_id: stableId,
+          bank_account_id: account.id,
+          bank_match_status: "bank_only",
+          bank_raw_line: rawLine,
+          bank_raw_line_source: "enable_banking",
+        });
+        if (trErr) {
+          if ((trErr as any).code === "23505") {
+            skipped += 1;
+          } else {
+            console.warn("[bank-sync-transactions] transfer insert err", trErr.message);
+            errors += 1;
+          }
+        } else {
+          imported += 1;
+          autoTransfers += 1;
+        }
+        continue;
+      }
+
       // Hybrid bank-first match logika (ručno upisani retci).
-      const candidates = await findCandidates(absAmount, txDate, type);
+      const candidates = await findCandidates(absAmount, txDate, type as "expense" | "income");
       const center = new Date(txDate).getTime();
 
       if (candidates.length === 1) {
