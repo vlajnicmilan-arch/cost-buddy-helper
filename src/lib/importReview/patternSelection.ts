@@ -35,6 +35,10 @@ export interface PatternSelectionRow {
   readonly paymentSource?: string | null;
   /** Tip iz uvezene transakcije; ima prednost pred `type`. */
   readonly txType?: string | null;
+  /** Smjer iz predznaka retka na izvodu (pdfPostProcess `statement_direction`). */
+  readonly statementDirection?: MoneyDirection | null;
+  /** Iznos retka (predznak) — rezervni izvor smjera kad nema statementDirection. */
+  readonly amount?: number | null;
 }
 
 export interface PatternSelectionDecision {
@@ -76,8 +80,22 @@ function keyPartsOf(row: PatternSelectionRow): {
   };
 }
 
-/** Smjer koji izvod nosi za taj redak; `null` = izvod ga ne nosi. */
+/**
+ * Smjer koji izvod nosi za taj redak; `null` = izvod ga ne nosi.
+ * Redom: spremljeni predznak (`statement_direction`) → predznak iznosa
+ * (negativan = 'out', pozitivan uz tip income = 'in') → tip retka
+ * (expense/income). Tip 'transfer' SAM PO SEBI ne nosi smjer.
+ */
 function directionOf(row: PatternSelectionRow): MoneyDirection | null {
+  if (row.statementDirection === 'in' || row.statementDirection === 'out') {
+    return row.statementDirection;
+  }
+  const amount = row.amount ?? null;
+  if (amount !== null && Number.isFinite(amount) && amount !== 0) {
+    if (amount < 0) return 'out';
+    const type = row.txType ?? row.type ?? null;
+    if (type === 'income') return 'in';
+  }
   return statementDirectionFromType(row.txType ?? row.type ?? null);
 }
 
