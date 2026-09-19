@@ -377,7 +377,7 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
     states.deleted.has(fingerprint) && !restoreWanted.has(fingerprint) && !existingBefore.has(fingerprint);
 
   let skippedPreviouslyDeleted = plan.skippedPreviouslyDeleted;
-  const blockedPlans = [...plan.merges, ...plan.inserts, ...plan.transfers]
+  const blockedPlans = [...plan.merges, ...plan.inserts, ...plan.transfers, ...plan.pairs]
     .filter(item => isBlockedByDeleted(item.tx.fingerprint));
   skippedPreviouslyDeleted += blockedPlans.length;
 
