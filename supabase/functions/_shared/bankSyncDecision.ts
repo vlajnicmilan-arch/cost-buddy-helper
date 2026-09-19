@@ -231,7 +231,8 @@ export function decideBankSyncRow(
     return {
       action: 'skip', reason: 'missing_id', stableId: null, isReservation: reservation,
       amount: null, date: null, description: '', type: null, paymentSourceCardId: null,
-      transferCandidate: null, raw: raw({ action: 'skip', reason: 'missing_id' }),
+      transferCandidate: null, transfer: null, ambiguousTransfer: false,
+      raw: raw({ action: 'skip', reason: 'missing_id' }),
     };
   }
 
@@ -241,7 +242,8 @@ export function decideBankSyncRow(
     return {
       action: 'skip', reason: 'missing_amount', stableId, isReservation: reservation,
       amount: null, date: null, description: '', type: null, paymentSourceCardId: null,
-      transferCandidate: null, raw: raw({ action: 'skip', reason: 'missing_amount' }),
+      transferCandidate: null, transfer: null, ambiguousTransfer: false,
+      raw: raw({ action: 'skip', reason: 'missing_amount' }),
     };
   }
   const absAmount = Math.abs(parsed);
@@ -251,7 +253,8 @@ export function decideBankSyncRow(
     return {
       action: 'skip', reason: 'missing_date', stableId, isReservation: reservation,
       amount: absAmount, date: null, description: '', type: null, paymentSourceCardId: null,
-      transferCandidate: null, raw: raw({ action: 'skip', reason: 'missing_date' }),
+      transferCandidate: null, transfer: null, ambiguousTransfer: false,
+      raw: raw({ action: 'skip', reason: 'missing_date' }),
     };
   }
 
@@ -260,7 +263,7 @@ export function decideBankSyncRow(
     return {
       action: 'skip', reason: 'reservation', stableId, isReservation: true,
       amount: absAmount, date: txDate, description: '', type: null, paymentSourceCardId: null,
-      transferCandidate: null,
+      transferCandidate: null, transfer: null, ambiguousTransfer: false,
       raw: raw({ action: 'skip', reason: 'reservation', status: tx.status ?? null }),
     };
   }
