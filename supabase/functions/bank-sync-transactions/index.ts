@@ -5,7 +5,13 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { ebFetch } from "../_shared/enableBankingJwt.ts";
 import { callGemini } from "../_shared/geminiClient.ts";
 import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
-import { resolveBankTxDirection } from "../_shared/moneyDirection.ts";
+import {
+  decideBankSyncRow,
+  pickMergeTarget,
+  type EBTransactionLike,
+  type BankSyncDecision,
+} from "../_shared/bankSyncDecision.ts";
+import type { UserCardRef } from "../_shared/cardMatch.ts";
 
 interface Body {
   bank_account_id: string;
@@ -17,64 +23,8 @@ const SYNC_COOLDOWN_MINUTES = 120;
 const RATE_LIMIT_COOLDOWN_MINUTES = 240;
 const RATE_LIMIT_ERROR_MARKER = "aspsp_rate_limited_429";
 
-interface EBTransaction {
-  entry_reference?: string;
-  transaction_id?: string;
-  booking_date?: string;
-  value_date?: string;
-  transaction_amount?: { amount: string; currency: string };
-  credit_debit_indicator?: "CRDT" | "DBIT";
-  remittance_information?: string[] | { content?: string }[];
-  creditor?: { name?: string };
-  debtor?: { name?: string };
-  status?: string;
-}
+type EBTransaction = EBTransactionLike;
 
-/**
- * Smjer novca — ISKLJUČIVO kroz zajednički modul. Ova funkcija ne smije sama
- * tumačiti `credit_debit_indicator` (to je bio uzrok kupnji upisanih kao priljev).
- */
-function directionOf(tx: EBTransaction): { isIncome: boolean; confidence: string; reason: string } {
-  const res = resolveBankTxDirection({
-    creditDebitIndicator: tx.credit_debit_indicator,
-    amount: tx.transaction_amount?.amount,
-    creditorName: tx.creditor?.name,
-    debtorName: tx.debtor?.name,
-  });
-  return { isIncome: res.direction === 'in', confidence: res.confidence, reason: res.reason };
-}
-
-function extractRemittance(tx: EBTransaction): string {
-  const ri = tx.remittance_information;
-  if (Array.isArray(ri) && ri.length > 0) {
-    const parts = ri
-      .map((r) => (typeof r === "string" ? r : r?.content || ""))
-      .filter(Boolean);
-    if (parts.length > 0) return parts.join(" ");
-  }
-  return "";
-}
-
-function pickDescription(tx: EBTransaction): string {
-  const { isIncome } = directionOf(tx);
-  const counterparty = isIncome ? tx.debtor?.name : tx.creditor?.name;
-  const remittance = extractRemittance(tx);
-
-  // Prefer counterparty (merchant/payer) name; remittance often is just a numeric reference.
-  if (counterparty && counterparty.trim()) {
-    // Append remittance only if it's not just digits
-    if (remittance && !/^[\d\s\-\/]+$/.test(remittance)) {
-      return `${counterparty} - ${remittance}`.slice(0, 200);
-    }
-    return counterparty;
-  }
-  if (remittance) return remittance.slice(0, 200);
-  return "Bank transaction";
-}
-
-function pickStableId(tx: EBTransaction): string | null {
-  return tx.entry_reference || tx.transaction_id || null;
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -276,6 +226,35 @@ Deno.serve(async (req) => {
     let aiCategorized = 0;
     const paymentSourceRef = `custom:${account.linked_payment_source_id}`;
 
+    // Broj kartice je PRIMARNI signal o tome tko je platio — učitaj sve
+    // korisnikove upisane kartice (uključujući „Wallet" brojeve).
+    const { data: cardRows } = await admin
+      .from("payment_source_cards")
+      .select("id, last_four_digits, payment_source_id")
+      .eq("user_id", userId);
+    const userCards: UserCardRef[] = (cardRows || []) as UserCardRef[];
+
+    // Sirovi zapis retka koji NIJE upisan u expenses (rezervacija, traži
+    // potvrdu) mora negdje završiti — inače dokaza nema.
+    const diagnostics: Array<Record<string, unknown>> = [];
+    function logSkipped(decision: BankSyncDecision) {
+      diagnostics.push({
+        event: "bank_sync_skipped_row",
+        session_id: `bank-sync-${account.id}`,
+        user_id: userId,
+        severity: "info",
+        details: {
+          bank_account_id: account.id,
+          bank_transaction_id: decision.stableId,
+          reason: decision.reason,
+          is_reservation: decision.isReservation,
+          payment_source: paymentSourceRef,
+          raw: decision.raw,
+        },
+      });
+    }
+
+
     // Load user's custom categories once for AI categorization
     const { data: customCats } = await admin
       .from("custom_categories")
@@ -352,30 +331,95 @@ Deno.serve(async (req) => {
       return data || [];
     }
 
+    let reservationsSkipped = 0;
+    let needsConfirmation = 0;
+    let mergedBooked = 0;
+
     for (const tx of allTx) {
-      const stableId = pickStableId(tx);
-      if (!stableId) { skipped += 1; continue; }
-      if (!tx.transaction_amount?.amount) { skipped += 1; continue; }
+      const decision = decideBankSyncRow(tx, {
+        syncPaymentSourceId: account.linked_payment_source_id,
+        cards: userCards,
+      });
 
-      const amount = parseFloat(tx.transaction_amount.amount);
-      if (!isFinite(amount) || amount === 0) { skipped += 1; continue; }
-      const absAmount = Math.abs(amount);
-
-      const txDate = tx.booking_date || tx.value_date;
-      if (!txDate) { skipped += 1; continue; }
-
-      const dir = directionOf(tx);
-      const isIncome = dir.isIncome;
-      if (dir.confidence !== "high") {
-        console.warn(
-          "[bank-sync-transactions] low-confidence direction",
-          JSON.stringify({ stableId, confidence: dir.confidence, reason: dir.reason }),
-        );
+      if (decision.action === "skip") {
+        skipped += 1;
+        if (decision.reason === "reservation") reservationsSkipped += 1;
+        if (decision.reason === "card_source_mismatch") needsConfirmation += 1;
+        if (decision.stableId) logSkipped(decision);
+        continue;
       }
-      const description = pickDescription(tx);
-      const type = isIncome ? "income" : "expense";
 
-      // Hybrid bank-first match logika.
+      const stableId = decision.stableId!;
+      const absAmount = decision.amount!;
+      const txDate = decision.date!;
+      const description = decision.description;
+      const type = decision.type!;
+      const isIncome = type === "income";
+      const rawLine = JSON.stringify(decision.raw);
+
+      // Proknjižena verzija onoga što je već upisano s drugim bankovnim ID-om
+      // (npr. ranija rezervacija iz stare verzije sinkronizacije) — AŽURIRAJ,
+      // ne dodavaj novi redak.
+      const mergeFrom = new Date(new Date(txDate).getTime() - 3 * 86400000).toISOString();
+      const mergeTo = new Date(new Date(txDate).getTime() + 4 * 86400000).toISOString();
+      const { data: bankRows } = await admin
+        .from("expenses")
+        .select("id, amount, date, description, payment_source_card_id, bank_transaction_id, status")
+        .eq("user_id", userId)
+        .eq("bank_account_id", account.id)
+        .eq("type", type)
+        .is("deleted_at", null)
+        .not("bank_transaction_id", "is", null)
+        .neq("bank_transaction_id", stableId)
+        .gte("amount", absAmount - 0.01)
+        .lte("amount", absAmount + 0.01)
+        .gte("date", mergeFrom)
+        .lte("date", mergeTo);
+
+      const mergeTarget = pickMergeTarget(
+        (bankRows || [])
+          // Samo retci koji se broje (status prazan ili 'approved').
+          .filter((r: any) => !r.status || r.status === "approved")
+          .map((r: any) => ({
+            id: r.id,
+            amount: Number(r.amount),
+            date: r.date,
+            payment_source_card_id: r.payment_source_card_id,
+            description: r.description,
+          })),
+
+        {
+          amount: absAmount,
+          date: txDate,
+          cardId: decision.paymentSourceCardId,
+          description,
+        },
+      );
+
+      if (mergeTarget) {
+        const { error: mergeErr } = await admin
+          .from("expenses")
+          .update({
+            bank_transaction_id: stableId,
+            bank_account_id: account.id,
+            date: new Date(txDate).toISOString(),
+            description,
+            bank_match_status: "confirmed",
+            bank_raw_line: rawLine,
+            bank_raw_line_source: "enable_banking",
+            payment_source_card_id: decision.paymentSourceCardId ?? mergeTarget.payment_source_card_id ?? null,
+          })
+          .eq("id", mergeTarget.id);
+        if (mergeErr) {
+          console.warn("[bank-sync-transactions] merge update err", mergeErr.message);
+          errors += 1;
+        } else {
+          mergedBooked += 1;
+        }
+        continue;
+      }
+
+      // Hybrid bank-first match logika (ručno upisani retci).
       const candidates = await findCandidates(absAmount, txDate, type);
       const center = new Date(txDate).getTime();
 
@@ -388,6 +432,9 @@ Deno.serve(async (req) => {
             bank_transaction_id: stableId,
             bank_account_id: account.id,
             bank_match_status: "confirmed",
+            bank_raw_line: rawLine,
+            bank_raw_line_source: "enable_banking",
+            payment_source_card_id: decision.paymentSourceCardId,
           })
           .eq("id", cand.id);
         if (updErr) {
@@ -430,13 +477,16 @@ Deno.serve(async (req) => {
         type,
         date: new Date(txDate).toISOString(),
         payment_source: paymentSourceRef,
-        currency: tx.transaction_amount.currency || account.currency || "EUR",
+        payment_source_card_id: decision.paymentSourceCardId,
+        currency: tx.transaction_amount?.currency || account.currency || "EUR",
         business_profile_id: account.business_profile_id,
         bank_transaction_id: stableId,
         bank_account_id: account.id,
         ai_extracted: category !== "other",
         bank_match_status: "bank_only",
         possible_duplicate_of: possibleDuplicateOf,
+        bank_raw_line: rawLine,
+        bank_raw_line_source: "enable_banking",
       };
 
       const { error: insErr } = await admin.from("expenses").insert(row);
@@ -452,6 +502,12 @@ Deno.serve(async (req) => {
       }
     }
 
+    if (diagnostics.length > 0) {
+      const { error: diagErr } = await admin.from("app_diagnostics_logs").insert(diagnostics);
+      if (diagErr) console.warn("[bank-sync-transactions] diagnostics err", diagErr.message);
+    }
+
+
     await admin
       .from("bank_accounts")
       .update({
@@ -466,7 +522,11 @@ Deno.serve(async (req) => {
       skipped,
       errors,
       ai_categorized: aiCategorized,
+      reservations_skipped: reservationsSkipped,
+      needs_confirmation: needsConfirmation,
+      merged_booked: mergedBooked,
       total: allTx.length,
+
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
