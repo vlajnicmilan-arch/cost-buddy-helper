@@ -61,11 +61,8 @@ import { recordImportedStatement } from '@/lib/statementFingerprint';
 
 import type { ReconciliationSupabaseClient } from '@/lib/reconciliation/actions';
 import { buildTransferRuleKey } from '@/lib/importReview/transferRules';
-import {
-  computePatternFill,
-  type PatternCandidateRow,
-  type PatternManualDecision,
-} from '@/lib/importReview/patternFill';
+import { computePatternFill } from '@/lib/importReview/patternFill';
+import { selectPatternInputs } from '@/lib/importReview/patternSelection';
 import {
   computeQuestionPatternFill,
   type QuestionCandidateRow,
@@ -230,48 +227,31 @@ const ImportReview = () => {
   useEffect(() => {
     if (!payload || !decisions || patternDisabled) return;
     const txByIndex = new Map(payload.importedTransactions.map(tx => [tx.index, tx]));
-    const manual: PatternManualDecision[] = [];
-    const candidates: PatternCandidateRow[] = [];
 
-    for (const row of payload.rows) {
-      const tx = txByIndex.get(row.index);
-      const key = buildTransferRuleKey({
-        merchantName: row.merchantName ?? null,
-        paymentSource: tx?.paymentSource ?? null,
-      });
-      const td = decisions.transfers[row.index];
-
-      if (td) {
-        if (!td.enabled) continue;              // korisnik je rekao "nije prijenos"
-        if (autoFilled[row.index]) continue;    // auto-popunjeno se NE broji u prag
-        if (!td.targetIncomeSourceId || !td.direction) continue;
-        manual.push({
+    // Odabir ulaza je čista funkcija (`patternSelection.ts`) — ovdje se samo
+    // slaže minimalan oblik retka.
+    const { manual, candidates } = selectPatternInputs({
+      rows: payload.rows.map(row => {
+        const tx = txByIndex.get(row.index);
+        return {
           index: row.index,
-          merchantKey: td.merchantKey ?? key?.merchantKey ?? null,
-          sourceWalletKey: td.sourceWalletKey ?? key?.sourceWalletKey ?? null,
-          direction: td.direction,
-          targetIncomeSourceId: td.targetIncomeSourceId,
-        });
-        continue;
-      }
-
-      // Podobni su SAMO čisti novi redci: bez fingerprint pogotka, bez ponude
-      // kasne kartice, bez odgovorenog pitanja i bez pogotka pravila.
-      if (row.classification.kind !== 'new') continue;
-      if (row.classification.existsByFingerprint) continue;
-      if (row.lateMatchOffer) continue;
-      if (decisions.questions[row.index]) continue;
-
-      const type = tx?.type ?? row.type;
-      const direction: MoneyDirection | null =
-        type === 'income' ? 'in' : type === 'expense' ? 'out' : null;
-      candidates.push({
-        index: row.index,
-        merchantKey: key?.merchantKey ?? null,
-        sourceWalletKey: key?.sourceWalletKey ?? null,
-        direction,
-      });
-    }
+          type: row.type,
+          merchantName: row.merchantName ?? null,
+          description: row.description ?? null,
+          classificationKind: row.classification.kind,
+          classificationTargetIncomeSourceId:
+            row.classification.kind === 'transfer' ? row.classification.targetIncomeSourceId : null,
+          existsByFingerprint:
+            row.classification.kind === 'new' ? row.classification.existsByFingerprint : false,
+          lateMatchOffer: row.lateMatchOffer ?? null,
+          paymentSource: tx?.paymentSource ?? null,
+          txType: tx?.type ?? null,
+        };
+      }),
+      transfers: decisions.transfers,
+      answeredQuestions: decisions.questions,
+      autoFilled,
+    });
 
     const fills = computePatternFill({ manual, candidates, excluded: patternOptOut });
     if (fills.length === 0) return;

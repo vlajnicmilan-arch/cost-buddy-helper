@@ -4,6 +4,8 @@ import { resolve } from 'node:path';
 import { computePatternFill, type PatternCandidateRow, type PatternManualDecision } from '@/lib/importReview/patternFill';
 
 const SRC = readFileSync(resolve(process.cwd(), 'src/pages/ImportReview.tsx'), 'utf8');
+/** Odabir kandidata živi u čistoj funkciji — čuvamo i nju. */
+const SELECTION = readFileSync(resolve(process.cwd(), 'src/lib/importReview/patternSelection.ts'), 'utf8');
 
 /**
  * ČUVAR UČENJA UNUTAR SERIJE (/import-review).
@@ -12,14 +14,15 @@ const SRC = readFileSync(resolve(process.cwd(), 'src/pages/ImportReview.tsx'), '
  */
 describe('ImportReview — obrazac serije, ožičenje stranice', () => {
   it('auto-popunjeni redak se NE broji u prag', () => {
-    expect(SRC).toMatch(/if \(autoFilled\[row\.index\]\) continue;/);
+    expect(SELECTION).toMatch(/if \(autoFilled\[row\.index\]\) continue;/);
   });
 
-  it('podobni su samo čisti novi redci — bez fingerprinta, kasne kartice i pitanja', () => {
-    expect(SRC).toContain("if (row.classification.kind !== 'new') continue;");
-    expect(SRC).toContain('if (row.classification.existsByFingerprint) continue;');
-    expect(SRC).toContain('if (row.lateMatchOffer) continue;');
-    expect(SRC).toContain('if (decisions.questions[row.index]) continue;');
+  it('podobni su neodlučeni redci — bez fingerprinta, kasne kartice i pitanja', () => {
+    expect(SELECTION).toContain("const isNew = row.classificationKind === 'new';");
+    expect(SELECTION).toContain("row.classificationKind === 'transfer' && !row.classificationTargetIncomeSourceId");
+    expect(SELECTION).toContain('if (row.existsByFingerprint) continue;');
+    expect(SELECTION).toContain('if (row.lateMatchOffer) continue;');
+    expect(SELECTION).toContain('if (answered[row.index]) continue;');
   });
 
   it('popunjavanje ne pali needs_explanation ni pravila', () => {

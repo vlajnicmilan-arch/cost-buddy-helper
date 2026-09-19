@@ -38,6 +38,11 @@ export function buildPatternKey(parts: PatternKeyParts): string | null {
 export interface PatternManualDecision extends PatternKeyParts {
   readonly index: number;
   readonly targetIncomeSourceId: string;
+  /**
+   * "Zapamti za ovog trgovca" — izričita korisnikova namjera da ovo vrijedi za
+   * sve iste retke. Tada prag od dvije odluke NE vrijedi: jedna je dovoljna.
+   */
+  readonly remember?: boolean;
 }
 
 /** Neodlučeni redak koji smije primiti obrazac. */
@@ -70,13 +75,14 @@ export function computePatternFill(input: ComputePatternFillInput): PatternFillR
   const excluded = new Set(input.excluded ?? []);
 
   // key -> skup ciljeva; više od jednog cilja znači da obrazac nije jednoznačan.
-  const byKey = new Map<string, { targets: Set<string>; count: number }>();
+  const byKey = new Map<string, { targets: Set<string>; count: number; remembered: boolean }>();
   for (const d of input.manual) {
     const key = buildPatternKey(d);
     if (!key || !d.targetIncomeSourceId) continue;
-    const entry = byKey.get(key) ?? { targets: new Set<string>(), count: 0 };
+    const entry = byKey.get(key) ?? { targets: new Set<string>(), count: 0, remembered: false };
     entry.targets.add(d.targetIncomeSourceId);
     entry.count += 1;
+    if (d.remember) entry.remembered = true;
     byKey.set(key, entry);
   }
 
@@ -87,7 +93,7 @@ export function computePatternFill(input: ComputePatternFillInput): PatternFillR
     if (!key) continue;
     const entry = byKey.get(key);
     if (!entry) continue;
-    if (entry.count < PATTERN_FILL_THRESHOLD) continue;
+    if (!entry.remembered && entry.count < PATTERN_FILL_THRESHOLD) continue;
     if (entry.targets.size !== 1) continue;
     const [target] = Array.from(entry.targets);
     out.push({
