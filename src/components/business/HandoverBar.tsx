@@ -296,7 +296,7 @@ export const HandoverBar = ({ businessProfileId }: HandoverBarProps) => {
         )}
       </div>
 
-      {selection.included.length > 0 && (
+      {selection.included.length > 0 ? (
         <div className="space-y-1.5">
           {selection.included.map((expense) => {
             const resolved = resolveExpenseAccountingCategory(expense);

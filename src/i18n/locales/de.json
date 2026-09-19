@@ -6467,6 +6467,7 @@
     "prevMonth": "Vorheriger Monat",
     "nextMonth": "Nächster Monat",
     "count": "{{count}} Belege zur Übergabe",
+    "empty": "Keine fotografierten Belege für {{period}}",
     "missingDateCount": "{{count}} ohne Datum — prüfen",
     "submittedAt": "Übergeben am {{date}}",
     "markSubmitted": "Als übergeben markieren",
