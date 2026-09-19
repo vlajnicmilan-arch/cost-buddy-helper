@@ -111,6 +111,9 @@ export function selectPatternInputs(input: PatternSelectionInput): PatternSelect
     const parts = keyPartsOf(row);
     const td = input.transfers[row.index];
 
+    // Upareni redak je odgovor sam po sebi — ne uči obrazac i ne puni se njime.
+    if (row.pairedExistingId) continue;
+
     if (td) {
       if (!td.enabled) continue;            // korisnik je rekao "nije prijenos"
       if (autoFilled[row.index]) continue;  // auto-popunjeno se NE broji u prag
