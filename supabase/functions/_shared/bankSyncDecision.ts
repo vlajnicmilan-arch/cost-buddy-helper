@@ -9,7 +9,11 @@
  * Smjer novca ide isključivo kroz `resolveBankTxDirection`, a platilac se
  * određuje brojem kartice (`cardMatch`), ne nazivom trgovca.
  */
-import { resolveBankTxDirection } from './moneyDirection.ts';
+import {
+  buildTransferPair,
+  isTransferDescription,
+  resolveBankTxDirection,
+} from './moneyDirection.ts';
 import {
   describeCardMasks,
   extractCardMasks,
@@ -32,11 +36,19 @@ export interface EBTransactionLike {
   [key: string]: unknown;
 }
 
+/** Korisnikov novčanik — kandidat za drugu stranu prijenosa. */
+export interface WalletRef {
+  readonly id: string;
+  readonly name: string | null;
+}
+
 export interface DecisionContext {
   /** UUID `custom_payment_sources` reda na koji je bankovni račun spojen. */
   readonly syncPaymentSourceId: string;
   /** Sve korisnikove upisane kartice (uključujući „Wallet" brojeve). */
   readonly cards: readonly UserCardRef[];
+  /** Svi korisnikovi novčanici — za prepoznavanje druge strane prijenosa. */
+  readonly wallets?: readonly WalletRef[];
 }
 
 export type SkipReason =
