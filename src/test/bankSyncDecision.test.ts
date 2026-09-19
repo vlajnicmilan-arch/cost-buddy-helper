@@ -12,6 +12,8 @@ import {
   isReservation,
   looksLikeShortReservationId,
   pickMergeTarget,
+  pickBankBalance,
+  normalizeCounterparty,
   type EBTransactionLike,
 } from '../../supabase/functions/_shared/bankSyncDecision';
 import { extractCardMasks, matchUserCard, type UserCardRef } from '@/lib/cardMatch';
@@ -185,5 +187,82 @@ describe('(1) sirovi zapis', () => {
     expect(decision.confidence).toBe('high');
     expect(decision.direction_reason).toBe('credit_debit_indicator');
     expect(decision.is_reservation ?? d.isReservation).toBe(false);
+  });
+});
+
+describe('(f) bankin saldo je istina', () => {
+  it('CLBD ima prednost pred ITAV', () => {
+    const picked = pickBankBalance([
+      { balance_type: 'ITAV', balance_amount: { amount: '1400.00', currency: 'EUR' }, reference_date: '2026-09-19' },
+      { balance_type: 'CLBD', balance_amount: { amount: '1357.93', currency: 'EUR' }, reference_date: '2026-09-19' },
+    ]);
+    expect(picked?.amount).toBe(1357.93);
+    expect(picked?.balanceType).toBe('CLBD');
+  });
+
+  it('bez proknjiženog uzima raspoloživi', () => {
+    expect(
+      pickBankBalance([{ name: 'interimAvailable', balance_amount: { amount: '57.34' } }])?.amount,
+    ).toBe(57.34);
+  });
+
+  it('prazan ili neupotrebljiv odgovor → null (sidro se ne mijenja)', () => {
+    expect(pickBankBalance([])).toBeNull();
+    expect(pickBankBalance(null)).toBeNull();
+    expect(pickBankBalance([{ balance_type: 'CLBD', balance_amount: { amount: 'x' } }])).toBeNull();
+  });
+});
+
+describe('(g) normalizacija imena protustrane', () => {
+  it('maska kartice i grad ne razlikuju istu protustranu', () => {
+    expect(normalizeCounterparty('Revolut**5385* Dublin')).toBe('revolut5385');
+    expect(normalizeCounterparty('Revolut**5385* - 462765XXXXXX2081,')).toBe('revolut5385');
+  });
+
+  it('interpunkcija i velika slova se brišu', () => {
+    expect(normalizeCounterparty('TACTURA j.d.o.o.')).toBe('tacturajdoo');
+  });
+});
+
+describe('(h) spajanje proknjiženog s ručnim prijenosom', () => {
+  it('„Revolut**5385* Dublin" (transfer, bez kartice, bez bankovnog ID-a) se spaja', () => {
+    const hit = pickMergeTarget(
+      [
+        {
+          id: 'transfer-1',
+          amount: 300,
+          date: '2026-09-17',
+          description: 'Revolut**5385* Dublin',
+          type: 'transfer',
+          bank_transaction_id: null,
+          payment_source_card_id: null,
+        },
+      ],
+      {
+        amount: 300,
+        date: '2026-09-18',
+        cardId: 'card-tz',
+        counterparty: 'Revolut**5385* - 462765XXXXXX2081,',
+      },
+    );
+    expect(hit?.id).toBe('transfer-1');
+    expect(hit?.type).toBe('transfer');
+  });
+
+  it('dvije legitimne uplate TACTURA 420 s vlastitim bankovnim ID-ima se NE spajaju', () => {
+    const hit = pickMergeTarget(
+      [
+        {
+          id: 'tac-17',
+          amount: 420,
+          date: '2026-09-17',
+          description: 'TACTURA j.d.o.o.',
+          bank_transaction_id: 'BOOKED-17',
+          bank_match_status: 'confirmed',
+        },
+      ],
+      { amount: 420, date: '2026-09-18', counterparty: 'TACTURA j.d.o.o.' },
+    );
+    expect(hit).toBeNull();
   });
 });

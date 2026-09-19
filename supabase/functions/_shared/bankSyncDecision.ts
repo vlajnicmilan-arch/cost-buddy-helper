@@ -238,13 +238,47 @@ export interface MergeCandidateRow {
   readonly date: string;
   readonly payment_source_card_id?: string | null;
   readonly description?: string | null;
+  /** Proknjiženi bankovni ID — ako postoji, redak je SVOJA transakcija. */
+  readonly bank_transaction_id?: string | null;
+  readonly bank_match_status?: string | null;
+  readonly type?: string | null;
+}
+
+/** Odsijeca sve iza maske kartice (npr. „Revolut**5385* Dublin" → „Revolut**5385*"). */
+const MASK_CUT =
+  /(\d{6}\s*[x\*\u2022\.\-\s]{4,10}\d{4}|[\*\u2022]{2,}\s*\d{4}\*?|(?:kartica|kartice|card)\s*[:\-]?\s*[^\dA-Za-z]{0,6}\d{4})/i;
+
+/**
+ * Normalizirano ime protustrane — jedini ključ po kojem se spaja.
+ * Uzima dio prije „ - ", odsijeca sve iza maske kartice, pa briše sve
+ * što nije slovo ili znamenka i spušta u mala slova.
+ *
+ * „Revolut**5385* Dublin" i „Revolut**5385* - 462765XXXXXX2081," → „revolut5385".
+ */
+export function normalizeCounterparty(input: string | null | undefined): string {
+  let s = String(input ?? '').trim();
+  if (!s) return '';
+  const dash = s.indexOf(' - ');
+  if (dash > 0) s = s.slice(0, dash);
+  const m = MASK_CUT.exec(s);
+  if (m && m.index !== undefined) s = s.slice(0, m.index + m[0].length);
+  return s.toLowerCase().replace(/[^a-z0-9\u00e0-\u017f]+/gi, '');
+}
+
+/** Ime protustrane iz EB objekta, s opisom kao rezervom. */
+export function counterpartyOf(tx: EBTransactionLike, fallback?: string | null): string {
+  const name = tx.creditor?.name || tx.debtor?.name || '';
+  return normalizeCounterparty(name || fallback || '');
 }
 
 /**
  * Traži već upisani redak koji je ISTA transakcija (proknjižena verzija onoga
- * što je već u bazi): iznos ±0,00, datum ±3 dana, ista kartica ili ista
- * protustrana. Više jednako dobrih kandidata → `null` (radije novi redak nego
- * kriva izmjena).
+ * što je već u bazi): iznos ±0,005, datum ±3 dana, isto normalizirano ime
+ * protustrane. Kartica, ako postoji na obje strane, mora se poklapati.
+ *
+ * Spaja se SAMO prema retku koji još nema svoj proknjiženi bankovni ID
+ * (ručni, iz rezervacije, `manual`/`pending_bank`). Dvije legitimne uplate
+ * istog iznosa u susjedne dane ostaju dva retka.
  */
 export function pickMergeTarget(
   candidates: readonly MergeCandidateRow[],
@@ -252,25 +286,76 @@ export function pickMergeTarget(
     readonly amount: number;
     readonly date: string;
     readonly cardId?: string | null;
+    readonly counterparty?: string | null;
+    /** Rezerva kad protustrana nije poznata iz EB objekta. */
     readonly description?: string | null;
   },
 ): MergeCandidateRow | null {
   const center = new Date(target.date).getTime();
-  const desc = String(target.description ?? '').trim().toLowerCase();
+  const wanted = normalizeCounterparty(target.counterparty ?? target.description ?? '');
+  if (!wanted) return null;
 
   const viable = candidates.filter((c) => {
+    // Redak s vlastitim proknjiženim ID-om je zasebna transakcija.
+    if (c.bank_transaction_id) {
+      const status = String(c.bank_match_status ?? '');
+      if (status !== 'manual' && status !== 'pending_bank') return false;
+    }
     if (Math.abs(Number(c.amount) - target.amount) > 0.005) return false;
     const days = Math.abs(new Date(c.date).getTime() - center) / 86400000;
     if (!(days <= 3)) return false;
-    if (target.cardId && c.payment_source_card_id) {
-      return c.payment_source_card_id === target.cardId;
+    if (target.cardId && c.payment_source_card_id && c.payment_source_card_id !== target.cardId) {
+      return false;
     }
-    if (desc) {
-      return String(c.description ?? '').trim().toLowerCase() === desc;
-    }
-    return false;
+    return normalizeCounterparty(c.description) === wanted;
   });
 
   if (viable.length !== 1) return null;
   return viable[0];
 }
+
+export interface EBBalanceLike {
+  balance_type?: string;
+  name?: string;
+  balance_amount?: { amount?: string; currency?: string };
+  reference_date?: string;
+  [key: string]: unknown;
+}
+
+export interface PickedBankBalance {
+  readonly amount: number;
+  readonly currency: string | null;
+  readonly balanceType: string | null;
+  readonly referenceDate: string | null;
+}
+
+const BOOKED_BALANCE = ['CLBD', 'CLOSINGBOOKED'];
+const AVAILABLE_BALANCE = ['ITAV', 'XPCD', 'INTERIMAVAILABLE', 'EXPECTED'];
+
+/** Proknjiženi saldo (CLBD) ima prednost pred raspoloživim (ITAV/XPCD). */
+export function pickBankBalance(
+  balances: readonly EBBalanceLike[] | null | undefined,
+): PickedBankBalance | null {
+  const list = (balances ?? []).filter(Boolean);
+  if (!list.length) return null;
+
+  const key = (b: EBBalanceLike) =>
+    String(b.balance_type ?? b.name ?? '').replace(/[^a-z]/gi, '').toUpperCase();
+
+  const find = (wanted: readonly string[]) =>
+    list.find((b) => wanted.includes(key(b)) && isFinite(parseFloat(String(b.balance_amount?.amount))));
+
+  const chosen = find(BOOKED_BALANCE) ?? find(AVAILABLE_BALANCE) ?? null;
+  if (!chosen) return null;
+
+  const amount = parseFloat(String(chosen.balance_amount?.amount));
+  if (!isFinite(amount)) return null;
+
+  return {
+    amount: Math.round(amount * 100) / 100,
+    currency: chosen.balance_amount?.currency ?? null,
+    balanceType: String(chosen.balance_type ?? chosen.name ?? '') || null,
+    referenceDate: chosen.reference_date ?? null,
+  };
+}
+
