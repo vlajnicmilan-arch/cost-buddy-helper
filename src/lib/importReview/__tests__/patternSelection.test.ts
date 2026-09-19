@@ -111,3 +111,54 @@ describe('selectPatternInputs — isključenja', () => {
     expect(candidates[0].direction).toBe('in');
   });
 });
+
+/**
+ * STVARNI SLUČAJ 19.9. — Aircash izvod, redci „Uplata na Aircash Google Pay",
+ * trgovac „Google Pay", txType 'transfer' (ključna riječ), statementDirection
+ * 'in', iznos 60. Tip 'transfer' SAM PO SEBI ne nosi smjer — bez predznaka
+ * takav redak ne smije biti kandidat.
+ */
+const realRow = (index: number, over: Partial<PatternSelectionRow> = {}): PatternSelectionRow => ({
+  index,
+  type: 'income',
+  merchantName: 'Google Pay',
+  description: 'Uplata na Aircash Google Pay',
+  classificationKind: 'transfer',
+  classificationTargetIncomeSourceId: '',
+  paymentSource: WALLET,
+  txType: 'transfer',
+  statementDirection: 'in',
+  amount: 60,
+  ...over,
+});
+
+describe('selectPatternInputs — smjer kandidata (Aircash Google Pay serija)', () => {
+  it('(a) 1 ručna odluka + „Zapamti" popuni preostalih 5 (txType transfer, bez „Revolut" u opisu)', () => {
+    const rows = [0, 1, 2, 3, 4, 5].map(i => realRow(i));
+    expect(rows.every(r => !r.description!.includes('Revolut'))).toBe(true);
+    expect(rows.every(r => r.txType === 'transfer')).toBe(true);
+    const fills = run(rows, { 0: decided({ rememberRule: true }) });
+    expect(fills.map(f => f.index)).toEqual([1, 2, 3, 4, 5]);
+    for (const f of fills) expect(f.direction).toBe('in');
+  });
+
+  it('(b) 2 ručne bez „Zapamti" popune preostala 4', () => {
+    const rows = [0, 1, 2, 3, 4, 5].map(i => realRow(i));
+    const fills = run(rows, { 0: decided(), 1: decided() });
+    expect(fills.map(f => f.index)).toEqual([2, 3, 4, 5]);
+  });
+
+  it('(c) bez statementDirection, pozitivan iznos uz tip income → smjer in', () => {
+    const rows = [0, 1].map(i =>
+      realRow(i, { statementDirection: null, type: 'income', txType: 'income', amount: 60 }));
+    const fills = run(rows, { 0: decided({ rememberRule: true }) });
+    expect(fills.map(f => f.index)).toEqual([1]);
+  });
+
+  it('(d) txType transfer bez ikakvog smjera nije kandidat', () => {
+    const rows = [0, 1, 2].map(i =>
+      realRow(i, { statementDirection: null, type: 'transfer', txType: 'transfer', amount: null }));
+    const fills = run(rows, { 0: decided({ rememberRule: true }), 1: decided({ rememberRule: true }) });
+    expect(fills).toEqual([]);
+  });
+});
