@@ -12,6 +12,7 @@ import {
   counterpartyOf,
   type EBTransactionLike,
   type BankSyncDecision,
+  type WalletRef,
 } from "../_shared/bankSyncDecision.ts";
 
 import type { UserCardRef } from "../_shared/cardMatch.ts";
@@ -237,6 +238,15 @@ Deno.serve(async (req) => {
       .eq("user_id", userId);
     const userCards: UserCardRef[] = (cardRows || []) as UserCardRef[];
 
+    // Svi korisnikovi novčanici — kandidati za drugu stranu prijenosa.
+    const { data: walletRows } = await admin
+      .from("custom_payment_sources")
+      .select("id, name")
+      .eq("user_id", userId)
+      .is("deleted_at", null);
+    const userWallets: WalletRef[] = ((walletRows || []) as Array<{ id: string; name: string | null }>)
+      .map((w) => ({ id: w.id, name: w.name }));
+
     // Sirovi zapis retka koji NIJE upisan u expenses (rezervacija, traži
     // potvrdu) mora negdje završiti — inače dokaza nema.
     const diagnostics: Array<Record<string, unknown>> = [];
@@ -337,11 +347,14 @@ Deno.serve(async (req) => {
     let reservationsSkipped = 0;
     let needsConfirmation = 0;
     let mergedBooked = 0;
+    let ambiguousTransfers = 0;
+    let autoTransfers = 0;
 
     for (const tx of allTx) {
       const decision = decideBankSyncRow(tx, {
         syncPaymentSourceId: account.linked_payment_source_id,
         cards: userCards,
+        wallets: userWallets,
       });
 
       if (decision.action === "skip") {
@@ -350,6 +363,24 @@ Deno.serve(async (req) => {
         if (decision.reason === "card_source_mismatch") needsConfirmation += 1;
         if (decision.stableId) logSkipped(decision);
         continue;
+      }
+
+      // Dva novčanika pogađaju ime → odredište nije sigurno; redak ide kao
+      // rashod/priljev, ali ostaje trag.
+      if (decision.ambiguousTransfer) {
+        ambiguousTransfers += 1;
+        diagnostics.push({
+          event: "transfer_candidate_ambiguous",
+          session_id: `bank-sync-${account.id}`,
+          user_id: userId,
+          severity: "info",
+          details: {
+            bank_account_id: account.id,
+            bank_transaction_id: decision.stableId,
+            payment_source: paymentSourceRef,
+            raw: decision.raw,
+          },
+        });
       }
 
       const stableId = decision.stableId!;
@@ -365,17 +396,37 @@ Deno.serve(async (req) => {
       // Retci koji već nose svoj proknjiženi bankovni ID se ne diraju.
       const mergeFrom = new Date(new Date(txDate).getTime() - 3 * 86400000).toISOString();
       const mergeTo = new Date(new Date(txDate).getTime() + 4 * 86400000).toISOString();
-      const { data: bankRows } = await admin
+      let mergeQuery = admin
         .from("expenses")
         .select("id, amount, date, description, payment_source_card_id, bank_transaction_id, bank_match_status, type, status")
         .eq("user_id", userId)
-        .eq("payment_source", paymentSourceRef)
-        .in("type", [type, "transfer"])
         .is("deleted_at", null)
         .gte("amount", absAmount - 0.01)
         .lte("amount", absAmount + 0.01)
         .gte("date", mergeFrom)
         .lte("date", mergeTo);
+
+      if (decision.transfer) {
+        // Prijenos ima DVIJE strane — postojeći redak može stajati na bilo kojoj.
+        const a = account.linked_payment_source_id;
+        const b = decision.transfer.counterpartSourceId;
+        mergeQuery = mergeQuery
+          .eq("type", "transfer")
+          .or(
+            [
+              `payment_source.eq."custom:${a}"`,
+              `payment_source.eq."custom:${b}"`,
+              `income_source_id.eq.${a}`,
+              `income_source_id.eq.${b}`,
+            ].join(","),
+          );
+      } else {
+        mergeQuery = mergeQuery
+          .eq("payment_source", paymentSourceRef)
+          .in("type", [type, "transfer"]);
+      }
+
+      const { data: bankRows } = await mergeQuery;
 
       const mergeTarget = pickMergeTarget(
         (bankRows || [])
@@ -426,8 +477,44 @@ Deno.serve(async (req) => {
       }
 
 
+      // Prijenos između dva korisnikova novčanika — JEDAN redak s obje strane.
+      // Par (payment_source, income_source_id) dolazi isključivo iz
+      // buildTransferPair() unutar decideBankSyncRow; ovdje se samo zapisuje.
+      if (decision.transfer) {
+        const { error: trErr } = await admin.from("expenses").insert({
+          user_id: userId,
+          amount: absAmount,
+          description,
+          category: "other",
+          type: "transfer",
+          date: new Date(txDate).toISOString(),
+          payment_source: decision.transfer.paymentSource,
+          income_source_id: decision.transfer.incomeSourceId,
+          payment_source_card_id: decision.paymentSourceCardId,
+          currency: tx.transaction_amount?.currency || account.currency || "EUR",
+          business_profile_id: account.business_profile_id,
+          bank_transaction_id: stableId,
+          bank_account_id: account.id,
+          bank_match_status: "bank_only",
+          bank_raw_line: rawLine,
+          bank_raw_line_source: "enable_banking",
+        });
+        if (trErr) {
+          if ((trErr as any).code === "23505") {
+            skipped += 1;
+          } else {
+            console.warn("[bank-sync-transactions] transfer insert err", trErr.message);
+            errors += 1;
+          }
+        } else {
+          imported += 1;
+          autoTransfers += 1;
+        }
+        continue;
+      }
+
       // Hybrid bank-first match logika (ručno upisani retci).
-      const candidates = await findCandidates(absAmount, txDate, type);
+      const candidates = await findCandidates(absAmount, txDate, type as "expense" | "income");
       const center = new Date(txDate).getTime();
 
       if (candidates.length === 1) {
@@ -614,6 +701,8 @@ Deno.serve(async (req) => {
       reservations_skipped: reservationsSkipped,
       needs_confirmation: needsConfirmation,
       merged_booked: mergedBooked,
+      auto_transfers: autoTransfers,
+      ambiguous_transfers: ambiguousTransfers,
       total: allTx.length,
 
     }), {

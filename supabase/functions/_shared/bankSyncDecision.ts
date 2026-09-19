@@ -9,7 +9,11 @@
  * Smjer novca ide isključivo kroz `resolveBankTxDirection`, a platilac se
  * određuje brojem kartice (`cardMatch`), ne nazivom trgovca.
  */
-import { resolveBankTxDirection } from './moneyDirection.ts';
+import {
+  buildTransferPair,
+  isTransferDescription,
+  resolveBankTxDirection,
+} from './moneyDirection.ts';
 import {
   describeCardMasks,
   extractCardMasks,
@@ -32,11 +36,19 @@ export interface EBTransactionLike {
   [key: string]: unknown;
 }
 
+/** Korisnikov novčanik — kandidat za drugu stranu prijenosa. */
+export interface WalletRef {
+  readonly id: string;
+  readonly name: string | null;
+}
+
 export interface DecisionContext {
   /** UUID `custom_payment_sources` reda na koji je bankovni račun spojen. */
   readonly syncPaymentSourceId: string;
   /** Sve korisnikove upisane kartice (uključujući „Wallet" brojeve). */
   readonly cards: readonly UserCardRef[];
+  /** Svi korisnikovi novčanici — za prepoznavanje druge strane prijenosa. */
+  readonly wallets?: readonly WalletRef[];
 }
 
 export type SkipReason =
@@ -54,13 +66,25 @@ export interface BankSyncDecision {
   readonly amount: number | null;
   readonly date: string | null;
   readonly description: string;
-  readonly type: 'expense' | 'income' | null;
+  readonly type: 'expense' | 'income' | 'transfer' | null;
   readonly paymentSourceCardId: string | null;
   /**
    * Redak nosi broj DRUGE korisnikove kartice → kandidat za prijenos između
-   * vlastitih novčanika. Drugu stranu upisuje tek točka 3 plana.
+   * vlastitih novčanika, ali odredište nije jednoznačno.
    */
   readonly transferCandidate: { readonly counterpartSourceId: string; readonly cardId: string } | null;
+  /**
+   * Jednoznačan prijenos između korisnikovih novčanika — par složen isključivo
+   * kroz `buildTransferPair`. Upisuje se kao JEDAN redak `type='transfer'`.
+   */
+  readonly transfer: {
+    readonly counterpartSourceId: string;
+    readonly signal: 'card' | 'name';
+    readonly paymentSource: string;
+    readonly incomeSourceId: string;
+  } | null;
+  /** Dva ili više novčanika kandidata → ne pogađa se, redak ide kao rashod/priljev. */
+  readonly ambiguousTransfer: boolean;
   /** Cijeli EB objekt + odluka aplikacije — ide u `bank_raw_line`. */
   readonly raw: Record<string, unknown>;
 }
@@ -127,6 +151,60 @@ export function pickStableId(tx: EBTransactionLike): string | null {
   return tx.entry_reference || tx.transaction_id || null;
 }
 
+const plainName = (value: string | null | undefined): string =>
+  String(value ?? '').toLowerCase().replace(/[^a-z0-9\u00e0-\u017f]+/gi, '');
+
+/** Prva značajna riječ imena novčanika („Revolut biznis" → „revolut"). */
+const firstToken = (value: string | null | undefined): string => {
+  const tokens = String(value ?? '')
+    .toLowerCase()
+    .split(/[^a-z0-9\u00e0-\u017f]+/i)
+    .filter((t) => t.length >= 4);
+  return tokens[0] ?? '';
+};
+
+export type OwnTransferResolution =
+  | { readonly kind: 'own_transfer'; readonly counterpartSourceId: string; readonly signal: 'card' | 'name' }
+  | { readonly kind: 'ambiguous'; readonly matches: readonly string[] }
+  | { readonly kind: 'none' };
+
+/**
+ * Je li protustrana DRUGI korisnikov novčanik.
+ *
+ * Redom: (a) broj kartice, (b) normalizirano ime novčanika sadržano u
+ * normaliziranom imenu protustrane. Odredište je sigurno samo kad je točno
+ * JEDAN novčanik kandidat; novčanik čiji se izvod sinkronizira nije kandidat.
+ */
+export function resolveOwnTransferCounterpart(input: {
+  readonly syncPaymentSourceId: string;
+  readonly cardPaymentSourceId?: string | null;
+  readonly counterpartyText?: string | null;
+  readonly wallets?: readonly WalletRef[];
+}): OwnTransferResolution {
+  const sync = String(input.syncPaymentSourceId ?? '');
+  const cardSource = input.cardPaymentSourceId ?? null;
+  if (cardSource && cardSource !== sync) {
+    return { kind: 'own_transfer', counterpartSourceId: cardSource, signal: 'card' };
+  }
+
+  const haystack = normalizeCounterparty(input.counterpartyText ?? '');
+  if (!haystack) return { kind: 'none' };
+
+  const matches = (input.wallets ?? [])
+    .filter((w) => w.id !== sync)
+    .filter((w) => {
+      const full = plainName(w.name);
+      if (full.length >= 3 && haystack.includes(full)) return true;
+      const token = firstToken(w.name);
+      return token.length >= 4 && haystack.includes(token);
+    })
+    .map((w) => w.id);
+
+  if (matches.length === 1) return { kind: 'own_transfer', counterpartSourceId: matches[0], signal: 'name' };
+  if (matches.length > 1) return { kind: 'ambiguous', matches };
+  return { kind: 'none' };
+}
+
 export function decideBankSyncRow(
   tx: EBTransactionLike,
   ctx: DecisionContext,
@@ -153,7 +231,8 @@ export function decideBankSyncRow(
     return {
       action: 'skip', reason: 'missing_id', stableId: null, isReservation: reservation,
       amount: null, date: null, description: '', type: null, paymentSourceCardId: null,
-      transferCandidate: null, raw: raw({ action: 'skip', reason: 'missing_id' }),
+      transferCandidate: null, transfer: null, ambiguousTransfer: false,
+      raw: raw({ action: 'skip', reason: 'missing_id' }),
     };
   }
 
@@ -163,7 +242,8 @@ export function decideBankSyncRow(
     return {
       action: 'skip', reason: 'missing_amount', stableId, isReservation: reservation,
       amount: null, date: null, description: '', type: null, paymentSourceCardId: null,
-      transferCandidate: null, raw: raw({ action: 'skip', reason: 'missing_amount' }),
+      transferCandidate: null, transfer: null, ambiguousTransfer: false,
+      raw: raw({ action: 'skip', reason: 'missing_amount' }),
     };
   }
   const absAmount = Math.abs(parsed);
@@ -173,7 +253,8 @@ export function decideBankSyncRow(
     return {
       action: 'skip', reason: 'missing_date', stableId, isReservation: reservation,
       amount: absAmount, date: null, description: '', type: null, paymentSourceCardId: null,
-      transferCandidate: null, raw: raw({ action: 'skip', reason: 'missing_date' }),
+      transferCandidate: null, transfer: null, ambiguousTransfer: false,
+      raw: raw({ action: 'skip', reason: 'missing_date' }),
     };
   }
 
@@ -182,7 +263,7 @@ export function decideBankSyncRow(
     return {
       action: 'skip', reason: 'reservation', stableId, isReservation: true,
       amount: absAmount, date: txDate, description: '', type: null, paymentSourceCardId: null,
-      transferCandidate: null,
+      transferCandidate: null, transfer: null, ambiguousTransfer: false,
       raw: raw({ action: 'skip', reason: 'reservation', status: tx.status ?? null }),
     };
   }
@@ -205,13 +286,59 @@ export function decideBankSyncRow(
     card: cardHit,
   };
 
-  // Broj kartice pripada DRUGOM korisnikovom novčaniku → ne upisujemo tiho.
+  // Je li protustrana DRUGI korisnikov novčanik (kartica, pa ime).
+  const own = resolveOwnTransferCounterpart({
+    syncPaymentSourceId: ctx.syncPaymentSourceId,
+    cardPaymentSourceId: cardHit ? cardHit.paymentSourceId : null,
+    counterpartyText: tx.creditor?.name || tx.debtor?.name || description,
+    wallets: ctx.wallets,
+  });
+  // Ključne riječi su dodatni signal u zapisu, ne određuju odredište.
+  const keywordSignal = isTransferDescription(description);
+
+  if (own.kind === 'own_transfer') {
+    const pair = buildTransferPair({
+      statementSource: `custom:${ctx.syncPaymentSourceId}`,
+      counterpartSourceId: own.counterpartSourceId,
+      direction: dir.direction,
+    });
+    if (pair) {
+      return {
+        action: 'upsert', reason: 'ok', stableId, isReservation: false,
+        amount: absAmount, date: txDate, description,
+        type: 'transfer',
+        paymentSourceCardId: cardHit ? cardHit.cardId : null,
+        transferCandidate: null,
+        transfer: {
+          counterpartSourceId: own.counterpartSourceId,
+          signal: own.signal,
+          paymentSource: pair.paymentSource,
+          incomeSourceId: pair.incomeSourceId,
+        },
+        ambiguousTransfer: false,
+        raw: raw({
+          ...decisionCore,
+          transfer_auto: true,
+          transfer_signal: own.signal,
+          transfer_keyword_signal: keywordSignal,
+          transfer_counterpart_source_id: own.counterpartSourceId,
+          transfer_payment_source: pair.paymentSource,
+          transfer_income_source_id: pair.incomeSourceId,
+        }),
+      };
+    }
+  }
+
+  // Broj kartice pripada DRUGOM korisnikovom novčaniku, a prijenos nije
+  // jednoznačan → ne upisujemo tiho.
   if (cardHit && cardHit.paymentSourceId !== ctx.syncPaymentSourceId) {
     return {
       action: 'skip', reason: 'card_source_mismatch', stableId, isReservation: false,
       amount: absAmount, date: txDate, description,
       type: isIncome ? 'income' : 'expense', paymentSourceCardId: null,
       transferCandidate: { counterpartSourceId: cardHit.paymentSourceId, cardId: cardHit.cardId },
+      transfer: null,
+      ambiguousTransfer: own.kind === 'ambiguous',
       raw: raw({
         ...decisionCore,
         action: 'skip',
@@ -228,7 +355,15 @@ export function decideBankSyncRow(
     type: isIncome ? 'income' : 'expense',
     paymentSourceCardId: cardHit ? cardHit.cardId : null,
     transferCandidate: null,
-    raw: raw(decisionCore),
+    transfer: null,
+    ambiguousTransfer: own.kind === 'ambiguous',
+    raw: raw({
+      ...decisionCore,
+      ...(own.kind === 'ambiguous'
+        ? { transfer_candidate_ambiguous: true, transfer_candidates: own.matches }
+        : {}),
+      transfer_keyword_signal: keywordSignal,
+    }),
   };
 }
 
