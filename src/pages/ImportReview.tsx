@@ -246,6 +246,10 @@ const ImportReview = () => {
           existsByFingerprint:
             row.classification.kind === 'new' ? row.classification.existsByFingerprint : false,
           lateMatchOffer: row.lateMatchOffer ?? null,
+          pairedExistingId:
+            row.classification.kind === 'transfer'
+              ? (row.classification.pairedExistingId ?? null)
+              : null,
           paymentSource: tx?.paymentSource ?? null,
           txType: tx?.type ?? null,
           statementDirection: tx?.statement_direction ?? null,
