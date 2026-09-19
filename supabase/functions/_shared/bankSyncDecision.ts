@@ -15,6 +15,12 @@ import {
   resolveBankTxDirection,
 } from './moneyDirection.ts';
 import {
+  normalizeCounterparty,
+  resolveOwnTransferCounterpart,
+  type OwnTransferResolution,
+  type WalletRef,
+} from './transferCounterpart.ts';
+import {
   describeCardMasks,
   extractCardMasks,
   matchUserCard,
@@ -36,11 +42,8 @@ export interface EBTransactionLike {
   [key: string]: unknown;
 }
 
-/** Korisnikov novčanik — kandidat za drugu stranu prijenosa. */
-export interface WalletRef {
-  readonly id: string;
-  readonly name: string | null;
-}
+export { normalizeCounterparty, resolveOwnTransferCounterpart };
+export type { OwnTransferResolution, WalletRef };
 
 export interface DecisionContext {
   /** UUID `custom_payment_sources` reda na koji je bankovni račun spojen. */
@@ -149,60 +152,6 @@ function pickDescription(tx: EBTransactionLike, isIncome: boolean): string {
 
 export function pickStableId(tx: EBTransactionLike): string | null {
   return tx.entry_reference || tx.transaction_id || null;
-}
-
-const plainName = (value: string | null | undefined): string =>
-  String(value ?? '').toLowerCase().replace(/[^a-z0-9\u00e0-\u017f]+/gi, '');
-
-/** Prva značajna riječ imena novčanika („Revolut biznis" → „revolut"). */
-const firstToken = (value: string | null | undefined): string => {
-  const tokens = String(value ?? '')
-    .toLowerCase()
-    .split(/[^a-z0-9\u00e0-\u017f]+/i)
-    .filter((t) => t.length >= 4);
-  return tokens[0] ?? '';
-};
-
-export type OwnTransferResolution =
-  | { readonly kind: 'own_transfer'; readonly counterpartSourceId: string; readonly signal: 'card' | 'name' }
-  | { readonly kind: 'ambiguous'; readonly matches: readonly string[] }
-  | { readonly kind: 'none' };
-
-/**
- * Je li protustrana DRUGI korisnikov novčanik.
- *
- * Redom: (a) broj kartice, (b) normalizirano ime novčanika sadržano u
- * normaliziranom imenu protustrane. Odredište je sigurno samo kad je točno
- * JEDAN novčanik kandidat; novčanik čiji se izvod sinkronizira nije kandidat.
- */
-export function resolveOwnTransferCounterpart(input: {
-  readonly syncPaymentSourceId: string;
-  readonly cardPaymentSourceId?: string | null;
-  readonly counterpartyText?: string | null;
-  readonly wallets?: readonly WalletRef[];
-}): OwnTransferResolution {
-  const sync = String(input.syncPaymentSourceId ?? '');
-  const cardSource = input.cardPaymentSourceId ?? null;
-  if (cardSource && cardSource !== sync) {
-    return { kind: 'own_transfer', counterpartSourceId: cardSource, signal: 'card' };
-  }
-
-  const haystack = normalizeCounterparty(input.counterpartyText ?? '');
-  if (!haystack) return { kind: 'none' };
-
-  const matches = (input.wallets ?? [])
-    .filter((w) => w.id !== sync)
-    .filter((w) => {
-      const full = plainName(w.name);
-      if (full.length >= 3 && haystack.includes(full)) return true;
-      const token = firstToken(w.name);
-      return token.length >= 4 && haystack.includes(token);
-    })
-    .map((w) => w.id);
-
-  if (matches.length === 1) return { kind: 'own_transfer', counterpartSourceId: matches[0], signal: 'name' };
-  if (matches.length > 1) return { kind: 'ambiguous', matches };
-  return { kind: 'none' };
 }
 
 export function decideBankSyncRow(
@@ -377,27 +326,6 @@ export interface MergeCandidateRow {
   readonly bank_transaction_id?: string | null;
   readonly bank_match_status?: string | null;
   readonly type?: string | null;
-}
-
-/** Odsijeca sve iza maske kartice (npr. „Revolut**5385* Dublin" → „Revolut**5385*"). */
-const MASK_CUT =
-  /(\d{6}\s*[x\*\u2022\.\-\s]{4,10}\d{4}|[\*\u2022]{2,}\s*\d{4}\*?|(?:kartica|kartice|card)\s*[:\-]?\s*[^\dA-Za-z]{0,6}\d{4})/i;
-
-/**
- * Normalizirano ime protustrane — jedini ključ po kojem se spaja.
- * Uzima dio prije „ - ", odsijeca sve iza maske kartice, pa briše sve
- * što nije slovo ili znamenka i spušta u mala slova.
- *
- * „Revolut**5385* Dublin" i „Revolut**5385* - 462765XXXXXX2081," → „revolut5385".
- */
-export function normalizeCounterparty(input: string | null | undefined): string {
-  let s = String(input ?? '').trim();
-  if (!s) return '';
-  const dash = s.indexOf(' - ');
-  if (dash > 0) s = s.slice(0, dash);
-  const m = MASK_CUT.exec(s);
-  if (m && m.index !== undefined) s = s.slice(0, m.index + m[0].length);
-  return s.toLowerCase().replace(/[^a-z0-9\u00e0-\u017f]+/gi, '');
 }
 
 /** Ime protustrane iz EB objekta, s opisom kao rezervom. */

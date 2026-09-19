@@ -739,6 +739,12 @@ const ImportReview = () => {
     const isTransferClass = row.classification.kind === 'transfer';
     // Bedž "Iz pravila" smije se prikazati SAMO za stvaran pogodak iz baze.
     const isRuleHit = isTransferClass && row.classification.origin === 'rule';
+    // Cilj je PREDODABRAN prepoznavanjem protustrane (kartica/ime) — sitna
+    // oznaka, korisnik ga i dalje može promijeniti.
+    const counterpartSignal =
+      isTransferClass && row.classification.origin === 'counterpart'
+        ? (row.classification.counterpartSignal ?? 'name')
+        : null;
     /**
      * Predznak je odgovor: kad smjer dolazi s izvoda, UI ne pita — samo javlja.
      * Vrijedi i za RUČNO označene prijenose: redak tipa expense/income nosi
@@ -848,6 +854,17 @@ const ImportReview = () => {
             {isRuleHit
               ? t('importReview.badges.fromRule')
               : t('importReview.badges.recognizedTransfer')}
+          </Badge>
+        )}
+        {counterpartSignal && (
+          <Badge
+            variant="outline"
+            className="ml-1 text-[10px]"
+            data-testid={`counterpart-preselected-${row.index}`}
+          >
+            {counterpartSignal === 'card'
+              ? t('importReview.badges.counterpartByCard')
+              : t('importReview.badges.counterpartByName')}
           </Badge>
         )}
         {autoFilled[row.index] && (
