@@ -40,6 +40,7 @@ import { sanitizeIban } from '@/lib/mailImport/iban';
 import { loadTransferRules, matchTransferRule, markTransferRulesUsed } from '@/lib/importReview/transferRules';
 import { resolveTransferDirection, statementDirectionFromType } from '@/lib/importReview/transferDirection';
 import { preselectTransferCounterpart } from '@/lib/importReview/counterpartPreselect';
+import { loadTransferPairCandidates, resolvePairForRow } from '@/lib/importReview/pairing';
 import { classifyTransferDescription, type MoneyDirection } from '@/lib/moneyDirection';
 import { resolvePaymentSourceKey } from '@/lib/paymentSource/resolve';
 import { areMerchantsSimilar } from '@/lib/duplicateDetection';
@@ -966,6 +967,54 @@ export const GlobalPDFImportHost = () => {
         try { logDiagnostic('import_review_targets_lookup_failed', { message: e instanceof Error ? e.message : String(e) }); } catch {}
       }
 
+      // --- DRUGA STRANA PRIJENOSA koja već stoji u knjigama -----------------
+      // Samo dohvat kandidata; odluku donosi čisti modul `transferPairMatch`.
+      const pairCandidates = await loadTransferPairCandidates(
+        supabase as any,
+        user.id,
+        transactions.map(t => new Date(t.date).toISOString()),
+      );
+
+      const pairCandidateById = new Map(pairCandidates.map(c => [c.id, c]));
+      /** Prijedlog uparivanja za jedan redak; nikad ne baca i ništa ne upisuje. */
+      const pairInfoFor = (
+        amount: number,
+        dateIso: string,
+        fingerprint: string,
+        direction: MoneyDirection | null,
+        counterpartWalletId: string | null,
+      ) => {
+        const match = resolvePairForRow(
+          { amount, dateIso, direction, counterpartWalletId, fingerprint },
+          sourceId,
+          pairCandidates,
+        );
+        if (match.kind === 'ambiguous') {
+          try {
+            logDiagnostic('transfer_pair_ambiguous', {
+              amount,
+              date: dateIso,
+              candidate_ids: match.candidateIds,
+              source_id: sourceId,
+            });
+          } catch { /* dijagnostika nikad ne ruši uvoz */ }
+          return { match, fields: {} as Record<string, unknown> };
+        }
+        if (match.kind !== 'pair') return { match, fields: {} as Record<string, unknown> };
+        const existing = pairCandidateById.get(match.existingId);
+        return {
+          match,
+          fields: {
+            pairedExistingId: match.existingId,
+            pairedCorrectedPayerFrom: match.correctedPayerFrom ?? null,
+            pairedPayerWalletId: match.payerWalletId,
+            pairedReceiverWalletId: match.receiverWalletId,
+            pairedExistingDate: existing?.date ?? null,
+            pairedExistingAmount: existing?.amount ?? null,
+          } as Record<string, unknown>,
+        };
+      };
+
       // Merge classifier output → review rows.
       const reviewRows: ImportReviewRow[] = transactions.map((tx, i) => {
         const fp = fingerprints[i];
@@ -992,6 +1041,19 @@ export const GlobalPDFImportHost = () => {
             description: tx.description,
             ruleDirection: override.direction,
           });
+          const rulePair = pairInfoFor(
+            tx.amount,
+            dateIso,
+            fp,
+            ruleDir.direction ?? override.direction,
+            override.targetIncomeSourceId,
+          );
+          if (rulePair.match.kind === 'same_row') {
+            return {
+              ...baseRow,
+              classification: { kind: 'new' as const, existsByFingerprint: true, deletedByFingerprint: false },
+            };
+          }
           return {
             ...baseRow,
             classification: {
@@ -1003,6 +1065,7 @@ export const GlobalPDFImportHost = () => {
               origin: 'rule' as const,
               directionSource: ruleDir.source ?? 'rule',
               directionConflict: ruleDir.conflict,
+              ...rulePair.fields,
             },
           };
         }
@@ -1028,18 +1091,40 @@ export const GlobalPDFImportHost = () => {
         });
         const preselected = preselect.kind === 'own_transfer' ? preselect : null;
         if (tx.type === 'transfer' || preselected) {
+          const rowPair = pairInfoFor(
+            tx.amount,
+            dateIso,
+            fp,
+            rowDirection.direction,
+            preselected?.counterpartSourceId ?? null,
+          );
+          if (rowPair.match.kind === 'same_row') {
+            return {
+              ...baseRow,
+              classification: { kind: 'new' as const, existsByFingerprint: true, deletedByFingerprint: false },
+            };
+          }
+          const pairedTarget =
+            rowPair.match.kind === 'pair'
+              ? (rowPair.match.payerWalletId === sourceId
+                  ? rowPair.match.receiverWalletId
+                  : rowPair.match.payerWalletId)
+              : null;
           return {
             ...baseRow,
             classification: {
               kind: 'transfer' as const,
-              targetIncomeSourceId: preselected?.counterpartSourceId ?? '',
+              targetIncomeSourceId: preselected?.counterpartSourceId ?? pairedTarget ?? '',
               ruleId: null,
               // Predznak s izvoda (sačuvan u pdfPostProcess) → opis → null.
               direction: rowDirection.direction,
-              origin: preselected ? ('counterpart' as const) : ('keyword' as const),
+              origin: preselected
+                ? ('counterpart' as const)
+                : (rowPair.match.kind === 'pair' ? ('counterpart' as const) : ('keyword' as const)),
               ...(preselected ? { counterpartSignal: preselected.signal } : {}),
               directionSource: rowDirection.source,
               directionConflict: rowDirection.conflict,
+              ...rowPair.fields,
             },
           };
         }

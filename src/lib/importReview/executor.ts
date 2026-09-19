@@ -122,6 +122,8 @@ export interface ExecutorResult {
   readonly merged: number;
   readonly inserted: number;
   readonly transfersCreated: number;
+  /** Redci spojeni s prijenosom koji je već stajao u knjigama (bez novog retka). */
+  readonly pairsMerged: number;
   readonly rulesSaved: number;
   /** Rows the user explicitly did NOT approve (unchecked auto/new, unanswered questions). */
   readonly skippedByUser: number;
@@ -205,10 +207,26 @@ type TransferPlan = {
   readonly decision: TransferDecision;
 };
 
+/**
+ * DRUGA STRANA VEĆ U KNJIGAMA — ne nastaje novi redak; postojeći dobiva otisak
+ * ovog izvoda kao protustranu.
+ */
+export type PairPlan = {
+  readonly rowIndex: number;
+  readonly tx: SerializedImportedTx;
+  readonly existingId: string;
+  /** Stvarni platitelj kad se ispravlja redak pogođen pravilom. */
+  readonly payerWalletId?: string | null;
+  readonly correctedPayerFrom?: string | null;
+  readonly signal?: 'card' | 'name' | null;
+};
+
 export interface PlannedWork {
   readonly merges: readonly MergePlan[];
   readonly inserts: readonly InsertPlan[];
   readonly transfers: readonly TransferPlan[];
+  /** Redci koji se spajaju s postojećim prijenosom (bez novog retka). */
+  readonly pairs: readonly PairPlan[];
   /** Ranije obrisani redci koje je korisnik svjesno vratio ("Vrati u knjige"). */
   readonly restores: readonly InsertPlan[];
   readonly skippedByUser: number;
@@ -235,6 +253,7 @@ export function planExecution(
   const inserts: InsertPlan[] = [];
   const transfers: TransferPlan[] = [];
   const restores: InsertPlan[] = [];
+  const pairs: PairPlan[] = [];
   let skippedByUser = 0;
   let skippedFingerprint = 0;
   let skippedPreviouslyDeleted = 0;
@@ -242,6 +261,26 @@ export function planExecution(
   for (const row of payload.rows) {
     const tx = txByIndex.get(row.index);
     if (!tx) continue;
+
+    // PAR PRIJE SVEGA: druga strana već stoji u knjigama, pa novi redak ne
+    // smije nastati. Korisnik ga kvačicom „ovo je drugi prijenos" odbija.
+    const cls = row.classification;
+    if (
+      cls.kind === 'transfer' &&
+      typeof cls.pairedExistingId === 'string' &&
+      cls.pairedExistingId.length > 0 &&
+      decisions.unpair?.[row.index] !== true
+    ) {
+      pairs.push({
+        rowIndex: row.index,
+        tx,
+        existingId: cls.pairedExistingId,
+        payerWalletId: cls.pairedPayerWalletId ?? null,
+        correctedPayerFrom: cls.pairedCorrectedPayerFrom ?? null,
+        signal: cls.counterpartSignal ?? null,
+      });
+      continue;
+    }
 
     // Transfer override wins.
     const td = decisions.transfers[row.index];
@@ -315,7 +354,7 @@ export function planExecution(
     skippedByUser += 1;
   }
 
-  return { merges, inserts, transfers, restores, skippedByUser, skippedFingerprint, skippedPreviouslyDeleted };
+  return { merges, inserts, transfers, pairs, restores, skippedByUser, skippedFingerprint, skippedPreviouslyDeleted };
 }
 
 export async function executeDecisions(input: ExecutorInput): Promise<ExecutorResult> {
@@ -325,7 +364,7 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
   const plan = planExecution(input.payload, input.decisions);
   const errors: string[] = [];
 
-  const plannedAll = [...plan.merges, ...plan.inserts, ...plan.transfers, ...plan.restores];
+  const plannedAll = [...plan.merges, ...plan.inserts, ...plan.transfers, ...plan.pairs, ...plan.restores];
   const states = await lookupFingerprintStates(
     input.supabase,
     input.userId,
@@ -340,11 +379,11 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
     states.deleted.has(fingerprint) && !restoreWanted.has(fingerprint) && !existingBefore.has(fingerprint);
 
   let skippedPreviouslyDeleted = plan.skippedPreviouslyDeleted;
-  const blockedPlans = [...plan.merges, ...plan.inserts, ...plan.transfers]
+  const blockedPlans = [...plan.merges, ...plan.inserts, ...plan.transfers, ...plan.pairs]
     .filter(item => isBlockedByDeleted(item.tx.fingerprint));
   skippedPreviouslyDeleted += blockedPlans.length;
 
-  const allPlans = [...plan.merges, ...plan.inserts, ...plan.transfers, ...plan.restores]
+  const allPlans = [...plan.merges, ...plan.inserts, ...plan.transfers, ...plan.pairs, ...plan.restores]
     .filter(item => !isBlockedByDeleted(item.tx.fingerprint));
 
   const pendingMerges = plan.merges.filter(
@@ -354,6 +393,9 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
     item => !existingBefore.has(item.tx.fingerprint) && !isBlockedByDeleted(item.tx.fingerprint),
   );
   const pendingTransfers = plan.transfers.filter(
+    item => !existingBefore.has(item.tx.fingerprint) && !isBlockedByDeleted(item.tx.fingerprint),
+  );
+  const pendingPairs = plan.pairs.filter(
     item => !existingBefore.has(item.tx.fingerprint) && !isBlockedByDeleted(item.tx.fingerprint),
   );
   const pendingRestores = plan.restores.filter(item => !existingBefore.has(item.tx.fingerprint));
@@ -522,6 +564,59 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
     }
   }
 
+  // --- PAIR branch: druga strana već stoji u knjigama ---------------------
+  // Ne nastaje novi redak. Postojeći dobiva otisak ovog izvoda kao protustranu;
+  // ako je bio ručan (bez bankovnog otiska), dobiva i sam otisak i 'confirmed'.
+  let pairsMerged = 0;
+  for (const p of pendingPairs) {
+    const counterpartPatch: Record<string, unknown> = {
+      counterpart_bank_transaction_id: p.tx.fingerprint,
+      counterpart_bank_raw_line: p.tx.bankRawLine ?? null,
+      transfer_counterpart_origin: 'pair',
+      import_batch_id: batchId,
+    };
+    // ISPRAVAK PLATITELJA — samo redak pogođen naučenim pravilom (mečer to već
+    // provjerava); pravi platitelj dolazi iz kartice ili imena.
+    if (p.correctedPayerFrom && p.payerWalletId) {
+      counterpartPatch.payment_source = `custom:${p.payerWalletId}`;
+      counterpartPatch.transfer_counterpart_origin = p.signal ?? 'card';
+    }
+    try {
+      const claim = await input.supabase
+        .from('expenses')
+        .update({
+          ...counterpartPatch,
+          bank_transaction_id: p.tx.fingerprint,
+          bank_match_status: 'confirmed',
+          bank_raw_line: p.tx.bankRawLine ?? null,
+          bank_raw_line_source: p.tx.bankRawLineSource ?? null,
+        })
+        .eq('id', p.existingId)
+        .eq('user_id', input.userId)
+        .is('bank_transaction_id', null)
+        .select('id');
+      if (!claim.error && (claim.data?.length ?? 0) > 0) { pairsMerged += 1; continue; }
+
+      const res = await input.supabase
+        .from('expenses')
+        .update(counterpartPatch)
+        .eq('id', p.existingId)
+        .eq('user_id', input.userId)
+        .select('id');
+      if (res.error) {
+        const detail = errorDetail(res.error);
+        errors.push(`pair:${p.existingId}:${detail}`);
+        writeErrorsByFingerprint.set(p.tx.fingerprint, detail);
+        continue;
+      }
+      if ((res.data?.length ?? 0) > 0) pairsMerged += 1;
+    } catch (e) {
+      const detail = errorDetail(e);
+      errors.push(`pair:${p.existingId}:${detail}`);
+      writeErrorsByFingerprint.set(p.tx.fingerprint, detail);
+    }
+  }
+
   // --- TRANSFER branch (bulk upsert, ignoreDuplicates) ---
   let transfersCreated = 0;
   if (pendingTransfers.length > 0) {
@@ -633,6 +728,7 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
     merged,
     inserted,
     transfersCreated,
+    pairsMerged,
     rulesSaved,
     skippedByUser: plan.skippedByUser,
     skippedFingerprint: plan.skippedFingerprint,
@@ -748,7 +844,7 @@ async function upsertRecoveringExistingUnique(input: {
   return { inserted, skippedDuplicate, skippedExistingUnique, failures: [] };
 }
 
-type OutcomePlan = MergePlan | InsertPlan | TransferPlan;
+type OutcomePlan = MergePlan | InsertPlan | TransferPlan | PairPlan;
 
 function failureFromPlan(
   item: OutcomePlan,
@@ -807,11 +903,48 @@ export async function lookupFingerprintStates(
         ok = false;
       }
     }
-    if (ok) return { live, deleted };
+    if (ok) {
+      const asCounterpart = await findCounterpartFingerprints(
+        supabase,
+        userId,
+        unique.filter(fp => !live.has(fp)),
+      );
+      for (const fp of asCounterpart) { live.add(fp); deleted.delete(fp); }
+      return { live, deleted };
+    }
   }
 
   const live = await findPersistedFingerprints(supabase, userId, unique);
   return { live, deleted: new Set() };
+}
+
+/**
+ * Otisak koji stoji kao PROTUSTRANA nekog prijenosa znači „već u knjigama" —
+ * inače bi ponovni uvoz istog izvoda drugi put stvorio isti prijenos.
+ */
+async function findCounterpartFingerprints(
+  supabase: ExecutorSupabaseClient,
+  userId: string,
+  fingerprints: readonly string[],
+): Promise<Set<string>> {
+  const found = new Set<string>();
+  for (let offset = 0; offset < fingerprints.length; offset += 200) {
+    const chunk = fingerprints.slice(offset, offset + 200);
+    try {
+      const res = await supabase
+        .from('expenses')
+        .select('counterpart_bank_transaction_id,status')
+        .eq('user_id', userId)
+        .in('counterpart_bank_transaction_id', chunk);
+      if (res.error) continue;
+      for (const row of res.data ?? []) {
+        if (!isCountedExpenseRow(row)) continue;
+        const fp = row?.counterpart_bank_transaction_id;
+        if (typeof fp === 'string') found.add(fp);
+      }
+    } catch { /* protustrana je dodatak, nikad razlog pada uvoza */ }
+  }
+  return found;
 }
 
 async function findPersistedFingerprints(
@@ -834,6 +967,10 @@ async function findPersistedFingerprints(
       const fingerprint = row?.bank_transaction_id;
       if (typeof fingerprint === 'string') found.add(fingerprint);
     }
+  }
+  const missing = unique.filter(fp => !found.has(fp));
+  if (missing.length > 0) {
+    for (const fp of await findCounterpartFingerprints(supabase, userId, missing)) found.add(fp);
   }
   return found;
 }

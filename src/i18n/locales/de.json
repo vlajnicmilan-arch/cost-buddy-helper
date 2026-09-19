@@ -6256,7 +6256,10 @@
       "recognizedTransfer": "Erkannte Umbuchung",
       "previouslyDeleted": "früher gelöscht — kehrt nicht zurück",
       "counterpartByCard": "Anhand der Karte erkannt",
-      "counterpartByName": "Anhand des Namens erkannt"
+      "counterpartByName": "Anhand des Namens erkannt",
+      "pairedExisting": "Bereits gebucht: {{payer}} → {{receiver}}, {{date}}, {{amount}}",
+      "pairedMerge": "Mit vorhandenem zusammenführen",
+      "pairedUnpair": "Das ist eine andere Umbuchung"
     },
     "markAsTransfer": "Dies ist eine Überweisung",
     "transferTo": "Zu Wallet",

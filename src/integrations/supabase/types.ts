@@ -1829,6 +1829,8 @@ export type Database = {
           category_origin: string | null
           client_request_id: string | null
           collaborator_id: string | null
+          counterpart_bank_raw_line: string | null
+          counterpart_bank_transaction_id: string | null
           created_at: string
           currency: string | null
           date: string
@@ -1868,6 +1870,7 @@ export type Database = {
           status: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by: string | null
           time_confidence: string
+          transfer_counterpart_origin: string | null
           type: string
           updated_at: string
           user_edited_event_at: boolean
@@ -1896,6 +1899,8 @@ export type Database = {
           category_origin?: string | null
           client_request_id?: string | null
           collaborator_id?: string | null
+          counterpart_bank_raw_line?: string | null
+          counterpart_bank_transaction_id?: string | null
           created_at?: string
           currency?: string | null
           date?: string
@@ -1935,6 +1940,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by?: string | null
           time_confidence?: string
+          transfer_counterpart_origin?: string | null
           type?: string
           updated_at?: string
           user_edited_event_at?: boolean
@@ -1963,6 +1969,8 @@ export type Database = {
           category_origin?: string | null
           client_request_id?: string | null
           collaborator_id?: string | null
+          counterpart_bank_raw_line?: string | null
+          counterpart_bank_transaction_id?: string | null
           created_at?: string
           currency?: string | null
           date?: string
@@ -2002,6 +2010,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by?: string | null
           time_confidence?: string
+          transfer_counterpart_origin?: string | null
           type?: string
           updated_at?: string
           user_edited_event_at?: boolean
@@ -7354,6 +7363,8 @@ export type Database = {
           category_origin: string | null
           client_request_id: string | null
           collaborator_id: string | null
+          counterpart_bank_raw_line: string | null
+          counterpart_bank_transaction_id: string | null
           created_at: string
           currency: string | null
           date: string
@@ -7393,6 +7404,7 @@ export type Database = {
           status: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by: string | null
           time_confidence: string
+          transfer_counterpart_origin: string | null
           type: string
           updated_at: string
           user_edited_event_at: boolean

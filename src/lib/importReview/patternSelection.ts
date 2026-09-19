@@ -31,6 +31,8 @@ export interface PatternSelectionRow {
   readonly classificationTargetIncomeSourceId?: string | null;
   readonly existsByFingerprint?: boolean;
   readonly lateMatchOffer?: string | null;
+  /** Redak uparen s postojećim prijenosom — ne ulazi u prag obrasca. */
+  readonly pairedExistingId?: string | null;
   /** Novčanik čiji se izvod uvozi (iz uvezene transakcije). */
   readonly paymentSource?: string | null;
   /** Tip iz uvezene transakcije; ima prednost pred `type`. */
@@ -108,6 +110,9 @@ export function selectPatternInputs(input: PatternSelectionInput): PatternSelect
   for (const row of input.rows) {
     const parts = keyPartsOf(row);
     const td = input.transfers[row.index];
+
+    // Upareni redak je odgovor sam po sebi — ne uči obrazac i ne puni se njime.
+    if (row.pairedExistingId) continue;
 
     if (td) {
       if (!td.enabled) continue;            // korisnik je rekao "nije prijenos"

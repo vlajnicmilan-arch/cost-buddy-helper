@@ -39,6 +39,8 @@ import {
   isPreviouslyDeletedRow,
   isRestoreDeleted,
   setRestoreDeleted,
+  setUnpair,
+  isUnpaired,
   setAutoMerge,
   setNeedsExplanation,
   setNewRow,
@@ -244,6 +246,10 @@ const ImportReview = () => {
           existsByFingerprint:
             row.classification.kind === 'new' ? row.classification.existsByFingerprint : false,
           lateMatchOffer: row.lateMatchOffer ?? null,
+          pairedExistingId:
+            row.classification.kind === 'transfer'
+              ? (row.classification.pairedExistingId ?? null)
+              : null,
           paymentSource: tx?.paymentSource ?? null,
           txType: tx?.type ?? null,
           statementDirection: tx?.statement_direction ?? null,
@@ -517,6 +523,10 @@ const ImportReview = () => {
   const updateRestoreDeleted = useCallback((idx: number, value: boolean) => {
     setDecisions(prev => (prev ? setRestoreDeleted(prev, idx, value) : prev));
   }, []);
+  /** „Ovo je drugi prijenos" — odbija predloženo uparivanje s postojećim retkom. */
+  const updateUnpair = useCallback((idx: number, value: boolean) => {
+    setDecisions(prev => (prev ? setUnpair(prev, idx, value) : prev));
+  }, []);
   const updateNew = useCallback((idx: number, value: boolean) => {
     setDecisions(prev => (prev ? setNewRow(prev, idx, value) : prev));
   }, []);
@@ -627,6 +637,12 @@ const ImportReview = () => {
   const fmtDate = (iso: string) => formatDateUi(iso, i18n.language);
 
   const targets = payload.availableTargets ?? [];
+  /** Ime novčanika za prikaz — izvor izvoda ili jedan od ciljeva. */
+  const walletName = (id: string | null): string => {
+    if (!id) return '';
+    if (id === payload.sourceId) return payload.sourceName;
+    return targets.find(x => x.id === id)?.name ?? '';
+  };
 
   /**
    * Given a row + user's picked target id, build the TransferDecision to
@@ -727,6 +743,10 @@ const ImportReview = () => {
       isTransferClass && row.classification.origin === 'counterpart'
         ? (row.classification.counterpartSignal ?? 'name')
         : null;
+    // Prijedlog uparivanja s retkom koji je VEĆ u knjigama. Zadano je SPOJI;
+    // korisnik ga može odbiti („ovo je drugi prijenos").
+    const pairedId = isTransferClass ? (row.classification.pairedExistingId ?? null) : null;
+    const unpaired = isUnpaired(decisions, row.index);
     /**
      * Predznak je odgovor: kad smjer dolazi s izvoda, UI ne pita — samo javlja.
      * Vrijedi i za RUČNO označene prijenose: redak tipa expense/income nosi
@@ -848,6 +868,32 @@ const ImportReview = () => {
               ? t('importReview.badges.counterpartByCard')
               : t('importReview.badges.counterpartByName')}
           </Badge>
+        )}
+        {pairedId && isTransferClass && (
+          <div
+            className="rounded-lg border border-border/60 bg-muted/40 p-2 space-y-1"
+            data-testid={`paired-existing-${row.index}`}
+          >
+            <p className="text-xs text-foreground">
+              {t('importReview.badges.pairedExisting', {
+                payer: walletName(row.classification.pairedPayerWalletId ?? null),
+                receiver: walletName(row.classification.pairedReceiverWalletId ?? null),
+                date: row.classification.pairedExistingDate ?? '',
+                amount: formatAmount(row.classification.pairedExistingAmount ?? row.amount),
+              })}
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-8 px-2 text-xs"
+              onClick={() => updateUnpair(row.index, !unpaired)}
+            >
+              {unpaired
+                ? t('importReview.badges.pairedMerge')
+                : t('importReview.badges.pairedUnpair')}
+            </Button>
+          </div>
         )}
         {autoFilled[row.index] && (
           <Badge

@@ -6268,7 +6268,10 @@
       "recognizedTransfer": "Prepoznat prijenos",
       "previouslyDeleted": "ranije obrisano — neće se vratiti",
       "counterpartByCard": "Prepoznato po kartici",
-      "counterpartByName": "Prepoznato po imenu"
+      "counterpartByName": "Prepoznato po imenu",
+      "pairedExisting": "Već u knjigama: {{payer}} → {{receiver}}, {{date}}, {{amount}}",
+      "pairedMerge": "Spoji s postojećim",
+      "pairedUnpair": "Ovo je drugi prijenos"
     },
     "markAsTransfer": "Ovo je prijenos",
     "transferTo": "Na novčanik",
