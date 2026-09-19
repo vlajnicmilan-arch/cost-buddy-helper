@@ -102,6 +102,9 @@ export const EXPENSE_OMITTED_COLUMNS = [
   'reviewed_by',
   'deleted_by',
   'client_request_id',
+  // Uparivanje dviju strana prijenosa — piše ga uvoz/sinkronizacija, UI ih ne čita.
+  'counterpart_bank_transaction_id',
+  'transfer_counterpart_origin',
 ] as const;
 
 /**
