@@ -16,6 +16,10 @@ import {
 } from "../_shared/bankSyncDecision.ts";
 
 import type { UserCardRef } from "../_shared/cardMatch.ts";
+import {
+  matchTransferPair,
+  type TransferPairCandidate,
+} from "../_shared/transferPairMatch.ts";
 
 interface Body {
   bank_account_id: string;
