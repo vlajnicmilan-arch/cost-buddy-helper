@@ -903,7 +903,15 @@ export async function lookupFingerprintStates(
         ok = false;
       }
     }
-    if (ok) return { live, deleted };
+    if (ok) {
+      const asCounterpart = await findCounterpartFingerprints(
+        supabase,
+        userId,
+        unique.filter(fp => !live.has(fp)),
+      );
+      for (const fp of asCounterpart) { live.add(fp); deleted.delete(fp); }
+      return { live, deleted };
+    }
   }
 
   const live = await findPersistedFingerprints(supabase, userId, unique);
