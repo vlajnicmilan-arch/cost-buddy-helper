@@ -1041,6 +1041,19 @@ export const GlobalPDFImportHost = () => {
             description: tx.description,
             ruleDirection: override.direction,
           });
+          const rulePair = pairInfoFor(
+            tx.amount,
+            dateIso,
+            fp,
+            ruleDir.direction ?? override.direction,
+            override.targetIncomeSourceId,
+          );
+          if (rulePair.match.kind === 'same_row') {
+            return {
+              ...baseRow,
+              classification: { kind: 'new' as const, existsByFingerprint: true, deletedByFingerprint: false },
+            };
+          }
           return {
             ...baseRow,
             classification: {
@@ -1052,6 +1065,7 @@ export const GlobalPDFImportHost = () => {
               origin: 'rule' as const,
               directionSource: ruleDir.source ?? 'rule',
               directionConflict: ruleDir.conflict,
+              ...rulePair.fields,
             },
           };
         }
