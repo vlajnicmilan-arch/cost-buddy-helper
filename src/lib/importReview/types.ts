@@ -253,6 +253,12 @@ export interface ImportReviewDecisions {
    * vraća. Zadano prazno: obrisani redak se NIKAD ne vraća sam.
    */
   readonly restoreDeleted?: Readonly<Record<number, boolean>>;
+  /**
+   * „OVO JE DRUGI PRIJENOS" — korisnik odbija ponuđeno uparivanje s postojećim
+   * retkom, pa redak ulazi u knjige kao nov. Zadano prazno: ponuđeni par se
+   * spaja.
+   */
+  readonly unpair?: Readonly<Record<number, boolean>>;
 }
 
 export interface ImportReviewDraft {
