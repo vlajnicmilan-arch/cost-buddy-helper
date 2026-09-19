@@ -12,6 +12,7 @@ import {
   counterpartyOf,
   type EBTransactionLike,
   type BankSyncDecision,
+  type WalletRef,
 } from "../_shared/bankSyncDecision.ts";
 
 import type { UserCardRef } from "../_shared/cardMatch.ts";
@@ -236,6 +237,15 @@ Deno.serve(async (req) => {
       .select("id, last_four_digits, payment_source_id")
       .eq("user_id", userId);
     const userCards: UserCardRef[] = (cardRows || []) as UserCardRef[];
+
+    // Svi korisnikovi novčanici — kandidati za drugu stranu prijenosa.
+    const { data: walletRows } = await admin
+      .from("custom_payment_sources")
+      .select("id, name")
+      .eq("user_id", userId)
+      .is("deleted_at", null);
+    const userWallets: WalletRef[] = ((walletRows || []) as Array<{ id: string; name: string | null }>)
+      .map((w) => ({ id: w.id, name: w.name }));
 
     // Sirovi zapis retka koji NIJE upisan u expenses (rezervacija, traži
     // potvrdu) mora negdje završiti — inače dokaza nema.
