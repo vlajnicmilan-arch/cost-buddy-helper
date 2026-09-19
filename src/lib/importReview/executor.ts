@@ -362,7 +362,7 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
   const plan = planExecution(input.payload, input.decisions);
   const errors: string[] = [];
 
-  const plannedAll = [...plan.merges, ...plan.inserts, ...plan.transfers, ...plan.restores];
+  const plannedAll = [...plan.merges, ...plan.inserts, ...plan.transfers, ...plan.pairs, ...plan.restores];
   const states = await lookupFingerprintStates(
     input.supabase,
     input.userId,
