@@ -286,13 +286,59 @@ export function decideBankSyncRow(
     card: cardHit,
   };
 
-  // Broj kartice pripada DRUGOM korisnikovom novčaniku → ne upisujemo tiho.
+  // Je li protustrana DRUGI korisnikov novčanik (kartica, pa ime).
+  const own = resolveOwnTransferCounterpart({
+    syncPaymentSourceId: ctx.syncPaymentSourceId,
+    cardPaymentSourceId: cardHit ? cardHit.paymentSourceId : null,
+    counterpartyText: tx.creditor?.name || tx.debtor?.name || description,
+    wallets: ctx.wallets,
+  });
+  // Ključne riječi su dodatni signal u zapisu, ne određuju odredište.
+  const keywordSignal = isTransferDescription(description);
+
+  if (own.kind === 'own_transfer') {
+    const pair = buildTransferPair({
+      statementSource: `custom:${ctx.syncPaymentSourceId}`,
+      counterpartSourceId: own.counterpartSourceId,
+      direction: dir.direction,
+    });
+    if (pair) {
+      return {
+        action: 'upsert', reason: 'ok', stableId, isReservation: false,
+        amount: absAmount, date: txDate, description,
+        type: 'transfer',
+        paymentSourceCardId: cardHit ? cardHit.cardId : null,
+        transferCandidate: null,
+        transfer: {
+          counterpartSourceId: own.counterpartSourceId,
+          signal: own.signal,
+          paymentSource: pair.paymentSource,
+          incomeSourceId: pair.incomeSourceId,
+        },
+        ambiguousTransfer: false,
+        raw: raw({
+          ...decisionCore,
+          transfer_auto: true,
+          transfer_signal: own.signal,
+          transfer_keyword_signal: keywordSignal,
+          transfer_counterpart_source_id: own.counterpartSourceId,
+          transfer_payment_source: pair.paymentSource,
+          transfer_income_source_id: pair.incomeSourceId,
+        }),
+      };
+    }
+  }
+
+  // Broj kartice pripada DRUGOM korisnikovom novčaniku, a prijenos nije
+  // jednoznačan → ne upisujemo tiho.
   if (cardHit && cardHit.paymentSourceId !== ctx.syncPaymentSourceId) {
     return {
       action: 'skip', reason: 'card_source_mismatch', stableId, isReservation: false,
       amount: absAmount, date: txDate, description,
       type: isIncome ? 'income' : 'expense', paymentSourceCardId: null,
       transferCandidate: { counterpartSourceId: cardHit.paymentSourceId, cardId: cardHit.cardId },
+      transfer: null,
+      ambiguousTransfer: own.kind === 'ambiguous',
       raw: raw({
         ...decisionCore,
         action: 'skip',
@@ -309,7 +355,15 @@ export function decideBankSyncRow(
     type: isIncome ? 'income' : 'expense',
     paymentSourceCardId: cardHit ? cardHit.cardId : null,
     transferCandidate: null,
-    raw: raw(decisionCore),
+    transfer: null,
+    ambiguousTransfer: own.kind === 'ambiguous',
+    raw: raw({
+      ...decisionCore,
+      ...(own.kind === 'ambiguous'
+        ? { transfer_candidate_ambiguous: true, transfer_candidates: own.matches }
+        : {}),
+      transfer_keyword_signal: keywordSignal,
+    }),
   };
 }
 
