@@ -251,6 +251,7 @@ export function planExecution(
   const inserts: InsertPlan[] = [];
   const transfers: TransferPlan[] = [];
   const restores: InsertPlan[] = [];
+  const pairs: PairPlan[] = [];
   let skippedByUser = 0;
   let skippedFingerprint = 0;
   let skippedPreviouslyDeleted = 0;
