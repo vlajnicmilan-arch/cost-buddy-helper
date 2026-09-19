@@ -396,17 +396,37 @@ Deno.serve(async (req) => {
       // Retci koji već nose svoj proknjiženi bankovni ID se ne diraju.
       const mergeFrom = new Date(new Date(txDate).getTime() - 3 * 86400000).toISOString();
       const mergeTo = new Date(new Date(txDate).getTime() + 4 * 86400000).toISOString();
-      const { data: bankRows } = await admin
+      let mergeQuery = admin
         .from("expenses")
         .select("id, amount, date, description, payment_source_card_id, bank_transaction_id, bank_match_status, type, status")
         .eq("user_id", userId)
-        .eq("payment_source", paymentSourceRef)
-        .in("type", [type, "transfer"])
         .is("deleted_at", null)
         .gte("amount", absAmount - 0.01)
         .lte("amount", absAmount + 0.01)
         .gte("date", mergeFrom)
         .lte("date", mergeTo);
+
+      if (decision.transfer) {
+        // Prijenos ima DVIJE strane — postojeći redak može stajati na bilo kojoj.
+        const a = account.linked_payment_source_id;
+        const b = decision.transfer.counterpartSourceId;
+        mergeQuery = mergeQuery
+          .eq("type", "transfer")
+          .or(
+            [
+              `payment_source.eq."custom:${a}"`,
+              `payment_source.eq."custom:${b}"`,
+              `income_source_id.eq.${a}`,
+              `income_source_id.eq.${b}`,
+            ].join(","),
+          );
+      } else {
+        mergeQuery = mergeQuery
+          .eq("payment_source", paymentSourceRef)
+          .in("type", [type, "transfer"]);
+      }
+
+      const { data: bankRows } = await mergeQuery;
 
       const mergeTarget = pickMergeTarget(
         (bankRows || [])
