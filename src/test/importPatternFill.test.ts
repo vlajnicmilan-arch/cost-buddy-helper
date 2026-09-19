@@ -4,6 +4,8 @@ import { resolve } from 'node:path';
 import { computePatternFill, type PatternCandidateRow, type PatternManualDecision } from '@/lib/importReview/patternFill';
 
 const SRC = readFileSync(resolve(process.cwd(), 'src/pages/ImportReview.tsx'), 'utf8');
+/** Odabir kandidata živi u čistoj funkciji — čuvamo i nju. */
+const SELECTION = readFileSync(resolve(process.cwd(), 'src/lib/importReview/patternSelection.ts'), 'utf8');
 
 /**
  * ČUVAR UČENJA UNUTAR SERIJE (/import-review).
