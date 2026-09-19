@@ -6256,7 +6256,10 @@
       "recognizedTransfer": "Recognised transfer",
       "previouslyDeleted": "previously deleted — will not return",
       "counterpartByCard": "Recognised by card",
-      "counterpartByName": "Recognised by name"
+      "counterpartByName": "Recognised by name",
+      "pairedExisting": "Already in the books: {{payer}} → {{receiver}}, {{date}}, {{amount}}",
+      "pairedMerge": "Merge with existing",
+      "pairedUnpair": "This is a different transfer"
     },
     "markAsTransfer": "This is a transfer",
     "transferTo": "To wallet",
