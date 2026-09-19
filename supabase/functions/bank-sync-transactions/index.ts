@@ -509,19 +509,101 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ── BANKIN SALDO JE ISTINA ────────────────────────────────────────────
+    // Nakon obrade transakcija dohvati saldo iz banke, spremi sve vraćene
+    // tipove sirovo i postavi sidro povezanog novčanika na bankin saldo.
+    const syncedAt = new Date().toISOString();
+    let balanceInfo: Record<string, unknown> | null = null;
+    try {
+      const balRes = await ebFetch(`/accounts/${encodeURIComponent(account.account_uid)}/balances`);
+      const balText = await balRes.text();
+      if (!balRes.ok) throw new Error(`balances_fetch_failed_${balRes.status}: ${balText.slice(0, 200)}`);
+      const balJson = JSON.parse(balText);
+      const list = balJson.balances ?? [];
+      const picked = pickBankBalance(list);
+      if (!picked) throw new Error("balances_no_usable_type");
+
+      balanceInfo = {
+        picked_amount: picked.amount,
+        picked_balance_type: picked.balanceType,
+        picked_reference_date: picked.referenceDate,
+        fetched_at: syncedAt,
+        balances: list,
+      };
+
+      await admin
+        .from("bank_accounts")
+        .update({
+          balance: picked.amount,
+          balance_updated_at: syncedAt,
+          raw_payload: { ...((account as any).raw_payload ?? {}), balances_raw: balanceInfo },
+        })
+        .eq("id", account.id);
+
+      // Sidro povezanog novčanika — isti mehanizam kao u bank-link-account.
+      const sourceId = account.linked_payment_source_id;
+      const { data: src } = await admin
+        .from("custom_payment_sources")
+        .select("correction_anchor_balance, correction_anchor_date, balance")
+        .eq("id", sourceId)
+        .maybeSingle();
+
+      const { error: anchorErr } = await admin
+        .from("custom_payment_sources")
+        .update({
+          correction_anchor_balance: picked.amount,
+          correction_anchor_date: syncedAt,
+          anchor_source: "bank_reconciliation",
+        })
+        .eq("id", sourceId);
+      if (anchorErr) throw new Error(`anchor_update_failed: ${anchorErr.message}`);
+
+      await admin.from("anchor_audit").insert({
+        source_id: sourceId,
+        user_id: userId,
+        old_anchor_date: src?.correction_anchor_date ?? null,
+        old_anchor_balance: src?.correction_anchor_balance ?? null,
+        old_balance: src?.balance ?? null,
+        new_anchor_date: syncedAt,
+        new_anchor_balance: picked.amount,
+        anchor_source: "bank_reconciliation",
+        reason: "bank-sync: anchor from bank balance",
+        actor: userId,
+      });
+
+      const { error: recErr } = await admin.rpc("recompute_custom_source_balance", {
+        p_source_id: sourceId,
+      });
+      if (recErr) console.warn("[bank-sync-transactions] recompute err", recErr.message);
+    } catch (balErr: any) {
+      // Transakcije su obrađene; sidro ostaje nepromijenjeno.
+      console.warn("[bank-sync-transactions] balances failed", balErr?.message ?? balErr);
+      diagnostics.push({
+        event: "bank_sync_balance_failed",
+        session_id: `bank-sync-${account.id}`,
+        user_id: userId,
+        severity: "warning",
+        details: {
+          bank_account_id: account.id,
+          payment_source: paymentSourceRef,
+          error: String(balErr?.message ?? balErr),
+        },
+      });
+    }
+
     if (diagnostics.length > 0) {
       const { error: diagErr } = await admin.from("app_diagnostics_logs").insert(diagnostics);
       if (diagErr) console.warn("[bank-sync-transactions] diagnostics err", diagErr.message);
     }
 
-
     await admin
       .from("bank_accounts")
       .update({
-        last_synced_at: new Date().toISOString(),
+        last_synced_at: syncedAt,
         last_sync_error: null,
       })
       .eq("id", account.id);
+
 
     return new Response(JSON.stringify({
       success: true,
