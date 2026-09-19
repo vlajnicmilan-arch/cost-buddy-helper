@@ -200,10 +200,28 @@ describe('(f) bankin saldo je istina', () => {
     expect(picked?.balanceType).toBe('CLBD');
   });
 
+  it('ITBD ima prednost pred ITAV (interim booked je proknjiženi)', () => {
+    const picked = pickBankBalance([
+      { balance_type: 'ITBD', balance_amount: { amount: '1357.93', currency: 'EUR' }, reference_date: '2026-09-19' },
+      { balance_type: 'ITAV', balance_amount: { amount: '1338.79', currency: 'EUR' }, reference_date: '2026-09-19' },
+    ]);
+    expect(picked?.amount).toBe(1357.93);
+    expect(picked?.balanceType).toBe('ITBD');
+  });
+
   it('bez proknjiženog uzima raspoloživi', () => {
     expect(
       pickBankBalance([{ name: 'interimAvailable', balance_amount: { amount: '57.34' } }])?.amount,
     ).toBe(57.34);
+  });
+
+  it('CLBD ima prednost i pred ITBD', () => {
+    const picked = pickBankBalance([
+      { balance_type: 'ITBD', balance_amount: { amount: '1357.93', currency: 'EUR' } },
+      { balance_type: 'CLBD', balance_amount: { amount: '1300.00', currency: 'EUR' } },
+    ]);
+    expect(picked?.amount).toBe(1300.0);
+    expect(picked?.balanceType).toBe('CLBD');
   });
 
   it('prazan ili neupotrebljiv odgovor → null (sidro se ne mijenja)', () => {
