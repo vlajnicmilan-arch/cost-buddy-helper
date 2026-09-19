@@ -39,6 +39,7 @@ import {
 import { sanitizeIban } from '@/lib/mailImport/iban';
 import { loadTransferRules, matchTransferRule, markTransferRulesUsed } from '@/lib/importReview/transferRules';
 import { resolveTransferDirection, statementDirectionFromType } from '@/lib/importReview/transferDirection';
+import { preselectTransferCounterpart } from '@/lib/importReview/counterpartPreselect';
 import { classifyTransferDescription, type MoneyDirection } from '@/lib/moneyDirection';
 import { resolvePaymentSourceKey } from '@/lib/paymentSource/resolve';
 import { areMerchantsSimilar } from '@/lib/duplicateDetection';
@@ -1013,21 +1014,36 @@ export const GlobalPDFImportHost = () => {
         // AI/pdfPostProcess flagged this row as a transfer but no rule matched
         // → route into Transfers section with EMPTY target so the user MUST
         // pick a destination wallet (no silent NULL insert, no default pick).
-        if (tx.type === 'transfer') {
+        // PREDODABIR protustrane — isti modul koji koristi bankovna
+        // sinkronizacija. Samo prijedlog: ništa se ne upisuje bez potvrde.
+        const preselect = preselectTransferCounterpart({
+          sourceWalletId: sourceId,
+          description: tx.description,
+          merchantName: tx.merchant_name ?? null,
+          wallets: customPaymentSources.map(s => ({
+            id: s.id,
+            name: s.name,
+            cards: (s.cards ?? []).map(c => ({ id: c.id, last_four_digits: c.last_four_digits })),
+          })),
+        });
+        const preselected = preselect.kind === 'own_transfer' ? preselect : null;
+        if (tx.type === 'transfer' || preselected) {
           return {
             ...baseRow,
             classification: {
               kind: 'transfer' as const,
-              targetIncomeSourceId: '',
+              targetIncomeSourceId: preselected?.counterpartSourceId ?? '',
               ruleId: null,
               // Predznak s izvoda (sačuvan u pdfPostProcess) → opis → null.
               direction: rowDirection.direction,
-              origin: 'keyword' as const,
+              origin: preselected ? ('counterpart' as const) : ('keyword' as const),
+              ...(preselected ? { counterpartSignal: preselected.signal } : {}),
               directionSource: rowDirection.source,
               directionConflict: rowDirection.conflict,
             },
           };
         }
+
         const previouslyDeleted = !existingFpSet.has(fp) && deletedFpSet.has(fp);
         const alreadyInBooks = existingFpSet.has(fp) || confirmedTwinIdx.has(baseRow.index);
         return {

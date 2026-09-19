@@ -63,10 +63,13 @@ export type ClassificationKind =
       /**
        * Odakle prijenos dolazi: `rule` = pogodak naučenog pravila iz
        * `import_transfer_rules`, `keyword` = deterministički safety-net iz
-       * opisa (pdfPostProcess). Bedž "Iz pravila" smije se prikazati SAMO za
-       * `rule` — inače laže.
+       * opisa (pdfPostProcess), `counterpart` = protustrana je prepoznata kao
+       * DRUGI korisnikov novčanik (kartica ili ime) pa je cilj PREDODABRAN.
+       * Bedž "Iz pravila" smije se prikazati SAMO za `rule` — inače laže.
        */
-      readonly origin: 'rule' | 'keyword';
+      readonly origin: 'rule' | 'keyword' | 'counterpart';
+      /** Što je odlučilo predodabir cilja kod `origin: 'counterpart'`. */
+      readonly counterpartSignal?: 'card' | 'name';
       /** Odakle je smjer izveden — `amount` znači "piše na izvodu". */
       readonly directionSource: DirectionSource;
       /** Opis se kosio s predznakom; predznak je pobijedio. */
