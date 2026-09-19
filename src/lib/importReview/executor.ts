@@ -910,6 +910,35 @@ export async function lookupFingerprintStates(
   return { live, deleted: new Set() };
 }
 
+/**
+ * Otisak koji stoji kao PROTUSTRANA nekog prijenosa znači „već u knjigama" —
+ * inače bi ponovni uvoz istog izvoda drugi put stvorio isti prijenos.
+ */
+async function findCounterpartFingerprints(
+  supabase: ExecutorSupabaseClient,
+  userId: string,
+  fingerprints: readonly string[],
+): Promise<Set<string>> {
+  const found = new Set<string>();
+  for (let offset = 0; offset < fingerprints.length; offset += 200) {
+    const chunk = fingerprints.slice(offset, offset + 200);
+    try {
+      const res = await supabase
+        .from('expenses')
+        .select('counterpart_bank_transaction_id,status')
+        .eq('user_id', userId)
+        .in('counterpart_bank_transaction_id', chunk);
+      if (res.error) continue;
+      for (const row of res.data ?? []) {
+        if (!isCountedExpenseRow(row)) continue;
+        const fp = row?.counterpart_bank_transaction_id;
+        if (typeof fp === 'string') found.add(fp);
+      }
+    } catch { /* protustrana je dodatak, nikad razlog pada uvoza */ }
+  }
+  return found;
+}
+
 async function findPersistedFingerprints(
   supabase: ExecutorSupabaseClient,
   userId: string,
@@ -930,6 +959,10 @@ async function findPersistedFingerprints(
       const fingerprint = row?.bank_transaction_id;
       if (typeof fingerprint === 'string') found.add(fingerprint);
     }
+  }
+  const missing = unique.filter(fp => !found.has(fp));
+  if (missing.length > 0) {
+    for (const fp of await findCounterpartFingerprints(supabase, userId, missing)) found.add(fp);
   }
   return found;
 }
