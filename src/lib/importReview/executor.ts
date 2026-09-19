@@ -122,6 +122,8 @@ export interface ExecutorResult {
   readonly merged: number;
   readonly inserted: number;
   readonly transfersCreated: number;
+  /** Redci spojeni s prijenosom koji je već stajao u knjigama (bez novog retka). */
+  readonly pairsMerged: number;
   readonly rulesSaved: number;
   /** Rows the user explicitly did NOT approve (unchecked auto/new, unanswered questions). */
   readonly skippedByUser: number;
@@ -726,6 +728,7 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
     merged,
     inserted,
     transfersCreated,
+    pairsMerged,
     rulesSaved,
     skippedByUser: plan.skippedByUser,
     skippedFingerprint: plan.skippedFingerprint,
@@ -841,7 +844,7 @@ async function upsertRecoveringExistingUnique(input: {
   return { inserted, skippedDuplicate, skippedExistingUnique, failures: [] };
 }
 
-type OutcomePlan = MergePlan | InsertPlan | TransferPlan;
+type OutcomePlan = MergePlan | InsertPlan | TransferPlan | PairPlan;
 
 function failureFromPlan(
   item: OutcomePlan,
