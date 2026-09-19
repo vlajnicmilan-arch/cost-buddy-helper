@@ -31,6 +31,8 @@ export interface PatternSelectionRow {
   readonly classificationTargetIncomeSourceId?: string | null;
   readonly existsByFingerprint?: boolean;
   readonly lateMatchOffer?: string | null;
+  /** Redak uparen s postojećim prijenosom — ne ulazi u prag obrasca. */
+  readonly pairedExistingId?: string | null;
   /** Novčanik čiji se izvod uvozi (iz uvezene transakcije). */
   readonly paymentSource?: string | null;
   /** Tip iz uvezene transakcije; ima prednost pred `type`. */
