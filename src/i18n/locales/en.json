@@ -6467,6 +6467,7 @@
     "prevMonth": "Previous month",
     "nextMonth": "Next month",
     "count": "{{count}} receipts to hand over",
+    "empty": "No photographed receipts for {{period}}",
     "missingDateCount": "{{count}} without date — check",
     "submittedAt": "Submitted {{date}}",
     "markSubmitted": "Mark as submitted",
