@@ -477,7 +477,9 @@ Deno.serve(async (req) => {
       }
 
 
-      // Prijenos između dva korisnikova novčanika — JEDAN redak, obje strane.
+      // Prijenos između dva korisnikova novčanika — JEDAN redak s obje strane.
+      // Par (payment_source, income_source_id) dolazi isključivo iz
+      // buildTransferPair() unutar decideBankSyncRow; ovdje se samo zapisuje.
       if (decision.transfer) {
         const { error: trErr } = await admin.from("expenses").insert({
           user_id: userId,
@@ -699,6 +701,8 @@ Deno.serve(async (req) => {
       reservations_skipped: reservationsSkipped,
       needs_confirmation: needsConfirmation,
       merged_booked: mergedBooked,
+      auto_transfers: autoTransfers,
+      ambiguous_transfers: ambiguousTransfers,
       total: allTx.length,
 
     }), {
