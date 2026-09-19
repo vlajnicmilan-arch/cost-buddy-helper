@@ -837,6 +837,7 @@ Deno.serve(async (req) => {
       merged_booked: mergedBooked,
       auto_transfers: autoTransfers,
       ambiguous_transfers: ambiguousTransfers,
+      transfers_paired: transfersPaired,
       total: allTx.length,
 
     }), {
