@@ -966,6 +966,14 @@ export const GlobalPDFImportHost = () => {
         try { logDiagnostic('import_review_targets_lookup_failed', { message: e instanceof Error ? e.message : String(e) }); } catch {}
       }
 
+      // --- DRUGA STRANA PRIJENOSA koja već stoji u knjigama -----------------
+      // Samo dohvat kandidata; odluku donosi čisti modul `transferPairMatch`.
+      const pairCandidates = await loadTransferPairCandidates(
+        supabase as any,
+        user.id,
+        transactions.map(t => new Date(t.date).toISOString()),
+      );
+
       // Merge classifier output → review rows.
       const reviewRows: ImportReviewRow[] = transactions.map((tx, i) => {
         const fp = fingerprints[i];
