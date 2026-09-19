@@ -97,6 +97,26 @@ export function setRestoreDeleted(
   };
 }
 
+/**
+ * Korisnikova radnja „ovo je drugi prijenos" — odbija predloženo uparivanje s
+ * postojećim retkom. Zadano je SPOJI, pa se ovo upisuje samo na klik.
+ */
+export function setUnpair(
+  decisions: ImportReviewDecisions,
+  index: number,
+  value: boolean,
+): ImportReviewDecisions {
+  return { ...decisions, unpair: { ...(decisions.unpair ?? {}), [index]: value } };
+}
+
+/** Jedini čitač te radnje — starim nacrtima bez polja vraća false. */
+export function isUnpaired(
+  decisions: ImportReviewDecisions,
+  index: number,
+): boolean {
+  return decisions.unpair?.[index] === true;
+}
+
 /** Jedini čitač te radnje — starim nacrtima bez polja vraća false. */
 export function isRestoreDeleted(
   decisions: ImportReviewDecisions,
