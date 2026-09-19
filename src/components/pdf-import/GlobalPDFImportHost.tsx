@@ -1088,6 +1088,7 @@ export const GlobalPDFImportHost = () => {
         bankRowSeq: i,
         bankRawLine: tx.raw_line ?? null,
         bankRawLineSource: tx.raw_line_source ?? null,
+        statement_direction: tx.statement_direction ?? null,
         fingerprint: fingerprints[i],
       }));
 
