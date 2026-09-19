@@ -562,6 +562,59 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
     }
   }
 
+  // --- PAIR branch: druga strana već stoji u knjigama ---------------------
+  // Ne nastaje novi redak. Postojeći dobiva otisak ovog izvoda kao protustranu;
+  // ako je bio ručan (bez bankovnog otiska), dobiva i sam otisak i 'confirmed'.
+  let pairsMerged = 0;
+  for (const p of pendingPairs) {
+    const counterpartPatch: Record<string, unknown> = {
+      counterpart_bank_transaction_id: p.tx.fingerprint,
+      counterpart_bank_raw_line: p.tx.bankRawLine ?? null,
+      transfer_counterpart_origin: 'pair',
+      import_batch_id: batchId,
+    };
+    // ISPRAVAK PLATITELJA — samo redak pogođen naučenim pravilom (mečer to već
+    // provjerava); pravi platitelj dolazi iz kartice ili imena.
+    if (p.correctedPayerFrom && p.payerWalletId) {
+      counterpartPatch.payment_source = `custom:${p.payerWalletId}`;
+      counterpartPatch.transfer_counterpart_origin = p.signal ?? 'card';
+    }
+    try {
+      const claim = await input.supabase
+        .from('expenses')
+        .update({
+          ...counterpartPatch,
+          bank_transaction_id: p.tx.fingerprint,
+          bank_match_status: 'confirmed',
+          bank_raw_line: p.tx.bankRawLine ?? null,
+          bank_raw_line_source: p.tx.bankRawLineSource ?? null,
+        })
+        .eq('id', p.existingId)
+        .eq('user_id', input.userId)
+        .is('bank_transaction_id', null)
+        .select('id');
+      if (!claim.error && (claim.data?.length ?? 0) > 0) { pairsMerged += 1; continue; }
+
+      const res = await input.supabase
+        .from('expenses')
+        .update(counterpartPatch)
+        .eq('id', p.existingId)
+        .eq('user_id', input.userId)
+        .select('id');
+      if (res.error) {
+        const detail = errorDetail(res.error);
+        errors.push(`pair:${p.existingId}:${detail}`);
+        writeErrorsByFingerprint.set(p.tx.fingerprint, detail);
+        continue;
+      }
+      if ((res.data?.length ?? 0) > 0) pairsMerged += 1;
+    } catch (e) {
+      const detail = errorDetail(e);
+      errors.push(`pair:${p.existingId}:${detail}`);
+      writeErrorsByFingerprint.set(p.tx.fingerprint, detail);
+    }
+  }
+
   // --- TRANSFER branch (bulk upsert, ignoreDuplicates) ---
   let transfersCreated = 0;
   if (pendingTransfers.length > 0) {
