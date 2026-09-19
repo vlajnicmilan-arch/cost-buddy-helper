@@ -347,6 +347,8 @@ Deno.serve(async (req) => {
     let reservationsSkipped = 0;
     let needsConfirmation = 0;
     let mergedBooked = 0;
+    let ambiguousTransfers = 0;
+    let autoTransfers = 0;
 
     for (const tx of allTx) {
       const decision = decideBankSyncRow(tx, {
