@@ -40,6 +40,7 @@ import { sanitizeIban } from '@/lib/mailImport/iban';
 import { loadTransferRules, matchTransferRule, markTransferRulesUsed } from '@/lib/importReview/transferRules';
 import { resolveTransferDirection, statementDirectionFromType } from '@/lib/importReview/transferDirection';
 import { preselectTransferCounterpart } from '@/lib/importReview/counterpartPreselect';
+import { loadTransferPairCandidates, resolvePairForRow } from '@/lib/importReview/pairing';
 import { classifyTransferDescription, type MoneyDirection } from '@/lib/moneyDirection';
 import { resolvePaymentSourceKey } from '@/lib/paymentSource/resolve';
 import { areMerchantsSimilar } from '@/lib/duplicateDetection';
