@@ -41,6 +41,8 @@ import {
   setRestoreDeleted,
   setUnpair,
   isUnpaired,
+  setPairChoice,
+  getPairChoice,
   setAutoMerge,
   setNeedsExplanation,
   setNewRow,
@@ -48,6 +50,7 @@ import {
   summarize,
 } from '@/lib/importReview/state';
 import { buildBlockerMessages, firstBlockingRowIndex } from '@/lib/importReview/confirmBlockers';
+import { PairCandidatePicker } from '@/components/import-review/PairCandidatePicker';
 import {
   executeDecisions,
   ImportExecutionIncompleteError,
@@ -527,6 +530,10 @@ const ImportReview = () => {
   const updateUnpair = useCallback((idx: number, value: boolean) => {
     setDecisions(prev => (prev ? setUnpair(prev, idx, value) : prev));
   }, []);
+  /** Odabir druge strane kad kandidata ima više — do tada je potvrda blokirana. */
+  const updatePairChoice = useCallback((idx: number, value: string) => {
+    setDecisions(prev => (prev ? setPairChoice(prev, idx, value) : prev));
+  }, []);
   const updateNew = useCallback((idx: number, value: boolean) => {
     setDecisions(prev => (prev ? setNewRow(prev, idx, value) : prev));
   }, []);
@@ -882,6 +889,14 @@ const ImportReview = () => {
                 amount: formatAmount(row.classification.pairedExistingAmount ?? row.amount),
               })}
             </p>
+            {(row.classification.pairedExistingDescription || row.classification.pairedExistingOrigin) && (
+              <p className="text-[11px] text-muted-foreground">
+                {row.classification.pairedExistingDescription ?? ''}
+                {row.classification.pairedExistingOrigin
+                  ? ` · ${t(`importReview.pair.origin.${row.classification.pairedExistingOrigin}`)}`
+                  : ''}
+              </p>
+            )}
             <Button
               type="button"
               size="sm"
@@ -894,6 +909,16 @@ const ImportReview = () => {
                 : t('importReview.badges.pairedUnpair')}
             </Button>
           </div>
+        )}
+        {isTransferClass && (row.classification.pairCandidates?.length ?? 0) > 0 && (
+          <PairCandidatePicker
+            rowIndex={row.index}
+            candidates={row.classification.pairCandidates ?? []}
+            value={getPairChoice(decisions, row.index)}
+            onChange={(v) => updatePairChoice(row.index, v)}
+            walletName={walletName}
+            formatAmount={formatAmount}
+          />
         )}
         {autoFilled[row.index] && (
           <Badge

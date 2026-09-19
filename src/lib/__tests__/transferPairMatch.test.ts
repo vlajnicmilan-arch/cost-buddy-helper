@@ -103,7 +103,11 @@ describe('matchTransferPair', () => {
         candidate({ id: 'b', amount: 200, date: '2026-08-23', payerWalletId: REVOLUT }),
       ],
     });
-    expect(r).toEqual({ kind: 'ambiguous', candidateIds: ['a', 'b'] });
+    expect(r.kind).toBe('ambiguous');
+    // Kandidati nose podatke za prikaz — bez njih korisnik ne može odlučiti.
+    expect(r.kind === 'ambiguous' && r.candidateIds).toEqual(['a', 'b']);
+    expect(r.kind === 'ambiguous' && r.candidates.map(c => c.id)).toEqual(['a', 'b']);
+    expect(r.kind === 'ambiguous' && r.candidates[0].payerWalletId).toBe(KES);
   });
 
   it('otisak koji već stoji na kandidatu znači isti redak, ne par', () => {

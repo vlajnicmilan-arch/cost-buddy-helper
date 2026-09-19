@@ -20,6 +20,7 @@ import {
   matchTransferPair,
   type TransferPairCandidate,
 } from "../_shared/transferPairMatch.ts";
+import { TRANSFER_KEYWORDS, buildTransferPair } from "../_shared/moneyDirection.ts";
 
 interface Body {
   bank_account_id: string;
@@ -354,6 +355,12 @@ Deno.serve(async (req) => {
     let ambiguousTransfers = 0;
     let autoTransfers = 0;
     let transfersPaired = 0;
+    let pairsConverted = 0;
+    /** Jedan postojeći redak može biti druga strana SAMO jednom po sinkronizaciji. */
+    const claimedPairIds = new Set<string>();
+    const userCardLast4 = userCards
+      .map((c) => String(c.last_four_digits ?? ""))
+      .filter((v) => /^\d{4}$/.test(v));
 
     for (const tx of allTx) {
       const decision = decideBankSyncRow(tx, {
@@ -410,10 +417,10 @@ Deno.serve(async (req) => {
           const { data: pairRows, error: pairErr } = await admin
             .from("expenses")
             .select(
-              "id, amount, date, payment_source, income_source_id, bank_transaction_id, counterpart_bank_transaction_id, transfer_counterpart_origin, bank_match_status, bank_raw_line, bank_raw_line_source, status",
+              "id, amount, date, type, description, payment_source, income_source_id, bank_transaction_id, counterpart_bank_transaction_id, transfer_counterpart_origin, bank_match_status, bank_raw_line, bank_raw_line_source, bank_raw_line_source, import_batch_id, status",
             )
             .eq("user_id", userId)
-            .eq("type", "transfer")
+            .in("type", ["transfer", "income", "expense"])
             .is("deleted_at", null)
             .gte("date", pairFrom)
             .lte("date", pairTo);
@@ -433,6 +440,16 @@ Deno.serve(async (req) => {
               bankTransactionId: r.bank_transaction_id ?? null,
               counterpartBankTransactionId: r.counterpart_bank_transaction_id ?? null,
               transferCounterpartOrigin: r.transfer_counterpart_origin ?? null,
+              type: r.type ?? null,
+              description: r.description ?? null,
+              walletId:
+                typeof r.payment_source === "string" && r.payment_source.startsWith("custom:")
+                  ? r.payment_source.slice("custom:".length)
+                  : null,
+              origin:
+                r.bank_raw_line_source === "enable_banking"
+                  ? "sync"
+                  : (r.import_batch_id || r.bank_transaction_id ? "import" : "manual"),
             }));
 
           const match = matchTransferPair({
@@ -443,6 +460,9 @@ Deno.serve(async (req) => {
             counterpartWalletId,
             fingerprint: stableId,
             candidates,
+            claimedCandidateIds: [...claimedPairIds],
+            cardLast4: userCardLast4,
+            transferKeywords: TRANSFER_KEYWORDS,
           });
 
           if (match.kind === "same_row") {
@@ -478,6 +498,26 @@ Deno.serve(async (req) => {
               patch.bank_raw_line = rawLine;
               patch.bank_raw_line_source = "enable_banking";
             }
+            // PRETVORBA: obični primitak/trošak JEST druga strana → postaje
+            // prijenos. Strane slaže isključivo buildTransferPair.
+            if (match.convert) {
+              const counterpart =
+                match.payerWalletId === statementWalletId
+                  ? match.receiverWalletId
+                  : match.payerWalletId;
+              const pair = counterpart
+                ? buildTransferPair({
+                    statementSource: `custom:${statementWalletId}`,
+                    counterpartSourceId: counterpart,
+                    direction,
+                  })
+                : null;
+              if (!pair) throw new Error("invalid_transfer_pair");
+              patch.type = "transfer";
+              patch.category = "transfer";
+              patch.payment_source = pair.paymentSource;
+              patch.income_source_id = pair.incomeSourceId;
+            }
             // Ispravak platitelja samo kad je postojeći nastao po pravilu.
             if (match.correctedPayerFrom) {
               patch.payment_source = `custom:${match.payerWalletId}`;
@@ -489,6 +529,8 @@ Deno.serve(async (req) => {
               .eq("id", match.existingId);
             if (pairUpdErr) throw pairUpdErr;
             transfersPaired += 1;
+            if (match.convert) pairsConverted += 1;
+            claimedPairIds.add(match.existingId);
             if (match.correctedPayerFrom) {
               diagnostics.push({
                 event: "transfer_payer_corrected",
@@ -838,6 +880,7 @@ Deno.serve(async (req) => {
       auto_transfers: autoTransfers,
       ambiguous_transfers: ambiguousTransfers,
       transfers_paired: transfersPaired,
+      pairs_converted: pairsConverted,
       total: allTx.length,
 
     }), {

@@ -117,6 +117,43 @@ export function isUnpaired(
   return decisions.unpair?.[index] === true;
 }
 
+/** Sentinel odabira „nijedan — ovo je novi prijenos". */
+export const PAIR_CHOICE_NONE = 'none';
+
+/** Korisnikov odabir kandidata kod dvosmislenog uparivanja. */
+export function setPairChoice(
+  decisions: ImportReviewDecisions,
+  index: number,
+  value: string | null,
+): ImportReviewDecisions {
+  return { ...decisions, pairChoice: { ...(decisions.pairChoice ?? {}), [index]: value } };
+}
+
+/** Jedini čitač odabira — starim nacrtima bez polja vraća null. */
+export function getPairChoice(
+  decisions: ImportReviewDecisions,
+  index: number,
+): string | null {
+  const v = decisions.pairChoice?.[index];
+  return typeof v === 'string' && v.length > 0 ? v : null;
+}
+
+/** Redak koji traži korisnikov odabir kandidata (više od jednog kandidata). */
+export function hasPairCandidates(row: ImportReviewRow): boolean {
+  return (
+    row.classification.kind === 'transfer' &&
+    (row.classification.pairCandidates?.length ?? 0) > 0
+  );
+}
+
+/** Dvosmislen par bez korisnikova odabira — koči potvrdu. */
+export function isPairUnchosen(
+  row: ImportReviewRow,
+  decisions: ImportReviewDecisions,
+): boolean {
+  return hasPairCandidates(row) && getPairChoice(decisions, row.index) === null;
+}
+
 /** Jedini čitač te radnje — starim nacrtima bez polja vraća false. */
 export function isRestoreDeleted(
   decisions: ImportReviewDecisions,
@@ -174,6 +211,10 @@ export interface GatingSummary {
   readonly plannedNew: number;
   readonly plannedTransfers: number;
   readonly plannedSkipped: number; // fingerprint-hit newRows + user-unchecked
+  /** Dvosmisleni parovi bez korisnikova odabira — koče potvrdu. */
+  readonly unchosenPairs: number;
+  /** Redci koji se spajaju s postojećim retkom (bez novog zapisa). */
+  readonly plannedPairs: number;
 }
 
 /**
@@ -215,8 +256,26 @@ export function summarize(
   let plannedTransfers = 0;
   let plannedSkipped = 0;
   let unresolvedTransfers = 0;
+  let unchosenPairs = 0;
+  let plannedPairs = 0;
 
   for (const row of payload.rows) {
+    // DVOSMISLEN PAR: dok korisnik ne odabere s čime spaja, redak koči potvrdu.
+    if (hasPairCandidates(row)) {
+      const choice = getPairChoice(decisions, row.index);
+      if (choice === null) { unchosenPairs += 1; continue; }
+      if (choice !== PAIR_CHOICE_NONE) { plannedPairs += 1; continue; }
+    }
+    // Redak uparen s postojećim retkom — jedan ishod, bez novog zapisa.
+    if (
+      row.classification.kind === 'transfer' &&
+      !!row.classification.pairedExistingId &&
+      !isUnpaired(decisions, row.index)
+    ) {
+      plannedPairs += 1;
+      continue;
+    }
+
     // Transfer override wins for any row when enabled.
     if (isTransferActive(decisions, row.index)) {
       plannedTransfers += 1;
@@ -282,11 +341,13 @@ export function summarize(
     answeredQuestions,
     unansweredQuestions,
     unresolvedTransfers,
-    canConfirm: unansweredQuestions === 0 && unresolvedTransfers === 0,
+    canConfirm: unansweredQuestions === 0 && unresolvedTransfers === 0 && unchosenPairs === 0,
     plannedMerges,
     plannedNew,
     plannedTransfers,
     plannedSkipped,
+    unchosenPairs,
+    plannedPairs,
   };
 }
 

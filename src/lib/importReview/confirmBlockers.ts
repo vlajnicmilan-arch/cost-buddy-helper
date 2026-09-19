@@ -7,17 +7,21 @@
  * sporni redak.
  */
 import type { GatingSummary } from './state';
-import { isTransferActive, isTransferResolved } from './state';
+import { isTransferActive, isTransferResolved, isPairUnchosen } from './state';
 import type { ImportReviewDecisions, ImportReviewPayload } from './types';
 
 type Translate = (key: string, params?: Record<string, unknown>) => string;
 
-/** Poruke po uzroku, redoslijedom: prijenosi pa pitanja. */
+/** Poruke po uzroku, redoslijedom: parovi, prijenosi pa pitanja. */
 export function buildBlockerMessages(
-  summary: Pick<GatingSummary, 'unresolvedTransfers' | 'unansweredQuestions'>,
+  summary: Pick<GatingSummary, 'unresolvedTransfers' | 'unansweredQuestions'> &
+    Partial<Pick<GatingSummary, 'unchosenPairs'>>,
   t: Translate,
 ): string[] {
   const out: string[] = [];
+  if ((summary.unchosenPairs ?? 0) > 0) {
+    out.push(t('importReview.pair.blocked', { count: summary.unchosenPairs }));
+  }
   if (summary.unresolvedTransfers > 0) {
     out.push(t('importReview.blockers.transfers', { count: summary.unresolvedTransfers }));
   }
@@ -27,12 +31,13 @@ export function buildBlockerMessages(
   return out;
 }
 
-/** Indeks prvog retka koji koči potvrdu (prijenos bez odredišta ili pitanje). */
+/** Indeks prvog retka koji koči potvrdu (neodabran par, prijenos bez odredišta ili pitanje). */
 export function firstBlockingRowIndex(
   payload: ImportReviewPayload,
   decisions: ImportReviewDecisions,
 ): number | null {
   for (const row of payload.rows) {
+    if (isPairUnchosen(row, decisions)) return row.index;
     if (isTransferActive(decisions, row.index)) {
       if (!isTransferResolved(decisions.transfers[row.index])) return row.index;
       continue;
