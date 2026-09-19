@@ -293,3 +293,151 @@ describe('(h) spajanje proknjiženog s ručnim prijenosom', () => {
     expect(hit).toBeNull();
   });
 });
+
+/**
+ * TOČKA 3 — DRUGA STRANA PRIJENOSA.
+ * Prijenos na vlastiti novčanik mora biti JEDAN redak s obje strane,
+ * a nikad rashod ni dva retka.
+ */
+describe('(3) prijenos na vlastiti novčanik', () => {
+  it('(a) DBIT 300, „Revolut**5385*" s kartice 2081 → transfer TZ → Revolut', () => {
+    const tx: EBTransactionLike = {
+      entry_reference: 'TR-OUT-1',
+      transaction_amount: { amount: '300.00', currency: 'EUR' },
+      credit_debit_indicator: 'DBIT',
+      status: 'BOOK',
+      booking_date: '2026-09-18',
+      creditor: { name: 'Revolut**5385*' },
+      remittance_information: ['462765XXXXXX2081, Revolut**5385* Dublin'],
+    };
+    const d = decideBankSyncRow(tx, ctxWallets);
+    expect(d.action).toBe('upsert');
+    expect(d.type).toBe('transfer');
+    expect(d.transfer?.paymentSource).toBe(`custom:${SRC_TZ}`);
+    expect(d.transfer?.incomeSourceId).toBe(SRC_REVOLUT);
+    // Kartica 2081 pripada novčaniku izvoda → odlučilo je IME protustrane.
+    expect(d.transfer?.signal).toBe('name');
+    expect(d.paymentSourceCardId).toBe('card-tz');
+    const decision = d.raw.decision as Record<string, unknown>;
+    expect(decision.transfer_auto).toBe(true);
+  });
+
+  it('(a2) kartica DRUGOG novčanika sama odlučuje odredište', () => {
+    const tx: EBTransactionLike = {
+      entry_reference: 'TR-OUT-2',
+      transaction_amount: { amount: '75.00', currency: 'EUR' },
+      credit_debit_indicator: 'DBIT',
+      status: 'BOOK',
+      booking_date: '2026-09-18',
+      creditor: { name: 'NEPOZNATO 416598******1542' },
+    };
+    const d = decideBankSyncRow(tx, ctxWallets);
+    expect(d.type).toBe('transfer');
+    expect(d.transfer?.signal).toBe('card');
+    expect(d.transfer?.incomeSourceId).toBe(SRC_REVOLUT);
+  });
+
+  it('(b) CRDT 300, debtor „Revolut" → transfer Revolut → TZ', () => {
+    const tx: EBTransactionLike = {
+      entry_reference: 'TR-IN-1',
+      transaction_amount: { amount: '300.00', currency: 'EUR' },
+      credit_debit_indicator: 'CRDT',
+      status: 'BOOK',
+      booking_date: '2026-09-18',
+      debtor: { name: 'Revolut' },
+    };
+    const d = decideBankSyncRow(tx, ctxWallets);
+    expect(d.type).toBe('transfer');
+    expect(d.transfer?.paymentSource).toBe(`custom:${SRC_REVOLUT}`);
+    expect(d.transfer?.incomeSourceId).toBe(SRC_TZ);
+  });
+
+  it('(c) nepoznata protustrana ostaje rashod', () => {
+    const tx: EBTransactionLike = {
+      entry_reference: 'TR-NONE',
+      transaction_amount: { amount: '19.90', currency: 'EUR' },
+      credit_debit_indicator: 'DBIT',
+      status: 'BOOK',
+      booking_date: '2026-09-18',
+      creditor: { name: 'KONZUM 462765XXXXXX2081' },
+    };
+    const d = decideBankSyncRow(tx, ctxWallets);
+    expect(d.type).toBe('expense');
+    expect(d.transfer).toBeNull();
+    expect(d.ambiguousTransfer).toBe(false);
+  });
+
+  it('(d) dva novčanika pogađaju ime → nema auto-prijenosa, ide u dijagnostiku', () => {
+    const tx: EBTransactionLike = {
+      entry_reference: 'TR-AMBIG',
+      transaction_amount: { amount: '300.00', currency: 'EUR' },
+      credit_debit_indicator: 'DBIT',
+      status: 'BOOK',
+      booking_date: '2026-09-18',
+      creditor: { name: 'Revolut**5385*' },
+    };
+    const d = decideBankSyncRow(tx, {
+      syncPaymentSourceId: SRC_TZ,
+      cards,
+      wallets: [...wallets, { id: SRC_REVOLUT_BIZ, name: 'Revolut biznis' }],
+    });
+    expect(d.type).toBe('expense');
+    expect(d.transfer).toBeNull();
+    expect(d.ambiguousTransfer).toBe(true);
+    expect((d.raw.decision as Record<string, unknown>).transfer_candidate_ambiguous).toBe(true);
+  });
+
+  it('novčanik izvoda nikad nije kandidat za drugu stranu', () => {
+    const r = resolveOwnTransferCounterpart({
+      syncPaymentSourceId: SRC_TZ,
+      counterpartyText: 'Tekući zaštićeni',
+      wallets,
+    });
+    expect(r.kind).toBe('none');
+  });
+
+  it('„aircash.eu" prepoznaje novčanik „Aircash"', () => {
+    const r = resolveOwnTransferCounterpart({
+      syncPaymentSourceId: SRC_TZ,
+      counterpartyText: 'aircash.eu, Visa Direct',
+      wallets: [...wallets, { id: SRC_REVOLUT_BIZ, name: 'Aircash' }],
+    });
+    expect(r).toMatchObject({ kind: 'own_transfer', counterpartSourceId: SRC_REVOLUT_BIZ, signal: 'name' });
+  });
+
+  it('(e) postojeći ručni prijenos bez proknjiženog ID-a se spaja', () => {
+    const hit = pickMergeTarget(
+      [
+        {
+          id: 'manual-transfer',
+          amount: 300,
+          date: '2026-09-17',
+          description: 'Revolut**5385* Dublin',
+          type: 'transfer',
+          bank_transaction_id: null,
+        },
+      ],
+      { amount: 300, date: '2026-09-18', counterparty: 'Revolut**5385*' },
+    );
+    expect(hit?.id).toBe('manual-transfer');
+    expect(hit?.type).toBe('transfer');
+  });
+
+  it('(f) redak s vlastitim proknjiženim ID-om se ne spaja', () => {
+    const hit = pickMergeTarget(
+      [
+        {
+          id: 'booked-other',
+          amount: 300,
+          date: '2026-09-17',
+          description: 'Revolut**5385* Dublin',
+          type: 'transfer',
+          bank_transaction_id: 'BOOKED-OTHER',
+          bank_match_status: 'confirmed',
+        },
+      ],
+      { amount: 300, date: '2026-09-18', counterparty: 'Revolut**5385*' },
+    );
+    expect(hit).toBeNull();
+  });
+});
