@@ -260,6 +260,26 @@ export function planExecution(
     const tx = txByIndex.get(row.index);
     if (!tx) continue;
 
+    // PAR PRIJE SVEGA: druga strana već stoji u knjigama, pa novi redak ne
+    // smije nastati. Korisnik ga kvačicom „ovo je drugi prijenos" odbija.
+    const cls = row.classification;
+    if (
+      cls.kind === 'transfer' &&
+      typeof cls.pairedExistingId === 'string' &&
+      cls.pairedExistingId.length > 0 &&
+      decisions.unpair?.[row.index] !== true
+    ) {
+      pairs.push({
+        rowIndex: row.index,
+        tx,
+        existingId: cls.pairedExistingId,
+        payerWalletId: cls.pairedPayerWalletId ?? null,
+        correctedPayerFrom: cls.pairedCorrectedPayerFrom ?? null,
+        signal: cls.counterpartSignal ?? null,
+      });
+      continue;
+    }
+
     // Transfer override wins.
     const td = decisions.transfers[row.index];
     if (td && td.enabled === true) {
