@@ -364,7 +364,7 @@ Deno.serve(async (req) => {
       const mergeTo = new Date(new Date(txDate).getTime() + 4 * 86400000).toISOString();
       const { data: bankRows } = await admin
         .from("expenses")
-        .select("id, amount, date, description, payment_source_card_id, bank_transaction_id")
+        .select("id, amount, date, description, payment_source_card_id, bank_transaction_id, status")
         .eq("user_id", userId)
         .eq("bank_account_id", account.id)
         .eq("type", type)
