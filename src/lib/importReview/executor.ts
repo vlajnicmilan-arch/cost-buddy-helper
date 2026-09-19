@@ -393,6 +393,9 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
   const pendingTransfers = plan.transfers.filter(
     item => !existingBefore.has(item.tx.fingerprint) && !isBlockedByDeleted(item.tx.fingerprint),
   );
+  const pendingPairs = plan.pairs.filter(
+    item => !existingBefore.has(item.tx.fingerprint) && !isBlockedByDeleted(item.tx.fingerprint),
+  );
   const pendingRestores = plan.restores.filter(item => !existingBefore.has(item.tx.fingerprint));
 
   // --- PRE-FLIGHT VALIDATION: no writes at all if any transfer decision is
