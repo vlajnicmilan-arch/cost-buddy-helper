@@ -733,6 +733,10 @@ const ImportReview = () => {
       isTransferClass && row.classification.origin === 'counterpart'
         ? (row.classification.counterpartSignal ?? 'name')
         : null;
+    // Prijedlog uparivanja s retkom koji je VEĆ u knjigama. Zadano je SPOJI;
+    // korisnik ga može odbiti („ovo je drugi prijenos").
+    const pairedId = isTransferClass ? (row.classification.pairedExistingId ?? null) : null;
+    const unpaired = isUnpaired(decisions, row.index);
     /**
      * Predznak je odgovor: kad smjer dolazi s izvoda, UI ne pita — samo javlja.
      * Vrijedi i za RUČNO označene prijenose: redak tipa expense/income nosi
