@@ -205,10 +205,26 @@ type TransferPlan = {
   readonly decision: TransferDecision;
 };
 
+/**
+ * DRUGA STRANA VEĆ U KNJIGAMA — ne nastaje novi redak; postojeći dobiva otisak
+ * ovog izvoda kao protustranu.
+ */
+export type PairPlan = {
+  readonly rowIndex: number;
+  readonly tx: SerializedImportedTx;
+  readonly existingId: string;
+  /** Stvarni platitelj kad se ispravlja redak pogođen pravilom. */
+  readonly payerWalletId?: string | null;
+  readonly correctedPayerFrom?: string | null;
+  readonly signal?: 'card' | 'name' | null;
+};
+
 export interface PlannedWork {
   readonly merges: readonly MergePlan[];
   readonly inserts: readonly InsertPlan[];
   readonly transfers: readonly TransferPlan[];
+  /** Redci koji se spajaju s postojećim prijenosom (bez novog retka). */
+  readonly pairs: readonly PairPlan[];
   /** Ranije obrisani redci koje je korisnik svjesno vratio ("Vrati u knjige"). */
   readonly restores: readonly InsertPlan[];
   readonly skippedByUser: number;
