@@ -38,6 +38,11 @@ export function buildPatternKey(parts: PatternKeyParts): string | null {
 export interface PatternManualDecision extends PatternKeyParts {
   readonly index: number;
   readonly targetIncomeSourceId: string;
+  /**
+   * "Zapamti za ovog trgovca" — izričita korisnikova namjera da ovo vrijedi za
+   * sve iste retke. Tada prag od dvije odluke NE vrijedi: jedna je dovoljna.
+   */
+  readonly remember?: boolean;
 }
 
 /** Neodlučeni redak koji smije primiti obrazac. */
