@@ -6480,6 +6480,7 @@
     "prevMonth": "Prethodni mjesec",
     "nextMonth": "Sljedeći mjesec",
     "count": "{{count}} računa za predaju",
+    "empty": "Nema fotografiranih računa za {{period}}",
     "missingDateCount": "{{count}} bez datuma — provjeri",
     "submittedAt": "Predano {{date}}",
     "markSubmitted": "Označi predano",
