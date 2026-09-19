@@ -246,6 +246,8 @@ const ImportReview = () => {
           lateMatchOffer: row.lateMatchOffer ?? null,
           paymentSource: tx?.paymentSource ?? null,
           txType: tx?.type ?? null,
+          statementDirection: tx?.statement_direction ?? null,
+          amount: tx?.amount ?? null,
         };
       }),
       transfers: decisions.transfers,

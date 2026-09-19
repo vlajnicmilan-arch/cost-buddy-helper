@@ -112,12 +112,13 @@ export function selectPatternInputs(input: PatternSelectionInput): PatternSelect
     if (td) {
       if (!td.enabled) continue;            // korisnik je rekao "nije prijenos"
       if (autoFilled[row.index]) continue;  // auto-popunjeno se NE broji u prag
-      if (!td.targetIncomeSourceId || !td.direction) continue;
+      const direction = td.direction ?? directionOf(row);
+      if (!td.targetIncomeSourceId || !direction) continue;
       manual.push({
         index: row.index,
         merchantKey: td.merchantKey ?? parts.merchantKey,
         sourceWalletKey: td.sourceWalletKey ?? parts.sourceWalletKey,
-        direction: td.direction,
+        direction,
         targetIncomeSourceId: td.targetIncomeSourceId,
         remember: td.rememberRule === true,
       });
