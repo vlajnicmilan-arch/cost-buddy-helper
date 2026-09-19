@@ -333,6 +333,10 @@ export const HandoverBar = ({ businessProfileId }: HandoverBarProps) => {
             );
           })}
         </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          {t('accounting.handover.empty', 'Nema fotografiranih računa za {{period}}', { period: periodLabel })}
+        </p>
       )}
 
       {zipProblems.length > 0 && (
@@ -348,22 +352,22 @@ export const HandoverBar = ({ businessProfileId }: HandoverBarProps) => {
       )}
 
       <div className="flex flex-wrap items-center gap-2 min-w-0">
-        <Button size="sm" variant="outline" className="min-h-[36px]" disabled={busy} onClick={() => runExport('pdf')}>
+        <Button size="sm" variant="outline" className="min-h-[36px]" disabled={busy || selection.included.length === 0} onClick={() => runExport('pdf')}>
           {busy ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <FileText className="w-3.5 h-3.5 mr-1" />}
           PDF
         </Button>
-        <Button size="sm" variant="outline" className="min-h-[36px]" disabled={busy} onClick={() => runExport('excel')}>
+        <Button size="sm" variant="outline" className="min-h-[36px]" disabled={busy || selection.included.length === 0} onClick={() => runExport('excel')}>
           <FileSpreadsheet className="w-3.5 h-3.5 mr-1" />
           Excel
         </Button>
-        <Button size="sm" variant="outline" className="min-h-[36px]" disabled={busy} onClick={() => void runZip()}>
+        <Button size="sm" variant="outline" className="min-h-[36px]" disabled={busy || selection.included.length === 0} onClick={() => void runZip()}>
           <FileArchive className="w-3.5 h-3.5 mr-1" />
           {t('accounting.handover.zipOriginals', 'ZIP originala')}
         </Button>
         <Button
           size="sm"
           className="min-h-[36px]"
-          disabled={busy}
+          disabled={busy || selection.included.length === 0}
           onClick={() => (submittedRow ? setConfirmOpen(true) : void submit())}
         >
           {t('accounting.handover.markSubmitted', 'Označi predano')}
