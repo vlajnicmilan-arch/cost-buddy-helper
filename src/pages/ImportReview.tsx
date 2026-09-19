@@ -39,6 +39,8 @@ import {
   isPreviouslyDeletedRow,
   isRestoreDeleted,
   setRestoreDeleted,
+  setUnpair,
+  isUnpaired,
   setAutoMerge,
   setNeedsExplanation,
   setNewRow,
