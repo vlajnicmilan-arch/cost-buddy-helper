@@ -8,9 +8,12 @@ import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
 import {
   decideBankSyncRow,
   pickMergeTarget,
+  pickBankBalance,
+  counterpartyOf,
   type EBTransactionLike,
   type BankSyncDecision,
 } from "../_shared/bankSyncDecision.ts";
+
 import type { UserCardRef } from "../_shared/cardMatch.ts";
 
 interface Body {
