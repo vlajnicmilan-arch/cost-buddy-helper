@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Receipt, RefreshCw, Building2, ChevronRight, Settings2, FileSignature, FileBarChart, FileInput } from 'lucide-react';
+import { Receipt, RefreshCw, Building2, ChevronRight, Settings2, FileSignature, FileBarChart, FileInput, Send } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { BusinessDebtTracker } from './BusinessDebtTracker';
 import { BusinessRecurring } from './BusinessRecurring';
@@ -8,12 +8,15 @@ import { BusinessModuleSettings } from './BusinessModuleSettings';
 import { ProjectEstimatesPanel } from '@/components/projects/ProjectEstimatesPanel';
 import { BusinessReports } from './BusinessReports';
 import { IncomingInvoicesPanel } from './eracun/IncomingInvoicesPanel';
+import { HandoverBar } from './HandoverBar';
 import { Expense } from '@/types/expense';
 import { useBackButton } from '@/hooks/useBackButton';
 import { BACK_PRIORITY } from '@/contexts/BackButtonContext';
+import { useAppState } from '@/contexts/AppStateContext';
+import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
 import { useTranslation } from 'react-i18next';
 
-type SubView = 'menu' | 'profile' | 'debts' | 'recurring' | 'modules' | 'estimates' | 'reports' | 'incoming';
+type SubView = 'menu' | 'profile' | 'debts' | 'recurring' | 'modules' | 'estimates' | 'reports' | 'incoming' | 'handover';
 
 interface Props {
   expenses: Expense[];
@@ -23,6 +26,8 @@ interface Props {
 
 export const BusinessMore = ({ expenses, companyName }: Props) => {
   const { t } = useTranslation();
+  const { activeBusinessProfileId } = useAppState();
+  const { profiles: businessProfiles } = useBusinessProfiles();
   const [view, setView] = useState<SubView>('menu');
 
   useBackButton(view !== 'menu', () => setView('menu'), BACK_PRIORITY.DETAIL);
