@@ -74,6 +74,19 @@ export type ClassificationKind =
       readonly directionSource: DirectionSource;
       /** Opis se kosio s predznakom; predznak je pobijedio. */
       readonly directionConflict: boolean;
+      /**
+       * DRUGA STRANA VEĆ STOJI U KNJIGAMA — id postojećeg prijenosa s kojim je
+       * ovaj redak isti novac. Zadana radnja je SPOJI (nema novog retka);
+       * korisnik ga kvačicom „ovo je drugi prijenos" može razdvojiti.
+       */
+      readonly pairedExistingId?: string | null;
+      /** Postojeći redak je imao krivog platitelja (pogođen pravilom). */
+      readonly pairedCorrectedPayerFrom?: string | null;
+      /** Za značku u pregledu: platitelj, primatelj, datum i iznos postojećeg retka. */
+      readonly pairedPayerWalletId?: string | null;
+      readonly pairedReceiverWalletId?: string | null;
+      readonly pairedExistingDate?: string | null;
+      readonly pairedExistingAmount?: number | null;
     };
 
 export interface ImportReviewRow {
