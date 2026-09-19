@@ -329,10 +329,15 @@ export interface PickedBankBalance {
   readonly referenceDate: string | null;
 }
 
-const BOOKED_BALANCE = ['CLBD', 'CLOSINGBOOKED'];
+// Proknjiženi saldo ima prednost pred raspoloživim: CLBD/CLOSINGBOOKED, pa
+// ITBD/INTERIMBOOKED (očekivani sirovi zapis ove banke), tek onda raspoloživi.
+// Rezervacije se preskaču pri upisu, pa bi raspoloživi saldo (ITAV) u sidru
+// dvaput odbio rezervaciju — jednom u sidru, jednom kad se proknjiži.
+const BOOKED_CLOSED_BALANCE = ['CLBD', 'CLOSINGBOOKED'];
+const BOOKED_INTERIM_BALANCE = ['ITBD', 'INTERIMBOOKED'];
 const AVAILABLE_BALANCE = ['ITAV', 'XPCD', 'INTERIMAVAILABLE', 'EXPECTED'];
 
-/** Proknjiženi saldo (CLBD) ima prednost pred raspoloživim (ITAV/XPCD). */
+/** Proknjiženi saldo (CLBD, pa ITBD) ima prednost pred raspoloživim (ITAV/XPCD). */
 export function pickBankBalance(
   balances: readonly EBBalanceLike[] | null | undefined,
 ): PickedBankBalance | null {
@@ -345,7 +350,8 @@ export function pickBankBalance(
   const find = (wanted: readonly string[]) =>
     list.find((b) => wanted.includes(key(b)) && isFinite(parseFloat(String(b.balance_amount?.amount))));
 
-  const chosen = find(BOOKED_BALANCE) ?? find(AVAILABLE_BALANCE) ?? null;
+  const chosen =
+    find(BOOKED_CLOSED_BALANCE) ?? find(BOOKED_INTERIM_BALANCE) ?? find(AVAILABLE_BALANCE) ?? null;
   if (!chosen) return null;
 
   const amount = parseFloat(String(chosen.balance_amount?.amount));
