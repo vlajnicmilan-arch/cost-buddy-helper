@@ -352,6 +352,7 @@ Deno.serve(async (req) => {
       const decision = decideBankSyncRow(tx, {
         syncPaymentSourceId: account.linked_payment_source_id,
         cards: userCards,
+        wallets: userWallets,
       });
 
       if (decision.action === "skip") {
@@ -360,6 +361,24 @@ Deno.serve(async (req) => {
         if (decision.reason === "card_source_mismatch") needsConfirmation += 1;
         if (decision.stableId) logSkipped(decision);
         continue;
+      }
+
+      // Dva novčanika pogađaju ime → odredište nije sigurno; redak ide kao
+      // rashod/priljev, ali ostaje trag.
+      if (decision.ambiguousTransfer) {
+        ambiguousTransfers += 1;
+        diagnostics.push({
+          event: "transfer_candidate_ambiguous",
+          session_id: `bank-sync-${account.id}`,
+          user_id: userId,
+          severity: "info",
+          details: {
+            bank_account_id: account.id,
+            bank_transaction_id: decision.stableId,
+            payment_source: paymentSourceRef,
+            raw: decision.raw,
+          },
+        });
       }
 
       const stableId = decision.stableId!;
