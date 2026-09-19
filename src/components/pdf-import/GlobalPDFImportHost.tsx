@@ -975,6 +975,46 @@ export const GlobalPDFImportHost = () => {
         transactions.map(t => new Date(t.date).toISOString()),
       );
 
+      const pairCandidateById = new Map(pairCandidates.map(c => [c.id, c]));
+      /** Prijedlog uparivanja za jedan redak; nikad ne baca i ništa ne upisuje. */
+      const pairInfoFor = (
+        amount: number,
+        dateIso: string,
+        fingerprint: string,
+        direction: MoneyDirection | null,
+        counterpartWalletId: string | null,
+      ) => {
+        const match = resolvePairForRow(
+          { amount, dateIso, direction, counterpartWalletId, fingerprint },
+          sourceId,
+          pairCandidates,
+        );
+        if (match.kind === 'ambiguous') {
+          try {
+            logDiagnostic('transfer_pair_ambiguous', {
+              amount,
+              date: dateIso,
+              candidate_ids: match.candidateIds,
+              source_id: sourceId,
+            });
+          } catch { /* dijagnostika nikad ne ruši uvoz */ }
+          return { match, fields: {} as Record<string, unknown> };
+        }
+        if (match.kind !== 'pair') return { match, fields: {} as Record<string, unknown> };
+        const existing = pairCandidateById.get(match.existingId);
+        return {
+          match,
+          fields: {
+            pairedExistingId: match.existingId,
+            pairedCorrectedPayerFrom: match.correctedPayerFrom ?? null,
+            pairedPayerWalletId: match.payerWalletId,
+            pairedReceiverWalletId: match.receiverWalletId,
+            pairedExistingDate: existing?.date ?? null,
+            pairedExistingAmount: existing?.amount ?? null,
+          } as Record<string, unknown>,
+        };
+      };
+
       // Merge classifier output → review rows.
       const reviewRows: ImportReviewRow[] = transactions.map((tx, i) => {
         const fp = fingerprints[i];
