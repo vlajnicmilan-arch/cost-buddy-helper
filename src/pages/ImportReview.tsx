@@ -859,6 +859,32 @@ const ImportReview = () => {
               : t('importReview.badges.counterpartByName')}
           </Badge>
         )}
+        {pairedId && isTransferClass && (
+          <div
+            className="rounded-lg border border-border/60 bg-muted/40 p-2 space-y-1"
+            data-testid={`paired-existing-${row.index}`}
+          >
+            <p className="text-xs text-foreground">
+              {t('importReview.badges.pairedExisting', {
+                payer: walletName(row.classification.pairedPayerWalletId ?? null),
+                receiver: walletName(row.classification.pairedReceiverWalletId ?? null),
+                date: row.classification.pairedExistingDate ?? '',
+                amount: formatAmount(row.classification.pairedExistingAmount ?? row.amount),
+              })}
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-8 px-2 text-xs"
+              onClick={() => updateUnpair(row.index, !unpaired)}
+            >
+              {unpaired
+                ? t('importReview.badges.pairedMerge')
+                : t('importReview.badges.pairedUnpair')}
+            </Button>
+          </div>
+        )}
         {autoFilled[row.index] && (
           <Badge
             variant="outline"
