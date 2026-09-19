@@ -93,7 +93,7 @@ export function computePatternFill(input: ComputePatternFillInput): PatternFillR
     if (!key) continue;
     const entry = byKey.get(key);
     if (!entry) continue;
-    if (entry.count < PATTERN_FILL_THRESHOLD) continue;
+    if (!entry.remembered && entry.count < PATTERN_FILL_THRESHOLD) continue;
     if (entry.targets.size !== 1) continue;
     const [target] = Array.from(entry.targets);
     out.push({
