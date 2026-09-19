@@ -67,3 +67,26 @@ export function statementDirectionFromType(
   if (type === 'income') return 'in';
   return null;
 }
+
+/**
+ * Smjer koji review UI prikazuje kao činjenicu (ne pitanje).
+ *
+ * Isto pravilo za automatski prepoznate i za RUČNO označene prijenose:
+ * ako redak nosi predznak s izvoda (`type` = expense/income), predznak je
+ * odgovor — korisnik se ne pita. Gumbi "ušao/izašao" ostaju samo kad izvod
+ * stvarno nema predznak.
+ */
+export function reviewRowDerivedDirection(input: {
+  readonly type: string | null | undefined;
+  readonly classificationKind?: string | null;
+  readonly classificationDirection?: MoneyDirection | null;
+  readonly classificationDirectionSource?: DirectionSource;
+}): MoneyDirection | null {
+  if (
+    input.classificationKind === 'transfer'
+    && input.classificationDirectionSource === 'amount'
+  ) {
+    return input.classificationDirection ?? null;
+  }
+  return statementDirectionFromType(input.type);
+}

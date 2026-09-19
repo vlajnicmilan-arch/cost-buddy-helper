@@ -74,6 +74,7 @@ import {
 import { deriveComparableName } from '@/lib/importReview/comparableName';
 import { resolvePaymentSourceKey } from '@/lib/paymentSource/resolve';
 import { classifyTransferDescription, type MoneyDirection } from '@/lib/moneyDirection';
+import { reviewRowDerivedDirection, statementDirectionFromType } from '@/lib/importReview/transferDirection';
 import { openImportBatch } from '@/lib/importUndo/host';
 import { clearReconciliationQueue } from '@/lib/reconciliation/queue';
 import type {
@@ -740,12 +741,16 @@ const ImportReview = () => {
     const isRuleHit = isTransferClass && row.classification.origin === 'rule';
     /**
      * Predznak je odgovor: kad smjer dolazi s izvoda, UI ne pita — samo javlja.
-     * Odluka korisnika (`td`) ne može ga promijeniti jer se gumbi ni ne nude.
+     * Vrijedi i za RUČNO označene prijenose: redak tipa expense/income nosi
+     * predznak, pa se gumbi "ušao/izašao" ne nude. Odluka korisnika (`td`)
+     * ne može ga promijeniti jer se gumbi ni ne nude.
      */
-    const derivedDirection: MoneyDirection | null =
-      isTransferClass && row.classification.directionSource === 'amount'
-        ? row.classification.direction
-        : null;
+    const derivedDirection: MoneyDirection | null = reviewRowDerivedDirection({
+      type: row.type,
+      classificationKind: isTransferClass ? 'transfer' : null,
+      classificationDirection: isTransferClass ? row.classification.direction : null,
+      classificationDirectionSource: isTransferClass ? row.classification.directionSource : null,
+    });
     const directionConflict = isTransferClass && row.classification.directionConflict;
     const currentTargetId = td?.enabled
       ? td.targetIncomeSourceId
@@ -811,7 +816,10 @@ const ImportReview = () => {
           onClick={() => {
             updateTransfer(
               row.index,
-              buildDecision(row, '', false, classifyTransferDescription(row.description).direction),
+              buildDecision(
+                row, '', false,
+                statementDirectionFromType(row.type) ?? classifyTransferDescription(row.description).direction,
+              ),
             );
           }}
         >
