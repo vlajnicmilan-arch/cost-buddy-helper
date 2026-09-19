@@ -66,13 +66,25 @@ export interface BankSyncDecision {
   readonly amount: number | null;
   readonly date: string | null;
   readonly description: string;
-  readonly type: 'expense' | 'income' | null;
+  readonly type: 'expense' | 'income' | 'transfer' | null;
   readonly paymentSourceCardId: string | null;
   /**
    * Redak nosi broj DRUGE korisnikove kartice → kandidat za prijenos između
-   * vlastitih novčanika. Drugu stranu upisuje tek točka 3 plana.
+   * vlastitih novčanika, ali odredište nije jednoznačno.
    */
   readonly transferCandidate: { readonly counterpartSourceId: string; readonly cardId: string } | null;
+  /**
+   * Jednoznačan prijenos između korisnikovih novčanika — par složen isključivo
+   * kroz `buildTransferPair`. Upisuje se kao JEDAN redak `type='transfer'`.
+   */
+  readonly transfer: {
+    readonly counterpartSourceId: string;
+    readonly signal: 'card' | 'name';
+    readonly paymentSource: string;
+    readonly incomeSourceId: string;
+  } | null;
+  /** Dva ili više novčanika kandidata → ne pogađa se, redak ide kao rashod/priljev. */
+  readonly ambiguousTransfer: boolean;
   /** Cijeli EB objekt + odluka aplikacije — ide u `bank_raw_line`. */
   readonly raw: Record<string, unknown>;
 }
