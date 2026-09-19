@@ -6319,7 +6319,19 @@
       "restoreDeleted": "Restore to books",
       "restoreDeletedOn": "Will be restored"
     },
-    "skippedPreviouslyDeletedSummary": "Skipped because previously deleted: {{count}}"
+    "skippedPreviouslyDeletedSummary": "Skipped because previously deleted: {{count}}",
+    "pair": {
+      "chooseCandidate": "Several possible pairs — choose which one this matches",
+      "none": "None — this is a new transfer",
+      "candidateLine": "{{date}} · {{amount}} · {{payer}} → {{receiver}}",
+      "blocked": "{{count}} rows awaiting a counterpart choice",
+      "origin": {
+        "import": "from statement import",
+        "sync": "from bank sync",
+        "manual": "manual entry"
+      },
+      "convertedSummary": "Converted to transfer: {{count}}"
+    }
   },
   "correctionDelete": {
     "title": "Delete balance correction record",

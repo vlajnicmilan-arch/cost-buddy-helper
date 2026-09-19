@@ -7,6 +7,7 @@
  */
 
 import type { MoneyDirection } from '@/lib/moneyDirection';
+import type { PairCandidateInfo, PairCandidateOrigin } from '@/lib/transferPairMatch';
 import type { DirectionSource } from './transferDirection';
 
 export type QuestionReason = 'merchant_mismatch' | 'no_merchant' | 'ambiguous';
@@ -87,6 +88,19 @@ export type ClassificationKind =
       readonly pairedReceiverWalletId?: string | null;
       readonly pairedExistingDate?: string | null;
       readonly pairedExistingAmount?: number | null;
+      /** Opis i porijeklo postojećeg retka — da korisnik vidi ŠTO spaja. */
+      readonly pairedExistingDescription?: string | null;
+      readonly pairedExistingOrigin?: PairCandidateOrigin | null;
+      /**
+       * Postojeći redak je obični primitak/trošak koji se PRETVARA u prijenos
+       * (nema novog retka). Prepoznat po kartici ili ključnoj riječi.
+       */
+      readonly pairedConvert?: boolean;
+      /**
+       * DVOSMISLENO UPARIVANJE — više od jednog kandidata. Korisnik MORA
+       * odabrati s čime spaja (ili „nijedan"); do tada je redak blokiran.
+       */
+      readonly pairCandidates?: readonly PairCandidateInfo[];
     };
 
 export interface ImportReviewRow {
@@ -259,6 +273,12 @@ export interface ImportReviewDecisions {
    * spaja.
    */
   readonly unpair?: Readonly<Record<number, boolean>>;
+  /**
+   * ODABIR KANDIDATA kod dvosmislenog uparivanja: id postojećeg retka s kojim
+   * se spaja, ili `'none'` („nijedan — ovo je novi prijenos"). Dok je polje
+   * prazno, redak koči potvrdu.
+   */
+  readonly pairChoice?: Readonly<Record<number, string | null>>;
 }
 
 export interface ImportReviewDraft {

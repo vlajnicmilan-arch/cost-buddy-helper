@@ -124,6 +124,8 @@ export interface ExecutorResult {
   readonly transfersCreated: number;
   /** Redci spojeni s prijenosom koji je već stajao u knjigama (bez novog retka). */
   readonly pairsMerged: number;
+  /** Od toga: postojeći primitak/trošak PRETVOREN u prijenos. */
+  readonly pairsConverted: number;
   readonly rulesSaved: number;
   /** Rows the user explicitly did NOT approve (unchecked auto/new, unanswered questions). */
   readonly skippedByUser: number;
@@ -205,6 +207,8 @@ type TransferPlan = {
   readonly rowIndex: number;
   readonly tx: SerializedImportedTx;
   readonly decision: TransferDecision;
+  /** Što je odredilo drugu stranu — ide u `transfer_counterpart_origin`. */
+  readonly counterpartOrigin: 'rule' | 'card' | 'name' | 'manual';
 };
 
 /**
@@ -219,6 +223,14 @@ export type PairPlan = {
   readonly payerWalletId?: string | null;
   readonly correctedPayerFrom?: string | null;
   readonly signal?: 'card' | 'name' | null;
+  /**
+   * Postojeći redak je obični primitak/trošak → PRETVARA se u prijenos
+   * (type/category/strane), a novi redak se ne stvara.
+   */
+  readonly convert?: boolean;
+  /** Druga strana za `buildTransferPair` kod pretvorbe. */
+  readonly counterpartSourceId?: string | null;
+  readonly direction?: 'in' | 'out' | null;
 };
 
 export interface PlannedWork {
@@ -265,6 +277,40 @@ export function planExecution(
     // PAR PRIJE SVEGA: druga strana već stoji u knjigama, pa novi redak ne
     // smije nastati. Korisnik ga kvačicom „ovo je drugi prijenos" odbija.
     const cls = row.classification;
+    const statementWalletId =
+      typeof tx.paymentSource === 'string' && tx.paymentSource.startsWith('custom:')
+        ? tx.paymentSource.slice('custom:'.length).toLowerCase()
+        : null;
+    const counterpartOf = (payer?: string | null, receiver?: string | null): string | null => {
+      if (payer && payer !== statementWalletId) return payer;
+      if (receiver && receiver !== statementWalletId) return receiver;
+      return null;
+    };
+    const directionOfPair = (payer?: string | null): 'in' | 'out' | null => {
+      if (!statementWalletId || !payer) return null;
+      return payer === statementWalletId ? 'out' : 'in';
+    };
+
+    // Korisnikov odabir kandidata kod dvosmislenog uparivanja ima prednost.
+    const choice = decisions.pairChoice?.[row.index];
+    if (cls.kind === 'transfer' && typeof choice === 'string' && choice.length > 0 && choice !== 'none') {
+      const picked = (cls.pairCandidates ?? []).find((c) => c.id === choice);
+      if (picked) {
+        pairs.push({
+          rowIndex: row.index,
+          tx,
+          existingId: picked.id,
+          payerWalletId: picked.payerWalletId ?? null,
+          correctedPayerFrom: null,
+          signal: null,
+          convert: picked.convert === true,
+          counterpartSourceId: counterpartOf(picked.payerWalletId, picked.receiverWalletId),
+          direction: directionOfPair(picked.payerWalletId),
+        });
+        continue;
+      }
+    }
+
     if (
       cls.kind === 'transfer' &&
       typeof cls.pairedExistingId === 'string' &&
@@ -278,6 +324,9 @@ export function planExecution(
         payerWalletId: cls.pairedPayerWalletId ?? null,
         correctedPayerFrom: cls.pairedCorrectedPayerFrom ?? null,
         signal: cls.counterpartSignal ?? null,
+        convert: cls.pairedConvert === true,
+        counterpartSourceId: counterpartOf(cls.pairedPayerWalletId, cls.pairedReceiverWalletId),
+        direction: directionOfPair(cls.pairedPayerWalletId),
       });
       continue;
     }
@@ -285,7 +334,16 @@ export function planExecution(
     // Transfer override wins.
     const td = decisions.transfers[row.index];
     if (td && td.enabled === true) {
-      transfers.push({ rowIndex: row.index, tx, decision: td });
+      // Porijeklo druge strane se ZAPISUJE — bez toga se kasnije ne zna je li
+      // cilj pogođen pravilom, karticom, imenom ili ga je korisnik odabrao.
+      const sameTarget = cls.kind === 'transfer' && td.targetIncomeSourceId === cls.targetIncomeSourceId;
+      const counterpartOrigin: 'rule' | 'card' | 'name' | 'manual' =
+        cls.kind === 'transfer' && sameTarget && cls.origin === 'rule'
+          ? 'rule'
+          : cls.kind === 'transfer' && sameTarget && cls.origin === 'counterpart'
+            ? (cls.counterpartSignal ?? 'name')
+            : 'manual';
+      transfers.push({ rowIndex: row.index, tx, decision: td, counterpartOrigin });
       continue;
     }
 
@@ -568,13 +626,40 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
   // Ne nastaje novi redak. Postojeći dobiva otisak ovog izvoda kao protustranu;
   // ako je bio ručan (bez bankovnog otiska), dobiva i sam otisak i 'confirmed'.
   let pairsMerged = 0;
+  let pairsConverted = 0;
   for (const p of pendingPairs) {
+    // BATCH POSTOJEĆEG RETKA SE NE DIRA — on nije uvezen ovim izvodom.
     const counterpartPatch: Record<string, unknown> = {
       counterpart_bank_transaction_id: p.tx.fingerprint,
       counterpart_bank_raw_line: p.tx.bankRawLine ?? null,
       transfer_counterpart_origin: 'pair',
-      import_batch_id: batchId,
     };
+    // PRETVORBA: obični primitak/trošak JEST druga strana → postaje prijenos.
+    // Strane slaže isključivo `buildTransferPair`.
+    let convertFailed: string | null = null;
+    if (p.convert) {
+      const pair =
+        p.direction === 'in' || p.direction === 'out'
+          ? buildTransferPair({
+              statementSource: p.tx.paymentSource,
+              counterpartSourceId: p.counterpartSourceId ?? '',
+              direction: p.direction,
+            })
+          : null;
+      if (!pair) {
+        convertFailed = 'invalid_transfer_pair';
+      } else {
+        counterpartPatch.type = 'transfer';
+        counterpartPatch.category = 'transfer';
+        counterpartPatch.payment_source = pair.paymentSource;
+        counterpartPatch.income_source_id = pair.incomeSourceId;
+      }
+    }
+    if (convertFailed) {
+      errors.push(`pair:${p.existingId}:${convertFailed}`);
+      writeErrorsByFingerprint.set(p.tx.fingerprint, convertFailed);
+      continue;
+    }
     // ISPRAVAK PLATITELJA — samo redak pogođen naučenim pravilom (mečer to već
     // provjerava); pravi platitelj dolazi iz kartice ili imena.
     if (p.correctedPayerFrom && p.payerWalletId) {
@@ -595,7 +680,11 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
         .eq('user_id', input.userId)
         .is('bank_transaction_id', null)
         .select('id');
-      if (!claim.error && (claim.data?.length ?? 0) > 0) { pairsMerged += 1; continue; }
+      if (!claim.error && (claim.data?.length ?? 0) > 0) {
+        pairsMerged += 1;
+        if (p.convert) pairsConverted += 1;
+        continue;
+      }
 
       const res = await input.supabase
         .from('expenses')
@@ -609,7 +698,10 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
         writeErrorsByFingerprint.set(p.tx.fingerprint, detail);
         continue;
       }
-      if ((res.data?.length ?? 0) > 0) pairsMerged += 1;
+      if ((res.data?.length ?? 0) > 0) {
+        pairsMerged += 1;
+        if (p.convert) pairsConverted += 1;
+      }
     } catch (e) {
       const detail = errorDetail(e);
       errors.push(`pair:${p.existingId}:${detail}`);
@@ -620,7 +712,7 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
   // --- TRANSFER branch (bulk upsert, ignoreDuplicates) ---
   let transfersCreated = 0;
   if (pendingTransfers.length > 0) {
-    const rows = pendingTransfers.map(({ tx, decision }) => {
+    const rows = pendingTransfers.map(({ tx, decision, counterpartOrigin }) => {
       // JEDINO mjesto koje slaže strane prijenosa — nikad ručno.
       const pair = buildTransferPair({
         statementSource: tx.paymentSource,
@@ -649,6 +741,8 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
       bank_raw_line: tx.bankRawLine ?? null,
       bank_raw_line_source: tx.bankRawLineSource ?? null,
       needs_explanation: isNeedsExplanation(input.decisions, tx.index),
+      // ODAKLE JE DRUGA STRANA — zapisuje se i za nove prijenose iz uvoza.
+      transfer_counterpart_origin: counterpartOrigin,
       };
     });
     const write = await upsertRecoveringExistingUnique({
@@ -729,6 +823,7 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
     inserted,
     transfersCreated,
     pairsMerged,
+    pairsConverted,
     rulesSaved,
     skippedByUser: plan.skippedByUser,
     skippedFingerprint: plan.skippedFingerprint,

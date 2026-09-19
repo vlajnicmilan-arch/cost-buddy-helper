@@ -3,6 +3,7 @@
 // labels, or externally-known proper nouns.
 export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, string>> = {
   en: {
+    "importReview.pair.candidateLine": "Samo oznake i razmaknice — nema teksta za prijevod",
     "mailReview.field.iban": "IBAN je međunarodna kratica — identična na svim jezicima",
     "mailImport.status": "Same word in EN",
     "categories.catering": "Catering is the same word in EN",
@@ -125,6 +126,7 @@ export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, s
     "admin.entitlements.source.admin_grant": "Admin terminology",
   },
   de: {
+    "importReview.pair.candidateLine": "Samo oznake i razmaknice — nema teksta za prijevod",
     "categories.catering": "Catering is the same word in DE",
     "settings.categories.profile.title": "Profil is the same word in DE",
     "collaborators.project": "Projekt is the same word in DE",

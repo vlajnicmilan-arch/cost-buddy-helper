@@ -6319,7 +6319,19 @@
       "restoreDeleted": "Zurück in die Bücher",
       "restoreDeletedOn": "Wird zurückgeholt"
     },
-    "skippedPreviouslyDeletedSummary": "Übersprungen, weil früher gelöscht: {{count}}"
+    "skippedPreviouslyDeletedSummary": "Übersprungen, weil früher gelöscht: {{count}}",
+    "pair": {
+      "chooseCandidate": "Mehrere mögliche Paare — wähle die passende Gegenseite",
+      "none": "Keine — das ist eine neue Überweisung",
+      "candidateLine": "{{date}} · {{amount}} · {{payer}} → {{receiver}}",
+      "blocked": "{{count}} Zeilen warten auf die Wahl der Gegenseite",
+      "origin": {
+        "import": "aus dem Kontoauszug-Import",
+        "sync": "aus der Bank-Synchronisation",
+        "manual": "manuelle Eingabe"
+      },
+      "convertedSummary": "In Überweisung umgewandelt: {{count}}"
+    }
   },
   "correctionDelete": {
     "title": "Saldo-Korrektur-Eintrag löschen",

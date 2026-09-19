@@ -976,6 +976,12 @@ export const GlobalPDFImportHost = () => {
       );
 
       const pairCandidateById = new Map(pairCandidates.map(c => [c.id, c]));
+      /** Jedan postojeći redak može biti druga strana SAMO jednom. */
+      const claimedPairIds = new Set<string>();
+      /** Sve korisnikove kartice — po njima se prepoznaje protustrana u opisu. */
+      const allCardLast4 = customPaymentSources
+        .flatMap(s => (s.cards ?? []).map(c => String(c.last_four_digits ?? '')))
+        .filter(v => /^\d{4}$/.test(v));
       /** Prijedlog uparivanja za jedan redak; nikad ne baca i ništa ne upisuje. */
       const pairInfoFor = (
         amount: number,
@@ -988,6 +994,7 @@ export const GlobalPDFImportHost = () => {
           { amount, dateIso, direction, counterpartWalletId, fingerprint },
           sourceId,
           pairCandidates,
+          { claimedCandidateIds: [...claimedPairIds], cardLast4: allCardLast4 },
         );
         if (match.kind === 'ambiguous') {
           try {
@@ -998,10 +1005,15 @@ export const GlobalPDFImportHost = () => {
               source_id: sourceId,
             });
           } catch { /* dijagnostika nikad ne ruši uvoz */ }
-          return { match, fields: {} as Record<string, unknown> };
+          // Korisnik MORA vidjeti kandidate da bi odlučio — zato idu u redak.
+          return {
+            match,
+            fields: { pairCandidates: match.candidates } as Record<string, unknown>,
+          };
         }
         if (match.kind !== 'pair') return { match, fields: {} as Record<string, unknown> };
         const existing = pairCandidateById.get(match.existingId);
+        claimedPairIds.add(match.existingId);
         return {
           match,
           fields: {
@@ -1011,6 +1023,9 @@ export const GlobalPDFImportHost = () => {
             pairedReceiverWalletId: match.receiverWalletId,
             pairedExistingDate: existing?.date ?? null,
             pairedExistingAmount: existing?.amount ?? null,
+            pairedExistingDescription: existing?.description ?? null,
+            pairedExistingOrigin: existing?.origin ?? null,
+            pairedConvert: match.convert === true,
           } as Record<string, unknown>,
         };
       };

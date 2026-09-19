@@ -6331,7 +6331,19 @@
       "restoreDeleted": "Vrati u knjige",
       "restoreDeletedOn": "Vraća se u knjige"
     },
-    "skippedPreviouslyDeletedSummary": "Preskočeno jer je ranije obrisano: {{count}}"
+    "skippedPreviouslyDeletedSummary": "Preskočeno jer je ranije obrisano: {{count}}",
+    "pair": {
+      "chooseCandidate": "Više mogućih parova — odaberi s čime se spaja",
+      "none": "Nijedan — ovo je novi prijenos",
+      "candidateLine": "{{date}} · {{amount}} · {{payer}} → {{receiver}}",
+      "blocked": "{{count}} redaka čeka odabir druge strane prijenosa",
+      "origin": {
+        "import": "iz uvoza izvoda",
+        "sync": "iz bankovne sinkronizacije",
+        "manual": "ručni unos"
+      },
+      "convertedSummary": "Pretvoreno u prijenos: {{count}}"
+    }
   },
   "correctionDelete": {
     "title": "Brisanje zapisa o korekciji salda",
