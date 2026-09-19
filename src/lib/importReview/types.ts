@@ -126,6 +126,12 @@ export interface SerializedImportedTx {
   readonly bankRawLine?: string | null;
   /** Porijeklo citata: 'text' (PDF sloj), 'html' (tablica), 'ai' (prepis čitačem). */
   readonly bankRawLineSource?: 'text' | 'html' | 'ai' | null;
+  /**
+   * Smjer iz predznaka retka na izvodu (pdfPostProcess `statement_direction`)
+   * — čuva se kad `income`/`expense` postane `transfer`, da se korisnik ne
+   * pita ono što na izvodu već piše.
+   */
+  readonly statement_direction?: 'in' | 'out' | null;
   readonly fingerprint: string;
 }
 
