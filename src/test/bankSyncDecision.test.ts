@@ -14,19 +14,28 @@ import {
   pickMergeTarget,
   pickBankBalance,
   normalizeCounterparty,
+  resolveOwnTransferCounterpart,
   type EBTransactionLike,
+  type WalletRef,
 } from '../../supabase/functions/_shared/bankSyncDecision';
 import { extractCardMasks, matchUserCard, type UserCardRef } from '@/lib/cardMatch';
 
-const SRC_TZ = 'src-tz';
-const SRC_REVOLUT = 'src-revolut';
+const SRC_TZ = 'aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa';
+const SRC_REVOLUT = 'bbbbbbbb-2222-4222-8222-bbbbbbbbbbbb';
+const SRC_REVOLUT_BIZ = 'cccccccc-3333-4333-8333-cccccccccccc';
 
 const cards: UserCardRef[] = [
   { id: 'card-tz', last_four_digits: '2081', payment_source_id: SRC_TZ },
   { id: 'card-revolut', last_four_digits: '1542', payment_source_id: SRC_REVOLUT },
 ];
 
+const wallets: WalletRef[] = [
+  { id: SRC_TZ, name: 'Tekući zaštićeni' },
+  { id: SRC_REVOLUT, name: 'Revolut' },
+];
+
 const ctx = { syncPaymentSourceId: SRC_TZ, cards };
+const ctxWallets = { syncPaymentSourceId: SRC_TZ, cards, wallets };
 
 const reservation = (id: string, date: string): EBTransactionLike => ({
   entry_reference: id,
