@@ -357,20 +357,18 @@ Deno.serve(async (req) => {
       const isIncome = type === "income";
       const rawLine = JSON.stringify(decision.raw);
 
-      // Proknjižena verzija onoga što je već upisano s drugim bankovnim ID-om
-      // (npr. ranija rezervacija iz stare verzije sinkronizacije) — AŽURIRAJ,
-      // ne dodavaj novi redak.
+      // Proknjižena verzija onoga što je već upisano (ručni redak, redak iz
+      // rezervacije, ručno pretvoren u prijenos) — AŽURIRAJ, ne dodavaj novi.
+      // Retci koji već nose svoj proknjiženi bankovni ID se ne diraju.
       const mergeFrom = new Date(new Date(txDate).getTime() - 3 * 86400000).toISOString();
       const mergeTo = new Date(new Date(txDate).getTime() + 4 * 86400000).toISOString();
       const { data: bankRows } = await admin
         .from("expenses")
-        .select("id, amount, date, description, payment_source_card_id, bank_transaction_id, status")
+        .select("id, amount, date, description, payment_source_card_id, bank_transaction_id, bank_match_status, type, status")
         .eq("user_id", userId)
-        .eq("bank_account_id", account.id)
-        .eq("type", type)
+        .eq("payment_source", paymentSourceRef)
+        .in("type", [type, "transfer"])
         .is("deleted_at", null)
-        .not("bank_transaction_id", "is", null)
-        .neq("bank_transaction_id", stableId)
         .gte("amount", absAmount - 0.01)
         .lte("amount", absAmount + 0.01)
         .gte("date", mergeFrom)
@@ -380,30 +378,35 @@ Deno.serve(async (req) => {
         (bankRows || [])
           // Samo retci koji se broje (status prazan ili 'approved').
           .filter((r: any) => !r.status || r.status === "approved")
+          .filter((r: any) => r.bank_transaction_id !== stableId)
           .map((r: any) => ({
             id: r.id,
             amount: Number(r.amount),
             date: r.date,
             payment_source_card_id: r.payment_source_card_id,
             description: r.description,
+            bank_transaction_id: r.bank_transaction_id,
+            bank_match_status: r.bank_match_status,
+            type: r.type,
           })),
 
         {
           amount: absAmount,
           date: txDate,
           cardId: decision.paymentSourceCardId,
+          counterparty: counterpartyOf(tx, description),
           description,
         },
       );
 
       if (mergeTarget) {
+        // Tip se ZADRŽAVA (prijenos ostaje prijenos), opis se ne prepisuje.
         const { error: mergeErr } = await admin
           .from("expenses")
           .update({
             bank_transaction_id: stableId,
             bank_account_id: account.id,
             date: new Date(txDate).toISOString(),
-            description,
             bank_match_status: "confirmed",
             bank_raw_line: rawLine,
             bank_raw_line_source: "enable_banking",
@@ -418,6 +421,7 @@ Deno.serve(async (req) => {
         }
         continue;
       }
+
 
       // Hybrid bank-first match logika (ručno upisani retci).
       const candidates = await findCandidates(absAmount, txDate, type);
