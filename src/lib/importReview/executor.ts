@@ -352,7 +352,7 @@ export function planExecution(
     skippedByUser += 1;
   }
 
-  return { merges, inserts, transfers, restores, skippedByUser, skippedFingerprint, skippedPreviouslyDeleted };
+  return { merges, inserts, transfers, pairs, restores, skippedByUser, skippedFingerprint, skippedPreviouslyDeleted };
 }
 
 export async function executeDecisions(input: ExecutorInput): Promise<ExecutorResult> {
