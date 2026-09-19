@@ -381,7 +381,7 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
     .filter(item => isBlockedByDeleted(item.tx.fingerprint));
   skippedPreviouslyDeleted += blockedPlans.length;
 
-  const allPlans = [...plan.merges, ...plan.inserts, ...plan.transfers, ...plan.restores]
+  const allPlans = [...plan.merges, ...plan.inserts, ...plan.transfers, ...plan.pairs, ...plan.restores]
     .filter(item => !isBlockedByDeleted(item.tx.fingerprint));
 
   const pendingMerges = plan.merges.filter(
