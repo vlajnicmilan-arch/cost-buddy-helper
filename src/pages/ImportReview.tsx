@@ -517,6 +517,10 @@ const ImportReview = () => {
   const updateRestoreDeleted = useCallback((idx: number, value: boolean) => {
     setDecisions(prev => (prev ? setRestoreDeleted(prev, idx, value) : prev));
   }, []);
+  /** „Ovo je drugi prijenos" — odbija predloženo uparivanje s postojećim retkom. */
+  const updateUnpair = useCallback((idx: number, value: boolean) => {
+    setDecisions(prev => (prev ? setUnpair(prev, idx, value) : prev));
+  }, []);
   const updateNew = useCallback((idx: number, value: boolean) => {
     setDecisions(prev => (prev ? setNewRow(prev, idx, value) : prev));
   }, []);
