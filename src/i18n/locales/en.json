@@ -6493,7 +6493,9 @@
     "categorySaved": "Category saved",
     "categorySavedRefreshFailed": "Category saved, but refreshing the list failed.",
     "categorySaveFailed": "Saving the category failed: {{reason}}",
-    "unknownError": "Unknown error"
+    "unknownError": "Unknown error",
+    "menuLabel": "Accounting handover",
+    "menuDesc": "Monthly package of photographed receipts for your accountant"
     }
   },
   "eracun": {
