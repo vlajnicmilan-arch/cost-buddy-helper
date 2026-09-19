@@ -633,6 +633,12 @@ const ImportReview = () => {
   const fmtDate = (iso: string) => formatDateUi(iso, i18n.language);
 
   const targets = payload.availableTargets ?? [];
+  /** Ime novčanika za prikaz — izvor izvoda ili jedan od ciljeva. */
+  const walletName = (id: string | null): string => {
+    if (!id) return '';
+    if (id === payload.sourceId) return payload.sourceName;
+    return targets.find(x => x.id === id)?.name ?? '';
+  };
 
   /**
    * Given a row + user's picked target id, build the TransferDecision to
