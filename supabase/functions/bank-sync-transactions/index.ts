@@ -377,13 +377,17 @@ Deno.serve(async (req) => {
         .lte("date", mergeTo);
 
       const mergeTarget = pickMergeTarget(
-        (bankRows || []).map((r: any) => ({
-          id: r.id,
-          amount: Number(r.amount),
-          date: r.date,
-          payment_source_card_id: r.payment_source_card_id,
-          description: r.description,
-        })),
+        (bankRows || [])
+          // Samo retci koji se broje (status prazan ili 'approved').
+          .filter((r: any) => !r.status || r.status === "approved")
+          .map((r: any) => ({
+            id: r.id,
+            amount: Number(r.amount),
+            date: r.date,
+            payment_source_card_id: r.payment_source_card_id,
+            description: r.description,
+          })),
+
         {
           amount: absAmount,
           date: txDate,
