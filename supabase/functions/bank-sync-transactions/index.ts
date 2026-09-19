@@ -395,6 +395,135 @@ Deno.serve(async (req) => {
       const isIncome = type === "income";
       const rawLine = JSON.stringify(decision.raw);
 
+      // UPARIVANJE DVIJU STRANA PRIJENOSA — isti novac s drugog izvoda već
+      // može stajati u knjigama. Ide PRIJE pickMergeTarget: par se ne stvara
+      // nanovo, nego se na postojeći redak upisuje druga strana.
+      if (decision.transfer) {
+        const statementWalletId = account.linked_payment_source_id as string;
+        const direction: "in" | "out" =
+          decision.transfer.paymentSource === `custom:${statementWalletId}` ? "out" : "in";
+        const counterpartWalletId = decision.transfer.counterpartSourceId ?? null;
+        try {
+          const pairFrom = new Date(new Date(txDate).getTime() - 3 * 86400000).toISOString();
+          const pairTo = new Date(new Date(txDate).getTime() + 4 * 86400000).toISOString();
+          const { data: pairRows, error: pairErr } = await admin
+            .from("expenses")
+            .select(
+              "id, amount, date, payment_source, income_source_id, bank_transaction_id, counterpart_bank_transaction_id, transfer_counterpart_origin, bank_match_status, bank_raw_line, bank_raw_line_source, status",
+            )
+            .eq("user_id", userId)
+            .eq("type", "transfer")
+            .is("deleted_at", null)
+            .gte("date", pairFrom)
+            .lte("date", pairTo);
+          if (pairErr) throw pairErr;
+
+          const candidates: TransferPairCandidate[] = (pairRows || [])
+            .filter((r: any) => !r.status || r.status === "approved")
+            .map((r: any) => ({
+              id: r.id,
+              amount: Number(r.amount),
+              date: r.date,
+              payerWalletId:
+                typeof r.payment_source === "string" && r.payment_source.startsWith("custom:")
+                  ? r.payment_source.slice("custom:".length)
+                  : null,
+              receiverWalletId: r.income_source_id ?? null,
+              bankTransactionId: r.bank_transaction_id ?? null,
+              counterpartBankTransactionId: r.counterpart_bank_transaction_id ?? null,
+              transferCounterpartOrigin: r.transfer_counterpart_origin ?? null,
+            }));
+
+          const match = matchTransferPair({
+            amount: absAmount,
+            date: txDate,
+            statementWalletId,
+            direction,
+            counterpartWalletId,
+            fingerprint: stableId,
+            candidates,
+          });
+
+          if (match.kind === "same_row") {
+            skipped += 1;
+            continue;
+          }
+          if (match.kind === "ambiguous") {
+            ambiguousTransfers += 1;
+            diagnostics.push({
+              event: "transfer_pair_ambiguous",
+              session_id: `bank-sync-${account.id}`,
+              user_id: userId,
+              severity: "info",
+              details: {
+                bank_account_id: account.id,
+                bank_transaction_id: stableId,
+                candidate_ids: match.candidateIds,
+              },
+            });
+          }
+          if (match.kind === "pair") {
+            const existing = (pairRows || []).find((r: any) => r.id === match.existingId);
+            const patch: Record<string, unknown> = {
+              counterpart_bank_transaction_id: stableId,
+              counterpart_bank_raw_line: rawLine,
+              transfer_counterpart_origin: "pair",
+            };
+            // Ručni redak (bez bankovnog ID-a) uparivanjem postaje potvrđen.
+            if (existing && !existing.bank_transaction_id) {
+              patch.bank_transaction_id = stableId;
+              patch.bank_account_id = account.id;
+              patch.bank_match_status = "confirmed";
+              patch.bank_raw_line = rawLine;
+              patch.bank_raw_line_source = "enable_banking";
+            }
+            // Ispravak platitelja samo kad je postojeći nastao po pravilu.
+            if (match.correctedPayerFrom) {
+              patch.payment_source = `custom:${match.payerWalletId}`;
+              patch.transfer_counterpart_origin = decision.transfer.signal ?? "card";
+            }
+            const { error: pairUpdErr } = await admin
+              .from("expenses")
+              .update(patch)
+              .eq("id", match.existingId);
+            if (pairUpdErr) throw pairUpdErr;
+            transfersPaired += 1;
+            if (match.correctedPayerFrom) {
+              diagnostics.push({
+                event: "transfer_payer_corrected",
+                session_id: `bank-sync-${account.id}`,
+                user_id: userId,
+                severity: "info",
+                details: {
+                  expense_id: match.existingId,
+                  from_wallet: match.correctedPayerFrom,
+                  to_wallet: match.payerWalletId,
+                  bank_transaction_id: stableId,
+                },
+              });
+            }
+            continue;
+          }
+        } catch (pairFail: any) {
+          errors += 1;
+          diagnostics.push({
+            event: "transfer_pair_failed",
+            session_id: `bank-sync-${account.id}`,
+            user_id: userId,
+            severity: "error",
+            details: {
+              step: "transfer_pair_match",
+              bank_account_id: account.id,
+              bank_transaction_id: stableId,
+              statement_wallet_id: statementWalletId,
+              counterpart_wallet_id: counterpartWalletId,
+              code: pairFail?.code ?? null,
+              message: pairFail?.message ?? String(pairFail),
+            },
+          });
+        }
+      }
+
       // Proknjižena verzija onoga što je već upisano (ručni redak, redak iz
       // rezervacije, ručno pretvoren u prijenos) — AŽURIRAJ, ne dodavaj novi.
       // Retci koji već nose svoj proknjiženi bankovni ID se ne diraju.
