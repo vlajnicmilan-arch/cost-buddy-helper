@@ -6506,7 +6506,9 @@
     "categorySaved": "Kategorija je spremljena",
     "categorySavedRefreshFailed": "Kategorija je spremljena, ali osvježavanje popisa nije uspjelo.",
     "categorySaveFailed": "Spremanje kategorije nije uspjelo: {{reason}}",
-    "unknownError": "Nepoznata greška"
+    "unknownError": "Nepoznata greška",
+    "menuLabel": "Predaja knjigovodstvu",
+    "menuDesc": "Mjesečni paket fotografiranih računa za knjigovođu"
     }
   },
   "eracun": {

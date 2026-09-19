@@ -6493,7 +6493,9 @@
     "categorySaved": "Kategorie gespeichert",
     "categorySavedRefreshFailed": "Kategorie gespeichert, Aktualisierung der Liste fehlgeschlagen.",
     "categorySaveFailed": "Kategorie konnte nicht gespeichert werden: {{reason}}",
-    "unknownError": "Unbekannter Fehler"
+    "unknownError": "Unbekannter Fehler",
+    "menuLabel": "Übergabe an die Buchhaltung",
+    "menuDesc": "Monatliches Paket fotografierter Belege für die Buchhaltung"
     }
   },
   "eracun": {
