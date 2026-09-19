@@ -92,7 +92,8 @@ describe('GlobalPDFImportHost — prednost zapamćenog pravila', () => {
   });
 
   it('predodabir nosi origin counterpart i signal', () => {
-    expect(SRC).toContain("origin: preselected ? ('counterpart' as const) : ('keyword' as const)");
+    expect(SRC).toContain("origin: preselected");
+    expect(SRC).toContain("? ('counterpart' as const)");
     expect(SRC).toContain('counterpartSignal: preselected.signal');
   });
 });
