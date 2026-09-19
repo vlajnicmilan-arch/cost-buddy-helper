@@ -43,6 +43,14 @@ export const BusinessMore = ({ expenses, companyName }: Props) => {
   if (view === 'reports') return <div>{backButton}<BusinessReports expenses={expenses} companyName={companyName ?? ''} /></div>;
   if (view === 'incoming') return <div>{backButton}<IncomingInvoicesPanel /></div>;
   if (view === 'estimates') return <div>{backButton}<ProjectEstimatesPanel /></div>;
+  if (view === 'handover') return (
+    <div>
+      {backButton}
+      <h2 className="text-lg font-semibold mb-3">{t('accounting.handover.title', 'Predaja knjigovodstvu')}</h2>
+      <HandoverBar businessProfileId={activeBusinessProfileId} />
+    </div>
+  );
+
 
   type MenuItem = { id: SubView; icon: any; label: string; desc: string };
 
@@ -55,6 +63,18 @@ export const BusinessMore = ({ expenses, companyName }: Props) => {
     { id: 'debts', icon: Receipt, label: t('business.more.openInvoices', 'Otvoreni računi'), desc: t('business.more.openInvoicesDesc', 'Praćenje neplaćenih računa i potraživanja') },
     { id: 'recurring', icon: RefreshCw, label: t('business.more.recurringObligations', 'Ponavljajuće obveze'), desc: t('business.more.recurringObligationsDesc', 'Najam, pretplate, leasing i ostalo') },
   ];
+
+  // Stavka se prikazuje samo kad aktivna tvrtka ima uključen prekidač predaje knjigovođi.
+  const handoverEnabled = !!activeBusinessProfileId &&
+    businessProfiles.some(p => p.id === activeBusinessProfileId && p.accounting_handover_enabled);
+  if (handoverEnabled) {
+    menuItems.push({
+      id: 'handover',
+      icon: Send,
+      label: t('accounting.handover.menuLabel', 'Predaja knjigovodstvu'),
+      desc: t('accounting.handover.menuDesc', 'Mjesečni paket fotografiranih računa za knjigovođu'),
+    });
+  }
 
   return (
     <div className="space-y-2">
