@@ -85,6 +85,8 @@ export const EXPENSE_LIST_COLUMNS = [
 export const EXPENSE_DETAIL_LAZY_COLUMNS = [
   'bank_raw_line',
   'bank_raw_line_source',
+  // Sirovi zapis druge strane uparenog prijenosa — jednako težak kao gornji.
+  'counterpart_bank_raw_line',
   'location_name',
 ] as const;
 
