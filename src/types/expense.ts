@@ -214,6 +214,8 @@ export interface Expense {
    * kad odredišni novčanik više nije vidljiv (izlazak iz dijeljenja).
    */
   counterparty_name_snapshot?: string | null;
+  /** Snimka imena novčanika PLATITELJA — čitljiva i kad novčanik više nije vidljiv. */
+  payer_name_snapshot?: string | null;
   items?: ReceiptItem[];
   // Suradnički avansi — vidi mem://features/collaborator-advances
   collaborator_id?: string | null;
