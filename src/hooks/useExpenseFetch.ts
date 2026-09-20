@@ -36,6 +36,7 @@ import { buildExpenseScopeFilter, belongsToMyScope, type ScopeContext } from '@/
 import { runSingleFlight } from '@/lib/loadWithRetry';
 import { isExpensesFresh, markExpensesFetched } from '@/lib/expensesFreshness';
 import { applyViewModeFilter, resolveSourceScope } from '@/lib/viewModeScope';
+import { readSourceScope, subscribeSourceScope, writeSourceScope } from '@/lib/sourceScopeCache';
 import {
   applySharedAccessFilter,
   isSharedRowVisible,
