@@ -24,6 +24,7 @@ function tx(i: number, over: Partial<SerializedImportedTx> = {}): SerializedImpo
 
 function makeClient() {
   const upserted: any[] = [];
+  const persisted = new Set<string>();
   const client: ExecutorSupabaseClient = {
     from(table: string) {
       if (table === 'custom_payment_sources') {
