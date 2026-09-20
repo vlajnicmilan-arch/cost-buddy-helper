@@ -179,7 +179,8 @@ export const useExpenseFetch = () => {
       }
 
       if (incomeRes.error) throw incomeRes.error;
-      setOwnedSourceIds(new Set((incomeRes.data || []).map(s => s.id)));
+      const incomeIds = new Set((incomeRes.data || []).map(s => s.id));
+      setOwnedSourceIds(incomeIds);
 
       const psIds = new Set<string>();
       const fullIds = new Set<string>();
@@ -187,12 +188,15 @@ export const useExpenseFetch = () => {
         psIds.add(m.payment_source_id);
         if (m.role === 'full') fullIds.add(m.payment_source_id);
       });
-      (ownedPsRes.data || []).forEach(s => {
+      const ownMap = new Map<string, string | null>();
+      (ownedPsRes.data || []).forEach((s: any) => {
         psIds.add(s.id);
         fullIds.add(s.id);
+        ownMap.set(s.id, s.business_profile_id || null);
       });
       setSharedPaymentSourceIds(psIds);
       setFullAccessSourceIds(fullIds);
+      setOwnSourceMap(ownMap);
       sharedIdsRef.current = psIds;
 
       // Map source.id -> business_profile_id (or null when personal)
@@ -201,6 +205,18 @@ export const useExpenseFetch = () => {
         map.set(s.id, s.business_profile_id || null);
       });
       setSourceBusinessMap(map);
+
+      // Doseg ide u dijeljeni cache + snimku: sve OSTALE instance hooka ga
+      // preuzmu bez vlastitog dohvata, a sljedeće hladno otvaranje starta s njim.
+      if (map.size > 0 || ownMap.size > 0) {
+        writeSourceScope(user.id, {
+          sourceBusinessMap: map,
+          sharedIds: psIds,
+          fullIds,
+          ownedIncomeIds: incomeIds,
+          ownSourceMap: ownMap,
+        });
+      }
 
       return { sharedIds: psIds };
     } catch (error) {
