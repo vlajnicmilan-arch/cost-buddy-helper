@@ -704,12 +704,13 @@ export const useExpenseFetch = () => {
   // A "cross-mode" expense = company-tagged transaction paid from a personal source
   // (i.e. owner loan to company). Visible in BOTH personal and business views.
   const isCrossModeExpense = useCallback((e: Expense): boolean => {
-    const scope = resolveSourceScope(e as any, sourceBusinessMap);
+    const scope = resolveSourceScope(e as any, sourceBusinessMap, ownSourceMap);
     const expenseBp = (e as any).business_profile_id || null;
     return scope.known && scope.businessProfileId === null && !!expenseBp;
-  }, [sourceBusinessMap]);
+  }, [sourceBusinessMap, ownSourceMap]);
 
-  // Doseg pogleda živi u `@/lib/viewModeScope` (nepoznat novčanik = skriven).
+  // Doseg pogleda živi u `@/lib/viewModeScope` (nepoznat novčanik = skriven,
+  // uz rezervu: vlastiti novčanik iz snimke je poznat).
   const applyViewMode = useCallback(
     (list: Expense[]) =>
       applyViewModeFilter(list, {
@@ -717,8 +718,9 @@ export const useExpenseFetch = () => {
         isBusinessView,
         viewBusinessProfileId,
         sourceBusinessMap,
+        ownSourceMap,
       }),
-    [isPersonalView, isBusinessView, viewBusinessProfileId, sourceBusinessMap],
+    [isPersonalView, isBusinessView, viewBusinessProfileId, sourceBusinessMap, ownSourceMap],
   );
 
   // Pristup redcima na dijeljenom novčaniku (vlastiti uvijek, tuđi samo uz 'full').
