@@ -787,6 +787,35 @@ export const useExpenseFetch = () => {
     return applySharedAccessFilter(scoped as SharedAccessRow[], sharedCtx) as Expense[];
   }, [expenses, applyViewMode, isLocalMode, sharedCtx]);
 
+  // Osvježenje UVIJEK obnavlja i doseg novčanika, ne samo transakcije.
+  const refetch = useCallback(async () => {
+    const { sharedIds } = await fetchOwnedSources();
+    await fetchExpenses(sharedIds);
+  }, [fetchOwnedSources, fetchExpenses]);
+
+  // Tiha dijagnostika: ako se ikad crta s praznom mapom I praznom snimkom
+  // vlastitih novčanika, to znači skrivene `custom:` retke. Nikad se ne
+  // prikazuje korisniku — služi samo za praćenje.
+  const emptyMapLoggedRef = useRef(false);
+  useEffect(() => {
+    if (isLocalMode || !userId || emptyMapLoggedRef.current) return;
+    if (sourceBusinessMap.size > 0 || ownSourceMap.size > 0) return;
+    const hiddenCustomRows = expenses.filter(
+      (e) => typeof e.payment_source === 'string' && e.payment_source.startsWith('custom:'),
+    ).length;
+    if (hiddenCustomRows === 0) return;
+    emptyMapLoggedRef.current = true;
+    logDiagnostic({
+      event: 'source_map_empty_at_render',
+      severity: 'warning',
+      details: {
+        instance_id: instanceIdRef.current,
+        hidden_custom_rows: hiddenCustomRows,
+        total_rows: expenses.length,
+      },
+    });
+  }, [expenses, sourceBusinessMap, ownSourceMap, isLocalMode, userId]);
+
   return {
     expenses: contextFilteredExpenses, // isolated by business/personal context
     rawExpenses: expenses,             // unfiltered: use for per-source views (source defines context)
@@ -796,6 +825,6 @@ export const useExpenseFetch = () => {
     loading,
     isLocalMode,
     setExpenses,
-    refetch: fetchExpenses,
+    refetch,
   };
 };
