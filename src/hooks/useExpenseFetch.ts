@@ -35,6 +35,7 @@ import { readExpenseSnapshot, writeExpenseSnapshot } from '@/lib/storage/expense
 import { buildExpenseScopeFilter, belongsToMyScope, type ScopeContext } from '@/lib/expenseScope';
 import { runSingleFlight } from '@/lib/loadWithRetry';
 import { isExpensesFresh, markExpensesFetched } from '@/lib/expensesFreshness';
+import { applyViewModeFilter, resolveSourceScope } from '@/lib/viewModeScope';
 
 
 // v3: bumped after the explicit-column select (lista više ne nosi teška
