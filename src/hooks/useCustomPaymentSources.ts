@@ -12,6 +12,7 @@ import { useAppResume } from '@/hooks/useAppResume';
 import { isSessionGone } from '@/lib/sessionGone';
 import { loadWithRetry } from '@/lib/loadWithRetry';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { wasDeleteApplied } from '@/lib/deleteConfirmation';
 
 /**
  * DIJELJENJE DOHVATA MEĐU INSTANCAMA
@@ -458,7 +459,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
 
       if (error) throw error;
 
-      if (!data || data.length === 0) {
+      if (!wasDeleteApplied(data)) {
         logDiagnostic({
           event: 'payment_source_delete_noop',
           severity: 'error',

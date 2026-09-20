@@ -5,6 +5,7 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { applyCountedFilter } from '@/lib/countedExpense';
+import { wasDeleteApplied } from '@/lib/deleteConfirmation';
 
 export type PaymentSourceRole = 'owner' | 'member' | 'limited' | 'full' | 'viewer';
 
@@ -214,7 +215,7 @@ export const usePaymentSourceMembers = (paymentSourceId: string | null) => {
         .select('id');
 
       if (error) throw error;
-      if (!removed || removed.length === 0) {
+      if (!wasDeleteApplied(removed)) {
         throw Object.assign(new Error('no membership row removed'), { code: 'noop' });
       }
 
