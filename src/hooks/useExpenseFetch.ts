@@ -555,6 +555,19 @@ export const useExpenseFetch = () => {
     }
   }, [user?.id, isLocalMode]);
 
+  // Doseg koji je dohvatila BILO KOJA instanca odmah vrijedi i ovdje.
+  useEffect(() => {
+    if (isLocalMode || !userId) return;
+    return subscribeSourceScope(userId, (scope) => {
+      setSourceBusinessMap(scope.sourceBusinessMap);
+      setOwnSourceMap(scope.ownSourceMap);
+      setSharedPaymentSourceIds(scope.sharedIds);
+      setFullAccessSourceIds(scope.fullIds);
+      setOwnedSourceIds(scope.ownedIncomeIds);
+      sharedIdsRef.current = scope.sharedIds;
+    });
+  }, [userId, isLocalMode]);
+
   // Initial data load (hiddenIds handled by useHiddenPaymentSources hook).
   // P0: fetchOwnedSources MUST complete before fetchExpenses, otherwise the
   // first SELECT runs with an empty shared set and legitimately-shared
@@ -567,15 +580,15 @@ export const useExpenseFetch = () => {
     (async () => {
       await snapshotHydrationRef.current;
       if (cancelled) return;
-      // Instanca koja se montira dok je potpuni dohvat za istog korisnika još
-      // svjež ne kreće u mrežu — prikazuje snimku. Vrijedi SAMO za ovaj
-      // početni efekt; refetch/fokus/realtime/spremanje ga zaobilaze.
+      // Doseg novčanika se dohvaća UVIJEK: bez njega bi „nepoznat novčanik =
+      // skriven" sakrio i vlastite retke. Prozor svježine smije preskočiti
+      // samo dohvat TRANSAKCIJA.
+      const { sharedIds } = await fetchOwnedSources();
+      if (cancelled) return;
       if (!isLocalMode && isExpensesFresh(userId)) {
         setLoading(false);
         return;
       }
-      const { sharedIds } = await fetchOwnedSources();
-      if (cancelled) return;
       await fetchExpenses(sharedIds);
     })();
 
@@ -586,7 +599,12 @@ export const useExpenseFetch = () => {
 
   // Svježina na povratku u fokus / mrežu — dashboard i novčanik brojke se
   // tiho usklade sa serverskom istinom (loading se ne pali nakon hidracije).
-  useAppResume(() => fetchExpenses(), { enabled: !isLocalMode && !!userId && authReady });
+  // Doseg novčanika ide zajedno s transakcijama: povratak u fokus mora
+  // popraviti i eventualno praznu mapu.
+  useAppResume(async () => {
+    const { sharedIds } = await fetchOwnedSources();
+    await fetchExpenses(sharedIds);
+  }, { enabled: !isLocalMode && !!userId && authReady });
 
 
   // Realtime subscription for cloud mode
