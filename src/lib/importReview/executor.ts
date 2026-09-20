@@ -520,6 +520,40 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
   let skippedExistingUnique = 0;
   const writeErrorsByFingerprint = new Map<string, string>();
 
+  // PRIPADNOST TVRTKI ide po NOVČANIKU na koji se knjiži; aktivni pogled je
+  // samo rezerva kad novčanik nije custom izvor ili nije poznat.
+  const walletBusinessMap = new Map<string, string | null>();
+  {
+    const ids = Array.from(
+      new Set(
+        [...pendingInserts, ...pendingTransfers]
+          .map(({ tx }) => tx.paymentSource)
+          .filter((ps): ps is string => typeof ps === 'string' && ps.startsWith('custom:'))
+          .map((ps) => ps.slice('custom:'.length)),
+      ),
+    );
+    if (ids.length > 0) {
+      try {
+        const res = await input.supabase
+          .from('custom_payment_sources')
+          .select('id, business_profile_id')
+          .in('id', ids);
+        for (const row of (res.data ?? []) as Array<{ id: string; business_profile_id: string | null }>) {
+          walletBusinessMap.set(row.id, row.business_profile_id ?? null);
+        }
+      } catch {
+        // Fail-soft: bez mape vrijedi današnje ponašanje (aktivni pogled).
+      }
+    }
+  }
+  const businessProfileForSource = (paymentSource: string | null | undefined): string | null => {
+    if (typeof paymentSource === 'string' && paymentSource.startsWith('custom:')) {
+      const id = paymentSource.slice('custom:'.length);
+      if (walletBusinessMap.has(id)) return walletBusinessMap.get(id) ?? null;
+    }
+    return input.activeBusinessProfileId;
+  };
+
   // --- MERGE branch ---
   for (const m of pendingMerges) {
     const patch: Record<string, unknown> = {
