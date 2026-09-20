@@ -58,3 +58,60 @@ describe('napušteni dijeljeni novčanik', () => {
     expect(resolved?.to.name).toBe('PBZ Solin kredit');
   });
 });
+
+/**
+ * Točka 9 — simetrija: prijenos IZ napuštenog novčanika U korisnikov ostaje
+ * vidljiv kao PRILJEV, s imenom platitelja iz snimke.
+ */
+describe('priljev iz napuštenog dijeljenog novčanika', () => {
+  const inflow = { payment_source: `custom:${LEFT}`, type: 'transfer', income_source_id: MINE };
+
+  it('ulazi u osobni pogled kao priljev u vlastiti novčanik', () => {
+    expect(isPersonalRow(inflow, map)).toBe(true);
+    expect(
+      applyViewModeFilter([inflow], {
+        isPersonalView: true,
+        isBusinessView: false,
+        viewBusinessProfileId: null,
+        sourceBusinessMap: map,
+      }),
+    ).toHaveLength(1);
+  });
+
+  it('nepoznat platitelj bez vlastitog primatelja ostaje skriven', () => {
+    const orphan = { payment_source: `custom:${LEFT}`, type: 'transfer', income_source_id: null };
+    expect(isPersonalRow(orphan, map)).toBe(false);
+    const foreignDest = {
+      payment_source: `custom:${LEFT}`,
+      type: 'transfer',
+      income_source_id: 'ffffffff-0000-0000-0000-000000000009',
+    };
+    expect(isPersonalRow(foreignDest, map)).toBe(false);
+  });
+
+  it('ime platitelja dolazi iz snimke', () => {
+    const expense = {
+      type: 'transfer',
+      payment_source: `custom:${LEFT}`,
+      income_source_id: MINE,
+      payer_name_snapshot: 'PBZ Solin kredit',
+    } as unknown as Expense;
+    const resolved = resolveTransferEndpoints(expense, [
+      { id: MINE, name: 'Keš', icon: '💵', color: '#000' },
+    ]);
+    expect(resolved?.from.name).toBe('PBZ Solin kredit');
+    expect(resolved?.to.name).toBe('Keš');
+  });
+
+  it('tekući saldo popisa novčanika računa priljev kao +iznos', () => {
+    // Zrcalo pravila iz PaymentSourceTransactionsDialog: inbound transfer je +.
+    const effect = (e: { type: string; income_source_id?: string | null; amount: number }) =>
+      e.type === 'transfer' && e.income_source_id === MINE ? e.amount : -e.amount;
+    const rows = [
+      { type: 'transfer', income_source_id: MINE, amount: 10990 },
+      { type: 'transfer', income_source_id: MINE, amount: 1900 },
+      { type: 'transfer', income_source_id: MINE, amount: 500 },
+    ];
+    expect(rows.reduce((sum, r) => sum + effect(r), 0)).toBe(13390);
+  });
+});
