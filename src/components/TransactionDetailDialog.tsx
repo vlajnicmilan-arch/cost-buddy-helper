@@ -104,6 +104,7 @@ export const TransactionDetailDialog = ({
   const { user } = useAuth();
   const { formatAmount } = useCurrency();
   const { customPaymentSources } = useCustomPaymentSources();
+  const allPaymentSourceNames = useAllPaymentSourceNames();
   const { customCategories } = useCustomCategories();
   const { t, i18n } = useTranslation();
   const { shareTransaction } = useNativeShare();
