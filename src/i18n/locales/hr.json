@@ -3756,7 +3756,11 @@
     "alreadyInvited": "Korisnik već ima aktivnu pozivnicu",
     "inviteSent": "Pozivnica poslana",
     "inviteError": "Greška pri slanju pozivnice",
-    "confirmRemove": "Jeste li sigurni da želite ukloniti ovog člana?"
+    "confirmRemove": "Jeste li sigurni da želite ukloniti ovog člana?",
+    "leaveShare": "Napusti dijeljenje",
+    "leaveShareConfirm": "Tuđe transakcije s ovog računa nestat će iz vašeg pregleda. Vaši troškovi plaćeni s njega izlaze iz vaših statistika. Vaše uplate s vlastitih računa u njega ostaju.",
+    "leftShare": "Napustili ste dijeljenje",
+    "leaveShareError": "Ne mogu vas ukloniti s ovog dijeljenog računa — pokušajte ponovno"
   },
   "workforce": {
     "title": "Radnici & satnice",

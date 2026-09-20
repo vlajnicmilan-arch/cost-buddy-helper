@@ -3748,7 +3748,11 @@
     "alreadyInvited": "User already has an active invitation",
     "inviteSent": "Invitation sent",
     "inviteError": "Error sending invitation",
-    "confirmRemove": "Are you sure you want to remove this member?"
+    "confirmRemove": "Are you sure you want to remove this member?",
+    "leaveShare": "Leave sharing",
+    "leaveShareConfirm": "Other people's transactions on this account will disappear from your view. Your expenses paid from it leave your statistics. Your payments from your own accounts into it remain.",
+    "leftShare": "You left the shared account",
+    "leaveShareError": "Could not remove you from this shared account — please try again"
   },
   "workforce": {
     "title": "Workers & Hours",

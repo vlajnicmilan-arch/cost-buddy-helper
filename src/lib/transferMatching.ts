@@ -42,7 +42,9 @@ interface CustomSourceLike {
 const resolveEndpoint = (
   sourceId: string | null | undefined,
   cardId: string | null | undefined,
-  customSources: CustomSourceLike[]
+  customSources: CustomSourceLike[],
+  /** Snimka imena — koristi se kad novčanik više nije vidljiv korisniku. */
+  snapshotName?: string | null
 ): TransferEndpointInfo => {
   // Card id wins — find the parent custom source for icon/color
   if (cardId) {
@@ -77,6 +79,12 @@ const resolveEndpoint = (
     }
   }
 
+  // Novčanik nije u popisu (npr. korisnik je napustio dijeljenje) — ime se
+  // čita iz snimke zapisane pri nastanku prijenosa.
+  if (snapshotName && snapshotName.trim()) {
+    return { name: snapshotName.trim(), icon: '💳' };
+  }
+
   // Fallback
   const fallback = getPaymentSourceInfo('cash');
   return { name: fallback.name, icon: fallback.icon };
@@ -103,7 +111,8 @@ export const resolveTransferEndpoints = (
   const to = resolveEndpoint(
     expense.income_source_id ?? null,
     null,
-    customSources
+    customSources,
+    expense.counterparty_name_snapshot ?? null
   );
 
   return { from, to };

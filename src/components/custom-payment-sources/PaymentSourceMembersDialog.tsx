@@ -11,6 +11,8 @@ import { Users, Trash2, UserMinus, Crown, Loader2, Mail, UserPlus, Eye, Edit3 } 
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { useTranslation } from 'react-i18next';
 import { invitationErrorMessage } from '@/lib/invitationErrors';
+import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
+import { LogOut } from 'lucide-react';
 
 interface PaymentSourceMembersDialogProps {
   open: boolean;
@@ -29,12 +31,23 @@ export const PaymentSourceMembersDialog = ({
   paymentSource,
 }: PaymentSourceMembersDialogProps) => {
   const { t } = useTranslation();
-  const { members, invitations, loading, isOwner, removeMember, updateMemberRole, cancelInvitation, refetch } = 
+  const { members, invitations, loading, isOwner, removeMember, leaveSharedSource, updateMemberRole, cancelInvitation, refetch } = 
     usePaymentSourceMembers(paymentSource?.id || null);
   
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'limited' | 'full'>('limited');
   const [sendingInvite, setSendingInvite] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+
+  const handleLeave = async () => {
+    if (!paymentSource) return;
+    setLeaving(true);
+    const ok = await leaveSharedSource(paymentSource.id);
+    setLeaving(false);
+    setConfirmLeave(false);
+    if (ok) onOpenChange(false);
+  };
 
   const handleSendInvite = async () => {
     if (!inviteEmail.trim() || !paymentSource) {
@@ -286,8 +299,34 @@ export const PaymentSourceMembersDialog = ({
               </div>
             </div>
           </div>
+
+          {/* Izlazak iz dijeljenja — samo za ne-vlasnika */}
+          {!isOwner && (
+            <Button
+              variant="outline"
+              className="w-full text-destructive border-destructive/40"
+              onClick={() => setConfirmLeave(true)}
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              {t('paymentSourceMembers.leaveShare', 'Napusti dijeljenje')}
+            </Button>
+          )}
         </div>
       </DialogContent>
+
+      <ConfirmActionDialog
+        open={confirmLeave}
+        onOpenChange={setConfirmLeave}
+        title={t('paymentSourceMembers.leaveShare', 'Napusti dijeljenje')}
+        description={t(
+          'paymentSourceMembers.leaveShareConfirm',
+          'Tuđe transakcije s ovog računa nestat će iz vašeg pregleda. Vaši troškovi plaćeni s njega izlaze iz vaših statistika. Vaše uplate s vlastitih računa u njega ostaju.',
+        )}
+        confirmLabel={t('paymentSourceMembers.leaveShare', 'Napusti dijeljenje')}
+        destructive
+        pending={leaving}
+        onConfirm={handleLeave}
+      />
     </Dialog>
   );
 };

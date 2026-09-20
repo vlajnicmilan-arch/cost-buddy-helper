@@ -209,6 +209,11 @@ export interface Expense {
   created_at?: string;
   updated_at?: string;
   import_batch_id?: string | null;
+  /**
+   * Snimka imena protustrane prijenosa u trenutku nastanka. Ostaje čitljiva i
+   * kad odredišni novčanik više nije vidljiv (izlazak iz dijeljenja).
+   */
+  counterparty_name_snapshot?: string | null;
   items?: ReceiptItem[];
   // Suradnički avansi — vidi mem://features/collaborator-advances
   collaborator_id?: string | null;

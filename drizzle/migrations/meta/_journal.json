@@ -64,6 +64,13 @@
       "when": 1789841489019,
       "tag": "0008_expenses_transfer_pair_counterpart",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789895499155,
+      "tag": "0009_ps_member_self_leave_and_counterparty_snapshot",
+      "breakpoints": true
     }
   ]
 }

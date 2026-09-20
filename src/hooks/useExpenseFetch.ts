@@ -36,6 +36,12 @@ import { buildExpenseScopeFilter, belongsToMyScope, type ScopeContext } from '@/
 import { runSingleFlight } from '@/lib/loadWithRetry';
 import { isExpensesFresh, markExpensesFetched } from '@/lib/expensesFreshness';
 import { applyViewModeFilter, resolveSourceScope } from '@/lib/viewModeScope';
+import {
+  applySharedAccessFilter,
+  isSharedRowVisible,
+  type SharedAccessContext,
+  type SharedAccessRow,
+} from '@/lib/sharedAccessScope';
 
 
 // v3: bumped after the explicit-column select (lista više ne nosi teška
@@ -676,6 +682,19 @@ export const useExpenseFetch = () => {
     [isPersonalView, isBusinessView, viewBusinessProfileId, sourceBusinessMap],
   );
 
+  // Pristup redcima na dijeljenom novčaniku (vlastiti uvijek, tuđi samo uz 'full').
+  const sharedCtx: SharedAccessContext | null = useMemo(
+    () =>
+      userId
+        ? {
+            userId,
+            sharedPaymentSourceIds,
+            fullAccessSourceIds,
+          }
+        : null,
+    [userId, sharedPaymentSourceIds, fullAccessSourceIds],
+  );
+
   // Filtered view for dashboard (respects payment source access levels + hidden toggle)
   const dashboardExpenses = useMemo(() => {
     let filtered = applyViewMode(expenses);
@@ -695,23 +714,20 @@ export const useExpenseFetch = () => {
       });
     }
 
-    if (isLocalMode || !user) return filtered;
+    if (isLocalMode || !user || !sharedCtx) return filtered;
 
     return filtered.filter(expense => {
+      // Pravilo dijeljenog novčanika živi u `@/lib/sharedAccessScope`.
+      if (!isSharedRowVisible(expense as SharedAccessRow, sharedCtx)) return false;
+
       const cleanPs = expense.payment_source?.replace('custom:', '');
-      const isOnSharedPaymentSource = cleanPs && sharedPaymentSourceIds.has(cleanPs);
-
-      if (isOnSharedPaymentSource) {
-        if (fullAccessSourceIds.has(cleanPs!)) return true;
-        return expense.user_id === user.id;
-      }
-
-      if (expense.type === 'transfer' && expense.income_source_id) {
-        const destId = expense.income_source_id;
-        if (sharedPaymentSourceIds.has(destId)) {
-          if (fullAccessSourceIds.has(destId)) return true;
-          return expense.user_id === user.id;
-        }
+      if (cleanPs && sharedPaymentSourceIds.has(cleanPs)) return true;
+      if (
+        expense.type === 'transfer' &&
+        expense.income_source_id &&
+        sharedPaymentSourceIds.has(expense.income_source_id)
+      ) {
+        return true;
       }
 
       if (expense.project_id) return expense.user_id === user.id;
@@ -721,8 +737,14 @@ export const useExpenseFetch = () => {
     });
   }, [expenses, ownedSourceIds, sharedPaymentSourceIds, fullAccessSourceIds, hiddenPaymentSourceIds, isPaymentSourceHidden, isLocalMode, userId, applyViewMode]);
 
-  // View-mode filtered expenses (no payment source access filtering)
-  const contextFilteredExpenses = useMemo(() => applyViewMode(expenses), [expenses, applyViewMode]);
+  // Pogled (Osobno/tvrtka) + pravilo dijeljenog novčanika. Tuđi redci s
+  // dijeljenog računa NE ulaze u statistike, grafove ni sažetke — vide se samo
+  // u popisu tog novčanika (`rawExpenses`).
+  const contextFilteredExpenses = useMemo(() => {
+    const scoped = applyViewMode(expenses);
+    if (isLocalMode || !sharedCtx) return scoped;
+    return applySharedAccessFilter(scoped as SharedAccessRow[], sharedCtx) as Expense[];
+  }, [expenses, applyViewMode, isLocalMode, sharedCtx]);
 
   return {
     expenses: contextFilteredExpenses, // isolated by business/personal context
