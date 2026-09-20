@@ -30,23 +30,46 @@ export interface SourceScope {
   businessProfileId: string | null;
 }
 
+/**
+ * Sigurnosna mreža: snimka VLASTITIH novčanika korisnika (user_id = auth.uid()).
+ * Kad mrežna mapa još nije stigla, vlastiti novčanik iz snimke je i dalje
+ * poznat — „nepoznato → skrij" ostaje samo za novčanike kojih nema ni u mapi
+ * ni u snimci vlastitih.
+ */
+export type OwnSourceMap = ReadonlyMap<string, string | null>;
+
+const lookup = (
+  id: string,
+  map: SourceBusinessMap,
+  own?: OwnSourceMap,
+): SourceScope | null => {
+  if (map.has(id)) return { known: true, businessProfileId: map.get(id) ?? null };
+  if (own?.has(id)) return { known: true, businessProfileId: own.get(id) ?? null };
+  return null;
+};
+
 /** Tvrtka novčanika s kojeg je redak plaćen (ili na koji je prijenos stigao). */
-export const resolveSourceScope = (row: ViewModeRow, map: SourceBusinessMap): SourceScope => {
+export const resolveSourceScope = (
+  row: ViewModeRow,
+  map: SourceBusinessMap,
+  own?: OwnSourceMap,
+): SourceScope => {
   const customId = customSourceIdOf(row.payment_source ?? null);
   if (customId) {
-    if (map.has(customId)) return { known: true, businessProfileId: map.get(customId) ?? null };
+    const direct = lookup(customId, map, own);
+    if (direct) return direct;
     // Platitelj je nepoznat (napušteni dijeljeni novčanik), ali prijenos je
     // stigao U korisnikov novčanik — ostaje vidljiv kao PRILJEV. Simetrično
     // pravilu za odljev u napušteni novčanik.
-    if (row.type === 'transfer' && row.income_source_id && map.has(row.income_source_id)) {
-      return { known: true, businessProfileId: map.get(row.income_source_id) ?? null };
+    if (row.type === 'transfer' && row.income_source_id) {
+      const dest = lookup(row.income_source_id, map, own);
+      if (dest) return dest;
     }
     return { known: false, businessProfileId: null };
   }
 
   if (row.type === 'transfer' && row.income_source_id) {
-    if (!map.has(row.income_source_id)) return { known: false, businessProfileId: null };
-    return { known: true, businessProfileId: map.get(row.income_source_id) ?? null };
+    return lookup(row.income_source_id, map, own) ?? { known: false, businessProfileId: null };
   }
 
   // Standardni izvori (gotovina, kartica…) su uvijek osobni i uvijek poznati.
