@@ -655,39 +655,25 @@ export const useExpenseFetch = () => {
     };
   }, [userId, isLocalMode, parseExpense]);
 
-  // Helper: business_profile_id of the source attached to an expense (null if personal)
-  const expenseSourceBusinessProfileId = useCallback((e: Expense): string | null => {
-    const ps = e.payment_source?.replace('custom:', '');
-    if (ps && sourceBusinessMap.has(ps)) return sourceBusinessMap.get(ps) || null;
-    if (e.type === 'transfer' && e.income_source_id && sourceBusinessMap.has(e.income_source_id)) {
-      return sourceBusinessMap.get(e.income_source_id) || null;
-    }
-    return null;
-  }, [sourceBusinessMap]);
-
   // A "cross-mode" expense = company-tagged transaction paid from a personal source
   // (i.e. owner loan to company). Visible in BOTH personal and business views.
   const isCrossModeExpense = useCallback((e: Expense): boolean => {
-    const sourceBp = expenseSourceBusinessProfileId(e);
+    const scope = resolveSourceScope(e as any, sourceBusinessMap);
     const expenseBp = (e as any).business_profile_id || null;
-    return sourceBp === null && !!expenseBp;
-  }, [expenseSourceBusinessProfileId]);
+    return scope.known && scope.businessProfileId === null && !!expenseBp;
+  }, [sourceBusinessMap]);
 
-  // Apply view-mode filter (Osobno / per-company)
-  // Personal view = source is personal (drains personal balance — includes cross-mode)
-  // Business view = expense.business_profile_id matches (booked to company — includes cross-mode)
-  const applyViewMode = useCallback((list: Expense[]) => {
-    if (isPersonalView) return list.filter(e => expenseSourceBusinessProfileId(e) === null);
-    if (isBusinessView && viewBusinessProfileId) {
-      return list.filter(e => {
-        const sourceBp = expenseSourceBusinessProfileId(e);
-        const expenseBp = (e as any).business_profile_id || null;
-        // Same-company source OR cross-mode expense booked to this company
-        return sourceBp === viewBusinessProfileId || (sourceBp === null && expenseBp === viewBusinessProfileId);
-      });
-    }
-    return list;
-  }, [isPersonalView, isBusinessView, viewBusinessProfileId, expenseSourceBusinessProfileId]);
+  // Doseg pogleda živi u `@/lib/viewModeScope` (nepoznat novčanik = skriven).
+  const applyViewMode = useCallback(
+    (list: Expense[]) =>
+      applyViewModeFilter(list, {
+        isPersonalView,
+        isBusinessView,
+        viewBusinessProfileId,
+        sourceBusinessMap,
+      }),
+    [isPersonalView, isBusinessView, viewBusinessProfileId, sourceBusinessMap],
+  );
 
   // Filtered view for dashboard (respects payment source access levels + hidden toggle)
   const dashboardExpenses = useMemo(() => {
