@@ -2374,7 +2374,8 @@
       "category": "Failed to delete category",
       "source": "Failed to delete payment source",
       "card": "Failed to delete card",
-      "installmentPlan": "Failed to delete installment plan"
+      "installmentPlan": "Failed to delete installment plan",
+      "sourceNotAllowed": "This account was not deleted — it is not yours. If it is shared with you, leave the share instead."
     },
     "auth": {
       "wrongCredentials": "Wrong email or password",
