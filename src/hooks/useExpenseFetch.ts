@@ -81,6 +81,8 @@ export const useExpenseFetch = () => {
   const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const hydratedKeyRef = useRef<string | null>(initialExpenses.length > 0 ? initialExpensesKey : null);
   const snapshotHydrationRef = useRef<Promise<void>>(Promise.resolve());
+  // Oznaka instance — samo za dijagnostiku prazne mape.
+  const instanceIdRef = useRef<string>(Math.random().toString(36).slice(2, 8));
   // Kept in a ref so the realtime handler always sees the current shared set
   // without re-subscribing the channel on every shared-source change.
   const sharedIdsRef = useRef<Set<string>>(new Set());
