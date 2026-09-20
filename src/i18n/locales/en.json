@@ -2331,6 +2331,7 @@
     "deleteError": "Error deleting",
     "networkError": "Network error",
     "fetch": {
+      "sourceMap": "Cannot verify which company the wallets belong to — some transactions are temporarily hidden",
       "expenses": "Failed to load transactions",
       "categories": "Failed to load categories",
       "sources": "Failed to load payment sources",

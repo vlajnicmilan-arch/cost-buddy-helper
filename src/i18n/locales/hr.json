@@ -2338,6 +2338,7 @@
     "deleteError": "Greška pri brisanju",
     "networkError": "Greška u mreži",
     "fetch": {
+      "sourceMap": "Ne mogu provjeriti kojoj tvrtki pripadaju novčanici — dio transakcija je privremeno skriven",
       "expenses": "Greška pri učitavanju transakcija",
       "categories": "Greška pri dohvaćanju kategorija",
       "sources": "Greška pri dohvaćanju izvora plaćanja",

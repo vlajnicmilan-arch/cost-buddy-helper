@@ -1,3 +1,4 @@
+import { useAllPaymentSourceNames } from '@/hooks/useAllPaymentSourceNames';
 import { Expense, getCategoryInfo, getPaymentSourceInfo, PAYMENT_SOURCES } from '@/types/expense';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
@@ -39,6 +40,7 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
   const hookPaymentSources = useCustomPaymentSources();
   const hookCategories = useCustomCategories();
   const customPaymentSources = contextLookup?.customPaymentSources ?? hookPaymentSources.customPaymentSources;
+  const allPaymentSourceNames = useAllPaymentSourceNames();
   const customCategories = contextLookup?.customCategories ?? hookCategories.customCategories;
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
@@ -104,15 +106,18 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
   const customSource = useMemo(() => {
     const sourceId = expense.payment_source;
     if (!sourceId) return null;
-    let source = customPaymentSources.find(s => s.id === sourceId);
+    const uuid = sourceId.startsWith('custom:') ? sourceId.replace('custom:', '') : sourceId;
+    const source = customPaymentSources.find(s => s.id === sourceId)
+      ?? customPaymentSources.find(s => s.id === uuid);
     if (source) return source;
-    if (sourceId.startsWith('custom:')) {
-      const uuid = sourceId.replace('custom:', '');
-      source = customPaymentSources.find(s => s.id === uuid);
-      if (source) return source;
+    // Novčanik izvan aktivnog pogleda (npr. firmin) — ime se i dalje mora
+    // vidjeti, pa se čita iz potpunog popisa korisnikovih novčanika.
+    const known = allPaymentSourceNames.find(s => s.id === uuid);
+    if (known) {
+      return { id: known.id, name: known.name, icon: known.icon || '💳', color: known.color || '#6b7280' } as any;
     }
     return null;
-  }, [expense.payment_source, customPaymentSources]);
+  }, [expense.payment_source, customPaymentSources, allPaymentSourceNames]);
 
   const isStandardSource = useMemo(() => {
     const sourceId = expense.payment_source;

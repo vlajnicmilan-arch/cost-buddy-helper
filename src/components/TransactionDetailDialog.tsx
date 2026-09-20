@@ -1,3 +1,4 @@
+import { useAllPaymentSourceNames } from '@/hooks/useAllPaymentSourceNames';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useBackButton } from '@/hooks/useBackButton';
@@ -103,6 +104,7 @@ export const TransactionDetailDialog = ({
   const { user } = useAuth();
   const { formatAmount } = useCurrency();
   const { customPaymentSources } = useCustomPaymentSources();
+  const allPaymentSourceNames = useAllPaymentSourceNames();
   const { customCategories } = useCustomCategories();
   const { t, i18n } = useTranslation();
   const { shareTransaction } = useNativeShare();
@@ -363,7 +365,22 @@ export const TransactionDetailDialog = ({
         color: directMatch.color
       };
     }
-    
+
+    // Novčanik izvan aktivnog pogleda (npr. firmin): ime se čita iz potpunog
+    // popisa korisnikovih novčanika — „Ostalo" se nikad ne prikazuje za
+    // custom id koji postoji u bazi.
+    const rawId = expense.payment_source || '';
+    const knownId = rawId.startsWith('custom:') ? rawId.replace('custom:', '') : rawId;
+    const known = allPaymentSourceNames.find(s => s.id === knownId);
+    if (known) {
+      return {
+        id: known.id,
+        name: known.name,
+        icon: known.icon || '💳',
+        color: known.color || undefined,
+      };
+    }
+
     // Fall back to standard payment source
     const standardInfo = getPaymentSourceInfo(expense.payment_source || 'cash');
     return {
@@ -372,7 +389,7 @@ export const TransactionDetailDialog = ({
       icon: standardInfo.icon,
       color: undefined
     };
-  }, [expense, customPaymentSources]);
+  }, [expense, customPaymentSources, allPaymentSourceNames]);
 
   // Resolve category: check custom categories first, then system ones
   const categoryInfo = useMemo(() => {

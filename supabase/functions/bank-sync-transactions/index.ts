@@ -235,6 +235,19 @@ Deno.serve(async (req) => {
     let aiCategorized = 0;
     const paymentSourceRef = `custom:${account.linked_payment_source_id}`;
 
+    // PRIPADNOST TVRTKI ide po NOVČANIKU na koji se knjiži. Bankovni račun
+    // može biti bez oznake tvrtke, a povezani novčanik firmin — tada je
+    // novčanik mjerodavan, inače bi redak završio kao "osoban".
+    const { data: linkedSource } = await admin
+      .from("custom_payment_sources")
+      .select("business_profile_id")
+      .eq("id", account.linked_payment_source_id)
+      .maybeSingle();
+    const rowBusinessProfileId =
+      (linkedSource?.business_profile_id as string | null | undefined) ??
+      account.business_profile_id ??
+      null;
+
     // Broj kartice je PRIMARNI signal o tome tko je platio — učitaj sve
     // korisnikove upisane kartice (uključujući „Wallet" brojeve).
     const { data: cardRows } = await admin
@@ -668,7 +681,7 @@ Deno.serve(async (req) => {
           income_source_id: decision.transfer.incomeSourceId,
           payment_source_card_id: decision.paymentSourceCardId,
           currency: tx.transaction_amount?.currency || account.currency || "EUR",
-          business_profile_id: account.business_profile_id,
+          business_profile_id: rowBusinessProfileId,
           bank_transaction_id: stableId,
           bank_account_id: account.id,
           bank_match_status: "bank_only",
@@ -749,7 +762,7 @@ Deno.serve(async (req) => {
         payment_source: paymentSourceRef,
         payment_source_card_id: decision.paymentSourceCardId,
         currency: tx.transaction_amount?.currency || account.currency || "EUR",
-        business_profile_id: account.business_profile_id,
+        business_profile_id: rowBusinessProfileId,
         bank_transaction_id: stableId,
         bank_account_id: account.id,
         ai_extracted: category !== "other",

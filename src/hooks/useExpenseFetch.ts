@@ -35,6 +35,7 @@ import { readExpenseSnapshot, writeExpenseSnapshot } from '@/lib/storage/expense
 import { buildExpenseScopeFilter, belongsToMyScope, type ScopeContext } from '@/lib/expenseScope';
 import { runSingleFlight } from '@/lib/loadWithRetry';
 import { isExpensesFresh, markExpensesFetched } from '@/lib/expensesFreshness';
+import { applyViewModeFilter, resolveSourceScope } from '@/lib/viewModeScope';
 
 
 // v3: bumped after the explicit-column select (lista više ne nosi teška
@@ -113,12 +114,58 @@ export const useExpenseFetch = () => {
     }
 
     try {
-      const [incomeRes, memberRes, ownedPsRes, allPsRes] = await Promise.all([
+      const loadSourceMap = () =>
+        supabase.from('custom_payment_sources').select('id, business_profile_id');
+
+      const [incomeRes, memberRes, ownedPsRes, firstMapRes] = await Promise.all([
         supabase.from('income_sources').select('id').eq('user_id', user.id),
         supabase.from('payment_source_members').select('payment_source_id, role').eq('user_id', user.id),
         supabase.from('custom_payment_sources').select('id').eq('user_id', user.id),
-        supabase.from('custom_payment_sources').select('id, business_profile_id'),
+        loadSourceMap(),
       ]);
+
+      // Mapa novčanik → tvrtka je sigurnosni podatak: bez nje osobni pogled
+      // ne smije prikazati nijedan custom novčanik. Zato se greška NE guta,
+      // nego se zapisuje i dohvat se jednom ponavlja s kratkim odmakom.
+      let allPsRes = firstMapRes;
+      const ownedCount = (ownedPsRes.data || []).length;
+      const mapSuspect = (res: typeof firstMapRes) =>
+        !!res.error || ((res.data || []).length === 0 && ownedCount > 0);
+
+      if (mapSuspect(allPsRes)) {
+        logDiagnostic({
+          event: 'source_map_failed',
+          severity: 'error',
+          details: {
+            attempt: 1,
+            code: (allPsRes.error as any)?.code ?? null,
+            message: String((allPsRes.error as any)?.message ?? 'empty_map'),
+            rows: (allPsRes.data || []).length,
+            owned_rows: ownedCount,
+          },
+        });
+        await new Promise<void>((r) => setTimeout(r, 800));
+        allPsRes = await loadSourceMap();
+        if (mapSuspect(allPsRes)) {
+          logDiagnostic({
+            event: 'source_map_failed',
+            severity: 'error',
+            details: {
+              attempt: 2,
+              code: (allPsRes.error as any)?.code ?? null,
+              message: String((allPsRes.error as any)?.message ?? 'empty_map'),
+              rows: (allPsRes.data || []).length,
+              owned_rows: ownedCount,
+            },
+          });
+          showWarning(
+            tr(
+              'errors.fetch.sourceMap',
+              'Ne mogu provjeriti kojoj tvrtki pripadaju novčanici — dio transakcija je privremeno skriven',
+            ),
+          );
+        }
+      }
 
       if (incomeRes.error) throw incomeRes.error;
       setOwnedSourceIds(new Set((incomeRes.data || []).map(s => s.id)));
@@ -609,39 +656,25 @@ export const useExpenseFetch = () => {
     };
   }, [userId, isLocalMode, parseExpense]);
 
-  // Helper: business_profile_id of the source attached to an expense (null if personal)
-  const expenseSourceBusinessProfileId = useCallback((e: Expense): string | null => {
-    const ps = e.payment_source?.replace('custom:', '');
-    if (ps && sourceBusinessMap.has(ps)) return sourceBusinessMap.get(ps) || null;
-    if (e.type === 'transfer' && e.income_source_id && sourceBusinessMap.has(e.income_source_id)) {
-      return sourceBusinessMap.get(e.income_source_id) || null;
-    }
-    return null;
-  }, [sourceBusinessMap]);
-
   // A "cross-mode" expense = company-tagged transaction paid from a personal source
   // (i.e. owner loan to company). Visible in BOTH personal and business views.
   const isCrossModeExpense = useCallback((e: Expense): boolean => {
-    const sourceBp = expenseSourceBusinessProfileId(e);
+    const scope = resolveSourceScope(e as any, sourceBusinessMap);
     const expenseBp = (e as any).business_profile_id || null;
-    return sourceBp === null && !!expenseBp;
-  }, [expenseSourceBusinessProfileId]);
+    return scope.known && scope.businessProfileId === null && !!expenseBp;
+  }, [sourceBusinessMap]);
 
-  // Apply view-mode filter (Osobno / per-company)
-  // Personal view = source is personal (drains personal balance — includes cross-mode)
-  // Business view = expense.business_profile_id matches (booked to company — includes cross-mode)
-  const applyViewMode = useCallback((list: Expense[]) => {
-    if (isPersonalView) return list.filter(e => expenseSourceBusinessProfileId(e) === null);
-    if (isBusinessView && viewBusinessProfileId) {
-      return list.filter(e => {
-        const sourceBp = expenseSourceBusinessProfileId(e);
-        const expenseBp = (e as any).business_profile_id || null;
-        // Same-company source OR cross-mode expense booked to this company
-        return sourceBp === viewBusinessProfileId || (sourceBp === null && expenseBp === viewBusinessProfileId);
-      });
-    }
-    return list;
-  }, [isPersonalView, isBusinessView, viewBusinessProfileId, expenseSourceBusinessProfileId]);
+  // Doseg pogleda živi u `@/lib/viewModeScope` (nepoznat novčanik = skriven).
+  const applyViewMode = useCallback(
+    (list: Expense[]) =>
+      applyViewModeFilter(list, {
+        isPersonalView,
+        isBusinessView,
+        viewBusinessProfileId,
+        sourceBusinessMap,
+      }),
+    [isPersonalView, isBusinessView, viewBusinessProfileId, sourceBusinessMap],
+  );
 
   // Filtered view for dashboard (respects payment source access levels + hidden toggle)
   const dashboardExpenses = useMemo(() => {
