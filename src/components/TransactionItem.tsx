@@ -39,6 +39,7 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
   const hookPaymentSources = useCustomPaymentSources();
   const hookCategories = useCustomCategories();
   const customPaymentSources = contextLookup?.customPaymentSources ?? hookPaymentSources.customPaymentSources;
+  const allPaymentSourceNames = useAllPaymentSourceNames();
   const customCategories = contextLookup?.customCategories ?? hookCategories.customCategories;
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
