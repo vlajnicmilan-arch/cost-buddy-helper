@@ -364,7 +364,22 @@ export const TransactionDetailDialog = ({
         color: directMatch.color
       };
     }
-    
+
+    // Novčanik izvan aktivnog pogleda (npr. firmin): ime se čita iz potpunog
+    // popisa korisnikovih novčanika — „Ostalo" se nikad ne prikazuje za
+    // custom id koji postoji u bazi.
+    const rawId = expense.payment_source || '';
+    const knownId = rawId.startsWith('custom:') ? rawId.replace('custom:', '') : rawId;
+    const known = allPaymentSourceNames.find(s => s.id === knownId);
+    if (known) {
+      return {
+        id: known.id,
+        name: known.name,
+        icon: known.icon || '💳',
+        color: known.color || undefined,
+      };
+    }
+
     // Fall back to standard payment source
     const standardInfo = getPaymentSourceInfo(expense.payment_source || 'cash');
     return {
@@ -373,7 +388,7 @@ export const TransactionDetailDialog = ({
       icon: standardInfo.icon,
       color: undefined
     };
-  }, [expense, customPaymentSources]);
+  }, [expense, customPaymentSources, allPaymentSourceNames]);
 
   // Resolve category: check custom categories first, then system ones
   const categoryInfo = useMemo(() => {
