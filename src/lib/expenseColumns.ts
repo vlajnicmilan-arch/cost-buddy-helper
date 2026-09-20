@@ -79,6 +79,9 @@ export const EXPENSE_LIST_COLUMNS = [
   'invoice_id',
   'needs_explanation',
   'owner_funding_choice',
+  // Ime protustrane prijenosa — jedini izvor naziva odredišta nakon izlaska
+  // iz dijeljenog novčanika.
+  'counterparty_name_snapshot',
 ] as const;
 
 /** Teška polja koja se dohvaćaju tek u detalju transakcije, po id-u. */

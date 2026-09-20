@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 
 export type PaymentSourceRole = 'owner' | 'member' | 'limited' | 'full' | 'viewer';
 
@@ -175,6 +176,70 @@ export const usePaymentSourceMembers = (paymentSourceId: string | null) => {
     }
   };
 
+  /**
+   * Član sam napušta dijeljenje — briše ISKLJUČIVO svoj member red.
+   * Nijedna transakcija se ne dira; vlasnikov saldo ostaje kakav jest.
+   */
+  const leaveSharedSource = async (sourceId: string): Promise<boolean> => {
+    if (!user) return false;
+    try {
+      const [{ count: ownRows }, { count: outgoing }] = await Promise.all([
+        supabase
+          .from('expenses')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('payment_source', `custom:${sourceId}`)
+          .is('deleted_at', null),
+        supabase
+          .from('expenses')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('type', 'transfer')
+          .eq('income_source_id', sourceId)
+          .is('deleted_at', null),
+      ]);
+
+      const { error } = await supabase
+        .from('payment_source_members')
+        .delete()
+        .eq('payment_source_id', sourceId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      logDiagnostic({
+        event: 'shared_source_left',
+        severity: 'info',
+        details: {
+          payment_source_id: sourceId,
+          rows_leaving_stats: ownRows ?? null,
+          transfers_kept: outgoing ?? null,
+        },
+      });
+
+      setMembers(prev => prev.filter(m => m.user_id !== user.id));
+      showSuccess(t('paymentSourceMembers.leftShare', 'Napustili ste dijeljenje'));
+      return true;
+    } catch (error) {
+      logDiagnostic({
+        event: 'shared_source_leave_failed',
+        severity: 'error',
+        details: {
+          payment_source_id: sourceId,
+          code: (error as { code?: string })?.code ?? null,
+          message: String((error as { message?: string })?.message ?? error),
+        },
+      });
+      showError(
+        t(
+          'paymentSourceMembers.leaveShareError',
+          'Ne mogu vas ukloniti s ovog dijeljenog računa — pokušajte ponovno',
+        ),
+      );
+      return false;
+    }
+  };
+
   const updateMemberRole = async (memberId: string, newRole: PaymentSourceRole): Promise<void> => {
     try {
       const { error } = await supabase
@@ -198,6 +263,7 @@ export const usePaymentSourceMembers = (paymentSourceId: string | null) => {
     loading,
     isOwner,
     removeMember,
+    leaveSharedSource,
     updateMemberRole,
     cancelInvitation,
     refetch: fetchMembers,

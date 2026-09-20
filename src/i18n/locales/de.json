@@ -3748,7 +3748,11 @@
     "alreadyInvited": "Benutzer hat bereits eine aktive Einladung",
     "inviteSent": "Einladung gesendet",
     "inviteError": "Fehler beim Senden der Einladung",
-    "confirmRemove": "Sind Sie sicher, dass Sie dieses Mitglied entfernen möchten?"
+    "confirmRemove": "Sind Sie sicher, dass Sie dieses Mitglied entfernen möchten?",
+    "leaveShare": "Freigabe verlassen",
+    "leaveShareConfirm": "Transaktionen anderer Personen auf diesem Konto verschwinden aus Ihrer Ansicht. Ihre damit bezahlten Ausgaben fallen aus Ihren Statistiken. Ihre Überweisungen von eigenen Konten dorthin bleiben erhalten.",
+    "leftShare": "Sie haben die Freigabe verlassen",
+    "leaveShareError": "Sie konnten nicht von diesem geteilten Konto entfernt werden — bitte erneut versuchen"
   },
   "workforce": {
     "title": "Mitarbeiter & Stunden",

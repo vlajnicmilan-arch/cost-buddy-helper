@@ -1831,6 +1831,7 @@ export type Database = {
           collaborator_id: string | null
           counterpart_bank_raw_line: string | null
           counterpart_bank_transaction_id: string | null
+          counterparty_name_snapshot: string | null
           created_at: string
           currency: string | null
           date: string
@@ -1901,6 +1902,7 @@ export type Database = {
           collaborator_id?: string | null
           counterpart_bank_raw_line?: string | null
           counterpart_bank_transaction_id?: string | null
+          counterparty_name_snapshot?: string | null
           created_at?: string
           currency?: string | null
           date?: string
@@ -1971,6 +1973,7 @@ export type Database = {
           collaborator_id?: string | null
           counterpart_bank_raw_line?: string | null
           counterpart_bank_transaction_id?: string | null
+          counterparty_name_snapshot?: string | null
           created_at?: string
           currency?: string | null
           date?: string
@@ -7365,6 +7368,7 @@ export type Database = {
           collaborator_id: string | null
           counterpart_bank_raw_line: string | null
           counterpart_bank_transaction_id: string | null
+          counterparty_name_snapshot: string | null
           created_at: string
           currency: string | null
           date: string

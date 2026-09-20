@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Plus, Pencil, Trash2, CreditCard, GripVertical, Users, Settings2, Eye, EyeOff, MoreHorizontal } from 'lucide-react';
+import { Plus, Pencil, Trash2, CreditCard, GripVertical, Users, Settings2, Eye, EyeOff, MoreHorizontal, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
@@ -7,6 +7,7 @@ import { useHiddenPaymentSources } from '@/hooks/useHiddenPaymentSources';
 import { CustomPaymentSourceDialog } from './CustomPaymentSourceDialog';
 import { BalanceCorrectionDialog } from './BalanceCorrectionDialog';
 import { PaymentSourceMembersDialog } from './PaymentSourceMembersDialog';
+import { LeaveSharedSourceDialog } from './LeaveSharedSourceDialog';
 import { CustomPaymentSource, SUGGESTED_PAYMENT_SOURCES } from '@/types/customPaymentSource';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -64,6 +65,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
   const [reorderMode, setReorderMode] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [membersDialogSource, setMembersDialogSource] = useState<CustomPaymentSource | null>(null);
+  const [leaveShareSource, setLeaveShareSource] = useState<CustomPaymentSource | null>(null);
   const [balanceCorrectionSource, setBalanceCorrectionSource] = useState<CustomPaymentSource | null>(null);
   const { t } = useTranslation();
 
@@ -454,6 +456,15 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
                         <Users className="h-3.5 w-3.5 mr-2" />
                         {t('common.members', 'Članovi')}
                       </DropdownMenuItem>
+                      {source.isOwned === false && (
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={(e) => { e.stopPropagation(); setLeaveShareSource(source); }}
+                        >
+                          <LogOut className="h-3.5 w-3.5 mr-2" />
+                          {t('paymentSourceMembers.leaveShare', 'Napusti dijeljenje')}
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(source); }}>
                         <Pencil className="h-3.5 w-3.5 mr-2" />
                         {t('common.edit', 'Uredi')}
@@ -552,6 +563,11 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
           onOpenChange={(open) => !open && setMembersDialogSource(null)}
           paymentSource={membersDialogSource}
         />
+        <LeaveSharedSourceDialog
+          source={leaveShareSource}
+          onClose={() => setLeaveShareSource(null)}
+          onLeft={() => onRefetchExpenses?.()}
+        />
         <BalanceCorrectionDialog
           open={!!balanceCorrectionSource}
           onOpenChange={(open) => !open && setBalanceCorrectionSource(null)}
@@ -621,6 +637,11 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
         open={!!membersDialogSource}
         onOpenChange={(open) => !open && setMembersDialogSource(null)}
         paymentSource={membersDialogSource}
+      />
+      <LeaveSharedSourceDialog
+        source={leaveShareSource}
+        onClose={() => setLeaveShareSource(null)}
+        onLeft={() => onRefetchExpenses?.()}
       />
       <BalanceCorrectionDialog
         open={!!balanceCorrectionSource}
