@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { applyCountedFilter } from '@/lib/countedExpense';
 
 export type PaymentSourceRole = 'owner' | 'member' | 'limited' | 'full' | 'viewer';
 
@@ -184,19 +185,23 @@ export const usePaymentSourceMembers = (paymentSourceId: string | null) => {
     if (!user) return false;
     try {
       const [{ count: ownRows }, { count: outgoing }] = await Promise.all([
-        supabase
-          .from('expenses')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', user.id)
-          .eq('payment_source', `custom:${sourceId}`)
-          .is('deleted_at', null),
-        supabase
-          .from('expenses')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', user.id)
-          .eq('type', 'transfer')
-          .eq('income_source_id', sourceId)
-          .is('deleted_at', null),
+        applyCountedFilter(
+          supabase
+            .from('expenses')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('payment_source', `custom:${sourceId}`)
+            .is('deleted_at', null),
+        ),
+        applyCountedFilter(
+          supabase
+            .from('expenses')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('type', 'transfer')
+            .eq('income_source_id', sourceId)
+            .is('deleted_at', null),
+        ),
       ]);
 
       const { error } = await supabase
