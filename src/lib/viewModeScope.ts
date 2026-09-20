@@ -34,8 +34,14 @@ export interface SourceScope {
 export const resolveSourceScope = (row: ViewModeRow, map: SourceBusinessMap): SourceScope => {
   const customId = customSourceIdOf(row.payment_source ?? null);
   if (customId) {
-    if (!map.has(customId)) return { known: false, businessProfileId: null };
-    return { known: true, businessProfileId: map.get(customId) ?? null };
+    if (map.has(customId)) return { known: true, businessProfileId: map.get(customId) ?? null };
+    // Platitelj je nepoznat (napušteni dijeljeni novčanik), ali prijenos je
+    // stigao U korisnikov novčanik — ostaje vidljiv kao PRILJEV. Simetrično
+    // pravilu za odljev u napušteni novčanik.
+    if (row.type === 'transfer' && row.income_source_id && map.has(row.income_source_id)) {
+      return { known: true, businessProfileId: map.get(row.income_source_id) ?? null };
+    }
+    return { known: false, businessProfileId: null };
   }
 
   if (row.type === 'transfer' && row.income_source_id) {
