@@ -113,12 +113,58 @@ export const useExpenseFetch = () => {
     }
 
     try {
-      const [incomeRes, memberRes, ownedPsRes, allPsRes] = await Promise.all([
+      const loadSourceMap = () =>
+        supabase.from('custom_payment_sources').select('id, business_profile_id');
+
+      const [incomeRes, memberRes, ownedPsRes, firstMapRes] = await Promise.all([
         supabase.from('income_sources').select('id').eq('user_id', user.id),
         supabase.from('payment_source_members').select('payment_source_id, role').eq('user_id', user.id),
         supabase.from('custom_payment_sources').select('id').eq('user_id', user.id),
-        supabase.from('custom_payment_sources').select('id, business_profile_id'),
+        loadSourceMap(),
       ]);
+
+      // Mapa novčanik → tvrtka je sigurnosni podatak: bez nje osobni pogled
+      // ne smije prikazati nijedan custom novčanik. Zato se greška NE guta,
+      // nego se zapisuje i dohvat se jednom ponavlja s kratkim odmakom.
+      let allPsRes = firstMapRes;
+      const ownedCount = (ownedPsRes.data || []).length;
+      const mapSuspect = (res: typeof firstMapRes) =>
+        !!res.error || ((res.data || []).length === 0 && ownedCount > 0);
+
+      if (mapSuspect(allPsRes)) {
+        logDiagnostic({
+          event: 'source_map_failed',
+          severity: 'error',
+          details: {
+            attempt: 1,
+            code: (allPsRes.error as any)?.code ?? null,
+            message: String((allPsRes.error as any)?.message ?? 'empty_map'),
+            rows: (allPsRes.data || []).length,
+            owned_rows: ownedCount,
+          },
+        });
+        await new Promise<void>((r) => setTimeout(r, 800));
+        allPsRes = await loadSourceMap();
+        if (mapSuspect(allPsRes)) {
+          logDiagnostic({
+            event: 'source_map_failed',
+            severity: 'error',
+            details: {
+              attempt: 2,
+              code: (allPsRes.error as any)?.code ?? null,
+              message: String((allPsRes.error as any)?.message ?? 'empty_map'),
+              rows: (allPsRes.data || []).length,
+              owned_rows: ownedCount,
+            },
+          });
+          showWarning(
+            tr(
+              'errors.fetch.sourceMap',
+              'Ne mogu provjeriti kojoj tvrtki pripadaju novčanici — dio transakcija je privremeno skriven',
+            ),
+          );
+        }
+      }
 
       if (incomeRes.error) throw incomeRes.error;
       setOwnedSourceIds(new Set((incomeRes.data || []).map(s => s.id)));
