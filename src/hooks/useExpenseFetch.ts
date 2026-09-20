@@ -65,10 +65,14 @@ export const useExpenseFetch = () => {
   }));
   if (initialExpenses.length > 0) markExpensesSource('session');
   const [expenses, setExpenses] = useState<Expense[]>(initialExpenses);
-  const [ownedSourceIds, setOwnedSourceIds] = useState<Set<string>>(new Set());
-  const [sharedPaymentSourceIds, setSharedPaymentSourceIds] = useState<Set<string>>(new Set());
-  const [fullAccessSourceIds, setFullAccessSourceIds] = useState<Set<string>>(new Set());
-  const [sourceBusinessMap, setSourceBusinessMap] = useState<Map<string, string | null>>(new Map());
+  // Doseg novčanika je DIJELJEN među instancama i čita se sinkrono (cache →
+  // snimka), pa nova instanca nikad ne kreće s praznom mapom.
+  const initialScope = readSourceScope(user?.id);
+  const [ownedSourceIds, setOwnedSourceIds] = useState<Set<string>>(initialScope.ownedIncomeIds);
+  const [sharedPaymentSourceIds, setSharedPaymentSourceIds] = useState<Set<string>>(initialScope.sharedIds);
+  const [fullAccessSourceIds, setFullAccessSourceIds] = useState<Set<string>>(initialScope.fullIds);
+  const [sourceBusinessMap, setSourceBusinessMap] = useState<Map<string, string | null>>(initialScope.sourceBusinessMap);
+  const [ownSourceMap, setOwnSourceMap] = useState<Map<string, string | null>>(initialScope.ownSourceMap);
   // Hidden source ids come from a shared, sessionStorage-seeded cache to avoid
   // any flicker when navigating back to the dashboard.
   const { hiddenIds: hiddenPaymentSourceIds, isHidden: isPaymentSourceHidden } = useHiddenPaymentSources();
