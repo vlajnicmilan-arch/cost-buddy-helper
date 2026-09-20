@@ -235,6 +235,19 @@ Deno.serve(async (req) => {
     let aiCategorized = 0;
     const paymentSourceRef = `custom:${account.linked_payment_source_id}`;
 
+    // PRIPADNOST TVRTKI ide po NOVČANIKU na koji se knjiži. Bankovni račun
+    // može biti bez oznake tvrtke, a povezani novčanik firmin — tada je
+    // novčanik mjerodavan, inače bi redak završio kao "osoban".
+    const { data: linkedSource } = await admin
+      .from("custom_payment_sources")
+      .select("business_profile_id")
+      .eq("id", account.linked_payment_source_id)
+      .maybeSingle();
+    const rowBusinessProfileId =
+      (linkedSource?.business_profile_id as string | null | undefined) ??
+      account.business_profile_id ??
+      null;
+
     // Broj kartice je PRIMARNI signal o tome tko je platio — učitaj sve
     // korisnikove upisane kartice (uključujući „Wallet" brojeve).
     const { data: cardRows } = await admin
