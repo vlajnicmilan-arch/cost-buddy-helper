@@ -131,7 +131,7 @@ export const useExpenseFetch = () => {
       const [incomeRes, memberRes, ownedPsRes, firstMapRes] = await Promise.all([
         supabase.from('income_sources').select('id').eq('user_id', user.id),
         supabase.from('payment_source_members').select('payment_source_id, role').eq('user_id', user.id),
-        supabase.from('custom_payment_sources').select('id').eq('user_id', user.id),
+        supabase.from('custom_payment_sources').select('id, business_profile_id').eq('user_id', user.id),
         loadSourceMap(),
       ]);
 
