@@ -2381,7 +2381,8 @@
       "category": "Greška pri brisanju kategorije",
       "source": "Greška pri brisanju izvora plaćanja",
       "card": "Greška pri brisanju kartice",
-      "installmentPlan": "Greška pri brisanju plana rata"
+      "installmentPlan": "Greška pri brisanju plana rata",
+      "sourceNotAllowed": "Ovaj račun nije obrisan — nije vaš. Ako vam je podijeljen, napustite dijeljenje."
     },
     "auth": {
       "wrongCredentials": "Pogrešan email ili lozinka",

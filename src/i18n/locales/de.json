@@ -2374,7 +2374,8 @@
       "category": "Kategorie konnte nicht gelöscht werden",
       "source": "Zahlungsquelle konnte nicht gelöscht werden",
       "card": "Karte konnte nicht gelöscht werden",
-      "installmentPlan": "Ratenplan konnte nicht gelöscht werden"
+      "installmentPlan": "Ratenplan konnte nicht gelöscht werden",
+      "sourceNotAllowed": "Dieses Konto wurde nicht gelöscht — es gehört Ihnen nicht. Wenn es mit Ihnen geteilt wird, verlassen Sie stattdessen die Freigabe."
     },
     "auth": {
       "wrongCredentials": "Falsche E-Mail oder falsches Passwort",

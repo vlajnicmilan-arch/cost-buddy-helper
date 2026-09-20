@@ -475,14 +475,21 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
                           {t('paymentSources.reorderAccounts', 'Presloži račune')}
                         </DropdownMenuItem>
                       )}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        className="text-destructive focus:text-destructive"
-                        onClick={(e) => { e.stopPropagation(); handleDelete(source); }}
-                      >
-                        <Trash2 className="h-3.5 w-3.5 mr-2" />
-                        {t('common.delete', 'Obriši')}
-                      </DropdownMenuItem>
+                      {/* Brisanje nudimo samo vlasniku — tuđi novčanik RLS
+                          ionako ne briše; članu je ispravna radnja "Napusti
+                          dijeljenje". */}
+                      {source.isOwned !== false && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={(e) => { e.stopPropagation(); handleDelete(source); }}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 mr-2" />
+                            {t('common.delete', 'Obriši')}
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}

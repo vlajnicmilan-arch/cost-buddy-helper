@@ -11,6 +11,8 @@ import { instantCache } from '@/lib/instantCache';
 import { useAppResume } from '@/hooks/useAppResume';
 import { isSessionGone } from '@/lib/sessionGone';
 import { loadWithRetry } from '@/lib/loadWithRetry';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { wasDeleteApplied } from '@/lib/deleteConfirmation';
 
 /**
  * DIJELJENJE DOHVATA MEĐU INSTANCAMA
@@ -446,12 +448,32 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
     }
 
     try {
-      const { error } = await supabase
+      // RLS odbija brisanje tuđeg novčanika BEZ greške (0 pogođenih redaka).
+      // `.select('id')` je jedini način da se taj tihi neuspjeh vidi — inače
+      // aplikacija javi "obrisano", a redak u bazi ostane.
+      const { data, error } = await supabase
         .from('custom_payment_sources' as any)
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .select('id');
 
       if (error) throw error;
+
+      if (!wasDeleteApplied(data)) {
+        logDiagnostic({
+          event: 'payment_source_delete_noop',
+          severity: 'error',
+          details: { payment_source_id: id },
+        });
+        showError(
+          tr(
+            'errors.delete.sourceNotAllowed',
+            'Ovaj račun nije obrisan — nije vaš. Ako vam je podijeljen, napustite dijeljenje.',
+          ),
+        );
+        return;
+      }
+
       setCustomPaymentSources(prev => prev.filter(src => src.id !== id));
       showSuccess(t('toasts.paymentSourceDeleted'));
     } catch (error) {

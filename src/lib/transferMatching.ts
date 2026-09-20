@@ -103,7 +103,8 @@ export const resolveTransferEndpoints = (
   const from = resolveEndpoint(
     expense.payment_source ?? null,
     expense.payment_source_card_id ?? null,
-    customSources
+    customSources,
+    expense.payer_name_snapshot ?? null
   );
 
   // Destination is stored in income_source_id (despite the name — for transfers
