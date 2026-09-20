@@ -1859,6 +1859,7 @@ export type Database = {
           needs_explanation: boolean
           note: string | null
           owner_funding_choice: string | null
+          payer_name_snapshot: string | null
           payment_source: string | null
           payment_source_card_id: string | null
           possible_duplicate_of: string | null
@@ -1930,6 +1931,7 @@ export type Database = {
           needs_explanation?: boolean
           note?: string | null
           owner_funding_choice?: string | null
+          payer_name_snapshot?: string | null
           payment_source?: string | null
           payment_source_card_id?: string | null
           possible_duplicate_of?: string | null
@@ -2001,6 +2003,7 @@ export type Database = {
           needs_explanation?: boolean
           note?: string | null
           owner_funding_choice?: string | null
+          payer_name_snapshot?: string | null
           payment_source?: string | null
           payment_source_card_id?: string | null
           possible_duplicate_of?: string | null
@@ -7396,6 +7399,7 @@ export type Database = {
           needs_explanation: boolean
           note: string | null
           owner_funding_choice: string | null
+          payer_name_snapshot: string | null
           payment_source: string | null
           payment_source_card_id: string | null
           possible_duplicate_of: string | null
