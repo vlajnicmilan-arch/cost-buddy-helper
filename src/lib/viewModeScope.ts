@@ -81,8 +81,12 @@ export const resolveSourceScope = (
  * novčanika (pozajmica vlasnika) ostaje vidljiva — to je postojeći cross-mode
  * slučaj i ne mijenja se.
  */
-export const isPersonalRow = (row: ViewModeRow, map: SourceBusinessMap): boolean => {
-  const scope = resolveSourceScope(row, map);
+export const isPersonalRow = (
+  row: ViewModeRow,
+  map: SourceBusinessMap,
+  own?: OwnSourceMap,
+): boolean => {
+  const scope = resolveSourceScope(row, map, own);
   return scope.known && scope.businessProfileId === null;
 };
 
@@ -91,8 +95,9 @@ export const isBusinessRow = (
   row: ViewModeRow,
   map: SourceBusinessMap,
   profileId: string,
+  own?: OwnSourceMap,
 ): boolean => {
-  const scope = resolveSourceScope(row, map);
+  const scope = resolveSourceScope(row, map, own);
   if (!scope.known) return false;
   if (scope.businessProfileId === profileId) return true;
   return scope.businessProfileId === null && (row.business_profile_id ?? null) === profileId;
@@ -103,16 +108,18 @@ export interface ViewModeFilterOptions {
   isBusinessView: boolean;
   viewBusinessProfileId: string | null;
   sourceBusinessMap: SourceBusinessMap;
+  /** Snimka vlastitih novčanika — rezerva dok mrežna mapa ne stigne. */
+  ownSourceMap?: OwnSourceMap;
 }
 
 export const applyViewModeFilter = <T extends ViewModeRow>(
   list: readonly T[],
   opts: ViewModeFilterOptions,
 ): T[] => {
-  const { isPersonalView, isBusinessView, viewBusinessProfileId, sourceBusinessMap } = opts;
-  if (isPersonalView) return list.filter((e) => isPersonalRow(e, sourceBusinessMap));
+  const { isPersonalView, isBusinessView, viewBusinessProfileId, sourceBusinessMap, ownSourceMap } = opts;
+  if (isPersonalView) return list.filter((e) => isPersonalRow(e, sourceBusinessMap, ownSourceMap));
   if (isBusinessView && viewBusinessProfileId) {
-    return list.filter((e) => isBusinessRow(e, sourceBusinessMap, viewBusinessProfileId));
+    return list.filter((e) => isBusinessRow(e, sourceBusinessMap, viewBusinessProfileId, ownSourceMap));
   }
   return [...list];
 };
