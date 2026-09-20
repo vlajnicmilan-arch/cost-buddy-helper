@@ -629,7 +629,7 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
       ai_extracted: false,
       category_origin: 'import',
       import_batch_id: batchId,
-      business_profile_id: input.activeBusinessProfileId,
+      business_profile_id: businessProfileForSource(tx.paymentSource),
       bank_transaction_id: tx.fingerprint,
       bank_match_status: 'bank_only',
       // Bank timeline anchors — enable stable same-day ordering and per-row
@@ -767,7 +767,7 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
       ai_extracted: false,
       category_origin: 'rule',
       import_batch_id: batchId,
-      business_profile_id: input.activeBusinessProfileId,
+      business_profile_id: businessProfileForSource(tx.paymentSource),
       bank_transaction_id: tx.fingerprint,
       bank_match_status: 'bank_only',
       balance_after: tx.balanceAfter,
