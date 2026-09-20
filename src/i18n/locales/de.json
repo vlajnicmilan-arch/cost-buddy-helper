@@ -2331,6 +2331,7 @@
     "deleteError": "Fehler beim Löschen",
     "networkError": "Netzwerkfehler",
     "fetch": {
+      "sourceMap": "Die Firmenzuordnung der Geldbörsen ist nicht prüfbar — einige Transaktionen sind vorübergehend ausgeblendet",
       "expenses": "Transaktionen konnten nicht geladen werden",
       "categories": "Kategorien konnten nicht geladen werden",
       "sources": "Zahlungsquellen konnten nicht geladen werden",
