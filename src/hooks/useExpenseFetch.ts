@@ -36,6 +36,7 @@ import { buildExpenseScopeFilter, belongsToMyScope, type ScopeContext } from '@/
 import { runSingleFlight } from '@/lib/loadWithRetry';
 import { isExpensesFresh, markExpensesFetched } from '@/lib/expensesFreshness';
 import { applyViewModeFilter, resolveSourceScope } from '@/lib/viewModeScope';
+import { readSourceScope, subscribeSourceScope, writeSourceScope } from '@/lib/sourceScopeCache';
 import {
   applySharedAccessFilter,
   isSharedRowVisible,
@@ -65,10 +66,14 @@ export const useExpenseFetch = () => {
   }));
   if (initialExpenses.length > 0) markExpensesSource('session');
   const [expenses, setExpenses] = useState<Expense[]>(initialExpenses);
-  const [ownedSourceIds, setOwnedSourceIds] = useState<Set<string>>(new Set());
-  const [sharedPaymentSourceIds, setSharedPaymentSourceIds] = useState<Set<string>>(new Set());
-  const [fullAccessSourceIds, setFullAccessSourceIds] = useState<Set<string>>(new Set());
-  const [sourceBusinessMap, setSourceBusinessMap] = useState<Map<string, string | null>>(new Map());
+  // Doseg novčanika je DIJELJEN među instancama i čita se sinkrono (cache →
+  // snimka), pa nova instanca nikad ne kreće s praznom mapom.
+  const initialScope = readSourceScope(user?.id);
+  const [ownedSourceIds, setOwnedSourceIds] = useState<Set<string>>(initialScope.ownedIncomeIds);
+  const [sharedPaymentSourceIds, setSharedPaymentSourceIds] = useState<Set<string>>(initialScope.sharedIds);
+  const [fullAccessSourceIds, setFullAccessSourceIds] = useState<Set<string>>(initialScope.fullIds);
+  const [sourceBusinessMap, setSourceBusinessMap] = useState<Map<string, string | null>>(initialScope.sourceBusinessMap);
+  const [ownSourceMap, setOwnSourceMap] = useState<Map<string, string | null>>(initialScope.ownSourceMap);
   // Hidden source ids come from a shared, sessionStorage-seeded cache to avoid
   // any flicker when navigating back to the dashboard.
   const { hiddenIds: hiddenPaymentSourceIds, isHidden: isPaymentSourceHidden } = useHiddenPaymentSources();
@@ -76,6 +81,8 @@ export const useExpenseFetch = () => {
   const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const hydratedKeyRef = useRef<string | null>(initialExpenses.length > 0 ? initialExpensesKey : null);
   const snapshotHydrationRef = useRef<Promise<void>>(Promise.resolve());
+  // Oznaka instance — samo za dijagnostiku prazne mape.
+  const instanceIdRef = useRef<string>(Math.random().toString(36).slice(2, 8));
   // Kept in a ref so the realtime handler always sees the current shared set
   // without re-subscribing the channel on every shared-source change.
   const sharedIdsRef = useRef<Set<string>>(new Set());
@@ -126,7 +133,7 @@ export const useExpenseFetch = () => {
       const [incomeRes, memberRes, ownedPsRes, firstMapRes] = await Promise.all([
         supabase.from('income_sources').select('id').eq('user_id', user.id),
         supabase.from('payment_source_members').select('payment_source_id, role').eq('user_id', user.id),
-        supabase.from('custom_payment_sources').select('id').eq('user_id', user.id),
+        supabase.from('custom_payment_sources').select('id, business_profile_id').eq('user_id', user.id),
         loadSourceMap(),
       ]);
 
@@ -174,7 +181,8 @@ export const useExpenseFetch = () => {
       }
 
       if (incomeRes.error) throw incomeRes.error;
-      setOwnedSourceIds(new Set((incomeRes.data || []).map(s => s.id)));
+      const incomeIds = new Set((incomeRes.data || []).map(s => s.id));
+      setOwnedSourceIds(incomeIds);
 
       const psIds = new Set<string>();
       const fullIds = new Set<string>();
@@ -182,12 +190,15 @@ export const useExpenseFetch = () => {
         psIds.add(m.payment_source_id);
         if (m.role === 'full') fullIds.add(m.payment_source_id);
       });
-      (ownedPsRes.data || []).forEach(s => {
+      const ownMap = new Map<string, string | null>();
+      (ownedPsRes.data || []).forEach((s: any) => {
         psIds.add(s.id);
         fullIds.add(s.id);
+        ownMap.set(s.id, s.business_profile_id || null);
       });
       setSharedPaymentSourceIds(psIds);
       setFullAccessSourceIds(fullIds);
+      setOwnSourceMap(ownMap);
       sharedIdsRef.current = psIds;
 
       // Map source.id -> business_profile_id (or null when personal)
@@ -196,6 +207,18 @@ export const useExpenseFetch = () => {
         map.set(s.id, s.business_profile_id || null);
       });
       setSourceBusinessMap(map);
+
+      // Doseg ide u dijeljeni cache + snimku: sve OSTALE instance hooka ga
+      // preuzmu bez vlastitog dohvata, a sljedeće hladno otvaranje starta s njim.
+      if (map.size > 0 || ownMap.size > 0) {
+        writeSourceScope(user.id, {
+          sourceBusinessMap: map,
+          sharedIds: psIds,
+          fullIds,
+          ownedIncomeIds: incomeIds,
+          ownSourceMap: ownMap,
+        });
+      }
 
       return { sharedIds: psIds };
     } catch (error) {
@@ -534,6 +557,19 @@ export const useExpenseFetch = () => {
     }
   }, [user?.id, isLocalMode]);
 
+  // Doseg koji je dohvatila BILO KOJA instanca odmah vrijedi i ovdje.
+  useEffect(() => {
+    if (isLocalMode || !userId) return;
+    return subscribeSourceScope(userId, (scope) => {
+      setSourceBusinessMap(scope.sourceBusinessMap);
+      setOwnSourceMap(scope.ownSourceMap);
+      setSharedPaymentSourceIds(scope.sharedIds);
+      setFullAccessSourceIds(scope.fullIds);
+      setOwnedSourceIds(scope.ownedIncomeIds);
+      sharedIdsRef.current = scope.sharedIds;
+    });
+  }, [userId, isLocalMode]);
+
   // Initial data load (hiddenIds handled by useHiddenPaymentSources hook).
   // P0: fetchOwnedSources MUST complete before fetchExpenses, otherwise the
   // first SELECT runs with an empty shared set and legitimately-shared
@@ -546,15 +582,15 @@ export const useExpenseFetch = () => {
     (async () => {
       await snapshotHydrationRef.current;
       if (cancelled) return;
-      // Instanca koja se montira dok je potpuni dohvat za istog korisnika još
-      // svjež ne kreće u mrežu — prikazuje snimku. Vrijedi SAMO za ovaj
-      // početni efekt; refetch/fokus/realtime/spremanje ga zaobilaze.
+      // Doseg novčanika se dohvaća UVIJEK: bez njega bi „nepoznat novčanik =
+      // skriven" sakrio i vlastite retke. Prozor svježine smije preskočiti
+      // samo dohvat TRANSAKCIJA.
+      const { sharedIds } = await fetchOwnedSources();
+      if (cancelled) return;
       if (!isLocalMode && isExpensesFresh(userId)) {
         setLoading(false);
         return;
       }
-      const { sharedIds } = await fetchOwnedSources();
-      if (cancelled) return;
       await fetchExpenses(sharedIds);
     })();
 
@@ -565,7 +601,12 @@ export const useExpenseFetch = () => {
 
   // Svježina na povratku u fokus / mrežu — dashboard i novčanik brojke se
   // tiho usklade sa serverskom istinom (loading se ne pali nakon hidracije).
-  useAppResume(() => fetchExpenses(), { enabled: !isLocalMode && !!userId && authReady });
+  // Doseg novčanika ide zajedno s transakcijama: povratak u fokus mora
+  // popraviti i eventualno praznu mapu.
+  useAppResume(async () => {
+    const { sharedIds } = await fetchOwnedSources();
+    await fetchExpenses(sharedIds);
+  }, { enabled: !isLocalMode && !!userId && authReady });
 
 
   // Realtime subscription for cloud mode
@@ -665,12 +706,13 @@ export const useExpenseFetch = () => {
   // A "cross-mode" expense = company-tagged transaction paid from a personal source
   // (i.e. owner loan to company). Visible in BOTH personal and business views.
   const isCrossModeExpense = useCallback((e: Expense): boolean => {
-    const scope = resolveSourceScope(e as any, sourceBusinessMap);
+    const scope = resolveSourceScope(e as any, sourceBusinessMap, ownSourceMap);
     const expenseBp = (e as any).business_profile_id || null;
     return scope.known && scope.businessProfileId === null && !!expenseBp;
-  }, [sourceBusinessMap]);
+  }, [sourceBusinessMap, ownSourceMap]);
 
-  // Doseg pogleda živi u `@/lib/viewModeScope` (nepoznat novčanik = skriven).
+  // Doseg pogleda živi u `@/lib/viewModeScope` (nepoznat novčanik = skriven,
+  // uz rezervu: vlastiti novčanik iz snimke je poznat).
   const applyViewMode = useCallback(
     (list: Expense[]) =>
       applyViewModeFilter(list, {
@@ -678,8 +720,9 @@ export const useExpenseFetch = () => {
         isBusinessView,
         viewBusinessProfileId,
         sourceBusinessMap,
+        ownSourceMap,
       }),
-    [isPersonalView, isBusinessView, viewBusinessProfileId, sourceBusinessMap],
+    [isPersonalView, isBusinessView, viewBusinessProfileId, sourceBusinessMap, ownSourceMap],
   );
 
   // Pristup redcima na dijeljenom novčaniku (vlastiti uvijek, tuđi samo uz 'full').
@@ -746,6 +789,35 @@ export const useExpenseFetch = () => {
     return applySharedAccessFilter(scoped as SharedAccessRow[], sharedCtx) as Expense[];
   }, [expenses, applyViewMode, isLocalMode, sharedCtx]);
 
+  // Osvježenje UVIJEK obnavlja i doseg novčanika, ne samo transakcije.
+  const refetch = useCallback(async () => {
+    const { sharedIds } = await fetchOwnedSources();
+    await fetchExpenses(sharedIds);
+  }, [fetchOwnedSources, fetchExpenses]);
+
+  // Tiha dijagnostika: ako se ikad crta s praznom mapom I praznom snimkom
+  // vlastitih novčanika, to znači skrivene `custom:` retke. Nikad se ne
+  // prikazuje korisniku — služi samo za praćenje.
+  const emptyMapLoggedRef = useRef(false);
+  useEffect(() => {
+    if (isLocalMode || !userId || emptyMapLoggedRef.current) return;
+    if (sourceBusinessMap.size > 0 || ownSourceMap.size > 0) return;
+    const hiddenCustomRows = expenses.filter(
+      (e) => typeof e.payment_source === 'string' && e.payment_source.startsWith('custom:'),
+    ).length;
+    if (hiddenCustomRows === 0) return;
+    emptyMapLoggedRef.current = true;
+    logDiagnostic({
+      event: 'source_map_empty_at_render',
+      severity: 'warning',
+      details: {
+        instance_id: instanceIdRef.current,
+        hidden_custom_rows: hiddenCustomRows,
+        total_rows: expenses.length,
+      },
+    });
+  }, [expenses, sourceBusinessMap, ownSourceMap, isLocalMode, userId]);
+
   return {
     expenses: contextFilteredExpenses, // isolated by business/personal context
     rawExpenses: expenses,             // unfiltered: use for per-source views (source defines context)
@@ -755,6 +827,6 @@ export const useExpenseFetch = () => {
     loading,
     isLocalMode,
     setExpenses,
-    refetch: fetchExpenses,
+    refetch,
   };
 };
