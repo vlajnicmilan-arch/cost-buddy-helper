@@ -204,13 +204,19 @@ export const usePaymentSourceMembers = (paymentSourceId: string | null) => {
         ),
       ]);
 
-      const { error } = await supabase
+      // Isto pravilo kao kod brisanja novčanika: RLS odbija bez greške, pa se
+      // uspjeh mjeri brojem stvarno obrisanih redaka.
+      const { data: removed, error } = await supabase
         .from('payment_source_members')
         .delete()
         .eq('payment_source_id', sourceId)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .select('id');
 
       if (error) throw error;
+      if (!removed || removed.length === 0) {
+        throw Object.assign(new Error('no membership row removed'), { code: 'noop' });
+      }
 
       logDiagnostic({
         event: 'shared_source_left',

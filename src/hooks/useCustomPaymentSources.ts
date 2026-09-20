@@ -11,6 +11,7 @@ import { instantCache } from '@/lib/instantCache';
 import { useAppResume } from '@/hooks/useAppResume';
 import { isSessionGone } from '@/lib/sessionGone';
 import { loadWithRetry } from '@/lib/loadWithRetry';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 
 /**
  * DIJELJENJE DOHVATA MEĐU INSTANCAMA
