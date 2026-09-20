@@ -188,7 +188,7 @@ export const usePaymentSourceMembers = (paymentSourceId: string | null) => {
         applyCountedFilter(
           supabase
             .from('expenses')
-            .select('id', { count: 'exact', head: true })
+            .select('id, status', { count: 'exact', head: true })
             .eq('user_id', user.id)
             .eq('payment_source', `custom:${sourceId}`)
             .is('deleted_at', null),
@@ -196,7 +196,7 @@ export const usePaymentSourceMembers = (paymentSourceId: string | null) => {
         applyCountedFilter(
           supabase
             .from('expenses')
-            .select('id', { count: 'exact', head: true })
+            .select('id, status', { count: 'exact', head: true })
             .eq('user_id', user.id)
             .eq('type', 'transfer')
             .eq('income_source_id', sourceId)
