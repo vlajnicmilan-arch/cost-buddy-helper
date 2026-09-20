@@ -45,7 +45,14 @@ function makeClient() {
         select() {
           return {
             eq() {
-              return { async in() { return { data: [], error: null }; } };
+              return {
+                async in(_col: string, fps: string[]) {
+                  return {
+                    data: fps.filter(f => persisted.has(f)).map(bank_transaction_id => ({ bank_transaction_id, status: null })),
+                    error: null,
+                  };
+                },
+              };
             },
           };
         },
@@ -53,6 +60,7 @@ function makeClient() {
           return {
             async select() {
               upserted.push(...rows);
+              for (const r of rows) persisted.add(r.bank_transaction_id);
               return { data: rows.map(r => ({ id: r.bank_transaction_id })), error: null };
             },
           };
