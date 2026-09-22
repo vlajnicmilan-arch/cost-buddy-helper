@@ -15,6 +15,10 @@ import {
   aesKeyBytes,
   LegacyAlgorithmError,
 } from "./p12Algorithms.ts";
+import { buildClientChain } from "./chain.ts";
+import { splitPemCertificates } from "./certInfo.ts";
+import { FINA_CA_PEM, FINA_DEMO_CA_PEM } from "./finaCa.ts";
+
 
 const asn1 = forge.asn1;
 type Asn1 = any;
@@ -147,7 +151,25 @@ interface P12OpenDetails {
   prf_oid: string | null;
   scheme_oid: string | null;
   key_iterations: number | null;
+  subject_cn?: string | null;
+  issuer_cn?: string | null;
+  cert_count?: number;
+  chain_cns?: string[];
 }
+
+/** CNs of the certificates that will be sent in the TLS handshake. */
+function describeChain(material: KeyMaterial): { chain_cns: string[] } {
+  try {
+    const chain = buildClientChain(material.certPem, material.chainPems, [
+      ...splitPemCertificates(FINA_CA_PEM),
+      ...splitPemCertificates(FINA_DEMO_CA_PEM),
+    ]);
+    return { chain_cns: chain.cns };
+  } catch {
+    return { chain_cns: [] };
+  }
+}
+
 
 function inspectP12Open(derBin: string): P12OpenDetails {
   const pfx = asn1.fromDer(derBin, { parseAllBytes: false });
