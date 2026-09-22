@@ -29,8 +29,13 @@ import {
   checkFinaSecrets,
   checkProbeKey,
   createFinaClient,
+  describeClientChain,
+  fetchWithDeadline,
+  FINA_TIMEOUT_MS,
+  FinaTimeoutError,
   importSigningKey,
   loadFinaKey,
+
   safeMessage,
   snippet,
   type KeyMaterial,
@@ -149,18 +154,36 @@ Deno.serve(async (req) => {
   report.steps = steps;
   const httpStatuses: number[] = [];
 
+  // Records the phase the probe stalled in, without ever throwing itself.
+  const noteTimeout = (e: unknown): boolean => {
+    if (!(e instanceof FinaTimeoutError)) return false;
+    report.timeout = { phase: e.phase, after_ms: FINA_TIMEOUT_MS, message: e.message };
+    return true;
+  };
+
   try {
     const key: KeyMaterial = await loadFinaKey();
     const oib = Deno.env.get("FINA_BUYER_OIB")!.trim();
-    report.certificate = { subject: key.subject, serial: key.serial };
+    report.certificate = {
+      subject: key.subject,
+      serial: key.serial,
+      subject_cn: key.subjectCn,
+      issuer_cn: key.issuerCn,
+      p12_cert_count: key.certCount,
+    };
+    report.client_chain = describeClientChain(key);
     report.p12_mac_verified = key.macVerified;
     report.p12_unlock_path = key.unlockPath;
     const client = createFinaClient(key);
 
     // ---- WSDL + schemas -------------------------------------------------
-    const wsdlRes = await fetch(`${ENDPOINT}?wsdl`, { client } as RequestInit);
-    const wsdlText = await wsdlRes.text();
+    const { res: wsdlRes, text: wsdlText } = await fetchWithDeadline(
+      `${ENDPOINT}?wsdl`,
+      { client } as RequestInit,
+      { connect: "tls", read: "wsdl" },
+    );
     steps.wsdl = { http_status: wsdlRes.status };
+
 
     const schemas: string[] = [wsdlText];
     const schemaDocs: Array<{ url: string; http_status: number }> = [];
@@ -169,8 +192,10 @@ Deno.serve(async (req) => {
         const resolvedLoc = resolveAgainstEndpoint(loc.location, ENDPOINT);
         if (resolvedLoc.hostOverridden) report.wsdl_address_host_overridden = true;
         const url = resolvedLoc.url;
-        const res = await fetch(url, { client } as RequestInit);
-        const text = await res.text();
+        const { res, text } = await fetchWithDeadline(url, { client } as RequestInit, {
+          connect: "wsdl",
+          read: "wsdl",
+        });
         schemas.push(text);
         schemaDocs.push({ url, http_status: res.status });
         for (const nested of allSchemaLocations(text)) {
@@ -178,13 +203,18 @@ Deno.serve(async (req) => {
           if (resolvedNested.hostOverridden) report.wsdl_address_host_overridden = true;
           const nurl = resolvedNested.url;
           if (schemaDocs.some((d) => d.url === nurl)) continue;
-          const nres = await fetch(nurl, { client } as RequestInit);
-          schemas.push(await nres.text());
-          schemaDocs.push({ url: nurl, http_status: nres.status });
+          const nested2 = await fetchWithDeadline(nurl, { client } as RequestInit, {
+            connect: "wsdl",
+            read: "wsdl",
+          });
+          schemas.push(nested2.text);
+          schemaDocs.push({ url: nurl, http_status: nested2.res.status });
         }
       } catch (e) {
+        noteTimeout(e);
         schemaDocs.push({ url: loc.location, http_status: -1, ...{ error: safeMessage(e) } } as any);
       }
+
     }
     steps.schemas = schemaDocs;
     if (dumpSchemas) {
@@ -235,13 +265,17 @@ Deno.serve(async (req) => {
     const call = async (label: string, payload: XmlNode, soapAction: string) => {
       const t0 = Date.now();
       const envelope = await buildSignedEnvelope(payload, V1, key, cryptoKey);
-      const res = await fetch(ENDPOINT, {
-        method: "POST",
-        client,
-        headers: { "Content-Type": "text/xml; charset=utf-8", SOAPAction: `"${soapAction ?? ""}"` },
-        body: envelope,
-      } as RequestInit);
-      const text = await res.text();
+      const { res, text } = await fetchWithDeadline(
+        ENDPOINT,
+        {
+          method: "POST",
+          client,
+          headers: { "Content-Type": "text/xml; charset=utf-8", SOAPAction: `"${soapAction ?? ""}"` },
+          body: envelope,
+        } as RequestInit,
+        { connect: "soap", read: "soap" },
+      );
+
       httpStatuses.push(res.status);
       const fault = /<(?:[\w.-]+:)?Fault\b/.test(text);
       (steps as any)[label] = {
@@ -480,8 +514,10 @@ Deno.serve(async (req) => {
       }
     }
   } catch (e) {
+    noteTimeout(e);
     report.error = safeMessage(e);
   }
+
 
   // Summary only — no invoice content, no secrets.
   try {
@@ -504,7 +540,14 @@ Deno.serve(async (req) => {
         status_after: (report as any).status_change?.status_after ?? null,
         p12_mac_verified: (report as any).p12_mac_verified ?? null,
         p12_unlock_path: (report as any).p12_unlock_path ?? null,
+        subject_cn: (report as any).certificate?.subject_cn ?? null,
+        issuer_cn: (report as any).certificate?.issuer_cn ?? null,
+        p12_cert_count: (report as any).certificate?.p12_cert_count ?? null,
+        client_chain_cns: (report as any).client_chain?.chain_cns ?? null,
+        client_chain_issuer_source: (report as any).client_chain?.issuer_source ?? null,
+        timeout_phase: (report as any).timeout?.phase ?? null,
         http_statuses: httpStatuses,
+
         error: report.error ?? null,
       },
     });

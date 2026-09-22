@@ -15,6 +15,10 @@ import {
   aesKeyBytes,
   LegacyAlgorithmError,
 } from "./p12Algorithms.ts";
+import { buildClientChain } from "./chain.ts";
+import { splitPemCertificates } from "./certInfo.ts";
+import { FINA_CA_PEM, FINA_DEMO_CA_PEM } from "./finaCa.ts";
+
 
 const asn1 = forge.asn1;
 type Asn1 = any;
@@ -26,11 +30,19 @@ export interface KeyMaterial {
   subject: string;
   serial: string;
   issuer: string;
+  /** CN only — safe to put in diagnostics. */
+  subjectCn: string | null;
+  issuerCn: string | null;
+  /** Other certificates found in the p12 (possible issuer chain), PEM. */
+  chainPems: string[];
+  /** How many certificates the p12 contained in total. */
+  certCount: number;
   pkcs8Der: Uint8Array;
   /** false when the p12 was opened on the WebCrypto path (MAC not checked). */
   macVerified: boolean;
   unlockPath: "webcrypto" | "forge";
 }
+
 
 // ---------------------------------------------------------------- ASN.1 utils
 
@@ -139,7 +151,25 @@ interface P12OpenDetails {
   prf_oid: string | null;
   scheme_oid: string | null;
   key_iterations: number | null;
+  subject_cn?: string | null;
+  issuer_cn?: string | null;
+  cert_count?: number;
+  chain_cns?: string[];
 }
+
+/** CNs of the certificates that will be sent in the TLS handshake. */
+function describeChain(material: KeyMaterial): { chain_cns: string[] } {
+  try {
+    const chain = buildClientChain(material.certPem, material.chainPems, [
+      ...splitPemCertificates(FINA_CA_PEM),
+      ...splitPemCertificates(FINA_DEMO_CA_PEM),
+    ]);
+    return { chain_cns: chain.cns };
+  } catch {
+    return { chain_cns: [] };
+  }
+}
+
 
 function inspectP12Open(derBin: string): P12OpenDetails {
   const pfx = asn1.fromDer(derBin, { parseAllBytes: false });
@@ -272,6 +302,7 @@ function toKeyMaterial(
   key: any,
   macVerified: boolean,
   unlockPath: "webcrypto" | "forge",
+  allCerts: any[] = [cert],
 ): KeyMaterial {
   const certPem = forge.pki.certificateToPem(cert);
   const keyPem = forge.pki.privateKeyToPem(key);
@@ -286,6 +317,9 @@ function toKeyMaterial(
   const pkcs8Der = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) pkcs8Der[i] = bin.charCodeAt(i);
 
+  const cnOf = (attrs: any[]): string | null =>
+    attrs.find((a: any) => (a.shortName ?? a.name) === "CN")?.value ?? null;
+
   return {
     certPem,
     keyPem,
@@ -296,12 +330,19 @@ function toKeyMaterial(
     issuer: cert.issuer.attributes
       .map((a: any) => `${a.shortName ?? a.name}=${a.value}`)
       .join(", "),
+    subjectCn: cnOf(cert.subject.attributes),
+    issuerCn: cnOf(cert.issuer.attributes),
+    chainPems: allCerts
+      .filter((c: any) => c !== cert)
+      .map((c: any) => forge.pki.certificateToPem(c)),
+    certCount: allCerts.length,
     serial: String(cert.serialNumber),
     pkcs8Der,
     macVerified,
     unlockPath,
   };
 }
+
 
 function pickCert(certs: any[], key: any): any {
   const match = certs.find((c: any) => c.publicKey?.n?.equals?.((key as any).n));
@@ -326,29 +367,44 @@ function loadP12WithForge(derBin: string, password: string): KeyMaterial {
   const certs = certBags.map((b: any) => b.cert).filter(Boolean);
   if (certs.length === 0) throw new Error("p12 contains no certificate");
 
-  return toKeyMaterial(pickCert(certs, key), key, true, "forge");
+  return toKeyMaterial(pickCert(certs, key), key, true, "forge", certs);
 }
 
 export async function loadP12(p12B64: string, password: string): Promise<KeyMaterial> {
   const derBin = forge.util.decode64(p12B64);
-  await recordP12Open(inspectP12Open(derBin));
+  const algDetails = inspectP12Open(derBin);
 
-  let bags: RawBags;
+  let material: KeyMaterial;
+  let bags: RawBags | null = null;
   try {
     bags = await collectBagsWithWebCrypto(derBin, password);
   } catch (e) {
-    if (e instanceof LegacyAlgorithmError) return loadP12WithForge(derBin, password);
-    throw e;
+    if (!(e instanceof LegacyAlgorithmError)) throw e;
   }
 
-  if (!bags.pkcs8Bin) throw new Error("p12 contains no private key");
-  if (bags.certDers.length === 0) throw new Error("p12 contains no certificate");
+  if (!bags) {
+    material = loadP12WithForge(derBin, password);
+  } else {
+    if (!bags.pkcs8Bin) throw new Error("p12 contains no private key");
+    if (bags.certDers.length === 0) throw new Error("p12 contains no certificate");
+    const key = forge.pki.privateKeyFromAsn1(asn1.fromDer(bags.pkcs8Bin));
+    const certs = bags.certDers.map((d) => forge.pki.certificateFromAsn1(asn1.fromDer(d)));
+    material = toKeyMaterial(pickCert(certs, key), key, false, "webcrypto", certs);
+  }
 
-  const key = forge.pki.privateKeyFromAsn1(asn1.fromDer(bags.pkcs8Bin));
-  const certs = bags.certDers.map((d) => forge.pki.certificateFromAsn1(asn1.fromDer(d)));
+  // Identity only — never the key, the password or any p12 content.
+  await recordP12Open({
+    ...algDetails,
+    unlock_path: material.unlockPath,
+    subject_cn: material.subjectCn,
+    issuer_cn: material.issuerCn,
+    cert_count: material.certCount,
+    chain_cns: describeChain(material).chain_cns,
+  });
 
-  return toKeyMaterial(pickCert(certs, key), key, false, "webcrypto");
+  return material;
 }
+
 
 export async function loadFinaKey(): Promise<KeyMaterial> {
   return await loadP12(
