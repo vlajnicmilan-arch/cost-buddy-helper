@@ -223,13 +223,16 @@ Deno.serve(async (req) => {
           cryptoKey,
         );
         if (dump && (variant === "V1" || variant === "V2")) envelopes[variant] = envelope;
-        const res = await fetch(ENDPOINT, {
-          method: "POST",
-          client,
-          headers: { "Content-Type": "text/xml; charset=utf-8", SOAPAction: `"${soapAction}"` },
-          body: envelope,
-        } as RequestInit);
-        const text = await res.text();
+        const { res, text } = await fetchWithDeadline(
+          ENDPOINT,
+          {
+            method: "POST",
+            client,
+            headers: { "Content-Type": "text/xml; charset=utf-8", SOAPAction: `"${soapAction}"` },
+            body: envelope,
+          } as RequestInit,
+          { connect: "soap", read: "soap" },
+        );
         const rejected = res.status >= 400 || /Fault/i.test(text);
         variants.push({
           variant,
@@ -240,13 +243,16 @@ Deno.serve(async (req) => {
         });
         if (!rejected) break;
       } catch (e) {
+        const timedOut = noteTimeout(e);
         variants.push({
           variant,
           duration_ms: Date.now() - t0,
           error: safeMessage(e),
+          ...(timedOut ? { timeout_phase: (e as FinaTimeoutError).phase } : {}),
           conclusion: "rejected",
         });
       }
+
     }
   } catch (e) {
     report.error = safeMessage(e);
