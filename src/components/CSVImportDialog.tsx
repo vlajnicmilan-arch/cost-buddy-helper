@@ -27,6 +27,7 @@ import { useAuth } from '@/hooks/useAuth';
 import {
   computeFileHash,
   computeContentHash,
+  computeContentHashes,
   findExistingStatement,
   recordImportedStatement,
   type ExistingStatement,

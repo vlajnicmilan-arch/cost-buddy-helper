@@ -47,6 +47,7 @@ import { areMerchantsSimilar } from '@/lib/duplicateDetection';
 import {
   computeFileHash,
   computeContentHash,
+  computeContentHashes,
   findExistingStatement,
   recordImportedStatement,
   type ExistingStatement,
