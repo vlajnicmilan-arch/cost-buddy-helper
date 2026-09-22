@@ -280,6 +280,7 @@ function toKeyMaterial(
   key: any,
   macVerified: boolean,
   unlockPath: "webcrypto" | "forge",
+  allCerts: any[] = [cert],
 ): KeyMaterial {
   const certPem = forge.pki.certificateToPem(cert);
   const keyPem = forge.pki.privateKeyToPem(key);
@@ -294,6 +295,9 @@ function toKeyMaterial(
   const pkcs8Der = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) pkcs8Der[i] = bin.charCodeAt(i);
 
+  const cnOf = (attrs: any[]): string | null =>
+    attrs.find((a: any) => (a.shortName ?? a.name) === "CN")?.value ?? null;
+
   return {
     certPem,
     keyPem,
@@ -304,12 +308,19 @@ function toKeyMaterial(
     issuer: cert.issuer.attributes
       .map((a: any) => `${a.shortName ?? a.name}=${a.value}`)
       .join(", "),
+    subjectCn: cnOf(cert.subject.attributes),
+    issuerCn: cnOf(cert.issuer.attributes),
+    chainPems: allCerts
+      .filter((c: any) => c !== cert)
+      .map((c: any) => forge.pki.certificateToPem(c)),
+    certCount: allCerts.length,
     serial: String(cert.serialNumber),
     pkcs8Der,
     macVerified,
     unlockPath,
   };
 }
+
 
 function pickCert(certs: any[], key: any): any {
   const match = certs.find((c: any) => c.publicKey?.n?.equals?.((key as any).n));
