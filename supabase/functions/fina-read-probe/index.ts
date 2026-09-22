@@ -540,7 +540,14 @@ Deno.serve(async (req) => {
         status_after: (report as any).status_change?.status_after ?? null,
         p12_mac_verified: (report as any).p12_mac_verified ?? null,
         p12_unlock_path: (report as any).p12_unlock_path ?? null,
+        subject_cn: (report as any).certificate?.subject_cn ?? null,
+        issuer_cn: (report as any).certificate?.issuer_cn ?? null,
+        p12_cert_count: (report as any).certificate?.p12_cert_count ?? null,
+        client_chain_cns: (report as any).client_chain?.chain_cns ?? null,
+        client_chain_issuer_source: (report as any).client_chain?.issuer_source ?? null,
+        timeout_phase: (report as any).timeout?.phase ?? null,
         http_statuses: httpStatuses,
+
         error: report.error ?? null,
       },
     });
