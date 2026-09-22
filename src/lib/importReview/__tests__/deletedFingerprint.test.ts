@@ -9,7 +9,7 @@
  * Otisci u testu su doslovni iz žive baze (korisnik d4d31ee6…, posao abd59543).
  */
 import { describe, it, expect } from 'vitest';
-import { executeDecisions, planExecution, type ExecutorSupabaseClient } from '../executor';
+import { executeDecisions, planExecution, IMPORT_LOCAL_OWNER, type ExecutorSupabaseClient } from '../executor';
 import { buildInitialDecisions, isPreviouslyDeletedRow, isRestoreDeleted, setRestoreDeleted } from '../state';
 import type { ImportReviewDecisions, ImportReviewPayload, SerializedImportedTx } from '../types';
 
@@ -135,7 +135,7 @@ describe('ranije obrisani otisak', () => {
     expect(isRestoreDeleted(d, 0)).toBe(false);
     expect(isPreviouslyDeletedRow(rows[0] as never)).toBe(true);
 
-    const plan = planExecution(p, d);
+    const plan = planExecution(p, d, IMPORT_LOCAL_OWNER);
     expect(plan.inserts).toHaveLength(0);
     expect(plan.restores).toHaveLength(0);
     expect(plan.skippedPreviouslyDeleted).toBe(1);

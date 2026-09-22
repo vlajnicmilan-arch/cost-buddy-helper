@@ -3,6 +3,7 @@ import {
   executeDecisions,
   ImportExecutionIncompleteError,
   planExecution,
+  IMPORT_LOCAL_OWNER,
   type ExecutorSupabaseClient,
 } from '../executor';
 import type { ImportReviewDecisions, ImportReviewPayload, SerializedImportedTx } from '../types';
@@ -136,7 +137,7 @@ describe('importReview/executor', () => {
       ],
     });
     const d = baseDecisions({ newRows: { 1: true, 2: false } });
-    const plan = planExecution(p, d);
+    const plan = planExecution(p, d, IMPORT_LOCAL_OWNER);
     expect(plan.inserts.map(i => i.rowIndex)).toEqual([1]);
     expect(plan.skippedFingerprint).toBe(1);
     expect(plan.skippedByUser).toBe(1);
