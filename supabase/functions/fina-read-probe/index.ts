@@ -154,18 +154,36 @@ Deno.serve(async (req) => {
   report.steps = steps;
   const httpStatuses: number[] = [];
 
+  // Records the phase the probe stalled in, without ever throwing itself.
+  const noteTimeout = (e: unknown): boolean => {
+    if (!(e instanceof FinaTimeoutError)) return false;
+    report.timeout = { phase: e.phase, after_ms: FINA_TIMEOUT_MS, message: e.message };
+    return true;
+  };
+
   try {
     const key: KeyMaterial = await loadFinaKey();
     const oib = Deno.env.get("FINA_BUYER_OIB")!.trim();
-    report.certificate = { subject: key.subject, serial: key.serial };
+    report.certificate = {
+      subject: key.subject,
+      serial: key.serial,
+      subject_cn: key.subjectCn,
+      issuer_cn: key.issuerCn,
+      p12_cert_count: key.certCount,
+    };
+    report.client_chain = describeClientChain(key);
     report.p12_mac_verified = key.macVerified;
     report.p12_unlock_path = key.unlockPath;
     const client = createFinaClient(key);
 
     // ---- WSDL + schemas -------------------------------------------------
-    const wsdlRes = await fetch(`${ENDPOINT}?wsdl`, { client } as RequestInit);
-    const wsdlText = await wsdlRes.text();
+    const { res: wsdlRes, text: wsdlText } = await fetchWithDeadline(
+      `${ENDPOINT}?wsdl`,
+      { client } as RequestInit,
+      { connect: "tls", read: "wsdl" },
+    );
     steps.wsdl = { http_status: wsdlRes.status };
+
 
     const schemas: string[] = [wsdlText];
     const schemaDocs: Array<{ url: string; http_status: number }> = [];
