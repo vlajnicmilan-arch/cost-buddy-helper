@@ -117,6 +117,26 @@ export function matchRawLines(
   lines: readonly string[],
   txs: readonly RawLineTx[],
 ): (string | null)[] {
+  return matchRawLineEntries(lines, txs).map((m) => (m ? m.line : null));
+}
+
+/** Citat + POZICIJA doslovnog retka u izvornom tekstu izvoda. */
+export interface RawLineMatch {
+  /** Indeks retka u `lines` (redoslijed na papiru, neovisan o čitaču). */
+  readonly index: number;
+  readonly line: string;
+}
+
+/**
+ * Ista logika kao `matchRawLines`, ali vraća i POZICIJU retka u izvornom
+ * tekstu. Pozicija je jedini redoslijed koji ne ovisi o tome kojim redom je
+ * čitač vratio transakcije, pa se iz nje izvodi stabilan `ord:N` u ključu
+ * uvoza (`importFingerprint.computeImportKeys`).
+ */
+export function matchRawLineEntries(
+  lines: readonly string[],
+  txs: readonly RawLineTx[],
+): (RawLineMatch | null)[] {
   const used = new Set<number>();
   let cursor = 0;
   return txs.map((tx) => {
@@ -138,9 +158,10 @@ export function matchRawLines(
 
     used.add(chosen);
     cursor = chosen + 1;
-    return buildBlock(lines, chosen);
+    return { index: chosen, line: buildBlock(lines, chosen) };
   });
 }
+
 
 /** Skraćivanje AI prepisa na istu granicu kao deterministički citat. */
 export function capRawLine(value: string | null | undefined): string | null {
