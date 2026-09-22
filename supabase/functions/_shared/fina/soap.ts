@@ -72,8 +72,10 @@ export function checkFinaSecrets(): Response | null {
   return null;
 }
 
+import type { KeyMaterial } from "./p12.ts";
 export type { KeyMaterial } from "./p12.ts";
 export { loadP12, loadFinaKey } from "./p12.ts";
+
 
 
 /**
