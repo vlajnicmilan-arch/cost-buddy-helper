@@ -280,6 +280,13 @@ Deno.serve(async (req) => {
         soap_action: (report.steps as any)?.wsdl?.soapAction ?? null,
         p12_mac_verified: report.p12_mac_verified ?? null,
         p12_unlock_path: report.p12_unlock_path ?? null,
+        subject_cn: (report.certificate as any)?.subject_cn ?? null,
+        issuer_cn: (report.certificate as any)?.issuer_cn ?? null,
+        p12_cert_count: (report.certificate as any)?.p12_cert_count ?? null,
+        client_chain_cns: (report.client_chain as any)?.chain_cns ?? null,
+        client_chain_issuer_source: (report.client_chain as any)?.issuer_source ?? null,
+        timeout_phase: (report.timeout as any)?.phase ?? null,
+
         variants: variants.map((v) => ({
           variant: v.variant,
           http_status: v.http_status ?? null,
