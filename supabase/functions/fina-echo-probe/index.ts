@@ -179,8 +179,12 @@ Deno.serve(async (req) => {
         const resolved = resolveAgainstEndpoint(loc, ENDPOINT);
         if (resolved.hostOverridden) report.wsdl_address_host_overridden = true;
         const url = resolved.url;
-        const res = await fetch(url, { client } as RequestInit);
-        const schema = await res.text();
+        const { res, text: schemaText } = await fetchWithDeadline(url, { client } as RequestInit, {
+          connect: "wsdl",
+          read: "wsdl",
+        });
+        const schema = schemaText;
+
         steps.schema = {
           url,
           http_status: res.status,
