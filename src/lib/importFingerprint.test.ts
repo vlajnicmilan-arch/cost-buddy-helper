@@ -146,10 +146,10 @@ describe('computeImportKey (v2 — bez AI-teksta)', () => {
     expect(a).not.toBe(c);
   });
 
-  it('bez salda koristi redni broj među identičnim redcima', async () => {
+  it('bez salda koristi redni broj po POZICIJI na izvodu', async () => {
     const rows = [
-      { ...b, balanceAfter: null },
-      { ...b, balanceAfter: null },
+      { ...b, balanceAfter: null, sourceOrder: 5 },
+      { ...b, balanceAfter: null, sourceOrder: 9 },
       { ...b, amount: 30, balanceAfter: null },
     ];
     const keys = await computeImportKeys(rows);
@@ -157,7 +157,20 @@ describe('computeImportKey (v2 — bez AI-teksta)', () => {
     expect(new Set(keys).size).toBe(3);
     const again = await computeImportKeys(rows);
     expect(again).toEqual(keys);
+    // Obrnut redoslijed čitača, ista pozicija na papiru → isti ključevi.
+    const reversed = await computeImportKeys([rows[1], rows[0], rows[2]]);
+    expect(reversed[0]).toBe(keys[1]);
+    expect(reversed[1]).toBe(keys[0]);
   });
+
+  it('bez salda I bez pozicije nerazlučivi redci nemaju v2 ključ', async () => {
+    const keys = await computeImportKeys([
+      { ...b, balanceAfter: null },
+      { ...b, balanceAfter: null },
+    ]);
+    expect(keys).toEqual([null, null]);
+  });
+
 
   it('kanonski niz je stabilan i nosi prefiks imp2:', async () => {
     expect(importKeyCanonicalString({ ...b, balanceAfter: 100 }))
