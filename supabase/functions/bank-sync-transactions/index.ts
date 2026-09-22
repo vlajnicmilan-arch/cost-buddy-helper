@@ -20,6 +20,11 @@ import {
   matchTransferPair,
   type TransferPairCandidate,
 } from "../_shared/transferPairMatch.ts";
+import {
+  BankSyncShadow,
+  type ShadowRowInput,
+} from "../_shared/bankSyncShadow.ts";
+import type { LedgerCandidate } from "../_shared/moneyLedgerPlan.ts";
 import { TRANSFER_KEYWORDS, buildTransferPair } from "../_shared/moneyDirection.ts";
 
 interface Body {
@@ -285,6 +290,16 @@ Deno.serve(async (req) => {
       });
     }
 
+    // SJENA (KORAK 3, NALOG 2): zajednička jezgra `moneyLedgerPlan` trči
+    // usporedno sa starom odlukom i NIŠTA ne odlučuje. Nijedan upis, brojač ni
+    // grana ne ovise o njoj; `observe` nikad ne baca.
+    const shadow = new BankSyncShadow({
+      sessionId: `bank-sync-${account.id}`,
+      userId,
+      bankAccountId: account.id,
+    });
+
+
 
     // Load user's custom categories once for AI categorization
     const { data: customCats } = await admin
@@ -344,7 +359,7 @@ Deno.serve(async (req) => {
 
       const { data, error } = await admin
         .from("expenses")
-        .select("id, amount, date, bank_match_status")
+        .select("id, user_id, amount, date, bank_match_status")
         .eq("user_id", userId)
         .eq("payment_source", paymentSourceRef)
         .eq("type", type)
@@ -375,20 +390,50 @@ Deno.serve(async (req) => {
       .map((c) => String(c.last_four_digits ?? ""))
       .filter((v) => /^\d{4}$/.test(v));
 
+    let rowIndex = -1;
     for (const tx of allTx) {
+      rowIndex += 1;
       const decision = decideBankSyncRow(tx, {
         syncPaymentSourceId: account.linked_payment_source_id,
         cards: userCards,
         wallets: userWallets,
       });
 
+      // Kandidati koje jezgra SMIJE vidjeti — `userId` je onaj IZ BAZE.
+      const shadowCandidates: LedgerCandidate[] = [];
+      const observeShadow = (
+        legacyOutcome: ShadowRowInput["legacyOutcome"],
+        classification: ShadowRowInput["classification"],
+        userChoice: ShadowRowInput["userChoice"] = {},
+      ) => {
+        shadow.observe({
+          rowIndex,
+          userId,
+          stableId: decision.stableId,
+          amount: decision.amount,
+          dateIso: decision.date,
+          direction: decision.type === "income" ? "in" : decision.type === "expense" ? "out" : null,
+          walletId: account.linked_payment_source_id as string,
+          legacyOutcome,
+          classification,
+          candidates: shadowCandidates,
+          userChoice,
+        });
+      };
+
       if (decision.action === "skip") {
         skipped += 1;
         if (decision.reason === "reservation") reservationsSkipped += 1;
         if (decision.reason === "card_source_mismatch") needsConfirmation += 1;
         if (decision.stableId) logSkipped(decision);
+        observeShadow("needs_review", {
+          kind: "new",
+          existsByFingerprint: false,
+          deletedByFingerprint: false,
+        });
         continue;
       }
+
 
       // Dva novčanika pogađaju ime → odredište nije sigurno; redak ide kao
       // rashod/priljev, ali ostaje trag.
@@ -430,7 +475,7 @@ Deno.serve(async (req) => {
           const { data: pairRows, error: pairErr } = await admin
             .from("expenses")
             .select(
-              "id, amount, date, type, description, payment_source, income_source_id, bank_transaction_id, counterpart_bank_transaction_id, transfer_counterpart_origin, bank_match_status, bank_raw_line, bank_raw_line_source, bank_raw_line_source, import_batch_id, status",
+              "id, user_id, amount, date, type, description, payment_source, income_source_id, bank_transaction_id, counterpart_bank_transaction_id, transfer_counterpart_origin, bank_match_status, bank_raw_line, bank_raw_line_source, bank_raw_line_source, import_batch_id, status",
             )
             .eq("user_id", userId)
             .in("type", ["transfer", "income", "expense"])
@@ -465,6 +510,12 @@ Deno.serve(async (req) => {
                   : (r.import_batch_id || r.bank_transaction_id ? "import" : "manual"),
             }));
 
+          // Vlasnik kandidata je onaj IZ BAZE, ne prepisan s retka koji se
+          // obrađuje — sync radi mimo RLS-a, pa jezgra mora sama izbaciti tuđe.
+          for (const r of (pairRows || []) as any[]) {
+            shadowCandidates.push({ id: r.id, userId: r.user_id, kind: "pair_default" });
+          }
+
           const match = matchTransferPair({
             amount: absAmount,
             date: txDate,
@@ -480,6 +531,11 @@ Deno.serve(async (req) => {
 
           if (match.kind === "same_row") {
             skipped += 1;
+            observeShadow("needs_review", {
+              kind: "new",
+              existsByFingerprint: true,
+              deletedByFingerprint: false,
+            });
             continue;
           }
           if (match.kind === "ambiguous") {
@@ -558,6 +614,10 @@ Deno.serve(async (req) => {
                 },
               });
             }
+            observeShadow("pair", {
+              kind: "transfer",
+              pairedExistingId: match.existingId,
+            });
             continue;
           }
         } catch (pairFail: any) {
@@ -587,7 +647,7 @@ Deno.serve(async (req) => {
       const mergeTo = new Date(new Date(txDate).getTime() + 4 * 86400000).toISOString();
       let mergeQuery = admin
         .from("expenses")
-        .select("id, amount, date, description, payment_source_card_id, bank_transaction_id, bank_match_status, type, status")
+        .select("id, user_id, amount, date, description, payment_source_card_id, bank_transaction_id, bank_match_status, type, status")
         .eq("user_id", userId)
         .is("deleted_at", null)
         .gte("amount", absAmount - 0.01)
@@ -616,6 +676,12 @@ Deno.serve(async (req) => {
       }
 
       const { data: bankRows } = await mergeQuery;
+
+      for (const r of (bankRows || []) as any[]) {
+        shadowCandidates.push({ id: r.id, userId: r.user_id, kind: "manual" });
+      }
+
+
 
       const mergeTarget = pickMergeTarget(
         (bankRows || [])
@@ -662,6 +728,11 @@ Deno.serve(async (req) => {
         } else {
           mergedBooked += 1;
         }
+        observeShadow(
+          "merge",
+          { kind: "auto_merge", manualId: mergeTarget.id },
+          { autoMergeOn: true },
+        );
         continue;
       }
 
@@ -699,12 +770,21 @@ Deno.serve(async (req) => {
           imported += 1;
           autoTransfers += 1;
         }
+        observeShadow(
+          "transfer",
+          { kind: "transfer", pairedExistingId: null },
+          { transferEnabled: true },
+        );
         continue;
       }
 
       // Hybrid bank-first match logika (ručno upisani retci).
       const candidates = await findCandidates(absAmount, txDate, type as "expense" | "income");
       const center = new Date(txDate).getTime();
+
+      for (const c of candidates as any[]) {
+        shadowCandidates.push({ id: c.id, userId: c.user_id, kind: "manual" });
+      }
 
       if (candidates.length === 1) {
         // 1 jasan kandidat — UPDATE postojeći expense u 'confirmed'.
@@ -726,6 +806,11 @@ Deno.serve(async (req) => {
         } else {
           imported += 1;
         }
+        observeShadow(
+          "merge",
+          { kind: "auto_merge", manualId: (cand as any).id },
+          { autoMergeOn: true },
+        );
         continue;
       }
 
@@ -783,6 +868,11 @@ Deno.serve(async (req) => {
       } else {
         imported += 1;
       }
+      observeShadow(
+        "new",
+        { kind: "new", existsByFingerprint: false, deletedByFingerprint: false },
+        { newRowOn: true },
+      );
     }
 
     // ── BANKIN SALDO JE ISTINA ────────────────────────────────────────────
@@ -865,6 +955,14 @@ Deno.serve(async (req) => {
           error: String(balErr?.message ?? balErr),
         },
       });
+    }
+
+    // SJENA: jedan zbirni zapis po pokretanju, bez iznosa i opisa.
+    try {
+      const shadowLog = shadow.summaryLog();
+      if (shadowLog) diagnostics.push(shadowLog);
+    } catch (shadowFail: any) {
+      console.warn("[bank-sync-transactions] shadow summary err", shadowFail?.message ?? shadowFail);
     }
 
     if (diagnostics.length > 0) {

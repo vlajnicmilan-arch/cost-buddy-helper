@@ -261,9 +261,9 @@ export interface PlannedWork {
 }
 
 /**
- * Vlasnik kad planExecution zovu testovi/pozivatelji bez korisnika. Tada su i
- * redak i svi kandidati istog (lokalnog) vlasnika, pa provjera vlasništva u
- * jezgri ne mijenja ništa.
+ * Vlasnik kojim se služe testovi i pozivatelji bez prijavljenog korisnika.
+ * NIJE zadana vrijednost: `planExecution` traži vlasnika izričito, jer poziv
+ * bez korisnika mora pasti, a ne dobiti zamjenski ključ.
  */
 export const IMPORT_LOCAL_OWNER = 'import-local-owner';
 
@@ -282,7 +282,7 @@ export const IMPORT_LOCAL_OWNER = 'import-local-owner';
 export function planExecution(
   payload: ImportReviewPayload,
   decisions: ImportReviewDecisions,
-  userId: string = IMPORT_LOCAL_OWNER,
+  userId: string,
 ): PlannedWork {
   const txByIndex = new Map<number, SerializedImportedTx>();
   for (const tx of payload.importedTransactions) txByIndex.set(tx.index, tx);

@@ -4,7 +4,7 @@
  * „nijedan" vraća redak u redovni put.
  */
 import { describe, it, expect } from 'vitest';
-import { planExecution } from '../executor';
+import { planExecution, IMPORT_LOCAL_OWNER } from '../executor';
 import {
   buildInitialDecisions,
   setPairChoice,
@@ -92,7 +92,7 @@ describe('odabir druge strane kod dvosmislenog para', () => {
     expect(s.plannedPairs).toBe(1);
     expect(s.canConfirm).toBe(true);
 
-    const plan = planExecution(payload, d);
+    const plan = planExecution(payload, d, IMPORT_LOCAL_OWNER);
     expect(plan.pairs).toHaveLength(1);
     expect(plan.pairs[0]).toMatchObject({
       existingId: 'inc2',
@@ -112,6 +112,6 @@ describe('odabir druge strane kod dvosmislenog para', () => {
     // Redak se vraća u redovni put — kao prijenos bez odredišta, koji dalje
     // traži odabir odredišta (postojeća brana, ne nova).
     expect(s.unresolvedTransfers).toBe(1);
-    expect(planExecution(payload, d).pairs).toHaveLength(0);
+    expect(planExecution(payload, d, IMPORT_LOCAL_OWNER).pairs).toHaveLength(0);
   });
 });

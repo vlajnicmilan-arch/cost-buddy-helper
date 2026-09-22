@@ -4,7 +4,7 @@
  * Uz to: upareni redak ne ulazi u prag popunjavanja po obrascu.
  */
 import { describe, it, expect } from 'vitest';
-import { planExecution } from '../executor';
+import { planExecution, IMPORT_LOCAL_OWNER } from '../executor';
 import { selectPatternInputs } from '../patternSelection';
 import type { ImportReviewDecisions, ImportReviewPayload, SerializedImportedTx } from '../types';
 
@@ -68,7 +68,7 @@ const decisions = (over: Partial<ImportReviewDecisions> = {}): ImportReviewDecis
 
 describe('uparivanje dviju strana prijenosa — plan', () => {
   it('(a) upareni redak ide u pairs, ne u transfers ni inserts', () => {
-    const plan = planExecution(payload([pairedRow(0)] as any, [tx(0)]), decisions());
+    const plan = planExecution(payload([pairedRow(0)] as any, [tx(0)]), decisions(), IMPORT_LOCAL_OWNER);
     expect(plan.pairs).toHaveLength(1);
     expect(plan.pairs[0].existingId).toBe('existing-1');
     expect(plan.transfers).toHaveLength(0);
@@ -79,6 +79,7 @@ describe('uparivanje dviju strana prijenosa — plan', () => {
     const plan = planExecution(
       payload([pairedRow(0)] as any, [tx(0)]),
       decisions({ unpair: { 0: true } }),
+      IMPORT_LOCAL_OWNER,
     );
     expect(plan.pairs).toHaveLength(0);
   });
@@ -87,7 +88,7 @@ describe('uparivanje dviju strana prijenosa — plan', () => {
     const row = pairedRow(0);
     (row.classification as any).pairedCorrectedPayerFrom = 'kes';
     (row.classification as any).counterpartSignal = 'card';
-    const plan = planExecution(payload([row] as any, [tx(0)]), decisions());
+    const plan = planExecution(payload([row] as any, [tx(0)]), decisions(), IMPORT_LOCAL_OWNER);
     expect(plan.pairs[0].correctedPayerFrom).toBe('kes');
     expect(plan.pairs[0].payerWalletId).toBe('revolut');
     expect(plan.pairs[0].signal).toBe('card');
