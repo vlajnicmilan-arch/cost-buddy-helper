@@ -306,9 +306,10 @@ export const GlobalPDFImportHost = () => {
           if (user?.id && !pendingPdf.forceImport) {
             try {
               const paymentSourceValue = `custom:${source.id}`;
-              const contentHash = await computeContentHash(user.id, paymentSourceValue, result.transactions);
+              const { contentHash, legacyContentHash } = await computeContentHashes(user.id, paymentSourceValue, result.transactions);
               contentHashRef.current = contentHash;
-              const existing = await findExistingStatement(user.id, { contentHash });
+              const existing = await findExistingStatement(user.id, { contentHash: [contentHash, legacyContentHash] });
+
               if (existing) {
                 clearStoredJob();
                 showStatementDuplicate(existing, { kind: 'pdf', opts: pendingPdf });
@@ -358,9 +359,10 @@ export const GlobalPDFImportHost = () => {
           if (user?.id && !pendingHtml.forceImport) {
             try {
               const paymentSourceValue = `custom:${source.id}`;
-              const contentHash = await computeContentHash(user.id, paymentSourceValue, result.transactions);
+              const { contentHash, legacyContentHash } = await computeContentHashes(user.id, paymentSourceValue, result.transactions);
               contentHashRef.current = contentHash;
-              const existing = await findExistingStatement(user.id, { contentHash });
+              const existing = await findExistingStatement(user.id, { contentHash: [contentHash, legacyContentHash] });
+
               if (existing) {
                 showStatementDuplicate(existing, { kind: 'html', opts: pendingHtml });
                 return;
