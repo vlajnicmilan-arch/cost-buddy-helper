@@ -1193,10 +1193,12 @@ async function buildReconciliationSummary(
       const data = (res.data ?? {}) as {
         app_balance?: number | null;
         bank_balance?: number | null;
+        bank_balance_row_id?: string | null;
         delta?: number | null;
         has_bank_row?: boolean;
         anchor_date?: string | null;
         batch_last_at?: string | null;
+        batch_last_confidence?: string | null;
         is_historical?: boolean;
       };
       const app = data.app_balance ?? null;
@@ -1208,10 +1210,10 @@ async function buildReconciliationSummary(
         delta,
         anchorDate: data.anchor_date ?? null,
         batchLastAt: data.batch_last_at ?? null,
+        batchLastConfidence: data.batch_last_confidence ?? null,
         isHistorical: typeof data.is_historical === 'boolean' ? data.is_historical : undefined,
       };
-      // Bez bankovnog retka (izvor bez Open Bankinga) saldo s papira postaje
-      // bankovna istina. S bankovnim retkom ponašanje je NEPROMIJENJENO.
+      // Bez retka s ovog računa saldo s papira postaje bankovna istina.
       if (!hasBankRow && statementFallback && statementFallback.sourceId === sourceId.toLowerCase() && app !== null) {
         const stmtDelta = round2(statementFallback.closingBalance - app);
         const stmtGate = {
@@ -1219,6 +1221,7 @@ async function buildReconciliationSummary(
           delta: stmtDelta,
           anchorDate: gateInput.anchorDate,
           batchLastAt: gateInput.batchLastAt ?? statementFallback.statementDate,
+          batchLastConfidence: gateInput.batchLastConfidence,
         };
         out.push({
           sourceId,
@@ -1230,8 +1233,30 @@ async function buildReconciliationSummary(
           engineMode: 'hybrid',
           anchorDate: stmtGate.anchorDate,
           batchLastAt: stmtGate.batchLastAt ?? null,
+          batchLastConfidence: stmtGate.batchLastConfidence,
           isHistorical: isHistoricalBatch(stmtGate),
           bankSource: 'statement',
+        });
+        continue;
+      }
+      // Izvod ne sadrži stanje OVOG računa: ništa se ne pogađa i ne uzima se
+      // broj s druge strane prijenosa. Korisnik upisuje stanje ili ostavlja
+      // novčanik neusidrenim.
+      if (!hasBankRow) {
+        out.push({
+          sourceId,
+          appBalance: app,
+          bankBalance: null,
+          delta: null,
+          hasBankRow: false,
+          needsReconciliation: false,
+          engineMode: 'hybrid',
+          anchorDate: gateInput.anchorDate,
+          batchLastAt: gateInput.batchLastAt,
+          batchLastConfidence: gateInput.batchLastConfidence,
+          isHistorical: isHistoricalBatch(gateInput),
+          bankSource: 'none',
+          needsManualBalance: app !== null && !isHistoricalBatch(gateInput),
         });
         continue;
       }
@@ -1247,9 +1272,12 @@ async function buildReconciliationSummary(
         engineMode: 'hybrid',
         anchorDate: gateInput.anchorDate,
         batchLastAt: gateInput.batchLastAt,
+        batchLastConfidence: gateInput.batchLastConfidence,
         isHistorical: isHistoricalBatch(gateInput),
         bankSource: 'bank_row',
+        bankBalanceRowId: data.bank_balance_row_id ?? null,
       });
+
 
     } catch (e) {
       out.push({
