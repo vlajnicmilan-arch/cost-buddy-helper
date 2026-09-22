@@ -68,8 +68,11 @@ export function isHistoricalWithGap(entry: HistoryGateInput): boolean {
 
 /**
  * `as_of` koji ide u `align_source_to_bank`: timestamp zadnjeg retka izvoda.
+ * Kad taj redak nema pravo vrijeme (C3/C4 — vrijeme mu je izveo okidač kao
+ * podne po Zagrebu), sidro ide na KRAJ tog dana, nikad na izmišljeni sat.
  * Fallback na `now` samo ako batch nema nijedan redak s datumom.
  */
 export function resolveAsOfIso(entry: HistoryGateInput, fallbackIso: string): string {
-  return entry.batchLastAt ?? fallbackIso;
+  return resolveAnchorAsOf(entry.batchLastAt, entry.batchLastConfidence, fallbackIso);
+
 }
