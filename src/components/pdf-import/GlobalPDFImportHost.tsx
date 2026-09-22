@@ -218,6 +218,8 @@ export const GlobalPDFImportHost = () => {
         // CITAT S IZVODA — putuje netaknut do executora; ne ulazi u otisak.
         raw_line: tx.raw_line ?? null,
         raw_line_source: tx.raw_line_source ?? null,
+        source_order: tx.source_order ?? null,
+
       }));
   }, [pdfImport.result, pdfImport.source]);
 
