@@ -1004,18 +1004,34 @@ export const useExpenseCRUD = ({
         // računati nad CIJELIM nizom odjednom jer jedino `computeImportKeys`
         // dodjeljuje `ord:N` redcima bez salda.
         // Backed by unique index `uniq_expenses_user_bank_tx(user_id, bank_transaction_id)`.
-        const { computeImportKeys } = await import('@/lib/importFingerprint');
+        const { computeImportKeys, computeImportFingerprint } = await import('@/lib/importFingerprint');
         const computedKeys = await computeImportKeys(transactions.map((tx) => ({
           userId: user.id,
           paymentSource: tx.payment_source,
           date: tx.date,
           amount: tx.amount,
           balanceAfter: (tx as any).balance_after ?? null,
+          sourceOrder: (tx as any).source_order ?? null,
         })));
+        // Redak bez dokazivog redoslijeda nema V2 ključ — ostaje na starom
+        // otisku; ništa se ne izmišlja.
+        const fallbackKeys = await Promise.all(transactions.map((tx, i) => (
+          computedKeys[i] ? Promise.resolve(null) : computeImportFingerprint({
+            userId: user.id,
+            paymentSource: tx.payment_source,
+            date: tx.date,
+            type: tx.type,
+            amount: tx.amount,
+            description: tx.description,
+            merchantName: (tx as any).merchant_name,
+            balanceAfter: (tx as any).balance_after ?? null,
+          })
+        )));
         let fingerprinted = transactions.map((tx, i) => ({
           tx,
-          fingerprint: tx.bank_transaction_id || computedKeys[i],
+          fingerprint: tx.bank_transaction_id || computedKeys[i] || (fallbackKeys[i] as string),
         }));
+
 
         // === Auto-merge: spoji izvod redove s postojećim ručnim unosima ===
         // Match scope: ±1 dan, isti payment_source, isti type, isti iznos.
