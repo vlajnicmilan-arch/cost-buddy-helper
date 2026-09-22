@@ -99,10 +99,25 @@ Deno.serve(async (req) => {
   const envelopes: Record<string, string> = {};
   if (dump) report.envelopes = envelopes;
 
+  // Records the phase the probe stalled in, without ever throwing itself.
+  const noteTimeout = (e: unknown): boolean => {
+    if (!(e instanceof FinaTimeoutError)) return false;
+    report.timeout = { phase: e.phase, after_ms: FINA_TIMEOUT_MS, message: e.message };
+    return true;
+  };
+
   try {
     const key = await loadFinaKey();
     const oib = Deno.env.get("FINA_BUYER_OIB")!.trim();
-    report.certificate = { subject: key.subject, issuer: key.issuer, serial: key.serial };
+    report.certificate = {
+      subject: key.subject,
+      issuer: key.issuer,
+      serial: key.serial,
+      subject_cn: key.subjectCn,
+      issuer_cn: key.issuerCn,
+      p12_cert_count: key.certCount,
+    };
+    report.client_chain = describeClientChain(key);
     report.p12_mac_verified = key.macVerified;
     report.p12_unlock_path = key.unlockPath;
 
@@ -118,8 +133,11 @@ Deno.serve(async (req) => {
     let wsdlText = "";
     try {
       const t0 = Date.now();
-      const res = await fetch(`${ENDPOINT}?wsdl`, { client } as RequestInit);
-      wsdlText = await res.text();
+      const { res, text } = await fetchWithDeadline(`${ENDPOINT}?wsdl`, { client } as RequestInit, {
+        connect: "tls",
+        read: "wsdl",
+      });
+      wsdlText = text;
       wsdlInfo = readWsdlEcho(wsdlText);
       steps.wsdl = {
         http_status: res.status,
@@ -128,8 +146,10 @@ Deno.serve(async (req) => {
         wsdl_head: wsdlText.slice(0, 3000),
       };
     } catch (e) {
+      noteTimeout(e);
       steps.wsdl = { error: safeMessage(e) };
     }
+
 
     // Step 1b — resolve the body root element from wsdl:message → wsdl:part element=.
     const part = wsdlInfo.inputMessage
