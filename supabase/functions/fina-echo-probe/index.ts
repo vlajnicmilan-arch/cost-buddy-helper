@@ -200,8 +200,10 @@ Deno.serve(async (req) => {
         };
       }
     } catch (e) {
+      noteTimeout(e);
       steps.schema = { error: safeMessage(e) };
     }
+
 
     const elementName = part.localName;
     const ns = part.namespace;
