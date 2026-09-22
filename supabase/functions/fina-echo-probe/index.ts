@@ -19,16 +19,21 @@ import {
   ENDPOINT_SOURCE,
   ENDPOINT_ERROR,
   COMPONENTS_NS,
+  FINA_TIMEOUT_MS,
+  FinaTimeoutError,
   buildSignedEnvelope,
   checkFinaSecrets,
   checkProbeKey,
   createFinaClient,
+  describeClientChain,
+  fetchWithDeadline,
   importSigningKey,
   loadFinaKey,
   safeMessage,
   snippet,
   type SignOptions,
 } from "../_shared/fina/soap.ts";
+
 import { resolveAgainstEndpoint } from "../_shared/fina/endpoint.ts";
 
 type Variant = "V1" | "V2" | "V3" | "V4";
