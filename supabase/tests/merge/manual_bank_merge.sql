@@ -201,6 +201,57 @@ BEGIN
 END $$;
 
 -- ===========================================================================
+-- 3b) KORAK 2 (C) — hybrid motor, sidro na KRAJU dana izvoda:
+--     spajanje slikanog i bankovnog retka istog iznosa i datuma NE SMIJE
+--     pomaknuti saldo ni za cent. Bez nasljeđivanja event_at/time_confidence
+--     s bankovnog retka, slikani redak (C1, pravo vrijeme) procuri pokraj
+--     sidra i saldo padne za iznos računa (živi slučaj Aircash 4,98).
+-- ===========================================================================
+DO $$
+DECLARE v_m uuid; v_b uuid; v_before numeric; v_after numeric; v_row record;
+BEGIN
+  PERFORM pg_temp.reset_world();
+  INSERT INTO public.app_settings (key, value)
+  VALUES ('anchor_engine_mode', '"hybrid"'::jsonb)
+  ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+
+  -- Sidro na kraju dana izvoda (17.09. 23:59:59 po Zagrebu = 21:59:59Z).
+  PERFORM public.set_source_anchor(
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,
+    '2026-09-17 21:59:59+00'::timestamptz,
+    381.27,
+    NULL::jsonb
+  );
+
+  -- Slikani račun s PRAVIM vremenom (18:48 po Zagrebu) istog dana.
+  v_m := pg_temp.mk_manual('00000000-0000-0000-0000-000000000001','custom:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','expense',4.98,'2026-09-17 16:48+00');
+  UPDATE public.expenses
+     SET event_at = '2026-09-17 16:48+00', time_confidence = 'C1'
+   WHERE id = v_m;
+  -- Bankovni blizanac istog troška, bez pravog vremena (C3).
+  v_b := pg_temp.mk_bank  ('00000000-0000-0000-0000-000000000001','custom:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','expense',4.98,'2026-09-17 00:00+00','imp2:spar-anchored');
+  UPDATE public.expenses SET time_confidence = 'C3' WHERE id = v_b;
+
+  SELECT balance INTO v_before FROM public.custom_payment_sources WHERE id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+  PERFORM pg_temp.assert_eq('3b.0 sidro na kraju dana: nijedan redak tog dana ne curi', 381.27, v_before);
+
+  PERFORM public.merge_manual_with_bank(v_m, v_b);
+
+  SELECT * INTO v_row FROM public.expenses WHERE id = v_m;
+  PERFORM pg_temp.assert_text('3b.1 prezivjeli redak nasljeduje konfidenciju bankovnog retka', 'C3', v_row.time_confidence);
+  PERFORM pg_temp.assert_text('3b.2 prezivjeli redak nasljeduje event_at bankovnog retka',
+    to_char(timestamptz '2026-09-17 00:00+00' AT TIME ZONE 'UTC','YYYY-MM-DD HH24:MI'),
+    to_char(v_row.event_at AT TIME ZONE 'UTC','YYYY-MM-DD HH24:MI'));
+
+  SELECT balance INTO v_after FROM public.custom_payment_sources WHERE id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+  PERFORM pg_temp.assert_eq('3b.3 spajanje ne mice saldo ni za cent', v_before, v_after);
+
+  INSERT INTO public.app_settings (key, value)
+  VALUES ('anchor_engine_mode', '"day_cut"'::jsonb)
+  ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+END $$;
+
+-- ===========================================================================
 -- 4) Guards (defense in depth)
 -- ===========================================================================
 DO $$
