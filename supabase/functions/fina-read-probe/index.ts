@@ -192,8 +192,10 @@ Deno.serve(async (req) => {
         const resolvedLoc = resolveAgainstEndpoint(loc.location, ENDPOINT);
         if (resolvedLoc.hostOverridden) report.wsdl_address_host_overridden = true;
         const url = resolvedLoc.url;
-        const res = await fetch(url, { client } as RequestInit);
-        const text = await res.text();
+        const { res, text } = await fetchWithDeadline(url, { client } as RequestInit, {
+          connect: "wsdl",
+          read: "wsdl",
+        });
         schemas.push(text);
         schemaDocs.push({ url, http_status: res.status });
         for (const nested of allSchemaLocations(text)) {
@@ -201,13 +203,18 @@ Deno.serve(async (req) => {
           if (resolvedNested.hostOverridden) report.wsdl_address_host_overridden = true;
           const nurl = resolvedNested.url;
           if (schemaDocs.some((d) => d.url === nurl)) continue;
-          const nres = await fetch(nurl, { client } as RequestInit);
-          schemas.push(await nres.text());
-          schemaDocs.push({ url: nurl, http_status: nres.status });
+          const nested2 = await fetchWithDeadline(nurl, { client } as RequestInit, {
+            connect: "wsdl",
+            read: "wsdl",
+          });
+          schemas.push(nested2.text);
+          schemaDocs.push({ url: nurl, http_status: nested2.res.status });
         }
       } catch (e) {
+        noteTimeout(e);
         schemaDocs.push({ url: loc.location, http_status: -1, ...{ error: safeMessage(e) } } as any);
       }
+
     }
     steps.schemas = schemaDocs;
     if (dumpSchemas) {
