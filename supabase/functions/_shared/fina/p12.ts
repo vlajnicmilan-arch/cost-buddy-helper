@@ -345,7 +345,7 @@ function loadP12WithForge(derBin: string, password: string): KeyMaterial {
   const certs = certBags.map((b: any) => b.cert).filter(Boolean);
   if (certs.length === 0) throw new Error("p12 contains no certificate");
 
-  return toKeyMaterial(pickCert(certs, key), key, true, "forge");
+  return toKeyMaterial(pickCert(certs, key), key, true, "forge", certs);
 }
 
 export async function loadP12(p12B64: string, password: string): Promise<KeyMaterial> {
@@ -366,7 +366,7 @@ export async function loadP12(p12B64: string, password: string): Promise<KeyMate
   const key = forge.pki.privateKeyFromAsn1(asn1.fromDer(bags.pkcs8Bin));
   const certs = bags.certDers.map((d) => forge.pki.certificateFromAsn1(asn1.fromDer(d)));
 
-  return toKeyMaterial(pickCert(certs, key), key, false, "webcrypto");
+  return toKeyMaterial(pickCert(certs, key), key, false, "webcrypto", certs);
 }
 
 export async function loadFinaKey(): Promise<KeyMaterial> {

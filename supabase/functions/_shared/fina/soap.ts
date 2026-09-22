@@ -4,6 +4,9 @@ import forge from "npm:node-forge@1.3.1";
 import { serialize, digestBase64, bytesToBase64, type XmlNode } from "./c14n.ts";
 import { FINA_CA_PEM, FINA_DEMO_CA_PEM } from "./finaCa.ts";
 import { resolveFinaEndpoint } from "./endpoint.ts";
+import { buildClientChain, type ClientChain } from "./chain.ts";
+import { splitPemCertificates } from "./certInfo.ts";
+
 
 const RESOLVED_ENDPOINT = resolveFinaEndpoint(
   (globalThis as any).Deno?.env?.get?.("FINA_ENDPOINT") ?? null,
@@ -73,14 +76,85 @@ export type { KeyMaterial } from "./p12.ts";
 export { loadP12, loadFinaKey } from "./p12.ts";
 
 
+/**
+ * Client certificate chain for the TLS handshake: our leaf plus the CA that
+ * issued it (from the p12 when present, otherwise from the bundled FINA CAs).
+ * The root is deliberately left out — the server already has it.
+ * The WS-Security BinarySecurityToken stays the leaf only.
+ */
+export function buildFinaClientChain(key: KeyMaterial): ClientChain {
+  return buildClientChain(key.certPem, key.chainPems, [
+    ...splitPemCertificates(FINA_CA_PEM),
+    ...splitPemCertificates(FINA_DEMO_CA_PEM),
+  ]);
+}
+
+/** Subject CNs of the certificates actually sent, leaf first. */
+export function describeClientChain(key: KeyMaterial): {
+  chain_cns: string[];
+  chain_length: number;
+  issuer_source: ClientChain["issuerSource"];
+  p12_cert_count: number;
+  subject_cn: string | null;
+  issuer_cn: string | null;
+} {
+  const chain = buildFinaClientChain(key);
+  return {
+    chain_cns: chain.cns,
+    chain_length: chain.cns.length,
+    issuer_source: chain.issuerSource,
+    p12_cert_count: key.certCount,
+    subject_cn: key.subjectCn,
+    issuer_cn: key.issuerCn,
+  };
+}
+
 /** mTLS client that trusts the Fina RDC chain and the Fina DEMO chain. */
 export function createFinaClient(key: KeyMaterial): unknown {
   return (Deno as any).createHttpClient({
     caCerts: [FINA_CA_PEM, FINA_DEMO_CA_PEM],
-    cert: key.certPem,
+    cert: buildFinaClientChain(key).pem,
     key: key.keyPem,
   });
 }
+
+export const FINA_TIMEOUT_MS = 25_000;
+
+/** Raised when FINA does not answer inside the internal deadline. */
+export class FinaTimeoutError extends Error {
+  constructor(public readonly phase: string) {
+    super(`no response after ${Math.round(FINA_TIMEOUT_MS / 1000)}s (phase: ${phase})`);
+    this.name = "FinaTimeoutError";
+  }
+}
+
+/**
+ * fetch with an internal deadline, so a probe returns a clean answer instead of
+ * hanging until the platform kills it. `connect` names the phase while waiting
+ * for response headers, `read` the phase while reading the body.
+ */
+export async function fetchWithDeadline(
+  url: string,
+  init: RequestInit,
+  phases: { connect: string; read: string },
+  timeoutMs: number = FINA_TIMEOUT_MS,
+): Promise<{ res: Response; text: string }> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let phase = phases.connect;
+  try {
+    const res = await fetch(url, { ...init, signal: controller.signal } as RequestInit);
+    phase = phases.read;
+    const text = await res.text();
+    return { res, text };
+  } catch (e) {
+    if (controller.signal.aborted) throw new FinaTimeoutError(phase);
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 
 export async function importSigningKey(
   key: KeyMaterial,
