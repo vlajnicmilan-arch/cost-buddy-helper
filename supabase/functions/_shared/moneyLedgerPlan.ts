@@ -53,8 +53,12 @@ export interface LedgerCandidate {
   readonly id: string;
   /** Vlasnik kandidata — mora biti isti kao vlasnik retka. */
   readonly userId: string;
-  /** `manual` = ručni/skenirani unos, `pair` = postojeći prijenos. */
-  readonly kind: 'manual' | 'pair';
+  /**
+   * `manual` = ručni/skenirani unos, `pair` = ponuđeni kandidat za par koji
+   * korisnik SMIJE odabrati, `pair_default` = automatski nađena druga strana
+   * (nije na popisu za odabir).
+   */
+  readonly kind: 'manual' | 'pair' | 'pair_default';
 }
 
 /** Kako je redak razvrstan prije korisnikove odluke. */
