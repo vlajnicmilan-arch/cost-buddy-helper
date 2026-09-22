@@ -48,6 +48,11 @@ import { upsertTransferRules, type TransferRulesSupabaseClient, type UpsertRuleI
 import { shouldReconcile, isHistoricalBatch } from '@/lib/reconciliation/historyGate';
 import { isCountedExpenseRow } from '@/lib/countedExpense';
 import { isNeedsExplanation } from './state';
+import {
+  planLedgerRow,
+  type LedgerCandidate,
+  type LedgerRowInput,
+} from '@/lib/moneyLedgerPlan';
 
 
 /**
