@@ -792,12 +792,18 @@ export function parseCSV(csvContent: string): CSVParseResult {
     // prefixira se razmakom kako bi spreadsheet aplikacije pri kasnijem
     // exportu/otvaranju tretirale vrijednost kao tekst, a ne formulu.
     // Vidi src/lib/csvSecurity.ts za detalje napada (OWASP CSV Injection).
-    transactions = transactions.map(t => ({
+    // POZICIJA U IZVORNOJ DATOTECI — kod CSV-a je redoslijed redaka doslovno
+    // redoslijed u datoteci (parser ne preslaguje), pa je to stabilan izvor
+    // rednog broja za ključ uvoza. Dodjeljuje se nakon filtriranja, ali prije
+    // ikakve daljnje obrade, i ne mijenja se ponovnim čitanjem iste datoteke.
+    transactions = transactions.map((t, i) => ({
       ...t,
       description: sanitizeCsvField(t.description),
       merchant_name: t.merchant_name ? sanitizeCsvField(t.merchant_name) : t.merchant_name,
       source: sanitizeCsvField(t.source),
+      source_order: t.source_order ?? i,
     }));
+
 
     return {
       success: transactions.length > 0,
