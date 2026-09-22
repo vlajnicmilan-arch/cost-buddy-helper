@@ -144,8 +144,21 @@ export function ReconciliationDialogHost() {
   const app = active.summary.appBalance;
   const bank = active.summary.bankBalance;
   const delta = active.summary.delta ?? 0;
-  // Izvor bankovne istine: papir (izvod) ili bankovni redak (Open Banking).
+  // Izvor bankovne istine: papir (izvod) ili redak s izvoda ovog novčanika.
   const fromStatement = active.summary.bankSource === 'statement';
+  // Izvod uopće ne sadrži stanje ovog računa — ništa se ne pogađa.
+  const noBalance = active.summary.needsManualBalance === true && bank === null;
+
+  if (noBalance) {
+    return (
+      <NoBalanceDialog
+        entry={active}
+        busy={busy}
+        setBusy={setBusy}
+        onDone={() => finish(active.summary.sourceId)}
+      />
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -244,3 +257,126 @@ export function ReconciliationDialogHost() {
     </Dialog>
   );
 }
+
+/**
+ * Izvod bez stanja računa: nikad se ne nudi tuđi broj. Korisnik upisuje stanje
+ * iz bankovne aplikacije ili novčanik ostaje neusidren (ništa se ne mijenja).
+ */
+function NoBalanceDialog({
+  entry,
+  busy,
+  setBusy,
+  onDone,
+}: {
+  entry: ReconciliationQueueEntry;
+  busy: 'align' | 'keep' | null;
+  setBusy: (v: 'align' | 'keep' | null) => void;
+  onDone: () => void;
+}) {
+  const { t } = useTranslation();
+  const { formatAmount } = useCurrency();
+  const [value, setValue] = useState('');
+  const app = entry.summary.appBalance;
+
+  const parsed = Number(value.replace(',', '.'));
+  const canSave = value.trim() !== '' && Number.isFinite(parsed);
+
+  const close = () => {
+    if (busy) return;
+    onDone();
+  };
+
+  useBackButton(true, close, 60, 'reconciliation-dialog');
+
+  const handleSave = async () => {
+    if (!canSave) return;
+    setBusy('align');
+    try {
+      const res = await setManualAnchor({
+        supabase: supabase as unknown as ReconciliationSupabaseClient,
+        summary: entry.summary,
+        asOfIso: entry.asOfIso,
+        balance: parsed,
+        importedStatementId: entry.importedStatementId ?? null,
+      });
+      try {
+        logDiagnostic('anchor_user_input', {
+          source_id: entry.summary.sourceId,
+          batch_id: entry.batchId,
+        });
+      } catch { /* noop */ }
+      showSuccess(t('reconciliation.alignedToast', { balance: formatAmount(res.newBalance) }), { module: 'wallet' });
+      setBusy(null);
+      onDone();
+    } catch {
+      showError(t('reconciliation.alignFailed'), { module: 'wallet' });
+      setBusy(null);
+    }
+  };
+
+  const handleSkip = async () => {
+    setBusy('keep');
+    try {
+      await keepMine({
+        supabase: supabase as unknown as ReconciliationSupabaseClient,
+        summary: entry.summary,
+        importedStatementId: entry.importedStatementId ?? null,
+      });
+    } catch { /* noop — odluka je "ne diraj ništa" */ }
+    setBusy(null);
+    onDone();
+  };
+
+  return (
+    <Dialog open onOpenChange={(next) => { if (!next) close(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <WalletIcon className="w-5 h-5 text-primary" />
+            {t('reconciliation.noBalance.title')}
+          </DialogTitle>
+          <DialogDescription>{t('reconciliation.noBalance.description')}</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3 py-2">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            {entry.sourceIcon ? <span>{entry.sourceIcon}</span> : <WalletIcon className="w-4 h-4 text-muted-foreground" />}
+            <span className="truncate">{entry.sourceName}</span>
+          </div>
+
+          <div className="rounded-xl border border-border/60 bg-card p-3 flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">{t('reconciliation.appBalance')}</span>
+            <span className="font-mono font-semibold">{app !== null ? formatAmount(app) : '—'}</span>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="recon-manual-balance" className="text-sm">
+              {t('reconciliation.noBalance.inputLabel')}
+            </Label>
+            <Input
+              id="recon-manual-balance"
+              inputMode="decimal"
+              className="min-h-11 font-mono"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder="0,00"
+              disabled={busy !== null}
+            />
+          </div>
+        </div>
+
+        <DialogFooter className="flex-col gap-2 sm:flex-col sm:space-x-0">
+          <Button className="w-full min-h-11" onClick={handleSave} disabled={busy !== null || !canSave}>
+            {busy === 'align' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+            {t('reconciliation.noBalance.save')}
+          </Button>
+          <Button className="w-full min-h-11" variant="outline" onClick={handleSkip} disabled={busy !== null}>
+            {busy === 'keep' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+            {t('reconciliation.noBalance.skip')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
