@@ -13,7 +13,6 @@ import {
   buildFinaClientChain,
   checkProbeKey,
   fetchWithDeadline,
-  FinaTimeoutError,
   loadP12,
   safeMessage,
   snippet,
