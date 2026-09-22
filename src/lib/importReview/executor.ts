@@ -409,7 +409,7 @@ function toLedgerRow(
   if (cls.kind === 'transfer') {
     for (const c of cls.pairCandidates ?? []) candidates.push({ id: c.id, userId, kind: 'pair' });
     if (typeof cls.pairedExistingId === 'string' && cls.pairedExistingId.length > 0) {
-      candidates.push({ id: cls.pairedExistingId, userId, kind: 'pair' });
+      candidates.push({ id: cls.pairedExistingId, userId, kind: 'pair_default' });
     }
   }
 
