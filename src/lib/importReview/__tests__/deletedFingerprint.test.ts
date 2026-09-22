@@ -106,13 +106,16 @@ function makeClient(deleted: Set<string>, live: Set<string>) {
         };
       }
       if (name === 'restore_deleted_import_row') {
-        const fp = args.p_fingerprint as string;
-        if (!deleted.has(fp)) return { data: false, error: null };
+        // Prijelaz na v2: funkcija prima POPIS ključeva (stari + novi).
+        const fps = (args.p_fingerprints ?? []) as string[];
+        const fp = fps.find(f => deleted.has(f));
+        if (!fp) return { data: false, error: null };
         deleted.delete(fp);
         live.add(fp);
         restored.push(fp);
         return { data: true, error: null };
       }
+
       return { data: null, error: { message: 'unknown_rpc' } };
     },
   } as never;

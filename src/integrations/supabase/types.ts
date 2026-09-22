@@ -8313,6 +8313,7 @@ export type Database = {
         Returns: undefined
       }
       refund_core_scan_quota: { Args: never; Returns: undefined }
+      rekey_import_fingerprints: { Args: { p_pairs: Json }; Returns: number }
       request_decision_admin: {
         Args: { _decision_id: string; _reason?: string; _type: string }
         Returns: string
@@ -8338,10 +8339,15 @@ export type Database = {
         Args: { p_active_dedup_keys: string[]; p_type_prefix: string }
         Returns: number
       }
-      restore_deleted_import_row: {
-        Args: { p_batch_id: string; p_fingerprint: string }
-        Returns: boolean
-      }
+      restore_deleted_import_row:
+        | {
+            Args: { p_batch_id: string; p_fingerprint: string }
+            Returns: boolean
+          }
+        | {
+            Args: { p_batch_id: string; p_fingerprints: string[] }
+            Returns: boolean
+          }
       restore_trash_item: {
         Args: { p_entity: string; p_id: string }
         Returns: undefined

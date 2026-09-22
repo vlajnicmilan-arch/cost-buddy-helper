@@ -1,0 +1,97 @@
+IZVOD PROMETA PO RAČUNU
+Datum i vrijeme izdavanja: 22.09.2026. 03:06
+Za razdoblje (po datumu obrade): 21.09.2026.
+ERSTE&STEIERMÄRKISCHE BANK D.D.
+OIB: 00000000001
+SWIFT/BIC: ESBCHR22
+51000 Rijeka, Jadranski trg 3a
+TESTNI OBRT j.d.o.o.
+PRIMJERNA 1
+31000 OSIJEK
+REPUBLIKA HRVATSKA
+Naziv klijenta: TESTNI OBRT j.d.o.o.
+OIB: 00000000002
+IBAN: HR0000000000000000001
+Broj računa: 0000000001
+Oznaka valute: EUR
+Broj izvoda: 031
+Datum valute
+Datum obrade
+Platitelj/Primatelj
+Broj računa/IBAN
+Redni broj
+Opis plaćanja
+Isplata Uplata
+Početno stanje: 624,63
+21.09.2026.
+21.09.2026.
+DOBAVLJAČ A D.O.O.
+HR0000000000000000011
+1 - Upl. 1. rate po sud.riješenju
+HR99
+9,93
+21.09.2026.
+21.09.2026.
+DOBAVLJAČ B D.O.O.
+HR0000000000000000012
+2 - Upl. 1. rate po sud.rješenju
+HR99
+10,69
+21.09.2026.
+21.09.2026.
+DOBAVLJAČ C D.O.O.
+HR0000000000000000013
+3 - Upl. 1. rate po sud.riješenju
+HR99
+43,03
+21.09.2026.
+21.09.2026.
+AGENCIJA D
+HR0000000000000000014
+4 - Upl. 1. rate po sudskom riješenju
+HR99
+0,12
+21.09.2026.
+21.09.2026.
+DOBAVLJAČ E d.o.o. ZAGREB
+HR0000000000000000015
+5 - Upl. 1. rate po sud.riješenju
+HR99
+167,65
+21.09.2026.
+21.09.2026.
+DOBAVLJAČ F d.o.o. ZAGREB
+HR0000000000000000016
+6 - Upl. 1. rate po sud.riješenju
+HR99
+52,17
+21.09.2026.
+21.09.2026.
+DOBAVLJAČ G d.o.o. OSIJEK
+HR0000000000000000017
+7 - Upl. 1. rate po sud.rješenju
+HR99
+97,34
+21.09.2026.
+21.09.2026.
+DOBAVLJAČ H j.d.o.o. OSIJEK
+HR0000000000000000018
+8 - Upl. 1. rate po sud.riješenju
+HR99
+9,39
+21.09.2026.
+21.09.2026.
+OBRT I, VL. I. I.
+HR0000000000000000019
+9 - Upl. 1. rate po sudskom riješenju
+HR99
+13,66
+21.09.2026.
+21.09.2026.
+SERVIS J D.O.O.
+HR0000000000000000020
+10 - Upl. 1. rate po sud.rješenju
+HR99
+26,41
+Stanje na dan: 21.09.2026. Broj izvoda 031 Promet
+Konačno stanje: 194,24

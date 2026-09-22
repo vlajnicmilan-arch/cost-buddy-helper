@@ -199,21 +199,70 @@ export async function computeImportKey(input: ImportKeyInput): Promise<string> {
   return `${PREFIX_V2}:${hash}`;
 }
 
+/** Redak izvoda na ulazu u ključ — uz iznos nosi i poziciju na papiru. */
+export interface ImportKeyRow extends Omit<ImportKeyInput, 'ordinal'> {
+  /**
+   * POZICIJA doslovnog retka u izvornom tekstu izvoda
+   * (`rawLineMatch.matchRawLineEntries`). Jedini redoslijed koji ne ovisi o
+   * tome kojim je redom čitač vratio transakcije.
+   */
+  readonly sourceOrder?: number | null;
+}
+
 /**
  * Ključevi za cijeli izvod odjednom — jedino mjesto koje dodjeljuje `ord:N`
- * redcima bez salda (redoslijed = redoslijed na izvodu).
+ * redcima bez salda.
+ *
+ * `ord:N` se dodjeljuje SAMO kad je redoslijed dokaziv:
+ *  - u skupini nerazlučivih redaka (isti novčanik, dan i iznos) ima samo
+ *    jedan redak → `ord:0` je jednoznačan i bez pozicije;
+ *  - skupina ima više redaka → svi moraju imati `sourceOrder` iz izvornog
+ *    teksta, i rang se računa po njemu (ne po redoslijedu čitača).
+ *
+ * Ako redoslijed nije dokaziv, redak vraća `null` — pozivatelj tada ostaje na
+ * starom ključu. Ništa se ne izmišlja.
  */
 export async function computeImportKeys(
-  rows: readonly Omit<ImportKeyInput, 'ordinal'>[],
-): Promise<string[]> {
-  const seen = new Map<string, number>();
-  const inputs: ImportKeyInput[] = rows.map(row => {
-    const hasBalance = typeof row.balanceAfter === 'number' && Number.isFinite(row.balanceAfter);
-    if (hasBalance) return { ...row };
-    const groupKey = [row.userId, String(row.paymentSource ?? ''), toUtcDateKey(row.date), toAmountKey(row.amount)].join('|');
-    const ordinal = seen.get(groupKey) ?? 0;
-    seen.set(groupKey, ordinal + 1);
-    return { ...row, ordinal };
+  rows: readonly ImportKeyRow[],
+): Promise<(string | null)[]> {
+  const groupOf = (row: ImportKeyRow) =>
+    [row.userId, String(row.paymentSource ?? ''), toUtcDateKey(row.date), toAmountKey(row.amount)].join('|');
+
+  const hasBalance = (row: ImportKeyRow) =>
+    typeof row.balanceAfter === 'number' && Number.isFinite(row.balanceAfter);
+
+  // Skupine nerazlučivih redaka bez salda.
+  const groups = new Map<string, number[]>();
+  rows.forEach((row, i) => {
+    if (hasBalance(row)) return;
+    const key = groupOf(row);
+    const list = groups.get(key);
+    if (list) list.push(i);
+    else groups.set(key, [i]);
   });
-  return Promise.all(inputs.map(computeImportKey));
+
+  const ordinalByIndex = new Map<number, number>();
+  const unresolved = new Set<number>();
+  for (const indices of groups.values()) {
+    if (indices.length === 1) {
+      ordinalByIndex.set(indices[0], 0);
+      continue;
+    }
+    const orders = indices.map(i => rows[i].sourceOrder);
+    const allKnown = orders.every(o => typeof o === 'number' && Number.isFinite(o));
+    const distinct = new Set(orders.map(o => Number(o))).size === indices.length;
+    if (!allKnown || !distinct) {
+      for (const i of indices) unresolved.add(i);
+      continue;
+    }
+    const sorted = [...indices].sort((a, b) => Number(rows[a].sourceOrder) - Number(rows[b].sourceOrder));
+    sorted.forEach((idx, rank) => ordinalByIndex.set(idx, rank));
+  }
+
+  return Promise.all(rows.map(async (row, i) => {
+    if (unresolved.has(i)) return null;
+    if (hasBalance(row)) return computeImportKey({ ...row });
+    return computeImportKey({ ...row, ordinal: ordinalByIndex.get(i) ?? 0 });
+  }));
 }
+

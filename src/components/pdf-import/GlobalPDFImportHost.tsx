@@ -23,6 +23,8 @@ import { COUNTED_EXPENSE_STATUSES } from '@/lib/countedExpense';
 import { savePayload as saveReviewPayload, hasResumableReview, clearDraft as clearReviewDraft, clearPayload as clearReviewPayload, saveStatementHint, clearStatementHint } from '@/lib/importReview/draft';
 import { findLateCardMatches } from '@/lib/importReview/lateCardMatch';
 import { lookupFingerprintStates, type ExecutorSupabaseClient } from '@/lib/importReview/executor';
+import { planFingerprintRekey } from '@/lib/importReview/fingerprintRekey';
+
 import type { ImportReviewPayload, ImportReviewRow, ManualCandidateInfo, TransferTargetOption } from '@/lib/importReview/types';
 import { checkAccountIdentity, maskAccountIdentity } from '@/lib/importReview/accountIdentityGuard';
 import { AccountIdentityMismatchDialog } from '@/components/import/AccountIdentityMismatchDialog';
@@ -47,6 +49,7 @@ import { areMerchantsSimilar } from '@/lib/duplicateDetection';
 import {
   computeFileHash,
   computeContentHash,
+  computeContentHashes,
   findExistingStatement,
   recordImportedStatement,
   type ExistingStatement,
@@ -217,6 +220,8 @@ export const GlobalPDFImportHost = () => {
         // CITAT S IZVODA — putuje netaknut do executora; ne ulazi u otisak.
         raw_line: tx.raw_line ?? null,
         raw_line_source: tx.raw_line_source ?? null,
+        source_order: tx.source_order ?? null,
+
       }));
   }, [pdfImport.result, pdfImport.source]);
 
@@ -306,9 +311,10 @@ export const GlobalPDFImportHost = () => {
           if (user?.id && !pendingPdf.forceImport) {
             try {
               const paymentSourceValue = `custom:${source.id}`;
-              const contentHash = await computeContentHash(user.id, paymentSourceValue, result.transactions);
+              const { contentHash, legacyContentHash } = await computeContentHashes(user.id, paymentSourceValue, result.transactions);
               contentHashRef.current = contentHash;
-              const existing = await findExistingStatement(user.id, { contentHash });
+              const existing = await findExistingStatement(user.id, { contentHash: [contentHash, legacyContentHash] });
+
               if (existing) {
                 clearStoredJob();
                 showStatementDuplicate(existing, { kind: 'pdf', opts: pendingPdf });
@@ -358,9 +364,10 @@ export const GlobalPDFImportHost = () => {
           if (user?.id && !pendingHtml.forceImport) {
             try {
               const paymentSourceValue = `custom:${source.id}`;
-              const contentHash = await computeContentHash(user.id, paymentSourceValue, result.transactions);
+              const { contentHash, legacyContentHash } = await computeContentHashes(user.id, paymentSourceValue, result.transactions);
               contentHashRef.current = contentHash;
-              const existing = await findExistingStatement(user.id, { contentHash });
+              const existing = await findExistingStatement(user.id, { contentHash: [contentHash, legacyContentHash] });
+
               if (existing) {
                 showStatementDuplicate(existing, { kind: 'html', opts: pendingHtml });
                 return;
@@ -714,8 +721,8 @@ export const GlobalPDFImportHost = () => {
       pdfImport._setImporting(true);
 
       // KLJUČ V2 — identitet retka bez AI-teksta (datum+iznos+saldo, inače
-      // redni broj). Stari otisak (ime trgovca) ostaje SAMO kao zamjenska
-      // provjera "je li već u knjigama" za retke uvezene prije prijelaza.
+      // stabilan redni broj po poziciji na izvodu). Stari otisak (ime trgovca)
+      // i dalje se računa, ali SAMO za pretragu "je li već u knjigama".
       const keysV2 = await computeImportKeys(transactions.map(tx => ({
         userId: user.id,
         paymentSource: paymentSourceValue,
@@ -723,6 +730,7 @@ export const GlobalPDFImportHost = () => {
         type: tx.type,
         amount: tx.amount,
         balanceAfter: tx.balance_after ?? null,
+        sourceOrder: tx.source_order ?? null,
       })));
       const legacyFingerprints = await Promise.all(transactions.map(tx =>
         computeImportFingerprint({
@@ -746,7 +754,7 @@ export const GlobalPDFImportHost = () => {
           const states = await lookupFingerprintStates(
             supabase as unknown as ExecutorSupabaseClient,
             user.id,
-            [...keysV2, ...legacyFingerprints],
+            [...keysV2.filter((k): k is string => !!k), ...legacyFingerprints],
           );
           liveKeys = states.live;
           deletedKeys = states.deleted;
@@ -755,18 +763,30 @@ export const GlobalPDFImportHost = () => {
         }
       }
 
-      // Djelotvoran otisak retka: v2 je pravilo; stari otisak preuzima SAMO
-      // kad taj redak stvarno postoji u bazi pod starim ključem (živ ili
-      // obrisan), da spajanje/vraćanje pogodi postojeći zapis.
-      const fingerprints = transactions.map((_, i) => {
-        const v2 = keysV2[i];
-        if (liveKeys.has(v2) || deletedKeys.has(v2)) return v2;
-        const legacy = legacyFingerprints[i];
-        if (liveKeys.has(legacy) || deletedKeys.has(legacy)) return legacy;
-        return v2;
+      // PRIJELAZ: redak nađen samo po starom ključu dobiva novi ključ upisan
+      // na POSTOJEĆI redak (rekey) — nikad novi redak, pa nema vala duplikata.
+      const rekey = planFingerprintRekey({
+        keysV2,
+        legacyKeys: legacyFingerprints,
+        live: liveKeys,
+        deleted: deletedKeys,
       });
-      const existingFpSet = liveKeys;
-      const deletedFpSet = deletedKeys;
+      if (rekey.pairs.length > 0) {
+        try {
+          const { data, error } = await (supabase as any).rpc('rekey_import_fingerprints', {
+            p_pairs: rekey.pairs,
+          });
+          if (error) throw error;
+          try { logDiagnostic('import_key_rekeyed', { requested: rekey.pairs.length, updated: typeof data === 'number' ? data : null }); } catch {}
+        } catch (e) {
+          try { logDiagnostic('import_key_rekey_failed', { count: rekey.pairs.length, message: e instanceof Error ? e.message : String(e) }); } catch {}
+        }
+      }
+
+      const fingerprints = rekey.fingerprints;
+      const existingFpSet = rekey.live;
+      const deletedFpSet = rekey.deleted;
+
 
 
       // SELECT (b) manual candidates on this source (no bank_transaction_id).

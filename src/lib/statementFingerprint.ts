@@ -10,7 +10,7 @@
  * Stored in `imported_statements`. Read before parsing; written after a successful import.
  */
 import { supabase } from '@/integrations/supabase/client';
-import { computeImportFingerprint } from '@/lib/importFingerprint';
+import { computeImportFingerprint, computeImportKeys } from '@/lib/importFingerprint';
 
 async function sha256HexFromBuffer(buf: ArrayBuffer | Uint8Array): Promise<string> {
   const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
@@ -45,8 +45,11 @@ export async function computeFileHash(file: File): Promise<string> {
 
 /**
  * Content hash mirrors the SQL backfill in 20260520-imported_statements migration:
- *   SHA-256( sorted bank_transaction_id values joined with '|' )
- * Since bank_transaction_id == computeImportFingerprint(...), we compute it the same way here.
+ *   SHA-256( sorted per-row keys joined with '|' )
+ *
+ * PRIJELAZ NA V2: novi hash se računa po V2 ključevima retka (`imp2:`, bez
+ * AI-teksta). Stari hash (po `computeImportFingerprint`) se i dalje računa,
+ * ali SAMO za pretragu ranije uvezenih izvoda.
  */
 export interface ContentHashTransaction {
   date: Date | string;
@@ -54,9 +57,13 @@ export interface ContentHashTransaction {
   amount: number;
   description?: string | null;
   merchant_name?: string | null;
+  balance_after?: number | null;
+  /** Pozicija retka u izvornom tekstu izvoda (stabilan `ord:N`). */
+  source_order?: number | null;
 }
 
-export async function computeContentHash(
+/** Stari (v1) statement hash — zadržan za pretragu ranijih uvoza. */
+export async function computeLegacyContentHash(
   userId: string,
   paymentSource: string | null,
   transactions: ContentHashTransaction[],
@@ -77,6 +84,53 @@ export async function computeContentHash(
   return sha256HexFromString(fps.join('|'));
 }
 
+/** Novi (v2) statement hash — po ključevima retka bez AI-teksta. */
+export async function computeContentHash(
+  userId: string,
+  paymentSource: string | null,
+  transactions: ContentHashTransaction[],
+): Promise<string> {
+  if (transactions.length === 0) return '';
+  const keys = await computeImportKeys(transactions.map(tx => ({
+    userId,
+    paymentSource,
+    date: tx.date,
+    type: tx.type,
+    amount: tx.amount,
+    balanceAfter: tx.balance_after ?? null,
+    sourceOrder: tx.source_order ?? null,
+  })));
+  // Redak bez dokazivog redoslijeda nema v2 ključ — u hash ulazi njegov stari
+  // otisak, da izvod i dalje ima jednoznačan potpis.
+  const legacy = await Promise.all(transactions.map((tx, i) => (
+    keys[i] ? Promise.resolve(null) : computeImportFingerprint({
+      userId,
+      paymentSource,
+      date: tx.date,
+      type: tx.type,
+      amount: tx.amount,
+      description: tx.description,
+      merchantName: tx.merchant_name,
+    })
+  )));
+  const values = keys.map((k, i) => k ?? (legacy[i] as string));
+  values.sort();
+  return sha256HexFromString(values.join('|'));
+}
+
+/** Oba hasha odjednom: v2 se upisuje, oba se traže. */
+export async function computeContentHashes(
+  userId: string,
+  paymentSource: string | null,
+  transactions: ContentHashTransaction[],
+): Promise<{ contentHash: string; legacyContentHash: string }> {
+  const [contentHash, legacyContentHash] = await Promise.all([
+    computeContentHash(userId, paymentSource, transactions),
+    computeLegacyContentHash(userId, paymentSource, transactions),
+  ]);
+  return { contentHash, legacyContentHash };
+}
+
 export interface ExistingStatement {
   id: string;
   imported_at: string;
@@ -86,11 +140,14 @@ export interface ExistingStatement {
 
 export async function findExistingStatement(
   userId: string,
-  hashes: { fileHash?: string | null; contentHash?: string | null },
+  hashes: { fileHash?: string | null; contentHash?: string | null | (string | null | undefined)[] },
 ): Promise<ExistingStatement | null> {
   const conditions: string[] = [];
   if (hashes.fileHash) conditions.push(`file_hash.eq.${hashes.fileHash}`);
-  if (hashes.contentHash) conditions.push(`content_hash.eq.${hashes.contentHash}`);
+  const contentHashes = Array.isArray(hashes.contentHash) ? hashes.contentHash : [hashes.contentHash];
+  for (const h of contentHashes) {
+    if (h) conditions.push(`content_hash.eq.${h}`);
+  }
   if (conditions.length === 0) return null;
 
   const { data, error } = await supabase
@@ -110,6 +167,7 @@ export async function findExistingStatement(
   }
   return data ?? null;
 }
+
 
 export async function recordImportedStatement(params: {
   userId: string;

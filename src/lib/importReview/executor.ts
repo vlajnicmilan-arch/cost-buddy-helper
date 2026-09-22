@@ -801,9 +801,10 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
     try {
       const res = typeof input.supabase.rpc === 'function'
         ? await input.supabase.rpc('restore_deleted_import_row', {
-            p_fingerprint: r.tx.fingerprint,
+            p_fingerprints: [r.tx.fingerprint],
             p_batch_id: batchId,
           })
+
         : { data: null, error: { message: 'rpc_unavailable' } };
       if (res.error) {
         errors.push(`restore:${r.rowIndex}:${res.error.message}`);

@@ -27,6 +27,7 @@ import { useAuth } from '@/hooks/useAuth';
 import {
   computeFileHash,
   computeContentHash,
+  computeContentHashes,
   findExistingStatement,
   recordImportedStatement,
   type ExistingStatement,
@@ -205,9 +206,10 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
         try {
           const paymentSourceValue = defaultPaymentSource
             || (selectedPaymentSource ? `custom:${selectedPaymentSource}` : null);
-          const contentHash = await computeContentHash(user.id, paymentSourceValue, result.transactions);
+          const { contentHash, legacyContentHash } = await computeContentHashes(user.id, paymentSourceValue, result.transactions);
           contentHashRef.current = contentHash;
-          const existing = await findExistingStatement(user.id, { contentHash });
+          const existing = await findExistingStatement(user.id, { contentHash: [contentHash, legacyContentHash] });
+
           if (existing) {
             setStatementDup({ existing, retry: () => { void processFile(file, true); } });
             return;
