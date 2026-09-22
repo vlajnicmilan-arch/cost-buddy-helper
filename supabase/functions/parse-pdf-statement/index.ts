@@ -945,25 +945,32 @@ DOSLOVAN REDAK (raw_line):
 
 
     // CITAT S IZVODA: deterministički redak ima prednost pred AI prepisom.
+    // Uz citat se pamti i POZICIJA retka u izvornom tekstu (`source_order`) —
+    // jedini redoslijed koji ne ovisi o čitaču, pa iz njega nastaje stabilan
+    // `ord:N` u ključu uvoza. Kad citata nema, `source_order` ostaje null i
+    // redak NE dobiva `ord:` (ništa se ne izmišlja).
     {
       const matches = sourceLines.length > 0
-        ? matchRawLines(sourceLines, transactions.map((t: any) => ({ date: t.date, amount: t.amount })))
+        ? matchRawLineEntries(sourceLines, transactions.map((t: any) => ({ date: t.date, amount: t.amount })))
         : transactions.map(() => null);
       let determinstic = 0;
       transactions.forEach((t: any, i: number) => {
         const literal = matches[i];
         if (literal) {
-          t.raw_line = capRawLine(literal);
+          t.raw_line = capRawLine(literal.line);
           t.raw_line_source = rawLineSource;
+          t.source_order = literal.index;
           determinstic += 1;
         } else {
           const ai = capRawLine(t.raw_line);
           t.raw_line = ai;
           t.raw_line_source = ai ? 'ai' : null;
+          t.source_order = null;
         }
       });
       console.log(`raw_line: ${determinstic}/${transactions.length} doslovno (${rawLineSource}), ostatak AI prepis`);
     }
+
 
     // BLOK REZERVACIJA („Na čekanju") — deterministički, neovisno o AI-ju.
     // Ista kupnja stoji i u rezervacijama i u proknjiženom dijelu; u knjige
