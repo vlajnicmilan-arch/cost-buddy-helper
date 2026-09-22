@@ -8,7 +8,7 @@ import { extractPdfText } from "../_shared/mailImport/pdfText.ts";
 import { extractStatementBalance } from "../_shared/mailImport/statementSignals.ts";
 import {
   capRawLine,
-  matchRawLines,
+  matchRawLineEntries,
   splitStatementLines,
   type RawLineSource,
 } from "../_shared/statement/rawLineMatch.ts";
