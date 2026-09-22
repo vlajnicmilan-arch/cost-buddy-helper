@@ -239,7 +239,7 @@ export function planLedgerRow(row: LedgerRowInput): LedgerDecision {
     }
     if (choice.questionChoice === 'merge') {
       const manualId = choice.questionManualId ?? null;
-      if (manualId && owned.has(manualId)) {
+      if (manualId && !foreign.has(manualId)) {
         return decide(row, 'merge', 'late_offer_merge', manualId);
       }
     }
