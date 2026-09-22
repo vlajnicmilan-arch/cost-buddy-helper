@@ -24,7 +24,10 @@ export interface HistoryGateInput {
   readonly anchorDate?: string | null;
   readonly batchLastAt?: string | null;
   readonly isHistorical?: boolean;
+  /** Vremenska konfidencija zadnjeg retka izvoda (C1/C2 = pravo vrijeme). */
+  readonly batchLastConfidence?: string | null;
 }
+
 
 export const RECON_DELTA_THRESHOLD = 0.01;
 
