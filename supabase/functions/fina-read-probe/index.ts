@@ -29,8 +29,13 @@ import {
   checkFinaSecrets,
   checkProbeKey,
   createFinaClient,
+  describeClientChain,
+  fetchWithDeadline,
+  FINA_TIMEOUT_MS,
+  FinaTimeoutError,
   importSigningKey,
   loadFinaKey,
+
   safeMessage,
   snippet,
   type KeyMaterial,
