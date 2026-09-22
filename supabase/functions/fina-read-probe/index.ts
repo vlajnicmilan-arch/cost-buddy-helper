@@ -514,8 +514,10 @@ Deno.serve(async (req) => {
       }
     }
   } catch (e) {
+    noteTimeout(e);
     report.error = safeMessage(e);
   }
+
 
   // Summary only — no invoice content, no secrets.
   try {
