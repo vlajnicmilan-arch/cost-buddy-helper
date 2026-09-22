@@ -6390,7 +6390,14 @@
     "statementBalance": "Izvod (papir)",
     "descriptionFromStatement": "Prema stanju s izvoda ({{balance}}) razlika iznosi {{delta}}. Potvrđuješ broj s papira, ne sinkronizaciju s bankom.",
     "statementSourceNote": "Ovaj novčanik nije povezan s bankom, pa je izvor istine završno stanje ispisano na samom izvodu.",
-    "alignToStatement": "Poravnaj sa stanjem s izvoda"
+    "alignToStatement": "Poravnaj sa stanjem s izvoda",
+    "noBalance": {
+      "title": "Izvod ne sadrži stanje računa",
+      "description": "Ovaj izvod ne pokazuje stanje računa. Prepiši stanje iz bankovne aplikacije ili ostavi novčanik neusidren — ništa se neće promijeniti.",
+      "inputLabel": "Stanje iz bankovne aplikacije",
+      "save": "Spremi stanje",
+      "skip": "Ostavi neusidreno"
+    }
   },
   "anchor": {
     "sectionTitle": "Sidro salda",

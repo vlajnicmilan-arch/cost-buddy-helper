@@ -6377,7 +6377,14 @@
     "statementBalance": "Statement (paper)",
     "descriptionFromStatement": "Against the statement balance ({{balance}}) the difference is {{delta}}. You are confirming the printed figure, not a bank sync.",
     "statementSourceNote": "This wallet is not linked to a bank, so the closing balance printed on the statement is the source of truth.",
-    "alignToStatement": "Align with statement balance"
+    "alignToStatement": "Align with statement balance",
+    "noBalance": {
+      "title": "Statement has no account balance",
+      "description": "This statement does not show the account balance. Enter the balance from your banking app, or leave the wallet unanchored — nothing will change.",
+      "inputLabel": "Balance from your banking app",
+      "save": "Save balance",
+      "skip": "Leave unanchored"
+    }
   },
   "anchor": {
     "sectionTitle": "Balance anchor",
