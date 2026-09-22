@@ -32,7 +32,7 @@ import {
   subscribeReconciliation,
   type ReconciliationQueueEntry,
 } from '@/lib/reconciliation/queue';
-import { alignToBank, keepMine, type ReconciliationSupabaseClient } from '@/lib/reconciliation/actions';
+import { alignToBank, keepMine, setManualAnchor, type ReconciliationSupabaseClient } from '@/lib/reconciliation/actions';
 import { toDayKey } from '@/lib/dayKey';
 import { openImportBatch } from '@/lib/importUndo/host';
 import { clearReconciliationQueue } from '@/lib/reconciliation/queue';
