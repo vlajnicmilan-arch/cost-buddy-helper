@@ -17,6 +17,8 @@
  * Čisti modul bez Supabase ovisnosti — testiran u src/test/reconciliationHistoryGate.test.ts.
  */
 
+import { resolveAnchorAsOf } from './anchorTime';
+
 /** Minimalni oblik koji gate treba (podskup ReconciliationSummaryEntry). */
 export interface HistoryGateInput {
   readonly hasBankRow: boolean;
