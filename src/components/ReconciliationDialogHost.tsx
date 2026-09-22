@@ -20,6 +20,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useBackButton } from '@/hooks/useBackButton';
 import { supabase } from '@/integrations/supabase/client';
