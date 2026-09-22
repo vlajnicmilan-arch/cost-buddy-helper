@@ -10,7 +10,7 @@
  * Stored in `imported_statements`. Read before parsing; written after a successful import.
  */
 import { supabase } from '@/integrations/supabase/client';
-import { computeImportFingerprint } from '@/lib/importFingerprint';
+import { computeImportFingerprint, computeImportKeys } from '@/lib/importFingerprint';
 
 async function sha256HexFromBuffer(buf: ArrayBuffer | Uint8Array): Promise<string> {
   const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
