@@ -460,7 +460,7 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
   const now = input.now ?? Date.now;
   const start = now();
   const batchId = input.batchId ?? input.payload.batchId;
-  const plan = planExecution(input.payload, input.decisions);
+  const plan = planExecution(input.payload, input.decisions, input.userId);
   const errors: string[] = [];
 
   const plannedAll = [...plan.merges, ...plan.inserts, ...plan.transfers, ...plan.pairs, ...plan.restores];
