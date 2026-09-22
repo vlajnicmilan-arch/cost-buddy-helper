@@ -98,16 +98,24 @@ export interface ReconciliationSummaryEntry {
   readonly anchorDate?: string | null;
   /** Timestamp zadnjeg retka uvezenog izvoda za ovaj izvor (ISO). */
   readonly batchLastAt?: string | null;
+  /** Vremenska konfidencija tog zadnjeg retka (C1/C2 = pravo vrijeme). */
+  readonly batchLastConfidence?: string | null;
   /** Izvod završava na dan sidra ili prije → ne traži odluku. */
   readonly isHistorical?: boolean;
   /**
    * Odakle dolazi `bankBalance`:
-   *  - 'bank_row'  — redak iz bank_accounts (Open Banking), uvijek ima prednost
-   *  - 'statement' — završni saldo ispisan na samom izvodu (jedina istina bez OB)
+   *  - 'bank_row'  — redak izvoda TOG novčanika (novčanik je platitelj)
+   *  - 'statement' — završni saldo ispisan na samom izvodu
+   *  - 'none'      — izvod ne sadrži stanje ovog računa; ništa se ne pogađa
    */
-  readonly bankSource?: 'bank_row' | 'statement';
+  readonly bankSource?: 'bank_row' | 'statement' | 'none';
+  /** expenses.id retka s kojeg je uzet bankin saldo (samo za 'bank_row'). */
+  readonly bankBalanceRowId?: string | null;
+  /** Izvod nema stanje ovog računa — korisnik upisuje ili ostavlja neusidreno. */
+  readonly needsManualBalance?: boolean;
   readonly error?: string;
 }
+
 
 /** Saldo s papira za točno jedan izvor — koristi se samo bez bankovnog retka. */
 export interface StatementBalanceFallback {
