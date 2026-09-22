@@ -1467,8 +1467,11 @@ async function enqueueReconciliationForBatch(
 ): Promise<void> {
   // History gate: povijesni izvodi (završavaju na dan sidra ili prije) ne
   // ulaze u queue — sidro se ne dira i korisnik ne dobiva pitanje.
-  const needing = summaries.filter(s => s.needsReconciliation);
+  // Uz njih ulaze i novčanici čiji izvod NEMA stanje računa: tada se ne nudi
+  // nikakav bankin broj, nego upis stanja iz banke ili ostanak neusidrenim.
+  const needing = summaries.filter(s => s.needsReconciliation || s.needsManualBalance === true);
   if (needing.length === 0) return;
+
 
   let statementId: string | null = null;
   try {
