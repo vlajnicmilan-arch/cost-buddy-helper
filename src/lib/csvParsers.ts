@@ -44,6 +44,13 @@ export interface ParsedTransaction {
   /** DOSLOVAN redak s izvoda (citat). NE ulazi u otisak. */
   raw_line?: string | null;
   raw_line_source?: 'text' | 'html' | 'ai' | null;
+  /**
+   * POZICIJA doslovnog retka u izvornom tekstu izvoda. Iz nje nastaje stabilan
+   * `ord:N` u ključu uvoza za izvode bez salda — redoslijed na papiru, ne
+   * redoslijed kojim je čitač vratio retke. Null kad citata nema.
+   */
+  source_order?: number | null;
+
 }
 
 // Detect if transaction is an internal transfer between own accounts
