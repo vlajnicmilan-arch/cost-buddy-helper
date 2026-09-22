@@ -24,9 +24,12 @@ function summary(over: Partial<ReconciliationSummaryEntry> = {}): Reconciliation
     hasBankRow: true,
     needsReconciliation: true,
     engineMode: 'hybrid',
+    bankSource: 'bank_row',
+    bankBalanceRowId: '22222222-2222-2222-2222-222222222222',
     ...over,
   };
 }
+
 
 function mkSupabase(): {
   supabase: ReconciliationSupabaseClient;
