@@ -80,10 +80,22 @@ describe('isHistoricalWithGap', () => {
 });
 
 describe('resolveAsOfIso', () => {
-  it('sidro se veže za zadnji redak izvoda, ne za sada', () => {
+  it('sidro se veže za zadnji redak izvoda, ne za sada (pravo vrijeme ostaje)', () => {
     const now = '2026-08-02T22:45:00.000Z';
-    expect(resolveAsOfIso({ ...base, batchLastAt: '2026-02-26T11:00:00Z' }, now)).toBe('2026-02-26T11:00:00Z');
+    expect(resolveAsOfIso(
+      { ...base, batchLastAt: '2026-02-26T11:00:00Z', batchLastConfidence: 'C1' },
+      now,
+    )).toBe('2026-02-26T11:00:00Z');
   });
+
+  it('redak bez pravog vremena (C3) → kraj tog dana po Zagrebu', () => {
+    const now = '2026-08-02T22:45:00.000Z';
+    expect(resolveAsOfIso(
+      { ...base, batchLastAt: '2026-02-26T11:00:00Z', batchLastConfidence: 'C3' },
+      now,
+    )).toBe('2026-02-26T22:59:59.000Z');
+  });
+
 
   it('fallback na now samo kad batch nema datuma', () => {
     const now = '2026-08-02T22:45:00.000Z';
