@@ -39,5 +39,13 @@ apply_list "$BAL/BALANCE_MIGRATIONS.txt"
 psql -v ON_ERROR_STOP=1 -q -f "$HERE/baseline_extra.sql"
 apply_list "$HERE/MERGE_MIGRATIONS.txt"
 
+# Drizzle migracija 0012 mijenja merge_manual_with_bank (nasljeđivanje event_at /
+# time_confidence s bankovnog retka). Ostatak te migracije (anchor_audit, align,
+# preview) ne pripada kuriranom baselineu, pa se primjenjuje samo taj blok.
+MERGE_FN_SRC="$(ls "$ROOT"/drizzle/migrations/0012_*.sql | head -1)"
+sed -n '/C) spajanje ne pomi/,$p' "$MERGE_FN_SRC" > /tmp/merge_fn_0012.sql
+echo "-- applying $(basename "$MERGE_FN_SRC") (merge_manual_with_bank block)"
+psql -v ON_ERROR_STOP=1 -q -f /tmp/merge_fn_0012.sql
+
 psql -v ON_ERROR_STOP=1 -f "$HERE/manual_bank_merge.sql"
 echo "merge SQL harness: OK"
