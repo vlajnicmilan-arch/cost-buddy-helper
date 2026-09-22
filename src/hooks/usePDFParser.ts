@@ -147,6 +147,7 @@ const toParseResult = (data: any): PDFParseResult => ({
         is_pending: tx.is_pending === true,
         raw_line: typeof tx.raw_line === 'string' && tx.raw_line.trim() ? tx.raw_line : null,
         raw_line_source: tx.raw_line_source === 'text' || tx.raw_line_source === 'html' || tx.raw_line_source === 'ai' ? tx.raw_line_source : null,
+        source_order: typeof tx.source_order === 'number' && Number.isFinite(tx.source_order) ? tx.source_order : null,
         date_source: tx.date_source === 'statement_text' || tx.date_source === 'ai' ? tx.date_source : null,
         date_needs_review: tx.date_needs_review === true,
         date_block_reason: typeof tx.date_block_reason === 'string' ? tx.date_block_reason : null,
@@ -542,6 +543,7 @@ export const usePDFParser = () => {
               is_pending: tx.is_pending === true,
               raw_line: typeof tx.raw_line === 'string' && tx.raw_line.trim() ? tx.raw_line : null,
               raw_line_source: tx.raw_line_source === 'text' || tx.raw_line_source === 'html' || tx.raw_line_source === 'ai' ? tx.raw_line_source : null,
+        source_order: typeof tx.source_order === 'number' && Number.isFinite(tx.source_order) ? tx.source_order : null,
             };
           })
           .filter((tx: ParsedPDFTransaction | null): tx is ParsedPDFTransaction => tx !== null),
