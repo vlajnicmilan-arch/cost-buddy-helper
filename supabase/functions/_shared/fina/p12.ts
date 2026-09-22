@@ -350,24 +350,39 @@ function loadP12WithForge(derBin: string, password: string): KeyMaterial {
 
 export async function loadP12(p12B64: string, password: string): Promise<KeyMaterial> {
   const derBin = forge.util.decode64(p12B64);
-  await recordP12Open(inspectP12Open(derBin));
+  const algDetails = inspectP12Open(derBin);
 
-  let bags: RawBags;
+  let material: KeyMaterial;
+  let bags: RawBags | null = null;
   try {
     bags = await collectBagsWithWebCrypto(derBin, password);
   } catch (e) {
-    if (e instanceof LegacyAlgorithmError) return loadP12WithForge(derBin, password);
-    throw e;
+    if (!(e instanceof LegacyAlgorithmError)) throw e;
   }
 
-  if (!bags.pkcs8Bin) throw new Error("p12 contains no private key");
-  if (bags.certDers.length === 0) throw new Error("p12 contains no certificate");
+  if (!bags) {
+    material = loadP12WithForge(derBin, password);
+  } else {
+    if (!bags.pkcs8Bin) throw new Error("p12 contains no private key");
+    if (bags.certDers.length === 0) throw new Error("p12 contains no certificate");
+    const key = forge.pki.privateKeyFromAsn1(asn1.fromDer(bags.pkcs8Bin));
+    const certs = bags.certDers.map((d) => forge.pki.certificateFromAsn1(asn1.fromDer(d)));
+    material = toKeyMaterial(pickCert(certs, key), key, false, "webcrypto", certs);
+  }
 
-  const key = forge.pki.privateKeyFromAsn1(asn1.fromDer(bags.pkcs8Bin));
-  const certs = bags.certDers.map((d) => forge.pki.certificateFromAsn1(asn1.fromDer(d)));
+  // Identity only — never the key, the password or any p12 content.
+  await recordP12Open({
+    ...algDetails,
+    unlock_path: material.unlockPath,
+    subject_cn: material.subjectCn,
+    issuer_cn: material.issuerCn,
+    cert_count: material.certCount,
+    chain_cns: describeChain(material).chain_cns,
+  });
 
-  return toKeyMaterial(pickCert(certs, key), key, false, "webcrypto", certs);
+  return material;
 }
+
 
 export async function loadFinaKey(): Promise<KeyMaterial> {
   return await loadP12(
