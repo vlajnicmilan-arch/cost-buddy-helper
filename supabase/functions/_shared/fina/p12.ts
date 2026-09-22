@@ -26,11 +26,19 @@ export interface KeyMaterial {
   subject: string;
   serial: string;
   issuer: string;
+  /** CN only — safe to put in diagnostics. */
+  subjectCn: string | null;
+  issuerCn: string | null;
+  /** Other certificates found in the p12 (possible issuer chain), PEM. */
+  chainPems: string[];
+  /** How many certificates the p12 contained in total. */
+  certCount: number;
   pkcs8Der: Uint8Array;
   /** false when the p12 was opened on the WebCrypto path (MAC not checked). */
   macVerified: boolean;
   unlockPath: "webcrypto" | "forge";
 }
+
 
 // ---------------------------------------------------------------- ASN.1 utils
 
