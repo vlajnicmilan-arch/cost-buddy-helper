@@ -128,7 +128,7 @@ describe('saldo s izvoda kao bankovna istina', () => {
     expect(entry.bankSource).toBe('bank_row');
   });
 
-  it('bez closing balance i bez bankovnog retka → ne traži ništa', async () => {
+  it('bez closing balance i bez retka ovog novčanika → ne nudi tuđi saldo, traži ručni unos', async () => {
     const res = await executeDecisions({
       supabase: mkSupabase({ app_balance: 34.93, bank_balance: null, delta: null, has_bank_row: false }),
       userId: 'u1',
@@ -139,8 +139,10 @@ describe('saldo s izvoda kao bankovna istina', () => {
     const entry = res.reconciliationSummary[0];
     expect(entry.needsReconciliation).toBe(false);
     expect(entry.bankBalance).toBeNull();
-    expect(entry.bankSource).toBe('bank_row');
+    expect(entry.bankSource).toBe('none');
+    expect(entry.needsManualBalance).toBe(true);
   });
+
 
   it('razlika ispod centa ne traži odluku', async () => {
     const res = await executeDecisions({
