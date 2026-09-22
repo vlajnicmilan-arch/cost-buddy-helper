@@ -98,16 +98,24 @@ export interface ReconciliationSummaryEntry {
   readonly anchorDate?: string | null;
   /** Timestamp zadnjeg retka uvezenog izvoda za ovaj izvor (ISO). */
   readonly batchLastAt?: string | null;
+  /** Vremenska konfidencija tog zadnjeg retka (C1/C2 = pravo vrijeme). */
+  readonly batchLastConfidence?: string | null;
   /** Izvod završava na dan sidra ili prije → ne traži odluku. */
   readonly isHistorical?: boolean;
   /**
    * Odakle dolazi `bankBalance`:
-   *  - 'bank_row'  — redak iz bank_accounts (Open Banking), uvijek ima prednost
-   *  - 'statement' — završni saldo ispisan na samom izvodu (jedina istina bez OB)
+   *  - 'bank_row'  — redak izvoda TOG novčanika (novčanik je platitelj)
+   *  - 'statement' — završni saldo ispisan na samom izvodu
+   *  - 'none'      — izvod ne sadrži stanje ovog računa; ništa se ne pogađa
    */
-  readonly bankSource?: 'bank_row' | 'statement';
+  readonly bankSource?: 'bank_row' | 'statement' | 'none';
+  /** expenses.id retka s kojeg je uzet bankin saldo (samo za 'bank_row'). */
+  readonly bankBalanceRowId?: string | null;
+  /** Izvod nema stanje ovog računa — korisnik upisuje ili ostavlja neusidreno. */
+  readonly needsManualBalance?: boolean;
   readonly error?: string;
 }
+
 
 /** Saldo s papira za točno jedan izvor — koristi se samo bez bankovnog retka. */
 export interface StatementBalanceFallback {
@@ -1185,10 +1193,12 @@ async function buildReconciliationSummary(
       const data = (res.data ?? {}) as {
         app_balance?: number | null;
         bank_balance?: number | null;
+        bank_balance_row_id?: string | null;
         delta?: number | null;
         has_bank_row?: boolean;
         anchor_date?: string | null;
         batch_last_at?: string | null;
+        batch_last_confidence?: string | null;
         is_historical?: boolean;
       };
       const app = data.app_balance ?? null;
@@ -1200,10 +1210,10 @@ async function buildReconciliationSummary(
         delta,
         anchorDate: data.anchor_date ?? null,
         batchLastAt: data.batch_last_at ?? null,
+        batchLastConfidence: data.batch_last_confidence ?? null,
         isHistorical: typeof data.is_historical === 'boolean' ? data.is_historical : undefined,
       };
-      // Bez bankovnog retka (izvor bez Open Bankinga) saldo s papira postaje
-      // bankovna istina. S bankovnim retkom ponašanje je NEPROMIJENJENO.
+      // Bez retka s ovog računa saldo s papira postaje bankovna istina.
       if (!hasBankRow && statementFallback && statementFallback.sourceId === sourceId.toLowerCase() && app !== null) {
         const stmtDelta = round2(statementFallback.closingBalance - app);
         const stmtGate = {
@@ -1211,6 +1221,7 @@ async function buildReconciliationSummary(
           delta: stmtDelta,
           anchorDate: gateInput.anchorDate,
           batchLastAt: gateInput.batchLastAt ?? statementFallback.statementDate,
+          batchLastConfidence: gateInput.batchLastConfidence,
         };
         out.push({
           sourceId,
@@ -1222,8 +1233,30 @@ async function buildReconciliationSummary(
           engineMode: 'hybrid',
           anchorDate: stmtGate.anchorDate,
           batchLastAt: stmtGate.batchLastAt ?? null,
+          batchLastConfidence: stmtGate.batchLastConfidence,
           isHistorical: isHistoricalBatch(stmtGate),
           bankSource: 'statement',
+        });
+        continue;
+      }
+      // Izvod ne sadrži stanje OVOG računa: ništa se ne pogađa i ne uzima se
+      // broj s druge strane prijenosa. Korisnik upisuje stanje ili ostavlja
+      // novčanik neusidrenim.
+      if (!hasBankRow) {
+        out.push({
+          sourceId,
+          appBalance: app,
+          bankBalance: null,
+          delta: null,
+          hasBankRow: false,
+          needsReconciliation: false,
+          engineMode: 'hybrid',
+          anchorDate: gateInput.anchorDate,
+          batchLastAt: gateInput.batchLastAt,
+          batchLastConfidence: gateInput.batchLastConfidence,
+          isHistorical: isHistoricalBatch(gateInput),
+          bankSource: 'none',
+          needsManualBalance: app !== null && !isHistoricalBatch(gateInput),
         });
         continue;
       }
@@ -1239,9 +1272,12 @@ async function buildReconciliationSummary(
         engineMode: 'hybrid',
         anchorDate: gateInput.anchorDate,
         batchLastAt: gateInput.batchLastAt,
+        batchLastConfidence: gateInput.batchLastConfidence,
         isHistorical: isHistoricalBatch(gateInput),
         bankSource: 'bank_row',
+        bankBalanceRowId: data.bank_balance_row_id ?? null,
       });
+
 
     } catch (e) {
       out.push({

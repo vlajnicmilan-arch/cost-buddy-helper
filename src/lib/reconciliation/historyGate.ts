@@ -17,6 +17,8 @@
  * Čisti modul bez Supabase ovisnosti — testiran u src/test/reconciliationHistoryGate.test.ts.
  */
 
+import { resolveAnchorAsOf } from './anchorTime';
+
 /** Minimalni oblik koji gate treba (podskup ReconciliationSummaryEntry). */
 export interface HistoryGateInput {
   readonly hasBankRow: boolean;
@@ -24,7 +26,10 @@ export interface HistoryGateInput {
   readonly anchorDate?: string | null;
   readonly batchLastAt?: string | null;
   readonly isHistorical?: boolean;
+  /** Vremenska konfidencija zadnjeg retka izvoda (C1/C2 = pravo vrijeme). */
+  readonly batchLastConfidence?: string | null;
 }
+
 
 export const RECON_DELTA_THRESHOLD = 0.01;
 
@@ -65,8 +70,11 @@ export function isHistoricalWithGap(entry: HistoryGateInput): boolean {
 
 /**
  * `as_of` koji ide u `align_source_to_bank`: timestamp zadnjeg retka izvoda.
+ * Kad taj redak nema pravo vrijeme (C3/C4 — vrijeme mu je izveo okidač kao
+ * podne po Zagrebu), sidro ide na KRAJ tog dana, nikad na izmišljeni sat.
  * Fallback na `now` samo ako batch nema nijedan redak s datumom.
  */
 export function resolveAsOfIso(entry: HistoryGateInput, fallbackIso: string): string {
-  return entry.batchLastAt ?? fallbackIso;
+  return resolveAnchorAsOf(entry.batchLastAt, entry.batchLastConfidence, fallbackIso);
+
 }

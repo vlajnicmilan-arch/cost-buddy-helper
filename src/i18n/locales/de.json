@@ -6377,7 +6377,14 @@
     "statementBalance": "Kontoauszug (Papier)",
     "descriptionFromStatement": "Gegenüber dem Auszugssaldo ({{balance}}) beträgt die Differenz {{delta}}. Du bestätigst den gedruckten Wert, keine Banksynchronisation.",
     "statementSourceNote": "Diese Geldbörse ist nicht mit einer Bank verbunden, daher gilt der auf dem Auszug gedruckte Schlusssaldo als Wahrheit.",
-    "alignToStatement": "Mit Auszugssaldo abgleichen"
+    "alignToStatement": "Mit Auszugssaldo abgleichen",
+    "noBalance": {
+      "title": "Auszug enthält keinen Kontostand",
+      "description": "Dieser Auszug zeigt keinen Kontostand. Übertrage den Stand aus deiner Banking-App oder lass die Geldbörse ohne Anker — es ändert sich nichts.",
+      "inputLabel": "Stand aus der Banking-App",
+      "save": "Stand speichern",
+      "skip": "Ohne Anker lassen"
+    }
   },
   "anchor": {
     "sectionTitle": "Saldo-Anker",

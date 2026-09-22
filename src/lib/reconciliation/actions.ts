@@ -33,10 +33,17 @@ export async function alignToBank(input: AlignInput): Promise<AlignResult> {
   if (summary.bankBalance === null) {
     throw new Error('alignToBank: bankBalance missing');
   }
+  // Saldo s retka izvoda vrijedi samo ako je taj redak s izvoda OVOG novčanika.
+  const balanceSource = summary.bankSource === 'statement' ? 'statement_closing' : 'statement_row';
+  if (balanceSource === 'statement_row' && !summary.bankBalanceRowId) {
+    throw new Error('alignToBank: balance row id missing');
+  }
   const res = await supabase.rpc('align_source_to_bank', {
     p_source_id: summary.sourceId,
     p_bank_balance: summary.bankBalance,
     p_as_of: asOfIso,
+    p_balance_source: balanceSource,
+    p_balance_source_row_id: summary.bankBalanceRowId ?? null,
   });
   if (res.error) throw new Error(res.error.message);
   const data = (res.data ?? {}) as { new_anchor_balance?: number; idempotent_skip?: boolean };
@@ -50,6 +57,41 @@ export async function alignToBank(input: AlignInput): Promise<AlignResult> {
     idempotentSkip: data.idempotent_skip === true,
   };
 }
+
+export interface ManualAnchorInput {
+  readonly supabase: ReconciliationSupabaseClient;
+  readonly summary: ReconciliationSummaryEntry;
+  readonly asOfIso: string;
+  /** Stanje koje je korisnik prepisao iz bankovne aplikacije. */
+  readonly balance: number;
+  readonly importedStatementId?: string | null;
+}
+
+/**
+ * Izvod ne sadrži stanje računa → korisnik sam upisuje stanje iz banke.
+ * Izvor salda se u anchor_audit bilježi kao `user_input`.
+ */
+export async function setManualAnchor(input: ManualAnchorInput): Promise<AlignResult> {
+  const { supabase, summary, asOfIso, balance, importedStatementId } = input;
+  if (!Number.isFinite(balance)) throw new Error('setManualAnchor: balance invalid');
+  const res = await supabase.rpc('align_source_to_bank', {
+    p_source_id: summary.sourceId,
+    p_bank_balance: balance,
+    p_as_of: asOfIso,
+    p_balance_source: 'user_input',
+    p_balance_source_row_id: null,
+  });
+  if (res.error) throw new Error(res.error.message);
+  const data = (res.data ?? {}) as { new_anchor_balance?: number; idempotent_skip?: boolean };
+  if (importedStatementId) {
+    await patchImportedStatement(supabase, importedStatementId, summary.sourceId, 'aligned');
+  }
+  return {
+    newBalance: Number(data.new_anchor_balance ?? balance),
+    idempotentSkip: data.idempotent_skip === true,
+  };
+}
+
 
 export interface KeepMineInput {
   readonly supabase: ReconciliationSupabaseClient;

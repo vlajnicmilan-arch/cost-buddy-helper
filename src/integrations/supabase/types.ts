@@ -391,6 +391,8 @@ export type Database = {
         Row: {
           actor: string | null
           anchor_source: Database["public"]["Enums"]["anchor_source_type"]
+          balance_source: string | null
+          balance_source_row_id: string | null
           created_at: string
           id: string
           new_anchor_balance: number
@@ -405,6 +407,8 @@ export type Database = {
         Insert: {
           actor?: string | null
           anchor_source: Database["public"]["Enums"]["anchor_source_type"]
+          balance_source?: string | null
+          balance_source_row_id?: string | null
           created_at?: string
           id?: string
           new_anchor_balance: number
@@ -419,6 +423,8 @@ export type Database = {
         Update: {
           actor?: string | null
           anchor_source?: Database["public"]["Enums"]["anchor_source_type"]
+          balance_source?: string | null
+          balance_source_row_id?: string | null
           created_at?: string
           id?: string
           new_anchor_balance?: number
@@ -7342,7 +7348,13 @@ export type Database = {
         Returns: number
       }
       align_source_to_bank: {
-        Args: { p_as_of: string; p_bank_balance: number; p_source_id: string }
+        Args: {
+          p_as_of: string
+          p_balance_source?: string
+          p_balance_source_row_id?: string
+          p_bank_balance: number
+          p_source_id: string
+        }
         Returns: Json
       }
       apply_balance_delta_if_unanchored: {

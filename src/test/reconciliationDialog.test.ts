@@ -24,9 +24,12 @@ function summary(over: Partial<ReconciliationSummaryEntry> = {}): Reconciliation
     hasBankRow: true,
     needsReconciliation: true,
     engineMode: 'hybrid',
+    bankSource: 'bank_row',
+    bankBalanceRowId: '22222222-2222-2222-2222-222222222222',
     ...over,
   };
 }
+
 
 function mkSupabase(): {
   supabase: ReconciliationSupabaseClient;
@@ -81,10 +84,24 @@ describe('reconciliation/actions — TUR 1', () => {
       p_source_id: '11111111-1111-1111-1111-111111111111',
       p_bank_balance: 120,
       p_as_of: '2026-07-22T18:00:00Z',
+      p_balance_source: 'statement_row',
+      p_balance_source_row_id: '22222222-2222-2222-2222-222222222222',
     });
     const alignedUpdate = updates.find(u => (u.patch as any).reconciliation_state === 'aligned');
     expect(alignedUpdate).toBeTruthy();
   });
+
+  it('alignToBank odbija saldo s retka koji nije s ovog novčanika (nema id retka)', async () => {
+    const { supabase, rpcCalls } = mkSupabase();
+    await expect(alignToBank({
+      supabase,
+      summary: summary({ bankBalanceRowId: null }),
+      asOfIso: '2026-07-22T18:00:00Z',
+      importedStatementId: 'stmt-1',
+    })).rejects.toThrow(/balance row id/);
+    expect(rpcCalls).toHaveLength(0);
+  });
+
 
   it('keepMine ne poziva RPC i piše user_override', async () => {
     const { supabase, rpcCalls, updates } = mkSupabase();
