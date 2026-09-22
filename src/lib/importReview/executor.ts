@@ -48,6 +48,11 @@ import { upsertTransferRules, type TransferRulesSupabaseClient, type UpsertRuleI
 import { shouldReconcile, isHistoricalBatch } from '@/lib/reconciliation/historyGate';
 import { isCountedExpenseRow } from '@/lib/countedExpense';
 import { isNeedsExplanation } from './state';
+import {
+  planLedgerRow,
+  type LedgerCandidate,
+  type LedgerRowInput,
+} from '@/lib/moneyLedgerPlan';
 
 
 /**
@@ -256,7 +261,19 @@ export interface PlannedWork {
 }
 
 /**
+ * Vlasnik kad planExecution zovu testovi/pozivatelji bez korisnika. Tada su i
+ * redak i svi kandidati istog (lokalnog) vlasnika, pa provjera vlasništva u
+ * jezgri ne mijenja ništa.
+ */
+export const IMPORT_LOCAL_OWNER = 'import-local-owner';
+
+/**
  * Build the write plan from decisions. Pure — no I/O. Exposed for tests.
+ *
+ * ODLUKU više ne donosi ova funkcija: pita se zajednička jezgra
+ * `planLedgerRow` (`src/lib/moneyLedgerPlan.ts`), a ovdje ostaje samo
+ * raspoređivanje u postojeće grane pisanja (MERGE / INSERT / PAIR / TRANSFER /
+ * RESTORE). Grane pisanja, SQL i upsert su nepromijenjeni.
  *
  * Precedence: an enabled TransferDecision overrides the row's default
  * classification path (auto/question/new). That's the same rule enforced in
@@ -265,6 +282,7 @@ export interface PlannedWork {
 export function planExecution(
   payload: ImportReviewPayload,
   decisions: ImportReviewDecisions,
+  userId: string = IMPORT_LOCAL_OWNER,
 ): PlannedWork {
   const txByIndex = new Map<number, SerializedImportedTx>();
   for (const tx of payload.importedTransactions) txByIndex.set(tx.index, tx);
@@ -282,8 +300,6 @@ export function planExecution(
     const tx = txByIndex.get(row.index);
     if (!tx) continue;
 
-    // PAR PRIJE SVEGA: druga strana već stoji u knjigama, pa novi redak ne
-    // smije nastati. Korisnik ga kvačicom „ovo je drugi prijenos" odbija.
     const cls = row.classification;
     const statementWalletId =
       typeof tx.paymentSource === 'string' && tx.paymentSource.startsWith('custom:')
@@ -299,49 +315,46 @@ export function planExecution(
       return payer === statementWalletId ? 'out' : 'in';
     };
 
-    // Korisnikov odabir kandidata kod dvosmislenog uparivanja ima prednost.
-    const choice = decisions.pairChoice?.[row.index];
-    if (cls.kind === 'transfer' && typeof choice === 'string' && choice.length > 0 && choice !== 'none') {
-      const picked = (cls.pairCandidates ?? []).find((c) => c.id === choice);
-      if (picked) {
+    const decision = planLedgerRow(toLedgerRow(row, tx, payload, decisions, userId));
+
+    if (decision.outcome === 'pair') {
+      if (decision.reason === 'pair_user_choice') {
+        const picked = (cls.kind === 'transfer' ? cls.pairCandidates ?? [] : []).find(
+          (c) => c.id === decision.candidateId,
+        );
+        if (picked) {
+          pairs.push({
+            rowIndex: row.index,
+            tx,
+            existingId: picked.id,
+            payerWalletId: picked.payerWalletId ?? null,
+            correctedPayerFrom: null,
+            signal: null,
+            convert: picked.convert === true,
+            counterpartSourceId: counterpartOf(picked.payerWalletId, picked.receiverWalletId),
+            direction: directionOfPair(picked.payerWalletId),
+          });
+          continue;
+        }
+      }
+      if (cls.kind === 'transfer' && decision.candidateId) {
         pairs.push({
           rowIndex: row.index,
           tx,
-          existingId: picked.id,
-          payerWalletId: picked.payerWalletId ?? null,
-          correctedPayerFrom: null,
-          signal: null,
-          convert: picked.convert === true,
-          counterpartSourceId: counterpartOf(picked.payerWalletId, picked.receiverWalletId),
-          direction: directionOfPair(picked.payerWalletId),
+          existingId: decision.candidateId,
+          payerWalletId: cls.pairedPayerWalletId ?? null,
+          correctedPayerFrom: cls.pairedCorrectedPayerFrom ?? null,
+          signal: cls.counterpartSignal ?? null,
+          convert: cls.pairedConvert === true,
+          counterpartSourceId: counterpartOf(cls.pairedPayerWalletId, cls.pairedReceiverWalletId),
+          direction: directionOfPair(cls.pairedPayerWalletId),
         });
-        continue;
       }
-    }
-
-    if (
-      cls.kind === 'transfer' &&
-      typeof cls.pairedExistingId === 'string' &&
-      cls.pairedExistingId.length > 0 &&
-      decisions.unpair?.[row.index] !== true
-    ) {
-      pairs.push({
-        rowIndex: row.index,
-        tx,
-        existingId: cls.pairedExistingId,
-        payerWalletId: cls.pairedPayerWalletId ?? null,
-        correctedPayerFrom: cls.pairedCorrectedPayerFrom ?? null,
-        signal: cls.counterpartSignal ?? null,
-        convert: cls.pairedConvert === true,
-        counterpartSourceId: counterpartOf(cls.pairedPayerWalletId, cls.pairedReceiverWalletId),
-        direction: directionOfPair(cls.pairedPayerWalletId),
-      });
       continue;
     }
 
-    // Transfer override wins.
-    const td = decisions.transfers[row.index];
-    if (td && td.enabled === true) {
+    if (decision.outcome === 'transfer') {
+      const td = decisions.transfers[row.index] as TransferDecision;
       // Porijeklo druge strane se ZAPISUJE — bez toga se kasnije ne zna je li
       // cilj pogođen pravilom, karticom, imenom ili ga je korisnik odabrao.
       const sameTarget = cls.kind === 'transfer' && td.targetIncomeSourceId === cls.targetIncomeSourceId;
@@ -355,79 +368,99 @@ export function planExecution(
       continue;
     }
 
-    if (row.classification.kind === 'auto_merge') {
-      const on = decisions.autoMerge[row.index] === true;
-      if (!on) {
-        // "Razdvoji" na automatski uparenom retku: umjesto spajanja, redak se
-        // uvozi kao novi. Bez te odluke redak se preskače (staro ponašanje).
-        if (decisions.newRows[row.index] === true) { inserts.push({ rowIndex: row.index, tx }); continue; }
-        skippedByUser += 1;
-        continue;
-      }
-      const manualId = row.classification.manualId;
+    if (decision.outcome === 'merge') {
+      const manualId = decision.candidateId as string;
       const manual = payload.manualCandidates[manualId];
-      const writeMerchant = !manual?.merchantName;
-      merges.push({ rowIndex: row.index, manualId, tx, writeMerchant });
+      merges.push({ rowIndex: row.index, manualId, tx, writeMerchant: !manual?.merchantName });
       continue;
     }
 
-    if (row.classification.kind === 'question') {
-      const ans = decisions.questions[row.index];
-      if (!ans) { skippedByUser += 1; continue; }
-      if (ans.choice === 'merge') {
-        const manual = payload.manualCandidates[ans.manualId];
-        const writeMerchant = !manual?.merchantName;
-        merges.push({ rowIndex: row.index, manualId: ans.manualId, tx, writeMerchant });
-      } else {
-        inserts.push({ rowIndex: row.index, tx });
-      }
+    if (decision.outcome === 'restore') {
+      restores.push({ rowIndex: row.index, tx });
       continue;
     }
 
-    if (row.classification.kind === 'new') {
-      if (row.classification.existsByFingerprint) { skippedFingerprint += 1; continue; }
-      // TREĆE STANJE: otisak zauzet ranije obrisanim retkom. Bez korisnikove
-      // radnje redak se PRESKAČE (ispunjen ishod); s radnjom se stari redak
-      // VRAĆA u knjige — nikad se ne stvara drugi zapis s istim otiskom.
-      if (row.classification.deletedByFingerprint === true) {
-        if (decisions.restoreDeleted?.[row.index] === true) restores.push({ rowIndex: row.index, tx });
-        else skippedPreviouslyDeleted += 1;
-        continue;
-      }
-      // PONUDA SPAJANJA (kartično kašnjenje): korisnikov dodir upisan je kao
-      // odgovor 'merge' na tom retku. Spojeni par = JEDAN ishod (merge), pa
-      // idempotentna postkondicija ostaje netaknuta.
-      const offer = decisions.questions[row.index];
-      if (offer && offer.choice === 'merge') {
-        const manual = payload.manualCandidates[offer.manualId];
-        merges.push({ rowIndex: row.index, manualId: offer.manualId, tx, writeMerchant: !manual?.merchantName });
-        continue;
-      }
-      const on = decisions.newRows[row.index] === true;
-      if (!on) { skippedByUser += 1; continue; }
+    if (decision.outcome === 'new') {
       inserts.push({ rowIndex: row.index, tx });
       continue;
     }
 
-    // "Poništi pravilo" vraća redak u običan prihod/rashod po izvornom
-    // predznaku; nije pošteno tiho ga izostaviti iz uvoza.
-    if (row.classification.kind === 'transfer' && td?.enabled === false) {
-      inserts.push({ rowIndex: row.index, tx });
-      continue;
-    }
-
-    // Neodgovoreni transfer ostaje blokiran korisničkom odlukom.
+    if (decision.reason === 'fingerprint_live') { skippedFingerprint += 1; continue; }
+    if (decision.reason === 'previously_deleted') { skippedPreviouslyDeleted += 1; continue; }
     skippedByUser += 1;
   }
 
   return { merges, inserts, transfers, pairs, restores, skippedByUser, skippedFingerprint, skippedPreviouslyDeleted };
 }
 
+/** Prijevod retka pregleda uvoza u rječnik zajedničke jezgre. */
+function toLedgerRow(
+  row: ImportReviewPayload['rows'][number],
+  tx: SerializedImportedTx,
+  payload: ImportReviewPayload,
+  decisions: ImportReviewDecisions,
+  userId: string,
+): LedgerRowInput {
+  const cls = row.classification;
+  const candidates: LedgerCandidate[] = [];
+  for (const id of Object.keys(payload.manualCandidates)) {
+    candidates.push({ id, userId, kind: 'manual' });
+  }
+  if (cls.kind === 'transfer') {
+    for (const c of cls.pairCandidates ?? []) candidates.push({ id: c.id, userId, kind: 'pair' });
+    if (typeof cls.pairedExistingId === 'string' && cls.pairedExistingId.length > 0) {
+      candidates.push({ id: cls.pairedExistingId, userId, kind: 'pair_default' });
+    }
+  }
+
+  const classification: LedgerRowInput['classification'] =
+    cls.kind === 'auto_merge'
+      ? { kind: 'auto_merge', manualId: cls.manualId }
+      : cls.kind === 'question'
+        ? { kind: 'question' }
+        : cls.kind === 'new'
+          ? {
+              kind: 'new',
+              existsByFingerprint: cls.existsByFingerprint === true,
+              deletedByFingerprint: cls.deletedByFingerprint === true,
+            }
+          : { kind: 'transfer', pairedExistingId: cls.pairedExistingId ?? null };
+
+  const answer = decisions.questions[row.index];
+  const td = decisions.transfers[row.index];
+
+  return {
+    rowIndex: row.index,
+    userId,
+    amount: tx.amount,
+    dateIso: tx.dateIso,
+    direction: tx.statement_direction ?? null,
+    walletId:
+      typeof tx.paymentSource === 'string' && tx.paymentSource.startsWith('custom:')
+        ? tx.paymentSource.slice('custom:'.length).toLowerCase()
+        : null,
+    fingerprint: tx.fingerprint,
+    classification,
+    candidates,
+    userChoice: {
+      pairChoiceId: decisions.pairChoice?.[row.index] ?? null,
+      unpair: decisions.unpair?.[row.index] === true,
+      transferEnabled: td ? td.enabled === true : undefined,
+      autoMergeOn: decisions.autoMerge[row.index] === true,
+      questionChoice: answer?.choice,
+      questionManualId: answer && answer.choice === 'merge' ? answer.manualId : null,
+      newRowOn: decisions.newRows[row.index] === true,
+      restoreDeleted: decisions.restoreDeleted?.[row.index] === true,
+    },
+  };
+}
+
+
 export async function executeDecisions(input: ExecutorInput): Promise<ExecutorResult> {
   const now = input.now ?? Date.now;
   const start = now();
   const batchId = input.batchId ?? input.payload.batchId;
-  const plan = planExecution(input.payload, input.decisions);
+  const plan = planExecution(input.payload, input.decisions, input.userId);
   const errors: string[] = [];
 
   const plannedAll = [...plan.merges, ...plan.inserts, ...plan.transfers, ...plan.pairs, ...plan.restores];

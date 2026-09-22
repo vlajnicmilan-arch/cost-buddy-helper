@@ -8,6 +8,14 @@
  * Ovdje nema mreže ni baze — samo odluka, da je testovi mogu voziti izravno.
  * Smjer novca ide isključivo kroz `resolveBankTxDirection`, a platilac se
  * određuje brojem kartice (`cardMatch`), ne nazivom trgovca.
+ *
+ * PROGRAM TEMELJ, KORAK 3: ova datoteka je NEPROMIJENJENA u nalogu 1 (samo je
+ * uvoz prespojen na zajedničku jezgru `_shared/moneyLedgerPlan.ts`). U
+ * SLJEDEĆEM nalogu u jezgru sele: izbor ishoda (`upsert`/`skip` → `new`,
+ * `merge`, `pair`, `transfer`, `needs_review`) i odabir cilja spajanja
+ * (`pickMergeTarget`), zajedno s obaveznom provjerom vlasnika kandidata.
+ * Ovdje ostaje samo ono što je stvarno bankovno: čitanje EB retka, stabilan
+ * id, rezervacije i izvršenje upisa.
  */
 import {
   buildTransferPair,
