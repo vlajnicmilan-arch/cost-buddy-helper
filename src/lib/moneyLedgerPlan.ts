@@ -145,6 +145,15 @@ const ownedById = (row: LedgerRowInput): Map<string, LedgerCandidate> => {
   return map;
 };
 
+/** Id koji pripada DRUGOM vlasniku — za ovaj redak ne postoji. */
+const foreignIds = (row: LedgerRowInput): Set<string> => {
+  const set = new Set<string>();
+  for (const candidate of row.candidates) {
+    if (candidate.userId !== row.userId) set.add(candidate.id);
+  }
+  return set;
+};
+
 const decide = (
   row: LedgerRowInput,
   outcome: LedgerOutcome,
@@ -162,6 +171,7 @@ export function planLedgerRow(row: LedgerRowInput): LedgerDecision {
   }
 
   const owned = ownedById(row);
+  const foreign = foreignIds(row);
   const cls = row.classification;
   const choice = row.userChoice;
 
@@ -178,7 +188,7 @@ export function planLedgerRow(row: LedgerRowInput): LedgerDecision {
       typeof cls.pairedExistingId === 'string' &&
       cls.pairedExistingId.length > 0 &&
       choice.unpair !== true &&
-      owned.has(cls.pairedExistingId)
+      !foreign.has(cls.pairedExistingId)
     ) {
       return decide(row, 'pair', 'pair_auto', cls.pairedExistingId);
     }
@@ -191,7 +201,7 @@ export function planLedgerRow(row: LedgerRowInput): LedgerDecision {
 
   // 3) AUTOMATSKO SPAJANJE s ručnim unosom.
   if (cls.kind === 'auto_merge') {
-    if (choice.autoMergeOn === true && owned.has(cls.manualId)) {
+    if (choice.autoMergeOn === true && !foreign.has(cls.manualId)) {
       return decide(row, 'merge', 'auto_merge_confirmed', cls.manualId);
     }
     if (choice.autoMergeOn !== true && choice.newRowOn === true) {
@@ -204,7 +214,7 @@ export function planLedgerRow(row: LedgerRowInput): LedgerDecision {
   if (cls.kind === 'question') {
     if (choice.questionChoice === 'merge') {
       const manualId = choice.questionManualId ?? null;
-      if (manualId && owned.has(manualId)) {
+      if (manualId && !foreign.has(manualId)) {
         return decide(row, 'merge', 'question_merge', manualId);
       }
       return decide(row, 'needs_review', 'skipped_by_user');
@@ -213,6 +223,7 @@ export function planLedgerRow(row: LedgerRowInput): LedgerDecision {
       return decide(row, 'new', 'question_new');
     }
     return decide(row, 'needs_review', 'skipped_by_user');
+
   }
 
   // 5) NOVI REDAK — otisak odlučuje prije korisnika.
