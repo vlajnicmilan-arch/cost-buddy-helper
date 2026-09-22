@@ -38,6 +38,12 @@ export interface ParsedPDFTransaction {
   raw_line?: string | null;
   /** Porijeklo citata: tekstualni sloj, HTML tablica ili AI prepis. */
   raw_line_source?: 'text' | 'html' | 'ai' | null;
+  /**
+   * POZICIJA doslovnog retka u izvornom tekstu izvoda. Stabilan redoslijed za
+   * `ord:N` u ključu uvoza; null kad citat nije deterministički pronađen.
+   */
+  source_order?: number | null;
+
   /** Odakle datum: iz teksta izvoda (deterministički) ili iz AI prepisa. */
   date_source?: 'statement_text' | 'ai' | null;
   /** Brana ga je zaustavila — ne ulazi u knjige bez korisnikove ruke. */
