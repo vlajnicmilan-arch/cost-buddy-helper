@@ -265,13 +265,17 @@ Deno.serve(async (req) => {
     const call = async (label: string, payload: XmlNode, soapAction: string) => {
       const t0 = Date.now();
       const envelope = await buildSignedEnvelope(payload, V1, key, cryptoKey);
-      const res = await fetch(ENDPOINT, {
-        method: "POST",
-        client,
-        headers: { "Content-Type": "text/xml; charset=utf-8", SOAPAction: `"${soapAction ?? ""}"` },
-        body: envelope,
-      } as RequestInit);
-      const text = await res.text();
+      const { res, text } = await fetchWithDeadline(
+        ENDPOINT,
+        {
+          method: "POST",
+          client,
+          headers: { "Content-Type": "text/xml; charset=utf-8", SOAPAction: `"${soapAction ?? ""}"` },
+          body: envelope,
+        } as RequestInit,
+        { connect: "soap", read: "soap" },
+      );
+
       httpStatuses.push(res.status);
       const fault = /<(?:[\w.-]+:)?Fault\b/.test(text);
       (steps as any)[label] = {
