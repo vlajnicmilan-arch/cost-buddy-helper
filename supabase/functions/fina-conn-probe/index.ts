@@ -80,7 +80,7 @@ async function describeKey(key: KeyMaterial): Promise<Step> {
     issuer: key.issuer,
     serial: key.serial,
     sha1: await sha1Fingerprint(info.der),
-    sha256: hexFingerprint(await sha256Fingerprint(info.der)),
+    sha256: (await sha256Fingerprint(info.der)).toLowerCase(),
     chain_cns: chain.cns,
     p12_cert_count: key.certCount,
   };
