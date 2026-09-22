@@ -208,7 +208,7 @@ END $$;
 --     sidra i saldo padne za iznos računa (živi slučaj Aircash 4,98).
 -- ===========================================================================
 DO $$
-DECLARE v_m uuid; v_b uuid; v_before numeric; v_after numeric; v_row record;
+DECLARE v_m uuid; v_b uuid; v_before numeric; v_after numeric; v_row record; v_bank_event_at timestamptz;
 BEGIN
   PERFORM pg_temp.reset_world();
   INSERT INTO public.app_settings (key, value)
@@ -232,6 +232,8 @@ BEGIN
   v_b := pg_temp.mk_bank  ('00000000-0000-0000-0000-000000000001','custom:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','expense',4.98,'2026-09-17 00:00+00','imp2:spar-anchored');
   UPDATE public.expenses SET time_confidence = 'C3' WHERE id = v_b;
 
+  SELECT event_at INTO v_bank_event_at FROM public.expenses WHERE id = v_b;
+
   SELECT balance INTO v_before FROM public.custom_payment_sources WHERE id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
   PERFORM pg_temp.assert_eq('3b.0 sidro na kraju dana: nijedan redak tog dana ne curi', 381.27, v_before);
 
@@ -240,7 +242,7 @@ BEGIN
   SELECT * INTO v_row FROM public.expenses WHERE id = v_m;
   PERFORM pg_temp.assert_text('3b.1 prezivjeli redak nasljeduje konfidenciju bankovnog retka', 'C3', v_row.time_confidence);
   PERFORM pg_temp.assert_text('3b.2 prezivjeli redak nasljeduje event_at bankovnog retka',
-    to_char(timestamptz '2026-09-17 00:00+00' AT TIME ZONE 'UTC','YYYY-MM-DD HH24:MI'),
+    to_char(v_bank_event_at AT TIME ZONE 'UTC','YYYY-MM-DD HH24:MI'),
     to_char(v_row.event_at AT TIME ZONE 'UTC','YYYY-MM-DD HH24:MI'));
 
   SELECT balance INTO v_after FROM public.custom_payment_sources WHERE id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
