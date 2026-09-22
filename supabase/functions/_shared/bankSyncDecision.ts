@@ -16,6 +16,7 @@
  * (`pickMergeTarget`), zajedno s obaveznom provjerom vlasnika kandidata.
  * Ovdje ostaje samo ono što je stvarno bankovno: čitanje EB retka, stabilan
  * id, rezervacije i izvršenje upisa.
+ */
 import {
   buildTransferPair,
   isTransferDescription,
