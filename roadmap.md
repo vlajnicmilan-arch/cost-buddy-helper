@@ -10,3 +10,4 @@
 - [x] Bankovna sinkronizacija: broj kartice, sirovi zapis, rezervacije (točke 0/1/2/4)
 - [ ] Bankovna sinkronizacija točka 3: prijenosi kroz buildTransferPair (opcija B) — čeka prvi sirovi EB zapis
 - [x] Popravak praznog popisa: dijeljena mapa novčanika (sourceScopeCache) nikad prazna
+- [x] Temelj korak 1: otisak retka na ključ v2 (imp2) uz dvostruku pretragu i rekey
