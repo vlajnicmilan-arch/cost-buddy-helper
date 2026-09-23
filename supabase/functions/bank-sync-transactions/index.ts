@@ -28,7 +28,6 @@ import {
 import type { LedgerCandidate } from "../_shared/moneyLedgerPlan.ts";
 import { TRANSFER_KEYWORDS, buildTransferPair } from "../_shared/moneyDirection.ts";
 import {
-  SYNC_MERGE_CANDIDATE_COLUMNS,
   cardWalletMapFrom,
   chooseSyncMerge,
   countedCandidates,
@@ -413,7 +412,9 @@ Deno.serve(async (req) => {
       const mergeTo = new Date(new Date(txDate).getTime() + 4 * 86400000).toISOString();
       let mergeQuery = admin
         .from("expenses")
-        .select(SYNC_MERGE_CANDIDATE_COLUMNS)
+        .select(
+          "id, user_id, amount, date, description, merchant_name, payment_source, payment_source_card_id, expense_nature, is_advance, linked_advance_ids, deleted_at, bank_transaction_id, bank_match_status, type, status",
+        )
         .eq("user_id", userId)
         .is("deleted_at", null)
         .gte("amount", absAmount - 0.01)
