@@ -3164,7 +3164,25 @@
       "noMatch": "Keine Übereinstimmung."
     },
     "mergeWithExisting": "Mit vorhandener zusammenführen",
-    "mergeHint": "Deine Inhalte (Beschreibung, Kategorie, Belegfoto) bleiben erhalten, zusammen mit der Bankidentität der Zeile."
+    "mergeHint": "Deine Inhalte (Beschreibung, Kategorie, Belegfoto) bleiben erhalten, zusammen mit der Bankidentität der Zeile.",
+    "offer": {
+      "title": "Die Bank hat diese Ausgabe möglicherweise schon",
+      "intro": "Wähle den Bankeintrag, der dieselbe Ausgabe ist, oder speichere deinen Eintrag als neu.",
+      "bookedOn": "Gebucht",
+      "wallet": "Konto",
+      "card": "Karte",
+      "bankText": "So steht es bei der Bank",
+      "rawLine": "Originalzeile",
+      "showMore": "Ganze Zeile anzeigen",
+      "showLess": "Einklappen",
+      "originSync": "Bank-Synchronisierung",
+      "originStatement": "Kontoauszug",
+      "arrived": "eingegangen {{date}}",
+      "similar": "Ähnlicher Händler",
+      "mergeThis": "Mit diesem zusammenführen",
+      "saveAsNew": "Als neu speichern",
+      "yourEntry": "Dein Eintrag"
+    }
   },
   "tutorial": {
     "start": "Anleitung starten",

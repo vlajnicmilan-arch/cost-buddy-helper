@@ -28,6 +28,11 @@ export interface GetInitialBankMatchStatusInput {
    * u korisnikovom trenutnom kontekstu (osobno ili konkretna tvrtka).
    */
   bankLinkedSourceIds: ReadonlySet<string>;
+  /**
+   * Banka je isti trošak već donijela (ponuda spajanja odbijena sa Spremi kao
+   * novi). Ručni/OCR redak tada dobiva `manual`, nikad `pending_bank`.
+   */
+  bankAlreadyPresent?: boolean;
 }
 
 /** Provjerava je li payment_source u formatu `custom:UUID` koji bi mogao biti vezan na banku. */
@@ -57,6 +62,7 @@ export function getInitialBankMatchStatus(
 
   // manual i ocr koriste istu logiku: status ovisi o payment_source.
   // (Račun je samo enrichment — payment_source diktira čeka li bank potvrdu.)
+  if (input.bankAlreadyPresent) return 'manual';
   const customId = extractCustomSourceId(paymentSource);
   if (customId && bankLinkedSourceIds.has(customId)) {
     return 'pending_bank';

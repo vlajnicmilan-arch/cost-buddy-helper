@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { findMergeOfferCandidate } from '../mergeOfferCandidate';
-import type { MergeCandidateExpense } from '../manualBankMergePair';
+import { findMergeOffers, type MergeOfferNewTx, type MergeOfferRow } from '../mergeOfferCandidate';
+
+/** Nalog 4: stari API (jedan ili null) zamijenjen popisom; ovaj omotač drži stara očekivanja. */
+const findMergeOfferCandidate = (tx: Omit<MergeOfferNewTx, 'userId'>, rows: MergeOfferRow[]) => {
+  const offers = findMergeOffers({ ...tx, userId: 'u1' }, rows);
+  return offers.length === 1 ? offers[0].row : null;
+};
 
 const SRC = 'custom:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 const OTHER = 'custom:bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
@@ -14,7 +19,7 @@ const pevexScan = {
   currency: null,
 };
 
-const bankRow: MergeCandidateExpense = {
+const bankRow: MergeOfferRow = {
   id: 'bank-1',
   user_id: 'u1',
   type: 'expense',
@@ -48,8 +53,9 @@ describe('findMergeOfferCandidate', () => {
     ).toBe('bank-1');
   });
 
-  it('stays silent when two candidates match (ambiguous)', () => {
-    expect(findMergeOfferCandidate(pevexScan, [bankRow, { ...bankRow, id: 'bank-2' }])).toBeNull();
+  it('NAMJERNA PROMJENA (nalog 4): dva kandidata → ponuda s oba (prije: šutnja)', () => {
+    const res = findMergeOffers({ ...pevexScan, userId: 'u1' }, [bankRow, { ...bankRow, id: 'bank-2' }]);
+    expect(res.map(o => o.row.id)).toEqual(['bank-1', 'bank-2']);
   });
 
   it('stays silent for transfers', () => {
