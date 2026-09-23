@@ -53,56 +53,8 @@ const DAY_MS = 86400000;
 // String helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Geo / country tokens commonly found in HR POS transaction descriptions.
- * Stripping them prevents false-positives where two unrelated merchants share
- * a city name (e.g. "LUKOIL POLJUD/SPLIT/HRV" vs "LESNINA H PC SPLIT").
- */
-const GEO_STOPWORDS = new Set([
-  'split','zagreb','rijeka','osijek','zadar','pula','sibenik','dubrovnik',
-  'varazdin','karlovac','vinkovci','sisak','slavonski','brod','bjelovar',
-  'kastel','supetar','trogir','makarska','samobor','koprivnica','krapina',
-  'cakovec','gospic','velika','gorica','hrv','hrvatska','hr','eur','eu',
-]);
-
-export function normalizeMerchant(name: string): string {
-  if (!name) return '';
-  const cleaned = name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // strip diacritics
-    .replace(/\b(d\.?o\.?o\.?|d\.?d\.?|j\.?d\.?o\.?o\.?|obrt|trgovina|trgovački|poslovanje|hotel)\b/gi, '')
-    .replace(/\b\d{2,}\b/g, ' ') // drop store numbers
-    .replace(/[.,&\-_'"()/]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  if (!cleaned) return '';
-  const filtered = cleaned
-    .split(/\s+/)
-    .filter(w => !GEO_STOPWORDS.has(w))
-    .join(' ')
-    .trim();
-  return filtered;
-}
-
-export function areMerchantsSimilar(a?: string | null, b?: string | null): boolean {
-  if (!a || !b) return false;
-  const na = normalizeMerchant(a);
-  const nb = normalizeMerchant(b);
-  if (!na || !nb) return false;
-  if (na === nb) return true;
-  if (na.length < 2 || nb.length < 2) return false;
-  if (na.includes(nb) || nb.includes(na)) return true;
-  const wa = na.split(/\s+/).filter(w => w.length >= 3);
-  const wb = nb.split(/\s+/).filter(w => w.length >= 3);
-  if (wa.length === 0 || wb.length === 0) return false;
-  const common = wa.filter(w => wb.some(w2 => w2.includes(w) || w.includes(w2)));
-  const minLen = Math.min(wa.length, wb.length);
-  // Require either ≥2 common meaningful words OR ≥60% overlap on a multi-word name.
-  // Single shared word on multi-word merchants is too weak (typical false-positive).
-  if (common.length >= 2) return true;
-  return minLen >= 2 && common.length / minLen >= 0.6;
-}
+import { normalizeMerchant, areMerchantsSimilar } from './sameExpenseRule';
+export { normalizeMerchant, areMerchantsSimilar };
 
 /**
  * Cross-field merchant similarity: covers the common case where the bank
