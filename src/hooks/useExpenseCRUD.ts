@@ -1100,12 +1100,14 @@ export const useExpenseCRUD = ({
           if (dates.length > 0 && sources.length > 0) {
             const minDate = new Date(Math.min(...dates));
             const maxDate = new Date(Math.max(...dates));
-            const minIso = new Date(minDate.getTime() - 24 * 60 * 60 * 1000).toISOString();
+            // Raspon pokriva prozor pravila „isti trošak" (ručni do 3 dana
+            // prije i 1 dan poslije retka izvoda) uz dan zaliha za vremensku zonu.
+            const minIso = new Date(minDate.getTime() - 4 * 24 * 60 * 60 * 1000).toISOString();
             const maxIso = new Date(maxDate.getTime() + 24 * 60 * 60 * 1000).toISOString();
 
             const { data: manualRows, error: manualErr } = await supabase
               .from('expenses')
-              .select('id, payment_source, type, amount, date, bank_match_status, bank_transaction_id')
+              .select('id, user_id, payment_source, payment_source_card_id, type, amount, date, merchant_name, description, expense_nature, is_advance, linked_advance_ids, bank_match_status, bank_transaction_id')
               .eq('user_id', user.id)
               .in('payment_source', sources)
               .in('type', ['income', 'expense', 'transfer'])
@@ -1118,24 +1120,38 @@ export const useExpenseCRUD = ({
             if (manualErr) {
               console.warn('[importFromCSV] manual candidate query failed, skipping auto-merge:', manualErr.message);
             } else if (manualRows && manualRows.length > 0) {
-              const { matchManualToImported } = await import('@/lib/manualMatchForImport');
-              const matchResult = matchManualToImported({
-                imported: fingerprinted.map((r, idx) => ({
+              // Pravilo „isti trošak" (auto, cijela datoteka = jedan batch).
+              // Spaja se SAMO na `match`; sve ostalo ide kao novi redak.
+              // CSV retci nemaju karticu, pa kartica ne može blokirati (mapa prazna).
+              const { matchImportRowsBySameExpense } = await import('@/lib/importReview/sameExpenseImport');
+              const matchResult = matchImportRowsBySameExpense(
+                { userId: user.id, cardWallets: {} },
+                fingerprinted.map((r, idx) => ({
                   index: idx,
                   paymentSource: r.tx.payment_source || 'other',
                   type: r.tx.type,
                   amount: r.tx.amount,
                   date: r.tx.date,
+                  merchantName: r.tx.merchant_name ?? null,
+                  description: r.tx.description ?? null,
                 })),
-                manualCandidates: manualRows.map(m => ({
+                manualRows.map(m => ({
                   id: m.id,
+                  userId: m.user_id,
                   paymentSource: m.payment_source,
                   type: m.type,
                   amount: Number(m.amount),
                   date: m.date,
+                  merchantName: m.merchant_name,
+                  description: m.description,
+                  cardId: m.payment_source_card_id,
+                  expenseNature: m.expense_nature,
+                  isAdvance: m.is_advance,
+                  linkedAdvanceIds: m.linked_advance_ids,
+                  bankTransactionId: m.bank_transaction_id,
+                  bankMatchStatus: m.bank_match_status,
                 })),
-                maxDayDiff: 1,
-              });
+              );
 
               const updates = await Promise.allSettled(matchResult.matches.map(async (m) => {
                 const row = fingerprinted[m.importedIndex];

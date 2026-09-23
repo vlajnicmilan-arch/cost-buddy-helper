@@ -172,3 +172,15 @@ export function resolveCardIdByLast4(
   const hits = cards.filter(c => String(c.last_four_digits ?? '') === String(last4));
   return hits.length === 1 ? hits[0].id : null;
 }
+
+/** Samo sigurni parovi (`match`) — za putove bez pregleda pitanja (CSV). */
+export function matchImportRowsBySameExpense(
+  ctx: ImportRuleContext,
+  imported: readonly ImportRuleBankRow[],
+  manuals: readonly ImportRuleManualRow[],
+): { matches: Array<{ importedIndex: number; manualId: string }> } {
+  const matches = decideImportSameExpense(ctx, imported, manuals)
+    .filter(d => d.outcome === 'match' && d.manualId)
+    .map(d => ({ importedIndex: d.importedIndex, manualId: d.manualId as string }));
+  return { matches };
+}
