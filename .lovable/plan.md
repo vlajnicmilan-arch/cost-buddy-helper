@@ -1,77 +1,85 @@
-# Mišljenje o programu „Temelj" (sloj novca)
+# Jedno pravilo „je li ovo isti trošak" (ručni/slikani ↔ bankovni)
 
-Samo procjena. Ništa nije mijenjano.
+Samo plan. Ništa se ne mijenja dok ne kažeš „gradi".
 
-## 1. A1 („sync kroz ImportReview") vs. B-a (zajednička jezgra + red na pregled)
+## Pravilo (jedno, za sva tri puta)
 
-B-a je realniji put u ovom kodu. A1 bi značio prepisivanje `supabase/functions/bank-sync-transactions/index.ts` (908 redaka) u klijentski tok i gubitak automatike (cron/resume sync), a ImportReview je danas klijentski: `src/lib/importReview/executor.ts` (1260 redaka) radi kroz korisnikov Supabase klijent, RPC-ove `lookup_import_fingerprints` / `restore_deleted_import_row` i UI odluke.
+Kandidat prolazi samo ako vrijedi SVE:
+- isti vlasnik (`user_id` iz baze, nikad prepisan s retka koji se obrađuje);
+- isti novčanik (`resolvePaymentSourceKey`), ista vrsta (expense/income), nije prijenos, korekcija ni avans;
+- iznos isti do centa;
+- datum: bankovni redak od −1 do +3 dana u odnosu na ručni (jednosmjerno, s tolerancijom od 1 dan unatrag);
+- trgovac: `merchant_name` ručnog retka ↔ protustrana banke (rezerva: opis banke) kroz `areMerchantsSimilar`; opis ručnog retka koristi se samo ako nema `merchant_name`; ako nijedna strana nema ime sa značajnom riječi → „nesigurno";
+- kartica: različite kartice ne blokiraju ako obje pripadaju istom novčaniku (vidi c).
 
-Što oba ulaza VEĆ dijele (preko `_shared` zrcala s testovima zrcaljenja):
-- smjer novca: `moneyDirection.ts` + `buildTransferPair` (jedini slagač para),
-- kartice: `cardMatch.ts`,
-- protustrana: `transferCounterpart.ts`,
-- uparivanje dviju strana: `transferPairMatch.ts` (sync ga zove oko red. 470 u `index.ts`; import kroz `importReview` PAIR plan).
+Ishod: `match` (točno jedan kandidat) | `ambiguous` (≥2, ili jedan kandidat traži više redaka) | `uncertain` (nema imena / ime se ne slaže) | `none`. Automatsko spajanje samo na `match`.
 
-Što NE dijele:
-- **identitet retka**: sync koristi `pickStableId(tx)` iz `_shared/bankSyncDecision.ts` (bankin `entry_reference`), uvoz koristi `computeImportFingerprint` iz `src/lib/importFingerprint.ts`. Dvije različite definicije istog retka → isti novac s dva izvora se ne prepoznaje kroz `uniq_expenses_user_bank_tx`, spašava ga samo `transferPairMatch`.
-- **spajanje s ručnim retkom**: sync ima `pickMergeTarget` u `bankSyncDecision.ts`, uvoz ima MERGE granu u `executor.ts` (`.is('bank_transaction_id', null)` race-guard) — različita pravila i različit ishod za merchant/kategoriju.
-- **upis**: sync `admin.from("expenses").insert(...)` servisnim ključem; uvoz bulk `upsert` s `onConflict (user_id, bank_transaction_id)` + obnova soft-obrisanog retka. Sync nema ni obnovu obrisanog ni „skippedMerged" brojanje.
-- **pregled**: sync nema red „na pregled" — dvosmisleno se samo zapiše u `app_diagnostics_logs` (`transfer_pair_ambiguous`, `transfer_candidate_ambiguous`) i pogodi.
+## (a) Datoteke i funkcije
 
-Preporuka: iz `executor.ts` izvući odluku (ne upis) u `_shared` modul `moneyLedgerPlan` — ulaz: normalizirani redci, postojeći kandidati, kartice, novčanici; izlaz: plan (`new` / `merge` / `pair` / `needs_review`). Sync i uvoz zovu istu funkciju i razlikuju se samo u izvršitelju i u tome tko potvrđuje `needs_review`. To je 3–4 naloga, a ne „iznova".
+Novi modul (zrcalo po uzoru na `moneyLedgerPlan`):
+- `supabase/functions/_shared/sameExpenseRule.ts` + `src/lib/sameExpenseRule.ts`, blok SHARED CORE; `decideSameExpense(target, candidates, cardWallets)` i `isSameExpense(pair)`.
+- `areMerchantsSimilar`/`normalizeMerchant` i `stripLeadingBankVerbs` trenutno žive samo u `src/lib`; njihova čista jezgra seli se u SHARED CORE (stare datoteke je dalje izvoze — bez promjene ponašanja, postojeći testovi `duplicateDetection` ostaju zeleni).
 
-## 2. Otisak (B-b)
+Sinkronizacija:
+- `_shared/bankSyncDecision.ts` → `pickMergeTarget` postaje tanki omotač oko pravila (uklanja se `normalizeCounterparty(c.description)` i blokada kartice).
+- `bank-sync-transactions/index.ts` (upit kandidata ~l.650): dodati `merchant_name`, `user_id`, `payment_source`, `type`; kod `ambiguous`/`uncertain` ne spaja, novi redak ide kao i danas, a razlog se dodaje u postojeći zbirni zapis u `app_diagnostics_logs` (bez iznosa/opisa, samo id-evi i razlog).
+- `bankSyncShadow` ostaje; dobiva iste kandidate, jezgra `moneyLedgerPlan` se ne mijenja.
 
-V2 ključ VEĆ postoji i nije uključen: `computeImportKey` / `importKeyCanonicalString` / `computeImportKeys` u `src/lib/importFingerprint.ts` (prefiks `imp2`, bez AI-teksta, bez `type`, s `bal:` ili `ord:N`). Produkcijski put i dalje zove `computeImportFingerprint` (`GlobalPDFImportHost.tsx`, `csvParsers.ts`, `importReview/types.ts`, `statementFingerprint.ts`).
+Uvoz izvoda:
+- `src/lib/importClassifier.ts`: faza spajanja s ručnim retkom zove pravilo (prozor −1/+3 umjesto `maxDayDiff=1` samo za taj par ručni↔banka). `match` → postojeći `auto_merge` (origin `merchant`); `ambiguous`/`uncertain` → postojeća pitanja na pregledu.
+- `src/lib/importReview/lateCardMatch.ts`: ostaje za slučaj „iznos + datum bez imena" kao ponuda; ne dira se logika, samo se isključuju retci koje je pravilo već spojilo.
+- `executor.ts`, grane pisanja i `merge_manual_with_bank` SQL: nepromijenjeni.
 
-Rizik promjene ključa:
-- `uniq_expenses_user_bank_tx (user_id, bank_transaction_id) WHERE NOT NULL` ostaje netaknut — mijenja se sadržaj, ne indeks. Nema DDL rizika.
-- Stvarni rizik je **jedan val duplikata pri prijelazu**: postojeći redci nose `imp:` ključeve, novi uvoz istog izvoda daje `imp2:` → sve prolazi kao novo.
-- Drugi rizik: `lookup_import_fingerprints` i `restore_deleted_import_row` traže točan string; soft-obrisani `imp:` redci prestaju biti pronalaženi → obrisani redak se vrati kao novi.
+Ručni unos / slika računa:
+- `src/lib/mergeOfferCandidate.ts` → koristi pravilo (dodaje trgovca i karticu; prozor −3/+1 gledano s ručne strane, zrcalno bankovnom).
+- `src/hooks/useMergeCandidate.ts` → upit dohvaća i `merchant_name`, protustranu, `payment_source_card_id`.
+- `src/hooks/useExpenseCRUD.ts`: bez promjene pisanja; `pending_bank` ostaje kad ponude nema.
 
-Siguran prijelaz bez novog vala:
-1. Prijelaznu fazu voditi **dvostrukim ključem**: prvo traži `imp2:`, ako nema — traži stari `imp:` istog retka i, kad se nađe, zapiši `imp2:` na njega (rekey, ne insert). To je ista logika koju `executor.ts` već ima za „postojeći redak bez `bank_transaction_id`".
-2. Backfill u SQL-u mora reproducirati `importKeyCanonicalString` znak po znak (komentar u kodu to izričito traži) — za retke bez salda `ord:N` se u SQL-u ne može pogoditi bez izvornog redoslijeda izvoda, pa te retke ne rekeyati nego ih ostaviti na `imp:` i tražiti oba ključa.
-3. `lookup_import_fingerprints` i `restore_deleted_import_row` prošireni na popis ključeva (v1+v2), inače se veza s obrisanima gubi.
-4. Tek nakon što je dvostruka pretraga živa mjesec dana — ugasiti pisanje `imp:`.
+## (b) Ponuda spajanja kod ručnog unosa
 
-## 3. Sidro vs. promet (B-c) — potvrđeno iz koda
+- Postojeći tok u `AddExpenseDialog` već zove `findMergeCandidate` prije spremanja i prikazuje dijalog duplikata. To se zadržava — nema novog ekrana.
+- Kada: nakon „Spremi" (ručno) ili nakon potvrde skeniranog računa, prije upisa. Personal skener je izvor istine; Business koristi isti tok.
+- Prikaz: samo kod `match` — dijalog s bankovnim retkom (datum, iznos, trgovac iz banke) i tri radnje: „Spoji s bankovnim", „Spremi kao novi", „Odustani". Kod `ambiguous` ponuda se ne prikazuje (šutnja, kao danas).
+- Ako korisnik odbije („Spremi kao novi"): upis kao danas, ali bez `pending_bank` (banka je taj trošak već donijela i neće ga ponovno slati), i taj par se pamti kao odbijen na novom retku samo u memoriji sesije — nema migracije. Nitko ga kasnije neće automatski spojiti.
+- Spajanje ide postojećim `merge_manual_with_bank` (nasljeđuje vrijeme banke, saldo se ne mijenja).
+- Tekstovi kroz postojeće i18n ključeve; nove oznake samo ako treba, hr/en/de.
 
-Žива definicija `recompute_custom_source_balance` (obje grane, `day_cut` i `hybrid`) zbraja SAMO retke strogo nakon sidra:
-`(e.date AT TIME ZONE 'UTC')::date > (v_anchor_date ...)::date`, uz `deleted_at IS NULL`, `expense_nature <> 'correction'`, `status = 'approved'`. Bez sidra funkcija je no-op (`RETURN NULL`, saldo drži delta-put).
+## (c) Kartice „istog novčanika"
 
-Dakle: duplikati **prije** sidra ne ulaze u prikazano stanje, ali izvještaji i kategorije (`useExpenseFetch` → izvještaji) čitaju `expenses` bez ikakvog sidrenog reza — ulaze u potpunosti. B-c je točan: točka 2 bez točke 1 daje točan saldo uz lažan promet.
+- Kartica pripada novčaniku preko `payment_source_cards.payment_source_id`.
+- Pravilo dobiva mapu `cardId → walletKey` (sinkronizacija: jedan upit po pokretanju za kartice vlasnika; klijent: iz postojećeg dohvaćanja kartica).
+- Kartice ne blokiraju ako: jedna od njih nedostaje, ILI su iste, ILI obje pokazuju na isti novčanik kao i sam redak. Blokiraju samo ako bilo koja pripada drugom novčaniku ili je nepoznata u mapi dok druga jest poznata → `uncertain`.
+- Token 7246 i fizička 2081 moraju biti vezane na isti novčanik u `payment_source_cards`; prije gradnje upitom provjeriti da je to stvarno stanje kod tog korisnika (nije još provjereno). Ako nisu, rezultat je `uncertain`, ne spajanje.
 
-## 4. Procjena po nalozima (ne danima)
+## (d) Brana — testovi
 
-| Korak | Nalozi | Rizik za salda |
-|---|---|---|
-| B-b otisak v2 + dvostruka pretraga + rekey | 2–3 | srednji (soft-delete/restore veza) |
-| Zajednička jezgra odluke + red „na pregled" | 3–4 | **najveći** — svaki novi/izmijenjeni redak okida `trg_expenses_recompute_source_balance` |
-| Sidro iz izvoda (završni saldo PDF/CSV) | 1–2 | visok po posljedici, nizak po opsegu |
-| Kategorije (stablo + rekategorizacija) | 2 | nula |
-| Obrada / mjesečni pogled | 2–3 | nula |
+Fixturei iz stvarnih parova (anonimizirani, bez id-eva korisnika) u `src/test/fixtures/sameExpense/`:
+- MORAJU se spojiti: Baustoff 60,96 (ručni 1.8. / banka 3.8., kartice 7246/2081 istog novčanika), Petrol 113,87 (3.8./5.8.), Lignum 126,29 (7.8./9.8.), Baustoff 110,49 (7.8./9.8.), Aleta 7,65 (31.7./2.8.), Oluk 472,40 (banka prije, ručni upisan poslije — ručni tok).
+- NE SMIJU se spojiti: Fero-Term / Ribola 5,95 isti dan; Lučko / Rovanjska 17,60 (dva prolaza).
 
-Najveći rizik nosi jezgra odluke, jer mijenja tko i kada piše u `expenses`, a saldo visi o okidaču. Prije njega mora biti zelen SQL paket `supabase/tests/balance/` (to je već zapisana brana).
+Testovi:
+1. `sameExpenseRule.test.ts` — svi fixturei kroz pravilo + rubovi: −2 dana, +4 dana, 1 cent razlike, drugi novčanik, tuđi `user_id`, kartica drugog novčanika, dva kandidata.
+2. `sameExpenseRuleMirror.test.ts` — doslovno zrcalo SHARED CORE.
+3. Sinkronizacija: isti fixturei kroz `pickMergeTarget` s kandidatima kakve vraća upit; kandidat drugog vlasnika nikad odabran; `bankSyncShadow.test.ts` ostaje zelen.
+4. Uvoz: fixturei kroz `classifyImport`; statement fixturei `erste-no-balance` i `keks-identical-rows` — dvostruki uvoz i dalje 0 novih redaka; `ledgerPlanEquivalence` i `indistinguishablePairing` zeleni (očekivane promjene samo gdje pravilo namjerno širi prozor, svaka popisana).
+5. Ručni tok: `mergeOfferCandidate.test.ts` proširen (Oluk, dva kandidata → šutnja).
+6. SQL paket salda (144) i merge harness zeleni — ne bi se smjeli ni pomaknuti.
 
-## 5. Što dodati, što maknuti
+## (e) Rizik i podjela
 
-Maknuti: A1 u obliku „sync kroz ekran". Zadržati automatiku, dodati red na pregled.
+Rizici:
+- Lažno spajanje dvaju različitih troškova istog iznosa → ublaženo: ime mora biti slično (≥2 zajedničke riječi ili isto jednorječno ime) + točno jedan kandidat. Najslabija točka: jednorječni generični trgovci (npr. „Petrol" s dva točenja istog iznosa u 4 dana) — tada su 2 kandidata → šutnja.
+- Širenje prozora uvoza s 1 na −1/+3 mijenja ishod postojećih uvoza; zato test ekvivalencije popisuje svaku razliku.
+- Seljenje `areMerchantsSimilar` u zajednički modul mora biti bez promjene ponašanja.
+- Sinkronizacija piše mimo RLS-a: vlasnik uvijek iz baze.
+- Nema diranja postojećih redaka, salda, sidra, otiska, prijenosa.
 
-Tri mine koje program ne spominje:
-1. **Servisni ključ zaobilazi RLS u syncu.** `bank-sync-transactions` piše `admin` klijentom; svaka greška u `userId` scopeu upisuje tuđe retke i nijedna RLS politika to neće zaustaviti. Jezgra mora dobiti `user_id` kao obavezan ulaz i imati test „ne piše izvan vlasnika".
-2. **Sidro i uvoz se bore za isti saldo.** `apply_balance_delta_if_unanchored` + `_cps_balance_guard_*` znače da isti uvoz daje različit saldo ovisno o tome je li novčanik usidren. Program mora definirati redoslijed: uvijek prvo redci, pa sidro — nikad obrnuto.
-3. **`ord:N` bez salda nije stabilan između dva čitanja istog izvoda.** Ako AI vrati redke u drugom redoslijedu (KEKS), v2 ključ se mijenja isto kao v1. Treba ga vezati za redoslijed u izvornom tekstu (`inbound_attachments.extracted_text`), ne za redoslijed AI izlaza.
+Predložena podjela (4 naloga):
+1. Modul pravila + zrcalo + seljenje sličnosti imena + fixturei i testovi pravila. Nitko ga još ne zove.
+2. Sinkronizacija: `pickMergeTarget` na pravilo, proširen upit, mapa kartica, razlozi u dijagnostiku; sjena radi.
+3. Uvoz izvoda: `importClassifier` na pravilo, popis namjernih razlika.
+4. Ručni unos/slika: `mergeOfferCandidate` + `useMergeCandidate`, ponuda i odbijanje; zatim odvojeno (izvan ovog programa) popis starih parova za ručni pregled.
 
-Dodatno: `transfer_counterpart_origin` i `counterpart_bank_transaction_id` trenutno nemaju obrnutu provjeru (par upisan na jednu stranu, druga strana kasnije obrisana) — vrijedi jedan invariant u `stress/invariants/layer1.sql`.
-
-## 6. Živi test (B-d)
-
-- Fixtures: izvući `inbound_attachments.extracted_text` za korisnikove stvarne izvode (Aircash 8/9, Revolut, TZ sync payload), anonimizirati IBAN/ime/OIB i spremiti kao datoteke u `e2e/fixtures/statements/` uz snimljeni Enable Banking JSON odgovor. Prava produkcijska tablica se time više ne dira.
-- Izvođenje: po uzoru na `e2e/security/helpers/fixtures.ts` i `global-setup.ts` napraviti testnog korisnika s prepoznatljivim prefiksom, uvesti fixture dvaput, pa pustiti lažni sync payload preko istog fixture skupa.
-- Brana: očekivanje je `count(expenses) == N` nakon drugog prolaza (nula duplikata), `sum` prometa po novčaniku jednak zbroju izvoda, i nula `transfer_pair_ambiguous` zapisa. Dodati kao job u `.github/workflows/test.yml` ili zaseban `merge-sql-suite.yml` stil workflow.
-- Čišćenje: `global-teardown.ts` + `e2e_reset_user` — inače testni redci kvare brojke vlasnika.
-
-## Zaključak
-
-Program je dobar, ali redoslijed treba biti: **B-b (otisak) → zajednička jezgra odluke + red na pregled → sidro iz izvoda → kategorije → obrada**, uz `supabase/tests/balance/` i živi test iz točke 6 kao brane. „Iznova" nije potrebno; potrebno je dovršiti spajanje dvaju postojećih ulaza na jednu odluku.
+## Otvoreno prije gradnje
+- Potvrditi upitom da su kartice 7246 i 2081 u `payment_source_cards` vezane na isti novčanik.
+- Potvrditi da li „Spremi kao novi" treba trajno pamtiti odbijeni par (zahtijevalo bi migraciju) ili je dovoljno samo ne postaviti `pending_bank`.
