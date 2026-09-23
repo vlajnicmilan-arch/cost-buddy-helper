@@ -6,6 +6,8 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { hr, de, enUS } from 'date-fns/locale';
+import { MergeOfferCandidateCard } from '@/components/add-expense/MergeOfferCandidateCard';
+import type { MergeCandidateOffer } from '@/hooks/useMergeCandidate';
 
 interface DuplicateWarningDialogProps {
   open: boolean;
@@ -31,6 +33,14 @@ interface DuplicateWarningDialogProps {
   canMerge?: boolean;
   onMerge?: () => void;
   isMerging?: boolean;
+  /**
+   * Ponuda spajanja po pravilu „isti trošak" (nalog 4): svi bankovni
+   * kandidati poredani kako ih vrati pravilo. Kad nije prazno, dijalog
+   * prikazuje kandidate umjesto jedne „postojeće transakcije".
+   */
+  mergeOffers?: readonly MergeCandidateOffer[];
+  onMergeWith?: (bankId: string) => void;
+  walletNameOf?: (paymentSource: string | null | undefined) => string | null;
 }
 
 export const DuplicateWarningDialog = ({
@@ -45,6 +55,9 @@ export const DuplicateWarningDialog = ({
   canMerge = false,
   onMerge,
   isMerging = false,
+  mergeOffers = [],
+  onMergeWith,
+  walletNameOf,
 }: DuplicateWarningDialogProps) => {
   const { t, i18n } = useTranslation();
   const { formatAmount } = useCurrency();
@@ -57,11 +70,71 @@ export const DuplicateWarningDialog = ({
     }
   };
 
-  if (!duplicateOf || !newTransaction) return null;
+  const offerMode = mergeOffers.length > 0 && !!onMergeWith;
+  if (!newTransaction || (!duplicateOf && !offerMode)) return null;
 
-  const existingCategoryInfo = getCategoryInfo(duplicateOf.category);
   const newCategoryInfo = getCategoryInfo(newTransaction.category as Category | IncomeCategory);
 
+  if (offerMode) {
+    return (
+      <AlertDialog open={open} onOpenChange={onOpenChange}>
+        <AlertDialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-warning">
+              <AlertTriangle className="w-5 h-5" />
+              {t('duplicates.offer.title')}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-left space-y-3">
+              <span className="block text-sm text-muted-foreground">{t('duplicates.offer.intro')}</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-3">
+            <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-medium text-primary uppercase">{t('duplicates.offer.yourEntry')}</span>
+                <Badge variant="outline" className="text-xs border-primary/30">
+                  {format(newTransaction.date, 'dd.MM.yyyy', { locale: getLocale() })}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between gap-2 mt-1">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-lg">{newCategoryInfo.icon}</span>
+                  <p className="font-medium text-sm truncate">{newTransaction.merchant_name || newTransaction.description}</p>
+                </div>
+                <p className={`font-bold ${newTransaction.type === 'income' ? 'text-income' : 'text-destructive'}`}>
+                  {newTransaction.type === 'expense' ? '-' : ''}{formatAmount(newTransaction.amount)}
+                </p>
+              </div>
+            </div>
+            {mergeOffers.map((o) => (
+              <MergeOfferCandidateCard
+                key={o.row.id}
+                offer={o}
+                walletName={walletNameOf ? walletNameOf(o.row.payment_source) : null}
+                disabled={isMerging}
+                onMerge={onMergeWith!}
+              />
+            ))}
+          </div>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-col sm:gap-2">
+            <AlertDialogAction
+              onClick={onConfirm}
+              disabled={isMerging}
+              className="w-full min-h-[44px] bg-muted text-foreground hover:bg-muted/80"
+            >
+              {t('duplicates.offer.saveAsNew')}
+            </AlertDialogAction>
+            <AlertDialogCancel onClick={onCancel} disabled={isMerging} className="w-full min-h-[44px] mt-0">
+              {t('common.cancel')}
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    );
+  }
+
+  if (!duplicateOf) return null;
+  const existingCategoryInfo = getCategoryInfo(duplicateOf.category);
   const levelLabel = level ? t(`duplicates.level.${level}`, level) : null;
   const reasonText = reasonKey ? t(reasonKey, '') : '';
 
