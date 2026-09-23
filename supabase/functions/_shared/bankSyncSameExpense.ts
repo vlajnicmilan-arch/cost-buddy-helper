@@ -17,10 +17,6 @@ import {
   type SameExpenseRow,
 } from './sameExpenseRule.ts';
 
-/** Stupci kandidata koje sinkronizacija dohvaća (vlasnik IZ BAZE). */
-export const SYNC_MERGE_CANDIDATE_COLUMNS =
-  'id, user_id, amount, date, description, merchant_name, payment_source, payment_source_card_id, expense_nature, is_advance, linked_advance_ids, deleted_at, bank_transaction_id, bank_match_status, type, status';
-
 export interface SyncCandidateDbRow {
   readonly id: string;
   readonly user_id: string;
