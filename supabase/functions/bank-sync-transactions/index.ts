@@ -13,6 +13,7 @@ import {
   type EBTransactionLike,
   type BankSyncDecision,
   type WalletRef,
+  type MergeCandidateRow,
 } from "../_shared/bankSyncDecision.ts";
 
 import type { UserCardRef } from "../_shared/cardMatch.ts";
@@ -763,7 +764,7 @@ Deno.serve(async (req) => {
         description,
       };
 
-      let mergeTarget: (typeof oldCandidates)[number] | null = null;
+      let mergeTarget: MergeCandidateRow | null = null;
       if (decision.transfer) {
         // PRIJENOS: doslovno stari put.
         mergeTarget = pickMergeTarget(oldCandidates, oldTarget);
