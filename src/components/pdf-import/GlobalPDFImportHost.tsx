@@ -22,7 +22,7 @@ import { computeImportFingerprint, computeImportKeys } from '@/lib/importFingerp
 import { COUNTED_EXPENSE_STATUSES } from '@/lib/countedExpense';
 import { savePayload as saveReviewPayload, hasResumableReview, clearDraft as clearReviewDraft, clearPayload as clearReviewPayload, saveStatementHint, clearStatementHint } from '@/lib/importReview/draft';
 import { findLateCardMatches } from '@/lib/importReview/lateCardMatch';
-import { buildCardWalletMap, resolveCardIdByLast4 } from '@/lib/importReview/sameExpenseImport';
+import { buildCardWalletMap } from '@/lib/importReview/sameExpenseImport';
 import { lookupFingerprintStates, type ExecutorSupabaseClient } from '@/lib/importReview/executor';
 import { planFingerprintRekey } from '@/lib/importReview/fingerprintRekey';
 
@@ -883,7 +883,6 @@ export const GlobalPDFImportHost = () => {
         bankMatchStatus: m.bank_match_status,
       }));
 
-      const walletCards = customPaymentSources.find(s => s.id === sourceId)?.cards ?? [];
       const cardWallets = buildCardWalletMap(customPaymentSources);
 
       const importedForClassifier: ClassifierImportedRow[] = transactions.map((tx, i) => ({
@@ -894,7 +893,6 @@ export const GlobalPDFImportHost = () => {
         date: tx.date,
         merchantName: tx.merchant_name,
         description: tx.description,
-        cardId: resolveCardIdByLast4(walletCards, tx.card_last4),
       }));
 
       const classified = classifyImport({

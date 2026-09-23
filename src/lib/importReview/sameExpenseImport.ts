@@ -163,16 +163,6 @@ export function buildCardWalletMap(
   return out;
 }
 
-/** Kartica novčanika po zadnje 4 znamenke (samo ako je jedinstvena). */
-export function resolveCardIdByLast4(
-  cards: ReadonlyArray<{ id: string; last_four_digits?: string | null }> | null | undefined,
-  last4: string | null | undefined,
-): string | null {
-  if (!last4 || !cards) return null;
-  const hits = cards.filter(c => String(c.last_four_digits ?? '') === String(last4));
-  return hits.length === 1 ? hits[0].id : null;
-}
-
 /** Samo sigurni parovi (`match`) — za putove bez pregleda pitanja (CSV). */
 export function matchImportRowsBySameExpense(
   ctx: ImportRuleContext,
