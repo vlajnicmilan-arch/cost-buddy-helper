@@ -9,6 +9,8 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import type { MergeCandidateOffer } from '@/hooks/useMergeCandidate';
 
 const RAW_PREVIEW_CHARS = 90;
+/** Znak za prazno polje (nije tekst). */
+const EMPTY = '—';
 
 interface Props {
   offer: MergeCandidateOffer;
@@ -26,12 +28,12 @@ export const MergeOfferCandidateCard = ({ offer, walletName, disabled, onMerge }
   const { row } = offer;
 
   const fmtDate = (d: string | Date | null | undefined) => {
-    if (!d) return t('duplicates.offer.noText');
+    if (!d) return EMPTY;
     const x = d instanceof Date ? d : new Date(d);
-    return Number.isNaN(x.getTime()) ? t('duplicates.offer.noText') : format(x, 'dd.MM.yyyy', { locale });
+    return Number.isNaN(x.getTime()) ? EMPTY : format(x, 'dd.MM.yyyy', { locale });
   };
 
-  const bankText = (row.merchant_name ?? '').trim() || (row.description ?? '').trim() || t('duplicates.offer.noText');
+  const bankText = (row.merchant_name ?? '').trim() || (row.description ?? '').trim() || EMPTY;
   const raw = (row.bank_raw_line ?? '').trim();
   const rawShown = expanded || raw.length <= RAW_PREVIEW_CHARS ? raw : `${raw.slice(0, RAW_PREVIEW_CHARS)}…`;
 
