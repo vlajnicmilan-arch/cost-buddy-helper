@@ -92,6 +92,13 @@
       "when": 1790112825649,
       "tag": "0012_anchor_balance_source_and_merge_time",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1790183993415,
+      "tag": "0013_merge_currency_null_eur",
+      "breakpoints": true
     }
   ]
 }

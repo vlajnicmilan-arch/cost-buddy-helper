@@ -333,6 +333,31 @@ BEGIN
   v_b := pg_temp.mk_bank  ('00000000-0000-0000-0000-000000000001','custom:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','expense',21.50,'2026-08-18 00:00+00','imp2:g12');
   PERFORM pg_temp.assert_raises('4.12 not authorized (other user manual row)', v_m, v_b, 'not_authorized');
 
+  -- 4.13a NULL currency treated as EUR: NULL (manual) + 'EUR' (bank) merges
+  PERFORM pg_temp.reset_world();
+  v_m := pg_temp.mk_manual('00000000-0000-0000-0000-000000000001','custom:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','expense',21.50,'2026-08-17 10:00+00');
+  UPDATE public.expenses SET currency = NULL WHERE id = v_m;
+  v_b := pg_temp.mk_bank  ('00000000-0000-0000-0000-000000000001','custom:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','expense',21.50,'2026-08-18 00:00+00','imp2:g13a');
+  PERFORM public.merge_manual_with_bank(v_m, v_b);
+  PERFORM pg_temp.assert_text('4.13a NULL+EUR merges', 'confirmed',
+    (SELECT bank_match_status FROM public.expenses WHERE id = v_m));
+
+  -- 4.13b NULL + NULL merges
+  PERFORM pg_temp.reset_world();
+  v_m := pg_temp.mk_manual('00000000-0000-0000-0000-000000000001','custom:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','expense',21.50,'2026-08-17 10:00+00');
+  v_b := pg_temp.mk_bank  ('00000000-0000-0000-0000-000000000001','custom:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','expense',21.50,'2026-08-18 00:00+00','imp2:g13b');
+  UPDATE public.expenses SET currency = NULL WHERE id IN (v_m, v_b);
+  PERFORM public.merge_manual_with_bank(v_m, v_b);
+  PERFORM pg_temp.assert_text('4.13b NULL+NULL merges', 'confirmed',
+    (SELECT bank_match_status FROM public.expenses WHERE id = v_m));
+
+  -- 4.13c real mismatch still rejected: USD + EUR
+  PERFORM pg_temp.reset_world();
+  v_m := pg_temp.mk_manual('00000000-0000-0000-0000-000000000001','custom:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','expense',21.50,'2026-08-17 10:00+00');
+  UPDATE public.expenses SET currency = 'USD' WHERE id = v_m;
+  v_b := pg_temp.mk_bank  ('00000000-0000-0000-0000-000000000001','custom:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','expense',21.50,'2026-08-18 00:00+00','imp2:g13c');
+  PERFORM pg_temp.assert_raises('4.13c USD+EUR rejected', v_m, v_b, 'different_currency');
+
   -- 4.13 deleted rows
   PERFORM pg_temp.reset_world();
   v_m := pg_temp.mk_manual('00000000-0000-0000-0000-000000000001','custom:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','expense',21.50,'2026-08-17 10:00+00');
