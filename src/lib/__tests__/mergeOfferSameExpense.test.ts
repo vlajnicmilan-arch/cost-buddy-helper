@@ -89,3 +89,14 @@ describe('„Spremi kao novi" uz ponudu', () => {
     expect(getInitialBankMatchStatus({ source: 'ocr', paymentSource: WALLET, bankLinkedSourceIds: linked, bankAlreadyPresent: true })).toBe('manual');
   });
 });
+
+describe('ožičenje „Spremi kao novi"', () => {
+  it('dijalog šalje bank_already_present, a upis ga predaje odluci o statusu', async () => {
+    const fs = await import('node:fs/promises');
+    const dlg = await fs.readFile('src/components/add-expense/AddExpenseDialog.tsx', 'utf8');
+    const crud = await fs.readFile('src/hooks/useExpenseCRUD.ts', 'utf8');
+    expect(dlg).toMatch(/executeAdd\(withBankPresence\(pendingTransaction\.expense\)/);
+    expect(dlg).toMatch(/bank_already_present: true/);
+    expect(crud).toMatch(/bankAlreadyPresent: \(normalizedExpense as any\)\.bank_already_present === true/);
+  });
+});
