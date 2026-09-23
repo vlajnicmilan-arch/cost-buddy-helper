@@ -3172,7 +3172,26 @@
       "noMatch": "Nema poklapanja."
     },
     "mergeWithExisting": "Spoji s postojećom",
-    "mergeHint": "Zadržava se tvoj sadržaj (opis, kategorija, slika računa) i bankovni identitet retka."
+    "mergeHint": "Zadržava se tvoj sadržaj (opis, kategorija, slika računa) i bankovni identitet retka.",
+    "offer": {
+      "title": "Banka je možda već donijela ovaj trošak",
+      "intro": "Odaberi bankovni redak koji je isti trošak, ili spremi unos kao novi.",
+      "bookedOn": "Knjiženo",
+      "wallet": "Novčanik",
+      "card": "Kartica",
+      "bankText": "Kako piše u banci",
+      "rawLine": "Izvorni redak",
+      "showMore": "Prikaži cijeli redak",
+      "showLess": "Skrati",
+      "originSync": "Sinkronizacija",
+      "originStatement": "Izvod",
+      "arrived": "stiglo {{date}}",
+      "similar": "Sličan trgovac",
+      "mergeThis": "Spoji s ovim",
+      "saveAsNew": "Spremi kao novi",
+      "yourEntry": "Tvoj unos",
+      "noText": "—"
+    }
   },
   "tutorial": {
     "start": "Pokreni vodič",

@@ -3164,7 +3164,26 @@
       "noMatch": "No match."
     },
     "mergeWithExisting": "Merge with existing",
-    "mergeHint": "Your content (description, category, receipt photo) is kept together with the bank identity of the row."
+    "mergeHint": "Your content (description, category, receipt photo) is kept together with the bank identity of the row.",
+    "offer": {
+      "title": "The bank may already have this expense",
+      "intro": "Pick the bank entry that is the same expense, or save your entry as new.",
+      "bookedOn": "Booked",
+      "wallet": "Wallet",
+      "card": "Card",
+      "bankText": "As written by the bank",
+      "rawLine": "Original line",
+      "showMore": "Show full line",
+      "showLess": "Collapse",
+      "originSync": "Bank sync",
+      "originStatement": "Statement",
+      "arrived": "arrived {{date}}",
+      "similar": "Similar merchant",
+      "mergeThis": "Merge with this",
+      "saveAsNew": "Save as new",
+      "yourEntry": "Your entry",
+      "noText": "—"
+    }
   },
   "tutorial": {
     "start": "Start guide",
