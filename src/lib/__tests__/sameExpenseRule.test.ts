@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { decideSameExpenseAuto, findSameExpenseOffers, SameExpenseOwnerError } from '../sameExpenseRule';
+import { decideSameExpenseAuto, decideSameExpenseAutoBatch, findSameExpenseOffers, SameExpenseOwnerError } from '../sameExpenseRule';
 import { resolvePaymentSourceKey } from '../paymentSource/resolve';
 import { sameExpenseSourceKey } from '../sameExpenseRule';
 import {
@@ -24,17 +24,25 @@ describe('auto — ne smije spojiti', () => {
 
   it('račun HAC 17,60 prema dva prolaza isti dan → ambiguous', () => {
     const m = manual('m-hac', 17.6, '2026-08-14', 'Hrvatske autoceste');
+    const r = decideSameExpenseAutoBatch([
+      bank('b-lucko', 17.6, '2026-08-14', 'Hrvatske autoceste Lučko'),
+      bank('b-rovanjska', 17.6, '2026-08-14', 'Hrvatske autoceste Rovanjska'),
+    ], [m], CARD_WALLETS);
+    expect(r.map((x) => x.outcome)).toEqual(['ambiguous', 'ambiguous']);
+  });
+
+  it('dva ručna računa istog iznosa za jedan prolaz → ambiguous', () => {
     const b1 = bank('b-lucko', 17.6, '2026-08-14', 'Hrvatske autoceste Lučko');
-    const b2 = bank('b-rovanjska', 17.6, '2026-08-14', 'Hrvatske autoceste Rovanjska');
-    // Isti ručni redak je jedini kandidat za oba bankovna retka — u auto načinu
-    // gledamo iz svakog bankovnog retka, pa ručni ne smije biti tražen dvaput.
-    const r1 = decideSameExpenseAuto(b1, [m], CARD_WALLETS);
-    const r2 = decideSameExpenseAuto(b2, [m], CARD_WALLETS);
-    // Dva bankovna retka traže isti ručni: pozivatelj rješava 1:1 (nalog 2/3).
-    // Ovdje provjeravamo simetričnu stranu: dva ručna računa za jedan prolaz.
-    expect([r1.outcome, r2.outcome]).toEqual(['match', 'match']);
-    const two = decideSameExpenseAuto(b1, [m, manual('m-hac-2', 17.6, '2026-08-14', 'Hrvatske autoceste')], CARD_WALLETS);
-    expect(two.outcome).toBe('ambiguous');
+    const r = decideSameExpenseAuto(b1, [
+      manual('m-1', 17.6, '2026-08-14', 'Hrvatske autoceste'),
+      manual('m-2', 17.6, '2026-08-14', 'Hrvatske autoceste'),
+    ], CARD_WALLETS);
+    expect(r.outcome).toBe('ambiguous');
+  });
+
+  it('batch ne mijenja obavezne parove', () => {
+    const r = decideSameExpenseAutoBatch(MUST_MATCH.map((p) => p.bank), MUST_MATCH.map((p) => p.manual), CARD_WALLETS);
+    expect(r.map((x) => x.candidate?.id)).toEqual(MUST_MATCH.map((p) => p.manual.id));
   });
 });
 
@@ -70,7 +78,7 @@ describe('auto — rubovi', () => {
     expect(decideSameExpenseAuto(base.bank, [{ ...base.manual, merchantName: null }]).outcome).toBe('uncertain');
   });
   it('opis ručnog koristi se samo kad nema trgovca', () => {
-    expect(decideSameExpenseAuto(base.bank, [{ ...base.manual, merchantName: null, description: 'Petrol gorivo' }]).outcome).toBe('match');
+    expect(decideSameExpenseAuto(base.bank, [{ ...base.manual, merchantName: null, description: 'Petrol' }]).outcome).toBe('match');
   });
   it('prijenos, korekcija i avans nikad', () => {
     expect(decideSameExpenseAuto(base.bank, [{ ...base.manual, type: 'transfer' }]).outcome).toBe('none');

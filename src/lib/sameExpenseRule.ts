@@ -301,6 +301,28 @@ export function decideSameExpenseAuto<R extends SameExpenseRow>(
 }
 
 /**
+ * `auto` za skup bankovnih redaka (jedno pokretanje sinkronizacije / jedan izvod).
+ * Jedan-na-jedan: ako isti ručni redak traži ≥2 bankovna retka, svi ti retci
+ * postaju `ambiguous` (npr. jedan račun cestarine ↔ dva prolaza istog iznosa).
+ */
+export function decideSameExpenseAutoBatch<R extends SameExpenseRow>(
+  banks: readonly SameExpenseRow[],
+  manuals: readonly R[],
+  cardWallets: CardWalletMap = {},
+): SameExpenseAutoResult<R>[] {
+  const results = banks.map(b => decideSameExpenseAuto(b, manuals, cardWallets));
+  const wanted = new Map<string, number>();
+  for (const r of results) for (const c of r.passing) wanted.set(c.id, (wanted.get(c.id) ?? 0) + 1);
+  return results.map(r => {
+    if (r.outcome !== 'match' || !r.candidate) return r;
+    if ((wanted.get(r.candidate.id) ?? 0) > 1) {
+      return { outcome: 'ambiguous' as const, candidate: null, passing: r.passing, reason: 'candidate_wanted_by_multiple_bank_rows' };
+    }
+    return r;
+  });
+}
+
+/**
  * NAČIN `offer` — ručni unos / slika računa (korisnik potvrđuje).
  * Vraća SVE bankovne kandidate, najprije slične po trgovcu, pa po blizini datuma.
  */
