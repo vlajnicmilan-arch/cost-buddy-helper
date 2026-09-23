@@ -273,6 +273,7 @@ export const useExpenseCRUD = ({
           source: entrySource ?? (normalizedExpense.ai_extracted ? 'ocr' : 'manual'),
           paymentSource: canonicalPaymentSource,
           bankLinkedSourceIds,
+          bankAlreadyPresent: (normalizedExpense as any).bank_already_present === true,
         });
 
         // Val 2: foundation gate. Default intent strips precision fields,

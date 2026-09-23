@@ -223,6 +223,11 @@ export interface Expense {
   linked_advance_ids?: string[] | null;
   // Hybrid bank-first model — vidi mem://features/bank-sync-roadmap
   bank_match_status?: string | null;
+  /**
+   * Samo klijent, nikad kolona: banka je taj trošak već donijela (korisnik je
+   * u ponudi spajanja odabrao Spremi kao novi) pa novi redak ne čeka banku.
+   */
+  bank_already_present?: boolean;
   bank_transaction_id?: string | null;
   bank_account_id?: string | null;
   /** DOSLOVAN redak s bankovnog izvoda — puni ISKLJUČIVO uvoz, nikad korisnik. */
