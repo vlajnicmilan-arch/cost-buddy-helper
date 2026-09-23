@@ -3,7 +3,7 @@ import { decideSameExpenseAuto, decideSameExpenseAutoBatch, findSameExpenseOffer
 import { resolvePaymentSourceKey } from '../paymentSource/resolve';
 import { sameExpenseSourceKey } from '../sameExpenseRule';
 import {
-  MUST_MATCH, CARD_WALLETS, OTHER, WALLET_2, CARD_OTHER_WALLET, CARD_PHYS_2081, CARD_TOKEN_7246, manual, bank,
+  MUST_MATCH, OLUK, CARD_WALLETS, OTHER, WALLET_2, CARD_OTHER_WALLET, CARD_PHYS_2081, CARD_TOKEN_7246, manual, bank,
 } from '@/test/fixtures/sameExpense/realPairs';
 
 describe('auto — obavezni stvarni parovi', () => {
@@ -95,14 +95,15 @@ describe('auto — rubovi', () => {
 });
 
 describe('offer', () => {
-  it('Oluk vraća jednog kandidata s podacima za prikaz', () => {
-    const p = MUST_MATCH[5];
+  it('Oluk (stvarni datumi): auto → none, offer vraća jednog kandidata', () => {
+    const p = OLUK;
+    expect(decideSameExpenseAuto(p.bank, [p.manual], CARD_WALLETS).outcome).toBe('none');
     const r = findSameExpenseOffers(p.manual, [p.bank]);
     expect(r).toHaveLength(1);
     expect(r[0].merchantSimilar).toBe(true);
     expect(r[0].row).toBe(p.bank); // prosljeđeno netaknuto
     expect(r[0].row.bankRawLine).toBeTruthy();
-    expect(r[0].row.origin).toEqual({ kind: 'sync', importedAt: '2026-08-12T06:00:00Z' });
+    expect(r[0].row.origin).toEqual({ kind: 'sync', importedAt: '2026-08-09T06:00:00Z' });
   });
 
   it('dva točenja Petrola istog iznosa unutar 4 dana → oba', () => {

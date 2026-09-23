@@ -50,6 +50,14 @@ export interface ShadowMismatch {
   readonly reason: string;
 }
 
+/** Pravilo „isti trošak" nije spojilo (ambiguous/uncertain) — bez iznosa, opisa, imena. */
+export interface SameExpenseUndecided {
+  readonly bank_transaction_id: string;
+  readonly candidate_ids: readonly string[];
+  readonly outcome: 'ambiguous' | 'uncertain';
+  readonly reason: string;
+}
+
 export interface ShadowOptions {
   readonly sessionId: string;
   readonly userId: string;
@@ -69,6 +77,8 @@ export class BankSyncShadow {
   private failed = 0;
   private firstError: string | null = null;
   private readonly mismatches: ShadowMismatch[] = [];
+  private undecidedTotal = 0;
+  private readonly undecided: SameExpenseUndecided[] = [];
   private readonly plan: (row: Parameters<typeof planLedgerRow>[0]) => LedgerDecision;
 
   constructor(private readonly opts: ShadowOptions) {
@@ -112,10 +122,27 @@ export class BankSyncShadow {
     }
   }
 
+  /** Nikad ne baca. Najviše SHADOW_MISMATCH_LIMIT zapisa, ostatak samo brojka. */
+  noteSameExpenseUndecided(entry: SameExpenseUndecided): void {
+    try {
+      this.undecidedTotal += 1;
+      if (this.undecided.length < SHADOW_MISMATCH_LIMIT) {
+        this.undecided.push({
+          bank_transaction_id: entry.bank_transaction_id,
+          candidate_ids: [...entry.candidate_ids],
+          outcome: entry.outcome,
+          reason: entry.reason,
+        });
+      }
+    } catch {
+      /* dijagnostika ne smije oboriti sync */
+    }
+  }
+
   /** Jedan zbirni zapis po pokretanju; `null` kad nije bilo redaka. */
   summaryLog(): Record<string, unknown> | null {
     try {
-      if (this.processed === 0 && this.failed === 0) return null;
+      if (this.processed === 0 && this.failed === 0 && this.undecidedTotal === 0) return null;
       return {
         event: 'bank_sync_core_shadow',
         session_id: this.opts.sessionId,
@@ -131,6 +158,8 @@ export class BankSyncShadow {
           mismatch_limit: SHADOW_MISMATCH_LIMIT,
           mismatches_logged: this.mismatches.length,
           mismatches: this.mismatches,
+          same_expense_undecided_total: this.undecidedTotal,
+          same_expense_undecided: this.undecided,
         },
       };
     } catch {
