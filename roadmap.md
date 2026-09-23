@@ -11,3 +11,8 @@
 - [ ] Bankovna sinkronizacija točka 3: prijenosi kroz buildTransferPair (opcija B) — čeka prvi sirovi EB zapis
 - [x] Popravak praznog popisa: dijeljena mapa novčanika (sourceScopeCache) nikad prazna
 - [x] Temelj korak 1: otisak retka na ključ v2 (imp2) uz dvostruku pretragu i rekey
+
+- [x] Isti trošak — Nalog 1: modul pravila + testovi (nitko ga ne zove)
+- [ ] Isti trošak — Nalog 2: sinkronizacija
+- [ ] Isti trošak — Nalog 3: uvoz izvoda
+- [ ] Isti trošak — Nalog 4: ručni unos (bez trajnog pamćenja odbijenog para; prikaz izbora s podacima banke)
