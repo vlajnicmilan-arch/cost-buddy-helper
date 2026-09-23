@@ -22,6 +22,7 @@ import { computeImportFingerprint, computeImportKeys } from '@/lib/importFingerp
 import { COUNTED_EXPENSE_STATUSES } from '@/lib/countedExpense';
 import { savePayload as saveReviewPayload, hasResumableReview, clearDraft as clearReviewDraft, clearPayload as clearReviewPayload, saveStatementHint, clearStatementHint } from '@/lib/importReview/draft';
 import { findLateCardMatches } from '@/lib/importReview/lateCardMatch';
+import { buildCardWalletMap } from '@/lib/importReview/sameExpenseImport';
 import { lookupFingerprintStates, type ExecutorSupabaseClient } from '@/lib/importReview/executor';
 import { planFingerprintRekey } from '@/lib/importReview/fingerprintRekey';
 
@@ -799,11 +800,18 @@ export const GlobalPDFImportHost = () => {
       const isoFrom = new Date(minMs).toISOString().slice(0, 10);
       const isoTo = new Date(maxMs).toISOString().slice(0, 10);
 
-      let manualRows: Array<{ id: string; date: string; amount: number; type: string; merchant_name: string | null; description: string | null }> = [];
+      let manualRows: Array<{
+        id: string; user_id: string; date: string; amount: number; type: string;
+        merchant_name: string | null; description: string | null; payment_source: string | null;
+        payment_source_card_id: string | null; expense_nature: string | null; is_advance: boolean | null;
+        linked_advance_ids: string[] | null; bank_match_status: string | null; deleted_at: string | null;
+      }> = [];
       try {
+        // Raspon (−4/+1 dan oko izvoda) pokriva prozor pravila „isti trošak":
+        // ručni redak smije biti do 3 dana prije i 1 dan poslije retka izvoda.
         const { data } = await supabase
           .from('expenses')
-          .select('id,date,amount,type,merchant_name,description')
+          .select('id,user_id,date,amount,type,merchant_name,description,payment_source,payment_source_card_id,expense_nature,is_advance,linked_advance_ids,bank_match_status,deleted_at')
           .eq('user_id', user.id)
           .eq('payment_source', paymentSourceValue)
           .is('bank_transaction_id', null)
@@ -865,7 +873,17 @@ export const GlobalPDFImportHost = () => {
         date: m.date,
         merchantName: m.merchant_name,
         description: m.description,
+        userId: m.user_id,
+        cardId: m.payment_source_card_id,
+        expenseNature: m.expense_nature,
+        isAdvance: m.is_advance,
+        linkedAdvanceIds: m.linked_advance_ids,
+        deletedAt: m.deleted_at,
+        bankTransactionId: null,
+        bankMatchStatus: m.bank_match_status,
       }));
+
+      const cardWallets = buildCardWalletMap(customPaymentSources);
 
       const importedForClassifier: ClassifierImportedRow[] = transactions.map((tx, i) => ({
         index: i,
@@ -881,6 +899,7 @@ export const GlobalPDFImportHost = () => {
         imported: importedForClassifier,
         manualCandidates: manualCandidatesForClassifier,
         statementBankName: pdfImport.result.detected_bank,
+        sameExpense: { userId: user.id, cardWallets },
       });
 
       // PONUDA SPAJANJA (kartično kašnjenje) — samo za retke koje je

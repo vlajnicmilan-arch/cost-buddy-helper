@@ -29,6 +29,7 @@
 import { areMerchantsSimilar } from './duplicateDetection';
 import { deriveComparableName, hasSignificantWord } from './importReview/comparableName';
 import { resolvePaymentSourceKey } from './paymentSource/resolve';
+import { decideImportSameExpense, type ImportRuleContext } from './importReview/sameExpenseImport';
 
 export type QuestionReason = 'merchant_mismatch' | 'no_merchant' | 'ambiguous';
 
@@ -40,6 +41,8 @@ export interface ClassifierImportedRow {
   readonly date: Date | string;
   readonly merchantName?: string | null;
   readonly description?: string | null;
+  /** Kartica retka izvoda (payment_source_cards.id), ako je poznata. */
+  readonly cardId?: string | null;
 }
 
 export interface ClassifierManualCandidate {
@@ -50,6 +53,15 @@ export interface ClassifierManualCandidate {
   readonly date: Date | string;
   readonly merchantName?: string | null;
   readonly description?: string | null;
+  /** Polja za pravilo „isti trošak" — `userId` KAKAV PIŠE U BAZI. */
+  readonly userId?: string | null;
+  readonly cardId?: string | null;
+  readonly expenseNature?: string | null;
+  readonly isAdvance?: boolean | null;
+  readonly linkedAdvanceIds?: readonly string[] | null;
+  readonly deletedAt?: string | null;
+  readonly bankTransactionId?: string | null;
+  readonly bankMatchStatus?: string | null;
 }
 
 export interface AutoMergePair {
@@ -84,6 +96,13 @@ export interface ClassifierInput {
   readonly maxDayDiff?: number;
   /** Ime izdavatelja izvoda; u merchantName se tretira kao prazna stop-vrijednost. */
   readonly statementBankName?: string | null;
+  /**
+   * PRAVILO „ISTI TROŠAK" (nalog 3). Kad je zadano, spajanje ručni↔banka za
+   * trošak/prihod odlučuje `sameExpenseRule` (auto, −1/+3, cijeli izvod kao
+   * jedan batch). `match` → autoMerge (`merchant`); `ambiguous`/`uncertain`
+   * → pitanje; `none` → dosadašnja logika klasifikatora.
+   */
+  readonly sameExpense?: ImportRuleContext;
 }
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -226,11 +245,48 @@ export function classifyImport(input: ClassifierInput): ClassifierOutput {
     }
   }
 
+  /**
+   * FAZA 1.7 — PRAVILO „ISTI TROŠAK". Nerazlučive skupine (faza 1.5) su već
+   * uparene i ne ulaze. Pravilo vidi SVE ručne kandidate (ne samo ±1 dan) jer
+   * nosi vlastiti prozor −1/+3.
+   */
+  const ruleHandled = new Map<number, { kind: 'merge'; manualId: string } | { kind: 'question'; reason: QuestionReason; candidateIds: string[] }>();
+  if (input.sameExpense) {
+    const decisions = decideImportSameExpense(
+      input.sameExpense,
+      buckets.filter((b) => !indistinguishablePairs.has(b.row.index)).map((b) => b.row),
+      input.manualCandidates.filter((c) => !pairedManualIds.has(c.id)),
+    );
+    const ruleMerged = new Set<string>();
+    for (const d of decisions) {
+      if (d.outcome === 'match' && d.manualId) {
+        ruleHandled.set(d.importedIndex, { kind: 'merge', manualId: d.manualId });
+        ruleMerged.add(d.manualId);
+      } else if (d.outcome === 'ambiguous') {
+        ruleHandled.set(d.importedIndex, { kind: 'question', reason: 'ambiguous', candidateIds: d.candidateIds });
+      } else if (d.outcome === 'uncertain') {
+        ruleHandled.set(d.importedIndex, {
+          kind: 'question',
+          reason: d.nameUnknown ? 'no_merchant' : 'ambiguous',
+          candidateIds: d.candidateIds,
+        });
+      }
+    }
+    // Ručni redak koji je pravilo spojilo ne smije se iskoristiti drugi put.
+    if (ruleMerged.size > 0) {
+      for (const b of buckets) {
+        if (ruleHandled.has(b.row.index) || indistinguishablePairs.has(b.row.index)) continue;
+        b.candidates = b.candidates.filter((c) => !ruleMerged.has(c.id));
+      }
+    }
+  }
+
   // Phase 2: detect candidates wanted by >=2 imported rows → ambiguous both sides.
 
   const candidateWantedBy = new Map<string, number[]>();
   for (const b of buckets) {
     if (indistinguishablePairs.has(b.row.index)) continue;
+    if (ruleHandled.has(b.row.index)) continue;
     for (const c of b.candidates) {
       const list = candidateWantedBy.get(c.id) ?? [];
       list.push(b.row.index);
@@ -304,6 +360,16 @@ export function classifyImport(input: ClassifierInput): ClassifierOutput {
     const paired = indistinguishablePairs.get(idx);
     if (paired) {
       autoMerge.push({ importedIndex: idx, manualId: paired, origin: 'indistinguishable' });
+      continue;
+    }
+
+    const ruled = ruleHandled.get(idx);
+    if (ruled) {
+      if (ruled.kind === 'merge') {
+        autoMerge.push({ importedIndex: idx, manualId: ruled.manualId, origin: 'merchant' });
+      } else {
+        questions.push({ importedIndex: idx, reason: ruled.reason, candidateIds: ruled.candidateIds });
+      }
       continue;
     }
 
