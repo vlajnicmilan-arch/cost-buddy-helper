@@ -70,6 +70,21 @@ describe('isMergeablePair', () => {
     expect(r).toEqual({ ok: false, reason: 'transactions.merge.errors.differentCurrency' });
   });
 
+  it('treats NULL currency as EUR (NULL + EUR allowed)', () => {
+    const r = isMergeablePair({ ...baseManual, currency: null }, { ...baseBank, currency: 'EUR' });
+    expect(r.ok).toBe(true);
+  });
+
+  it('treats NULL currency as EUR (NULL + NULL allowed)', () => {
+    const r = isMergeablePair({ ...baseManual, currency: null }, { ...baseBank, currency: null });
+    expect(r.ok).toBe(true);
+  });
+
+  it('still rejects USD manual + EUR bank', () => {
+    const r = isMergeablePair({ ...baseManual, currency: 'USD' }, { ...baseBank, currency: 'EUR' });
+    expect(r).toEqual({ ok: false, reason: 'transactions.merge.errors.differentCurrency' });
+  });
+
   it('rejects amount outside 0.1% tolerance', () => {
     const r = isMergeablePair(baseManual, { ...baseBank, amount: 41 });
     expect(r).toEqual({ ok: false, reason: 'transactions.merge.errors.differentAmount' });
