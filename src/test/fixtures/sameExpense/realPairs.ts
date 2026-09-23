@@ -48,7 +48,14 @@ export const MUST_MATCH: readonly MustMatchPair[] = [
   { name: 'Aleta 7,65',
     manual: manual('m-aleta', 7.65, '2026-07-31', 'Aleta'),
     bank: bank('b-aleta', 7.65, '2026-08-02', 'Aleta P 1') },
-  { name: 'Oluk 472,40 (ručni upisan nakon banke)',
-    manual: manual('m-oluk', 472.4, '2026-08-12', 'Oluk Interijeri'),
-    bank: bank('b-oluk', 472.4, '2026-08-12', 'Oluk') },
 ];
+
+/**
+ * Oluk 472,40 — STVARNI datumi: banka 9.8. („Oluk", opis „Oluk, Branjin Vrh
+ * [Card *1542]"), račun 11.8. („Oluk Interijeri", upisan ručno nakon banke).
+ * Banka je 2 dana PRIJE računa → izvan `auto` prozora (`none`), a `offer` ga nudi.
+ */
+export const OLUK = {
+  manual: manual('m-oluk', 472.4, '2026-08-11', 'Oluk Interijeri'),
+  bank: bank('b-oluk', 472.4, '2026-08-09', 'Oluk', { description: 'Oluk, Branjin Vrh [Card *1542]' }),
+} as const;
