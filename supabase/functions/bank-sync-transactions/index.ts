@@ -26,6 +26,14 @@ import {
 } from "../_shared/bankSyncShadow.ts";
 import type { LedgerCandidate } from "../_shared/moneyLedgerPlan.ts";
 import { TRANSFER_KEYWORDS, buildTransferPair } from "../_shared/moneyDirection.ts";
+import {
+  SYNC_MERGE_CANDIDATE_COLUMNS,
+  cardWalletMapFrom,
+  chooseSyncMerge,
+  countedCandidates,
+  planSyncSameExpense,
+  type SyncSameExpenseEntry,
+} from "../_shared/bankSyncSameExpense.ts";
 
 interface Body {
   bank_account_id: string;
@@ -390,14 +398,96 @@ Deno.serve(async (req) => {
       .map((c) => String(c.last_four_digits ?? ""))
       .filter((v) => /^\d{4}$/.test(v));
 
-    let rowIndex = -1;
-    for (const tx of allTx) {
-      rowIndex += 1;
-      const decision = decideBankSyncRow(tx, {
+    const decisions = allTx.map((tx) =>
+      decideBankSyncRow(tx, {
         syncPaymentSourceId: account.linked_payment_source_id,
         cards: userCards,
         wallets: userWallets,
+      })
+    );
+
+    // Upit kandidata za spajanje (vlasnik IZ BAZE). Prijenos ima DVIJE strane.
+    const buildMergeQuery = (absAmount: number, txDate: string, decision: BankSyncDecision) => {
+      const mergeFrom = new Date(new Date(txDate).getTime() - 3 * 86400000).toISOString();
+      const mergeTo = new Date(new Date(txDate).getTime() + 4 * 86400000).toISOString();
+      let mergeQuery = admin
+        .from("expenses")
+        .select(SYNC_MERGE_CANDIDATE_COLUMNS)
+        .eq("user_id", userId)
+        .is("deleted_at", null)
+        .gte("amount", absAmount - 0.01)
+        .lte("amount", absAmount + 0.01)
+        .gte("date", mergeFrom)
+        .lte("date", mergeTo);
+      if (decision.transfer) {
+        const a = account.linked_payment_source_id;
+        const b = decision.transfer.counterpartSourceId;
+        mergeQuery = mergeQuery
+          .eq("type", "transfer")
+          .or(
+            [
+              `payment_source.eq."custom:${a}"`,
+              `payment_source.eq."custom:${b}"`,
+              `income_source_id.eq.${a}`,
+              `income_source_id.eq.${b}`,
+            ].join(","),
+          );
+      } else {
+        mergeQuery = mergeQuery
+          .eq("payment_source", paymentSourceRef)
+          .in("type", [decision.type as string, "transfer"]);
+      }
+      return mergeQuery;
+    };
+
+    // PRAVILO „ISTI TROŠAK" (nalog 2): pred-prolaz nad SVIM knjiženim
+    // retcima trošak/prihod PRIJE pisanja — jedan-na-jedan kao
+    // decideSameExpenseAutoBatch. Prijenosi ovdje ne ulaze.
+    const cardWallets = cardWalletMapFrom((cardRows || []) as Array<{ id: string; payment_source_id?: string | null }>);
+    const plainCandidateCache = new Map<number, any[]>();
+    const sameExpenseEntries: SyncSameExpenseEntry[] = [];
+    for (let i = 0; i < decisions.length; i += 1) {
+      const d = decisions[i];
+      if (d.action === "skip" || d.transfer || !d.stableId) continue;
+      if (d.type !== "expense" && d.type !== "income") continue;
+      const { data: rows } = await buildMergeQuery(d.amount!, d.date!, d);
+      const list = (rows || []) as any[];
+      plainCandidateCache.set(i, list);
+      sameExpenseEntries.push({
+        bank: {
+          stableId: d.stableId,
+          userId,
+          paymentSource: paymentSourceRef,
+          type: d.type,
+          amount: d.amount!,
+          date: d.date!,
+          counterparty: counterpartyOf(allTx[i], d.description),
+          description: d.description ?? null,
+          cardId: d.paymentSourceCardId ?? null,
+        },
+        candidates: list,
       });
+    }
+    let sameExpensePlan: ReturnType<typeof planSyncSameExpense> = new Map();
+    try {
+      sameExpensePlan = planSyncSameExpense(sameExpenseEntries, cardWallets);
+    } catch (ruleFail: any) {
+      // Bez odluke pravila nema spajanja — retci idu kao novi.
+      diagnostics.push({
+        event: "bank_sync_same_expense_failed",
+        session_id: `bank-sync-${account.id}`,
+        user_id: userId,
+        severity: "error",
+        details: { bank_account_id: account.id, message: ruleFail?.message ?? String(ruleFail) },
+      });
+    }
+    /** Ručni redak spojen u ovom pokretanju ne smije se spojiti drugi put. */
+    const mergedManualIds = new Set<string>();
+
+    let rowIndex = -1;
+    for (const tx of allTx) {
+      rowIndex += 1;
+      const decision = decisions[rowIndex];
 
       // Kandidati koje jezgra SMIJE vidjeti — `userId` je onaj IZ BAZE.
       const shadowCandidates: LedgerCandidate[] = [];
@@ -643,70 +733,65 @@ Deno.serve(async (req) => {
       // Proknjižena verzija onoga što je već upisano (ručni redak, redak iz
       // rezervacije, ručno pretvoren u prijenos) — AŽURIRAJ, ne dodavaj novi.
       // Retci koji već nose svoj proknjiženi bankovni ID se ne diraju.
-      const mergeFrom = new Date(new Date(txDate).getTime() - 3 * 86400000).toISOString();
-      const mergeTo = new Date(new Date(txDate).getTime() + 4 * 86400000).toISOString();
-      let mergeQuery = admin
-        .from("expenses")
-        .select("id, user_id, amount, date, description, payment_source_card_id, bank_transaction_id, bank_match_status, type, status")
-        .eq("user_id", userId)
-        .is("deleted_at", null)
-        .gte("amount", absAmount - 0.01)
-        .lte("amount", absAmount + 0.01)
-        .gte("date", mergeFrom)
-        .lte("date", mergeTo);
-
+      let bankRows: any[];
       if (decision.transfer) {
-        // Prijenos ima DVIJE strane — postojeći redak može stajati na bilo kojoj.
-        const a = account.linked_payment_source_id;
-        const b = decision.transfer.counterpartSourceId;
-        mergeQuery = mergeQuery
-          .eq("type", "transfer")
-          .or(
-            [
-              `payment_source.eq."custom:${a}"`,
-              `payment_source.eq."custom:${b}"`,
-              `income_source_id.eq.${a}`,
-              `income_source_id.eq.${b}`,
-            ].join(","),
-          );
+        const { data } = await buildMergeQuery(absAmount, txDate, decision);
+        bankRows = (data || []) as any[];
       } else {
-        mergeQuery = mergeQuery
-          .eq("payment_source", paymentSourceRef)
-          .in("type", [type, "transfer"]);
+        bankRows = plainCandidateCache.get(rowIndex) ?? [];
       }
 
-      const { data: bankRows } = await mergeQuery;
-
-      for (const r of (bankRows || []) as any[]) {
+      for (const r of bankRows) {
         shadowCandidates.push({ id: r.id, userId: r.user_id, kind: "manual" });
       }
 
+      const oldCandidates = countedCandidates(bankRows, stableId).map((r: any) => ({
+        id: r.id,
+        amount: Number(r.amount),
+        date: r.date,
+        payment_source_card_id: r.payment_source_card_id,
+        description: r.description,
+        bank_transaction_id: r.bank_transaction_id,
+        bank_match_status: r.bank_match_status,
+        type: r.type,
+      }));
+      const oldTarget = {
+        amount: absAmount,
+        date: txDate,
+        cardId: decision.paymentSourceCardId,
+        counterparty: counterpartyOf(tx, description),
+        description,
+      };
 
-
-      const mergeTarget = pickMergeTarget(
-        (bankRows || [])
-          // Samo retci koji se broje (status prazan ili 'approved').
-          .filter((r: any) => !r.status || r.status === "approved")
-          .filter((r: any) => r.bank_transaction_id !== stableId)
-          .map((r: any) => ({
-            id: r.id,
-            amount: Number(r.amount),
-            date: r.date,
-            payment_source_card_id: r.payment_source_card_id,
-            description: r.description,
-            bank_transaction_id: r.bank_transaction_id,
-            bank_match_status: r.bank_match_status,
-            type: r.type,
-          })),
-
-        {
-          amount: absAmount,
-          date: txDate,
-          cardId: decision.paymentSourceCardId,
-          counterparty: counterpartyOf(tx, description),
-          description,
-        },
-      );
+      let mergeTarget: (typeof oldCandidates)[number] | null = null;
+      if (decision.transfer) {
+        // PRIJENOS: doslovno stari put.
+        mergeTarget = pickMergeTarget(oldCandidates, oldTarget);
+      } else {
+        // TROŠAK/PRIHOD: odlučuje pravilo „isti trošak"; kandidati tipa
+        // prijenos (ručno pretvoreni) i dalje idu starim pickMergeTarget.
+        const transferTarget = pickMergeTarget(
+          oldCandidates.filter((c) => c.type === "transfer"),
+          oldTarget,
+        );
+        const rule = sameExpensePlan.get(stableId);
+        const used = new Set<string>([...mergedManualIds, ...claimedPairIds]);
+        const choice = chooseSyncMerge(rule, transferTarget?.id ?? null, used);
+        if (rule && (rule.outcome === "ambiguous" || rule.outcome === "uncertain")) {
+          const passingIds = rule.passing.map((c) => c.id);
+          shadow.noteSameExpenseUndecided({
+            bank_transaction_id: stableId,
+            candidate_ids: passingIds.length > 0
+              ? passingIds
+              : oldCandidates.filter((c) => c.type !== "transfer").map((c) => c.id),
+            outcome: rule.outcome,
+            reason: rule.reason,
+          });
+        }
+        if (choice.kind !== "none") {
+          mergeTarget = oldCandidates.find((c) => c.id === choice.id) ?? null;
+        }
+      }
 
       if (mergeTarget) {
         // Tip se ZADRŽAVA (prijenos ostaje prijenos), opis se ne prepisuje.
@@ -727,6 +812,7 @@ Deno.serve(async (req) => {
           errors += 1;
         } else {
           mergedBooked += 1;
+          mergedManualIds.add(mergeTarget.id);
         }
         observeShadow(
           "merge",
@@ -786,35 +872,10 @@ Deno.serve(async (req) => {
         shadowCandidates.push({ id: c.id, userId: c.user_id, kind: "manual" });
       }
 
-      if (candidates.length === 1) {
-        // 1 jasan kandidat — UPDATE postojeći expense u 'confirmed'.
-        const cand = candidates[0];
-        const { error: updErr } = await admin
-          .from("expenses")
-          .update({
-            bank_transaction_id: stableId,
-            bank_account_id: account.id,
-            bank_match_status: "confirmed",
-            bank_raw_line: rawLine,
-            bank_raw_line_source: "enable_banking",
-            payment_source_card_id: decision.paymentSourceCardId,
-          })
-          .eq("id", cand.id);
-        if (updErr) {
-          if ((updErr as any).code === "23505") { skipped += 1; }
-          else { console.warn("[bank-sync-transactions] confirm update err", updErr.message); errors += 1; }
-        } else {
-          imported += 1;
-        }
-        observeShadow(
-          "merge",
-          { kind: "auto_merge", manualId: (cand as any).id },
-          { autoMergeOn: true },
-        );
-        continue;
-      }
-
-      // 0 ili >1 kandidata — INSERT novi bank_only.
+      // Spajanje trošak/prihod s ručnim retkom odlučuje ISKLJUČIVO pravilo
+      // „isti trošak" (gore). Ovi kandidati služe samo sjeni i oznaci
+      // possible_duplicate_of — redak se upisuje kao novi, kao i dosad.
+      // INSERT novi bank_only.
       // AI categorization (samo expense, samo ako nemamo kandidata).
       let category = "other";
       if (!isIncome) {
