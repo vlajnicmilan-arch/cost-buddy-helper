@@ -4,7 +4,7 @@ import { findMergeOffers, type MergeOfferNewTx, type MergeOfferRow } from '../me
 /** Nalog 4: stari API (jedan ili null) zamijenjen popisom; ovaj omotač drži stara očekivanja. */
 const findMergeOfferCandidate = (tx: Omit<MergeOfferNewTx, 'userId'>, rows: MergeOfferRow[]) => {
   const offers = findMergeOffers({ ...tx, userId: 'u1' }, rows);
-  return offers.length === 1 ? offers[0].row : offers.length === 0 ? null : offers;
+  return offers.length === 1 ? offers[0].row : null;
 };
 
 const SRC = 'custom:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
@@ -54,8 +54,8 @@ describe('findMergeOfferCandidate', () => {
   });
 
   it('NAMJERNA PROMJENA (nalog 4): dva kandidata → ponuda s oba (prije: šutnja)', () => {
-    const res = findMergeOfferCandidate(pevexScan, [bankRow, { ...bankRow, id: 'bank-2' }]);
-    expect(Array.isArray(res) && res.map(o => o.row.id)).toEqual(['bank-1', 'bank-2']);
+    const res = findMergeOffers({ ...pevexScan, userId: 'u1' }, [bankRow, { ...bankRow, id: 'bank-2' }]);
+    expect(res.map(o => o.row.id)).toEqual(['bank-1', 'bank-2']);
   });
 
   it('stays silent for transfers', () => {
