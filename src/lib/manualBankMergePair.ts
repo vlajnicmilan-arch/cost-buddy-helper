@@ -114,8 +114,11 @@ export function isMergeablePair(
     return { ok: false, reason: 'transactions.merge.errors.differentSource' };
   }
 
-  const aCur = (a.currency ?? '').toUpperCase();
-  const bCur = (b.currency ?? '').toUpperCase();
+  // Prazna/NULL valuta tretira se kao osnovna valuta 'EUR' (3.447 aktivnih
+  // ručnih redaka u produkciji nema upisanu valutu). Različite stvarne
+  // valute (npr. USD vs EUR) i dalje se odbijaju.
+  const aCur = (a.currency ?? '').toUpperCase() || 'EUR';
+  const bCur = (b.currency ?? '').toUpperCase() || 'EUR';
   if (aCur !== bCur) {
     return { ok: false, reason: 'transactions.merge.errors.differentCurrency' };
   }
