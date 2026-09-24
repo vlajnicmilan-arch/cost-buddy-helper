@@ -3,7 +3,10 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 
 const mutateAsync = vi.fn().mockResolvedValue({ ok: true, id: 'l1' });
 vi.mock('@/hooks/useBackButton', () => ({ useBackButton: () => {} }));
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }));
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({ t: (k: string) => k }),
+  initReactI18next: { type: '3rdParty', init: () => {} },
+}));
 vi.mock('@/hooks/useKrugSettlementMutations', () => ({
   useKrugMarkSettledWithSource: () => ({ mutateAsync, isPending: false }),
   useLatestKrugFxSnapshot: () => ({ data: null }),
