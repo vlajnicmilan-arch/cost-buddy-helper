@@ -1863,7 +1863,7 @@
     "food": "Essen",
     "groceries": "Lebensmittel",
     "transport": "Transport",
-    "car": "Auto",
+    "car": "Fahrzeug",
     "shopping": "Einkaufen",
     "clothing": "Kleidung",
     "entertainment": "Unterhaltung",
@@ -7434,7 +7434,7 @@
     "groups": {
       "cafes": "Cafés und Restaurants",
       "food": "Lebensmittel",
-      "car": "Auto",
+      "car": "Fahrzeug",
       "travel": "Reisen",
       "work": "Arbeit",
       "home": "Zuhause",
