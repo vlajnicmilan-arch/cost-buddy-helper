@@ -670,7 +670,7 @@ async function executeTool(
           const { data } = await applyModeFilter(
             supabase
               .from("expenses")
-              .select("amount, type, category")
+              .select("amount, type, category, expense_nature")
               .eq("user_id", userId)
               .gte("date", fromStr)
               .lte("date", toStr)
