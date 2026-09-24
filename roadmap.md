@@ -16,3 +16,19 @@
 - [ ] Isti trošak — Nalog 2: sinkronizacija
 - [ ] Isti trošak — Nalog 3: uvoz izvoda
 - [ ] Isti trošak — Nalog 4: ručni unos (bez trajnog pamćenja odbijenog para; prikaz izbora s podacima banke)
+
+## Kategorije u dvije razine (plan odobren 24.9.2026 uz ispravke)
+- [x] Nalog 1: registar skupina i aliasa (`categoryTree.ts` + zrcalo), bez prikaza
+- [ ] Nalog 2: `isRealSpend` / `isRealIncome` za sve čitače
+- [ ] Nalog 3: migracija (`custom_categories.group_key`, `expenses.tags`, `expenses.movement_kind`) + izbornik u dvije razine
+- [ ] Nalog 5: zaslon „Pregled kategorija" (prijedlozi po trgovcu, potvrda korisnika)
+- [ ] Nalog 4: oznake (Nepotrebno, Luksuz) + vrste zapisa (pozajmica, uplata u firmu)
+- [ ] Nalog 6: AI s novim ključevima + učenje iz `category_corrections`
+- [ ] Nalog 7: budžeti po skupini, PDF, izvoz
+
+Pravila za sve naloge:
+- Široka stara kategorija nikad se tiho ne prikazuje kao list: dobiva skupinu + `unsorted`, pa ide na pregled.
+- Korisničke kategorije se nikad ne brišu ni preimenuju automatski. Kategorija sa zapisima se ne može obrisati dok korisnik ne izabere kamo idu njeni zapisi; briše se tek prazna. Skrivena ugrađena kategorija na starim zapisima i dalje pokazuje pravi naziv.
+- Pretvaranje troška u prijenos (Aircash, bankomat...) mijenja saldo drugog novčanika. Smije ići samo kroz korisnikov pregled, uz provjeru salda i upozorenje kad je zapis nakon sidra.
+- Pozajmice: stanje po osobi (dano / vraćeno / preostalo), bez veze s `business_debts` u ovom krugu.
+- „Pokrivanje drugih pizdarija" je izuzeta iz svega, po ID-u.
