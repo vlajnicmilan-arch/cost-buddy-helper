@@ -61,3 +61,32 @@ describe('krug settle with source — pure rules', () => {
     expect(isAwaitingReceipt({ payer_expense_id: 'x', voided_at: '2026-09-01' })).toBe(false);
   });
 });
+
+import { resolveKrugNotification } from '@/lib/krugNotificationRoutes';
+import { canActOnReceipt } from '@/lib/krugSettleWithSource';
+
+describe('krug settle — recipient rules and notification route', () => {
+  const row = { to_user: 'm', payer_expense_id: 'e', recipient_confirmed_at: null, voided_at: null };
+  it('only the recipient, only while awaiting, never read-only', () => {
+    expect(canActOnReceipt(row, 'm')).toBe(true);
+    expect(canActOnReceipt(row, 'p')).toBe(false);
+    expect(canActOnReceipt(row, 'm', true)).toBe(false);
+    expect(canActOnReceipt({ ...row, recipient_confirmed_at: 'x' }, 'm')).toBe(false);
+    expect(canActOnReceipt({ ...row, payer_expense_id: null }, 'm')).toBe(false);
+  });
+  it('receipt-pending notification routes into the confirm dialog', () => {
+    const k = '11111111-1111-1111-1111-111111111111';
+    const l = '22222222-2222-2222-2222-222222222222';
+    const r = resolveKrugNotification('krug_settlement_marked_settled', {
+      krug_id: k, dedup_ref: `settled:${l}`, receipt_pending: true,
+    });
+    expect(r?.route).toBe(`/krug?id=${k}&settlement=${l}&confirm=1`);
+    const plain = resolveKrugNotification('krug_settlement_marked_settled', { krug_id: k, dedup_ref: `settled:${l}` });
+    expect(plain?.route).toBe(`/krug?id=${k}&settlement=${l}`);
+  });
+  it('recipient error codes are translated', () => {
+    for (const c of ['only_recipient_can_confirm', 'already_confirmed', 'legacy_settlement', 'recipient_amount_required', 'already_voided', 'source_not_writable']) {
+      expect(resolveKrugSettleErrorCode(`ERROR: ${c}`)).toBe(c);
+    }
+  });
+});

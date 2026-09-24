@@ -30,6 +30,8 @@ interface Props {
   readOnly?: boolean;
   /** Deep-link iz obavijesti o podmirenju — otvori povijest i istakni zapis. */
   focusSettlementId?: string | null;
+  /** Deep-link za primatelja: otvori prozor potvrde primitka. */
+  focusConfirmReceipt?: boolean;
 }
 
 const fmt = (n: number, currency: string) =>
@@ -41,6 +43,7 @@ export function KrugSettlementSection({
   isOwner = false,
   readOnly = false,
   focusSettlementId = null,
+  focusConfirmReceipt = false,
 }: Props) {
 
   const { t, i18n } = useTranslation();
@@ -396,6 +399,7 @@ export function KrugSettlementSection({
             isFullMember={isFullMember}
             readOnly={readOnly}
             focusSettlementId={focusSettlementId}
+            focusConfirmReceipt={focusConfirmReceipt}
           />
         </>
       )}

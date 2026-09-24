@@ -2876,6 +2876,14 @@
       "ownership_received": {
         "title": "You are now the Krug owner",
         "message": "The previous owner left and transferred ownership to you. You now manage this Krug."
+      },
+      "settlement_receipt_pending": {
+        "title": "You received a payment",
+        "message": "{{name}} paid you {{amount}} {{currency}} — where did it arrive?"
+      },
+      "settlement_receipt_pending_anon": {
+        "title": "You received a payment",
+        "message": "A Krug member paid you {{amount}} {{currency}} — where did it arrive?"
       }
     },
     "payment_source_transaction": {
@@ -6027,11 +6035,17 @@
         "payer_amount_required": "The source uses another currency — enter the amount actually paid.",
         "payer_amount_mismatch": "The paid amount must equal the settlement amount when the currency is the same.",
         "client_request_id_required": "Invalid request. Close and reopen the dialog.",
-        "unauthenticated": "Your session expired. Please sign in again."
+        "unauthenticated": "Your session expired. Please sign in again.",
+        "only_recipient_can_confirm": "Only the person who was paid can confirm receipt.",
+        "already_confirmed": "Receipt has already been confirmed.",
+        "legacy_settlement": "This is an older settlement without a source — receipt cannot be confirmed.",
+        "recipient_amount_required": "The source uses another currency — enter the amount actually received.",
+        "recipient_amount_mismatch": "The received amount must equal the settlement amount when the currency is the same."
       },
       "success": {
         "marked": "Settlement recorded.",
-        "voided": "Settlement voided."
+        "voided": "Settlement voided.",
+        "confirmed": "Receipt confirmed."
       },
       "dialog": {
         "title": "Mark as settled",
@@ -6065,7 +6079,19 @@
           "confirm": "Void settlement"
         },
         "paidFrom": "Paid from: {{source}}",
-        "awaitingReceipt": "Awaiting receipt confirmation"
+        "awaitingReceipt": "Awaiting receipt confirmation",
+        "confirmReceipt": "Confirm receipt",
+        "notReceived": "Not received",
+        "notReceivedReason": "I did not receive the payment",
+        "receivedOn": "Received at: {{source}}",
+        "received": "Received"
+      },
+      "confirm": {
+        "title": "Confirm receipt",
+        "body": "{{from}} paid you {{amount}} {{currency}}.",
+        "sourceLabel": "It arrived at:",
+        "receivedAmountLabel": "Actually received ({{currency}})",
+        "submit": "Confirm receipt"
       }
     },
     "override": {

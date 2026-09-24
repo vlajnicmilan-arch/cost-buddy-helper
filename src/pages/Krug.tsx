@@ -45,6 +45,8 @@ export default function Krug() {
   // Deep-link fokus iz obavijesti: konkretna transakcija ili zapis podmirenja.
   const [focusExpenseId, setFocusExpenseId] = useState<string | null>(null);
   const [focusSettlementId, setFocusSettlementId] = useState<string | null>(null);
+  // Recipient deep link (`&confirm=1`): open the receipt confirm dialog.
+  const [focusConfirmReceipt, setFocusConfirmReceipt] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Direktan ulaz na /krug bez prava: ako korisnik nema NI tier NI članstvo
@@ -78,11 +80,15 @@ export default function Krug() {
     if (!idParam && !expenseParam && !settlementParam) return;
     if (idParam && idParam !== selectedKrugId) setSelectedKrugId(idParam);
     if (expenseParam) setFocusExpenseId(expenseParam);
-    if (settlementParam) setFocusSettlementId(settlementParam);
+    if (settlementParam) {
+      setFocusSettlementId(settlementParam);
+      setFocusConfirmReceipt(searchParams.get('confirm') === '1');
+    }
     const next = new URLSearchParams(searchParams);
     next.delete('id');
     next.delete('expense');
     next.delete('settlement');
+    next.delete('confirm');
     setSearchParams(next, { replace: true });
   }, [searchParams, selectedKrugId, setSearchParams]);
 
@@ -133,6 +139,7 @@ export default function Krug() {
                 setSelectedKrugId(null);
                 setFocusExpenseId(null);
                 setFocusSettlementId(null);
+                setFocusConfirmReceipt(false);
               }}
               className="-ml-2"
             >
@@ -144,9 +151,11 @@ export default function Krug() {
               onLeft={() => setSelectedKrugId(null)}
               focusExpenseId={focusExpenseId}
               focusSettlementId={focusSettlementId}
+              focusConfirmReceipt={focusConfirmReceipt}
               onFocusConsumed={() => {
                 setFocusExpenseId(null);
                 setFocusSettlementId(null);
+                setFocusConfirmReceipt(false);
               }}
             />
           </>

@@ -8,7 +8,8 @@
  *
  * Odredišta:
  *  - `expense`     → `/krug?id=<krug>&expense=<expense>`  (pregled transakcije)
- *  - `settlement`  → `/krug?id=<krug>&settlement=<ledger>` (povijest podmirenja)
+ *  - `settlement`  → `/krug?id=<krug>&settlement=<ledger>` (povijest podmirenja;
+ *                    `&confirm=1` kad primatelj treba potvrditi primitak)
  *  - `krug`        → `/krug?id=<krug>`                     (ekran tog Kruga)
  *  - `list`        → `/krug`                               (Krug je obrisan)
  *
@@ -139,8 +140,10 @@ export function resolveKrugNotification(
   if (kind === 'settlement') {
     const settlementId = extractSettlementId(d);
     if (krugId && settlementId) {
+      // Recipient of a settlement with source lands directly in the confirm dialog.
+      const confirm = d.receipt_pending === true ? '&confirm=1' : '';
       return {
-        route: `/krug?id=${krugId}&settlement=${settlementId}`,
+        route: `/krug?id=${krugId}&settlement=${settlementId}${confirm}`,
         fallback_route: krugRoute,
         highlight: { type: 'settlement', id: settlementId },
       };
