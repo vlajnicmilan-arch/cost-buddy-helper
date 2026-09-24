@@ -2,6 +2,7 @@ import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { supabaseForUser } from "./_client";
 import { COUNTED_EXPENSE_STATUSES } from '../../countedExpense';
+import { isRealSpend } from '../../spendClassification';
 
 export default defineTool({
   name: "get_krug_summary",
@@ -31,12 +32,12 @@ export default defineTool({
       const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
       const { data: exp } = await sb
         .from("expenses")
-        .select("amount,type")
+        .select("amount,type,expense_nature")
         .in("payment_source", srcIds)
         .gte("date", since)
         .is("deleted_at", null)
         .in("status", COUNTED_EXPENSE_STATUSES);
-      for (const e of exp ?? []) if (e.type === "expense") recent_expense_total += Number(e.amount);
+      for (const e of exp ?? []) if (isRealSpend(e)) recent_expense_total += Number(e.amount);
     }
     const result = {
       krug: krug.data,

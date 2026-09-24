@@ -162,7 +162,7 @@ export const resolveTreeCategory = (
 
   if (raw) {
     const custom = customCategories.find((c) => c.id === raw);
-    const customIncomeId = raw.startsWith(CUSTOM_INCOME_PREFIX) ? raw : null;
+    const customIncomeId = raw.startsWith(CUSTOM_INCOME_PREFIX) ? raw.slice(CUSTOM_INCOME_PREFIX.length) : null;
     const customIncome = customIncomeId ? customCategories.find((c) => c.id === customIncomeId) : undefined;
     const hit = custom ?? customIncome;
     if (hit) {

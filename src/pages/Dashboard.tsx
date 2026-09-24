@@ -52,6 +52,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { CashflowForecast } from '@/components/CashflowForecast';
 import { SpendingCalendar } from '@/components/SpendingCalendar';
+import { isExpenseType, isIncomeType, isRealIncome, isRealSpend } from '@/lib/spendClassification';
 
 const CATEGORY_COLORS: Record<string, string> = {
   food: 'hsl(var(--category-food))',
@@ -137,8 +138,8 @@ const Dashboard = () => {
         return expDate >= date && expDate <= monthEnd;
       });
       
-      const income = monthExpenses.filter(e => e.type === 'income').reduce((sum, e) => sum + e.amount, 0);
-      const exp = monthExpenses.filter(e => e.type === 'expense').reduce((sum, e) => sum + e.amount, 0);
+      const income = monthExpenses.filter(e => isRealIncome(e)).reduce((sum, e) => sum + e.amount, 0);
+      const exp = monthExpenses.filter(e => isRealSpend(e)).reduce((sum, e) => sum + e.amount, 0);
       
       months.push({
         month: monthName,
@@ -172,7 +173,7 @@ const Dashboard = () => {
     const categoryMap: Record<string, number> = {};
     
     expenses
-      .filter(e => e.type === 'income')
+      .filter(e => isRealIncome(e))
       .forEach(e => {
         const name = e.category || 'Ostalo';
         categoryMap[name] = (categoryMap[name] || 0) + e.amount;
@@ -196,7 +197,7 @@ const Dashboard = () => {
       const dayStr = d.getDate().toString();
       const dayExpenses = expenses.filter(e => {
         const expDate = e.date;
-        return e.type === 'expense' && 
+        return isRealSpend(e) && 
                expDate.getDate() === d.getDate() && 
                expDate.getMonth() === d.getMonth() &&
                expDate.getFullYear() === d.getFullYear();
@@ -222,8 +223,8 @@ const Dashboard = () => {
       return d.getMonth() === lm.getMonth() && d.getFullYear() === lm.getFullYear();
     });
     
-    const thisMonthExpenses = thisMonth.filter(e => e.type === 'expense').reduce((sum, e) => sum + e.amount, 0);
-    const lastMonthExpenses = lastMonth.filter(e => e.type === 'expense').reduce((sum, e) => sum + e.amount, 0);
+    const thisMonthExpenses = thisMonth.filter(e => isRealSpend(e)).reduce((sum, e) => sum + e.amount, 0);
+    const lastMonthExpenses = lastMonth.filter(e => isRealSpend(e)).reduce((sum, e) => sum + e.amount, 0);
     
     const avgDailySpend = dailySpendingData.length > 0 
       ? dailySpendingData.reduce((sum, d) => sum + d.amount, 0) / dailySpendingData.length 
@@ -332,9 +333,9 @@ const Dashboard = () => {
                             </div>
                             <span className={cn(
                               'text-sm font-mono font-semibold flex-shrink-0 ml-2',
-                              expense.type === 'income' ? 'text-income' : expense.type === 'transfer' ? 'text-muted-foreground' : 'text-expense'
+                              isIncomeType(expense) ? 'text-income' : expense.type === 'transfer' ? 'text-muted-foreground' : 'text-expense'
                             )}>
-                              {expense.type === 'income' ? '+' : expense.type === 'expense' ? '-' : ''}
+                              {isIncomeType(expense) ? '+' : isExpenseType(expense) ? '-' : ''}
                               {formatAmount(expense.amount)}
                             </span>
                           </div>

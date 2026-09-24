@@ -13,6 +13,7 @@ import type { ConfidentialityLevel } from '@/lib/reportDesign';
 import type { ProjectMilestone } from '@/types/project';
 import type { ProjectExpense } from './types';
 import type { ProjectExpenseTotals } from '@/lib/projectTransactionFilters';
+import { isExpenseType, isIncomeType } from '@/lib/spendClassification';
 
 interface ProjectTransactionsListProps {
   expenses: ProjectExpense[]; // all (for empty state)
@@ -102,8 +103,8 @@ export const ProjectTransactionsList = ({
         <>
           {filteredExpenses.map((expense) => {
             const categoryInfo = resolveCategory(expense.category, customCategories);
-            const isIncome = expense.type === 'income';
-            const isOwnerLoan = expense.type === 'expense' && expense.owner_funding_choice === 'owner_loan';
+            const isIncome = isIncomeType(expense);
+            const isOwnerLoan = isExpenseType(expense) && expense.owner_funding_choice === 'owner_loan';
             const milestoneName = getMilestoneName(expense.milestone_id);
             const authorId = expense.submitted_by || expense.user_id;
             const authorName = profiles[authorId] || 'Član';

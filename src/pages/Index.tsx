@@ -38,6 +38,7 @@ import { APP_VERSION } from '@/lib/version';
 
 import { useTranslation } from 'react-i18next';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { isRealSpend } from '@/lib/spendClassification';
 
 const Index = () => {
   const { t } = useTranslation();
@@ -354,7 +355,7 @@ const Index = () => {
   const projectsForAssistant = useMemo(() =>
     projects.map(p => {
       const projectExpenses = allExpenses.filter(
-        e => e.project_id === p.id && e.type === 'expense' && e.status === 'approved'
+        e => e.project_id === p.id && isRealSpend(e) && e.status === 'approved'
       );
       const spent = projectExpenses.reduce((sum, e) => sum + e.amount, 0);
       return { name: p.name, total_budget: p.total_budget, spent, status: p.status, description: p.description, milestones: [] };

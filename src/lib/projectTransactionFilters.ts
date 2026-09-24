@@ -1,4 +1,5 @@
 import type { ProjectExpense, ProjectTransactionFilterState } from '@/components/projects/project-transactions/types';
+import { isRealIncome, isRealSpend } from '@/lib/spendClassification';
 
 export type { ProjectExpense, ProjectTransactionFilterState };
 
@@ -59,11 +60,11 @@ export function computeProjectExpenseTotals(filtered: ProjectExpense[]): Project
   let totalMaterial = 0;
   let totalLabor = 0;
   for (const e of filtered) {
-    if (e.type === 'expense') {
+    if (isRealSpend(e)) {
       totalExpenses += e.amount;
       if (e.work_type === 'material') totalMaterial += e.amount;
       else if (e.work_type === 'labor') totalLabor += e.amount;
-    } else if (e.type === 'income') {
+    } else if (isRealIncome(e)) {
       totalIncome += e.amount;
     }
   }

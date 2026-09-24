@@ -16,6 +16,7 @@ import {
 import { Expense } from '@/types/expense';
 import { isSessionGone } from '@/lib/sessionGone';
 import { loadWithRetry, fetchFailureMessage } from '@/lib/loadWithRetry';
+import { isRealSpend } from '@/lib/spendClassification';
 
 interface UseBudgetsOptions {
   externalExpenses?: Expense[];
@@ -149,7 +150,7 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
       // Filter expenses within the period
       // Only include expenses explicitly assigned to this budget via budget_id
       const periodExpenses = expenses.filter(e => {
-        if (e.type !== 'expense') return false;
+        if (!isRealSpend(e)) return false;
         if (e.status && e.status !== 'approved') return false;
         if (e.budget_id !== budget.id) return false;
         const expDate = e.date;
@@ -174,7 +175,7 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
       const prevEndDate = new Date(startDate.getTime() - 1);
       
       const prevPeriodExpenses = expenses.filter(e => {
-        if (e.type !== 'expense') return false;
+        if (!isRealSpend(e)) return false;
         if (e.status && e.status !== 'approved') return false;
         if (e.budget_id !== budget.id) return false;
         const expDate = e.date;
@@ -471,7 +472,7 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
       dayEnd.setHours(23, 59, 59, 999);
 
       const dayExpenses = expenses.filter(e => {
-        if (e.type !== 'expense') return false;
+        if (!isRealSpend(e)) return false;
         if (e.project_id) return false; // Exclude project transactions
         if (e.status && e.status !== 'approved') return false; // Only approved
         const expDate = e.date;

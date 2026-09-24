@@ -59,6 +59,7 @@ import { ProjectTransactionEditDialog } from './project-transactions/ProjectTran
 import { ProjectTransactionDetailDialog } from './project-transactions/ProjectTransactionDetailDialog';
 import { UnassignedMilestoneDialog, selectUnassignedExpenses } from './project-transactions/UnassignedMilestoneDialog';
 import type { ProjectExpense } from './project-transactions/types';
+import { isIncomeType } from '@/lib/spendClassification';
 
 interface ProjectTransactionsTabProps {
   projectId: string;
@@ -525,14 +526,14 @@ export const ProjectTransactionsTab = ({
       .map((e) => {
         const cat = resolveCategory(e.category, customCategories);
         const milestone = getMilestoneName(e.milestone_id);
-        const cls = e.type === 'income' ? 'pos' : 'neg';
+        const cls = isIncomeType(e) ? 'pos' : 'neg';
         return `<tr>
         <td>${format(new Date(e.date), 'dd.MM.yyyy')}</td>
         <td>${e.description}</td>
         <td>${cat.name}</td>
         <td>${milestone || '-'}</td>
         <td>${e.expense_nature === 'extraordinary' ? t('projects.extraordinary', 'Vanredni') : t('projects.regular', 'Redovni')}</td>
-        <td class="num ${cls}">${e.type === 'income' ? '+' : '-'}${formatAmount(e.amount)}</td>
+        <td class="num ${cls}">${isIncomeType(e) ? '+' : '-'}${formatAmount(e.amount)}</td>
       </tr>`;
       })
       .join('');

@@ -7,6 +7,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { isExpenseType, isIncomeType } from '@/lib/spendClassification';
 
 interface LookupItem { id: string; name: string }
 interface PaymentSourceLookup extends LookupItem {
@@ -211,14 +212,14 @@ export const GlobalSearch = ({
                   <span
                     className={cn(
                       'text-sm font-mono font-medium shrink-0',
-                      expense.type === 'income'
+                      isIncomeType(expense)
                         ? 'text-income'
                         : expense.type === 'transfer'
                           ? 'text-muted-foreground'
                           : 'text-destructive'
                     )}
                   >
-                    {expense.type === 'income' ? '+' : expense.type === 'expense' ? '-' : ''}
+                    {isIncomeType(expense) ? '+' : isExpenseType(expense) ? '-' : ''}
                     {formatAmount(expense.amount)}
                   </span>
                 </button>

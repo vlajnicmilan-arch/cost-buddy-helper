@@ -40,6 +40,7 @@ export interface IssueCandidate {
 
 import { getBaselineSummary } from "./projectCostBaseline";
 import type { PlannedMarginMilestone } from "./projectPlannedMargin";
+import { isRealSpend } from '@/lib/spendClassification';
 
 interface ProjectInput {
   id: string;
@@ -67,7 +68,7 @@ export const detectProjectLossZone = (
   const spentByProject = new Map<string, number>();
   for (const e of expenses) {
     if (!e.project_id) continue;
-    if (e.type !== "expense") continue;
+    if (!isRealSpend(e)) continue;
     if (e.expense_nature === "correction") continue;
     spentByProject.set(e.project_id, (spentByProject.get(e.project_id) ?? 0) + (Number(e.amount) || 0));
   }

@@ -10,6 +10,7 @@ import { getCategoryInfo } from '@/types/expense';
 import { loadJsPdf } from '@/lib/loadJsPdf';
 import { exportPDFDoc, type ExportMode } from '@/lib/fileExport';
 import { applyBrandFont, brandTableTheme, BRAND_TEAL, BRAND_TEAL_LIGHT, brandAutoTable } from '@/lib/pdfBranding';
+import { isExpenseType, isIncomeType, isRealIncome, isRealSpend } from '@/lib/spendClassification';
 
 interface Expense {
   id: string;
@@ -62,8 +63,8 @@ export const SpendingCalendar = ({ expenses }: SpendingCalendarProps) => {
         const day = d.getDate();
         if (map[day]) {
           map[day].transactions.push(e);
-          if (e.type === 'expense') map[day].expense += e.amount;
-          else if (e.type === 'income') map[day].income += e.amount;
+          if (isRealSpend(e)) map[day].expense += e.amount;
+          else if (isRealIncome(e)) map[day].income += e.amount;
         }
       }
     });
@@ -104,7 +105,7 @@ export const SpendingCalendar = ({ expenses }: SpendingCalendarProps) => {
 
     const tableData = selectedDayData.transactions.map(tx => {
       const catInfo = getCategoryInfo(tx.category as any);
-      const sign = tx.type === 'income' ? '+' : tx.type === 'expense' ? '-' : '';
+      const sign = isIncomeType(tx) ? '+' : isExpenseType(tx) ? '-' : '';
       return [
         toAscii(tx.description),
         toAscii(tx.merchant_name || '-'),
@@ -319,9 +320,9 @@ export const SpendingCalendar = ({ expenses }: SpendingCalendarProps) => {
                     </div>
                     <span className={cn(
                       "text-xs sm:text-sm font-mono font-semibold flex-shrink-0 ml-2",
-                      tx.type === 'income' ? 'text-income' : tx.type === 'transfer' ? 'text-muted-foreground' : 'text-expense'
+                      isIncomeType(tx) ? 'text-income' : tx.type === 'transfer' ? 'text-muted-foreground' : 'text-expense'
                     )}>
-                      {tx.type === 'income' ? '+' : tx.type === 'expense' ? '-' : ''}
+                      {isIncomeType(tx) ? '+' : isExpenseType(tx) ? '-' : ''}
                       {formatAmount(tx.amount)}
                     </span>
                   </div>

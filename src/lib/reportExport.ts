@@ -25,6 +25,7 @@ import {
 
   type CategoryRow,
 } from '@/lib/reportTotals';
+import { isExpenseType, isIncomeType, isRealSpend } from '@/lib/spendClassification';
 
 let pdfLibsPromise: Promise<{ jsPDF: typeof JsPDFType; autoTable: typeof import('jspdf-autotable').default }> | null = null;
 const loadPdfLibs = () => {
@@ -381,7 +382,7 @@ export const generatePDFReport = async (
         data.expenses
           .filter(
             (e) =>
-              e.type === 'expense' &&
+              isRealSpend(e) &&
               !isCorrectionTx(e as any) &&
               getCategoryInfo(e.category as any).name === topCategoryName,
           )
@@ -485,14 +486,14 @@ export const generatePDFReport = async (
       const isCorrection = isCorrectionTx(expense as any);
       const signed: 'pos' | 'neg' | 'neutral' = isCorrection
         ? 'neutral'
-        : expense.type === 'expense' ? 'neg' : expense.type === 'income' ? 'pos' : 'neutral';
+        : isExpenseType(expense) ? 'neg' : isIncomeType(expense) ? 'pos' : 'neutral';
       const hiddenMeta = [
         i18n.t('common.other', 'Ostalo') as string,
         i18n.t('common.unknown', 'Nepoznato') as string,
       ];
       const metaSource: (string | null | undefined)[] = isCorrection
         ? [i18n.t('reports.correctionLabel', 'Korekcija') as string]
-        : [categoryInfo.name, paymentInfo.name, expense.type !== 'expense' ? typeInfo.name : ''];
+        : [categoryInfo.name, paymentInfo.name, !isExpenseType(expense) ? typeInfo.name : ''];
       return {
         date: expense.date,
         title: expense.description || categoryInfo.name,
@@ -543,7 +544,7 @@ export const generateCSVReport = async (data: ReportData, mode: ExportMode = 'sa
         `"${safeDesc}"`,
         sanitizeCsvField(categoryInfo.name),
         sanitizeCsvField(paymentInfo.name),
-        expense.type === 'expense' ? -expense.amount : expense.amount,
+        isExpenseType(expense) ? -expense.amount : expense.amount,
       ].join(',');
     });
 

@@ -12,6 +12,7 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { downloadCalendarEventICS } from '@/lib/icsExport';
 import { ExportButton } from '@/components/ui/export-button';
 import type { ExportMode } from '@/lib/fileExport';
+import { isExpenseType, isIncomeType } from '@/lib/spendClassification';
 
 interface Props {
   open: boolean;
@@ -139,8 +140,8 @@ export const CalendarDayDetail = ({ open, onOpenChange, date, events, onToggleCo
                        event.type === 'birthday' ? t('calendar.birthday', 'Rođendan') :
                        event.type === 'planned_expense' ? t('calendar.plannedExpense', 'Planirano') :
                        event.type === 'deadline' ? t('calendar.deadline', 'Rok') :
-                       event.type === 'income' ? t('dashboard.income', 'Prihod') :
-                       event.type === 'expense' ? t('dashboard.expenses', 'Trošak') :
+                       isIncomeType(event) ? t('dashboard.income', 'Prihod') :
+                       isExpenseType(event) ? t('dashboard.expenses', 'Trošak') :
                        event.type === 'transfer' ? t('common.transfer', 'Transfer') :
                        event.type === 'holiday' ? t('calendar.holiday', 'Praznik') :
                        t('calendar.event', 'Događaj')}
@@ -152,9 +153,9 @@ export const CalendarDayDetail = ({ open, onOpenChange, date, events, onToggleCo
                 {event.amount != null && (
                   <span className={cn(
                     "text-sm font-mono font-semibold flex-shrink-0",
-                    event.type === 'income' ? 'text-green-500' : 'text-red-500'
+                    isIncomeType(event) ? 'text-green-500' : 'text-red-500'
                   )}>
-                    {event.type === 'income' ? '+' : '-'}{formatAmount(event.amount)}
+                    {isIncomeType(event) ? '+' : '-'}{formatAmount(event.amount)}
                   </span>
                 )}
 

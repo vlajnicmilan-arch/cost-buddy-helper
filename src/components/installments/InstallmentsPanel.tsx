@@ -43,6 +43,7 @@ import { format, isAfter, isBefore, startOfToday } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
+import { isExpenseType } from '@/lib/spendClassification';
 
 interface InstallmentDetailContentProps {
   plan: InstallmentPlanWithProgress;
@@ -345,7 +346,7 @@ export const InstallmentsPanel = () => {
                               <div>
                                 <p className="font-medium">{plan.description}</p>
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                  {plan.type === 'expense' ? (
+                                  {isExpenseType(plan) ? (
                                     <TrendingDown className="w-3 h-3 text-expense" />
                                   ) : (
                                     <TrendingUp className="w-3 h-3 text-income" />

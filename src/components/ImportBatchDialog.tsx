@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { computeBreakdown, mapUndoResult } from '@/lib/importReview/undoBatch';
+import { isExpenseType, isRealIncome, isRealSpend } from '@/lib/spendClassification';
 
 interface ImportBatchDialogProps {
   open: boolean;
@@ -48,8 +49,8 @@ export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses, on
   const totals = useMemo(() => {
     let inc = 0, exp = 0;
     for (const e of batchExpenses) {
-      if (e.type === 'income') inc += e.amount;
-      else if (e.type === 'expense') exp += e.amount;
+      if (isRealIncome(e)) inc += e.amount;
+      else if (isRealSpend(e)) exp += e.amount;
     }
     return { totalIncome: inc, totalExpenses: exp };
   }, [batchExpenses]);
@@ -218,10 +219,10 @@ export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses, on
                         </div>
                         <p className={cn(
                           "font-mono font-bold text-base leading-tight shrink-0",
-                          expense.type === 'expense' ? 'text-expense' :
+                          isExpenseType(expense) ? 'text-expense' :
                           expense.type === 'transfer' ? 'text-muted-foreground' : 'text-income'
                         )}>
-                          {expense.type === 'expense' ? '-' : '+'}{formatAmount(expense.amount)}
+                          {isExpenseType(expense) ? '-' : '+'}{formatAmount(expense.amount)}
                         </p>
                       </div>
                     </div>

@@ -36,6 +36,7 @@ import { LocalStorage } from '@/hooks/useLocalStorage';
 import { OwnerFundingChoiceRow } from './business/OwnerFundingChoiceRow';
 import { KrugTransactionPanel } from './krug/KrugTransactionPanel';
 import { KrugExpenseSplitPanelGate } from './krug/KrugExpenseSplitPanelGate';
+import { isExpenseType, isIncomeType } from '@/lib/spendClassification';
 
 
 interface TransactionDetailDialogProps {
@@ -462,18 +463,18 @@ export const TransactionDetailDialog = ({
           {/* Amount */}
           <div className={cn(
             "p-4 rounded-xl text-center",
-            expense.type === 'income' ? "bg-income/10" : 
+            isIncomeType(expense) ? "bg-income/10" : 
             expense.type === 'transfer' ? "bg-primary/10" : "bg-expense/10"
           )}>
             <p className="text-sm text-muted-foreground mb-1">
-              {expense.type === 'income' ? t('transactions.income') : expense.type === 'transfer' ? t('transactions.transfer') : t('transactions.expense')}
+              {isIncomeType(expense) ? t('transactions.income') : expense.type === 'transfer' ? t('transactions.transfer') : t('transactions.expense')}
             </p>
             <p className={cn(
               "text-3xl font-bold font-mono",
-              expense.type === 'income' ? "text-income" : 
+              isIncomeType(expense) ? "text-income" : 
               expense.type === 'transfer' ? "text-primary" : "text-expense"
             )}>
-              {expense.type === 'expense' ? '-' : expense.type === 'transfer' ? '↔' : '+'}{formatAmount(Number(expense.amount), expense.currency as any)}
+              {isExpenseType(expense) ? '-' : expense.type === 'transfer' ? '↔' : '+'}{formatAmount(Number(expense.amount), expense.currency as any)}
             </p>
             {expense.type === 'transfer' && (
               <p className="text-xs text-muted-foreground mt-1">
@@ -518,7 +519,7 @@ export const TransactionDetailDialog = ({
           {/* Krug Faza B — odluka o prijedlogu ručne podjele. Pregled je JEDINO
               mjesto gdje ne-autor punopravni član može odlučiti (Uredi je
               rezerviran autoru). Read-only kontekst: bez kreiranja prijedloga. */}
-          {expense.type === 'expense' &&
+          {isExpenseType(expense) &&
             !readOnlyKrug &&
             expense.krug_id &&
             expense.krug_privacy === 'shared' && (

@@ -1,6 +1,7 @@
 // WS3a-2 Batch A — refactored to write i18n keys into notification row.
 // Instant push remains disabled — recipients see it as in-app bell only.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { isIncomeType } from '../_shared/spendClassification.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -68,7 +69,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       .single();
 
     const submitterName = profile?.display_name || user.email?.split('@')[0] || 'Član';
-    const typeSlot = expense.type === 'income' ? 'income' : expense.type === 'transfer' ? 'transfer' : 'expense';
+    const typeSlot = isIncomeType(expense) ? 'income' : expense.type === 'transfer' ? 'transfer' : 'expense';
     const formattedAmount = new Intl.NumberFormat('hr-HR', {
       style: 'currency',
       currency: 'EUR'

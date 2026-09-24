@@ -1,3 +1,4 @@
+import { isRealIncome, isRealSpend } from '@/lib/spendClassification';
 /**
  * Unified project financial calculations.
  *
@@ -67,13 +68,13 @@ export const calculateNetExpenseAmount = (
 
 export const calculateProjectSpent = (expenses: RawProjectExpense[]): number => {
   return expenses
-    .filter(e => isCounted(e) && e.type === 'expense')
+    .filter(e => isCounted(e) && isRealSpend(e))
     .reduce((sum, e) => sum + calculateNetExpenseAmount(e, expenses), 0);
 };
 
 export const calculateProjectIncomeFromTransactions = (expenses: RawProjectExpense[]): number => {
   return expenses
-    .filter(e => isCounted(e) && e.type === 'income')
+    .filter(e => isCounted(e) && isRealIncome(e))
     .reduce((sum, e) => sum + Number(e.amount || 0), 0);
 };
 

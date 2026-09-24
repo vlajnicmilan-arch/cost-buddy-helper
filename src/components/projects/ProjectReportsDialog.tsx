@@ -30,6 +30,7 @@ import {
 } from 'recharts';
 import { ProjectRevisionsReport } from './ProjectRevisionsReport';
 import { useProjectContractAmendments } from '@/hooks/useProjectContractAmendments';
+import { isRealSpend } from '@/lib/spendClassification';
 
 interface ProjectExpense {
   id: string;
@@ -141,7 +142,7 @@ export const ProjectReportsDialog = ({
     let unassigned = 0;
 
     expenses.forEach(e => {
-      if (e.type === 'expense') {
+      if (isRealSpend(e)) {
         if (e.milestone_id) {
           byMilestone[e.milestone_id] = (byMilestone[e.milestone_id] || 0) + e.amount;
         } else {
@@ -176,7 +177,7 @@ export const ProjectReportsDialog = ({
     const byMember: Record<string, number> = {};
 
     expenses.forEach(e => {
-      if (e.type === 'expense') {
+      if (isRealSpend(e)) {
         byMember[e.user_id] = (byMember[e.user_id] || 0) + e.amount;
       }
     });

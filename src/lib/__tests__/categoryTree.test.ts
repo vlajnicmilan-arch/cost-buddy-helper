@@ -83,6 +83,15 @@ describe('categoryTree', () => {
     expect([m.isCustom, m.groupKey]).toEqual([true, null]);
   });
 
+  it('custom_income_<uuid> traži korisničku kategoriju po uuid-u bez prefiksa', () => {
+    const id = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+    const ok = resolveTreeCategory(`custom_income_${id}`, [{ id, name: 'Najam' }]);
+    expect([ok.isCustom, ok.customName, ok.invalid]).toEqual([true, 'Najam', false]);
+    const miss = resolveTreeCategory('custom_income_ffffffff-0000-0000-0000-000000000000', [{ id, name: 'Najam' }]);
+    expect([miss.isCustom, miss.invalid]).toEqual([false, true]);
+  });
+
+
   it('i18n: svaka skupina i list postoje u hr/en/de', () => {
     for (const loc of [hr, en, de] as Array<Record<string, any>>) {
       for (const g of CATEGORY_GROUPS) expect(loc.categoryTree.groups[g.key]).toBeTruthy();

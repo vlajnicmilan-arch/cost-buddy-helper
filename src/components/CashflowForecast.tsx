@@ -19,6 +19,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import { isRealIncome, isRealSpend } from '@/lib/spendClassification';
 
 interface ForecastWeek {
   label: string;
@@ -108,9 +109,9 @@ export const CashflowForecast = () => {
       for (const rec of recurringTransactions) {
         const occurrences = getNextOccurrences(rec, weekStart, weekEnd);
         for (const _ of occurrences) {
-          if (rec.type === 'income') {
+          if (isRealIncome(rec)) {
             weekIncome += rec.amount;
-          } else if (rec.type === 'expense') {
+          } else if (isRealSpend(rec)) {
             weekExpenses += rec.amount;
           }
         }
@@ -122,7 +123,7 @@ export const CashflowForecast = () => {
           if (inst.status === 'planned') {
             const dueDate = inst.due_date instanceof Date ? inst.due_date : new Date(inst.due_date);
             if (isWithinInterval(dueDate, { start: weekStart, end: weekEnd })) {
-              if (plan.type === 'income') {
+              if (isRealIncome(plan)) {
                 weekIncome += inst.amount;
               } else {
                 weekExpenses += inst.amount;

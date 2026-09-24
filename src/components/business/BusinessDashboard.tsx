@@ -7,6 +7,7 @@ import { startOfMonth, endOfMonth, subMonths, format } from 'date-fns';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
 import { useTranslation } from 'react-i18next';
 import { ProjectStatusBoard } from './ProjectStatusBoard';
+import { isRealIncome, isRealSpend } from '@/lib/spendClassification';
 
 interface Props {
   expenses: Expense[];
@@ -29,13 +30,13 @@ export const BusinessDashboard = ({ expenses, totalReceivable, totalPayable }: P
     const thisMonth = expenses.filter(e => e.date >= monthStart && e.date <= monthEnd);
     const prevMonth = expenses.filter(e => e.date >= prevMonthStart && e.date <= prevMonthEnd);
 
-    const income = thisMonth.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0);
-    const expense = thisMonth.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0);
-    const prevIncome = prevMonth.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0);
-    const prevExpense = prevMonth.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0);
+    const income = thisMonth.filter(e => isRealIncome(e)).reduce((s, e) => s + e.amount, 0);
+    const expense = thisMonth.filter(e => isRealSpend(e)).reduce((s, e) => s + e.amount, 0);
+    const prevIncome = prevMonth.filter(e => isRealIncome(e)).reduce((s, e) => s + e.amount, 0);
+    const prevExpense = prevMonth.filter(e => isRealSpend(e)).reduce((s, e) => s + e.amount, 0);
 
     const catMap = new Map<string, number>();
-    thisMonth.filter(e => e.type === 'expense').forEach(e => {
+    thisMonth.filter(e => isRealSpend(e)).forEach(e => {
       catMap.set(e.category, (catMap.get(e.category) || 0) + e.amount);
     });
     const categories = Array.from(catMap.entries())
@@ -50,8 +51,8 @@ export const BusinessDashboard = ({ expenses, totalReceivable, totalPayable }: P
       const mExpenses = expenses.filter(e => e.date >= ms && e.date <= me);
       return {
         name: format(m, 'MMM'),
-        income: mExpenses.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0),
-        expense: mExpenses.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0),
+        income: mExpenses.filter(e => isRealIncome(e)).reduce((s, e) => s + e.amount, 0),
+        expense: mExpenses.filter(e => isRealSpend(e)).reduce((s, e) => s + e.amount, 0),
       };
     });
 

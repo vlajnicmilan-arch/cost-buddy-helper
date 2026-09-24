@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { Expense } from "@/types/expense";
 import type { AIInsight } from "./useAIInsights";
+import { isRealSpend } from '@/lib/spendClassification';
 
 /**
  * Deterministički, lokalni "data quality" uvidi za sekciju "Za pažnju".
@@ -16,7 +17,7 @@ export const useLocalAttentionInsights = (expenses: Expense[]): AIInsight[] => {
     const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
 
     const uncategorized = expenses.filter(e => {
-      if (e.type !== "expense") return false;
+      if (!isRealSpend(e)) return false;
       const ts = new Date(e.date).getTime();
       if (Number.isNaN(ts) || ts < cutoff) return false;
       const desc = (e.description ?? "").trim();

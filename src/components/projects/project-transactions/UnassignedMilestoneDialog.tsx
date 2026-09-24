@@ -22,6 +22,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import type { ProjectMilestone } from '@/types/project';
 import type { ProjectExpense } from './types';
+import { isIncomeType } from '@/lib/spendClassification';
 
 interface UnassignedMilestoneDialogProps {
   open: boolean;
@@ -121,10 +122,10 @@ export const UnassignedMilestoneDialog = ({
                       <span
                         className={cn(
                           'font-mono text-sm font-semibold shrink-0',
-                          expense.type === 'income' ? 'text-income' : 'text-expense',
+                          isIncomeType(expense) ? 'text-income' : 'text-expense',
                         )}
                       >
-                        {expense.type === 'income' ? '+' : '-'}
+                        {isIncomeType(expense) ? '+' : '-'}
                         {formatAmount(Math.abs(expense.amount))}
                       </span>
                     </div>

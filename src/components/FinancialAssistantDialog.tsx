@@ -26,6 +26,7 @@ import { useTranslation } from 'react-i18next';
 import { applyBrandFont, brandTableTheme, BRAND_TEAL, BRAND_TEAL_LIGHT, brandAutoTable } from '@/lib/pdfBranding';
 import { parseProposalMarkers } from '@/lib/aiProposal';
 import { AiProposalCard } from '@/components/AiProposalCard';
+import { isIncomeType, isRealIncome, isRealSpend } from '@/lib/spendClassification';
 
 
 interface BudgetInfo {
@@ -101,7 +102,7 @@ export const FinancialAssistantDialog = ({
     // Category breakdown for current month
     const categoryTotals: Record<string, number> = {};
     expenses.forEach(e => {
-      if (e.type === 'expense') {
+      if (isRealSpend(e)) {
         categoryTotals[e.category] = (categoryTotals[e.category] || 0) + e.amount;
       }
     });
@@ -133,7 +134,7 @@ export const FinancialAssistantDialog = ({
         const sourceLabel = sourceName ? ` na ${sourceName}` : '';
         const correctionTag = (e as any).expense_nature === 'correction' ? ' [KOREKCIJA]' : '';
         const merchantLabel = e.merchant_name ? ` (${e.merchant_name})` : '';
-        return `- ${e.date.toLocaleDateString('hr-HR')}: ${e.description}${merchantLabel}${correctionTag}${sourceLabel} (${e.type === 'income' ? '+' : '-'}${formatAmount(e.amount)}) [${e.type}]`;
+        return `- ${e.date.toLocaleDateString('hr-HR')}: ${e.description}${merchantLabel}${correctionTag}${sourceLabel} (${isIncomeType(e) ? '+' : '-'}${formatAmount(e.amount)}) [${e.type}]`;
       })
       .join('\n') || 'Nema transakcija';
 
@@ -194,17 +195,17 @@ export const FinancialAssistantDialog = ({
       );
 
       const monthIncome = monthExpenses
-        .filter(e => e.type === 'income')
+        .filter(e => isRealIncome(e))
         .reduce((sum, e) => sum + e.amount, 0);
       
       const monthExpenseTotal = monthExpenses
-        .filter(e => e.type === 'expense')
+        .filter(e => isRealSpend(e))
         .reduce((sum, e) => sum + e.amount, 0);
 
       // Top categories for this month
       const monthCategoryTotals: Record<string, number> = {};
       monthExpenses
-        .filter(e => e.type === 'expense')
+        .filter(e => isRealSpend(e))
         .forEach(e => {
           monthCategoryTotals[e.category] = (monthCategoryTotals[e.category] || 0) + e.amount;
         });

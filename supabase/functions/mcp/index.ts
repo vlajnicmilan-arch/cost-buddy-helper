@@ -218,6 +218,27 @@ import { z as z4 } from "npm:zod@^3.25.76";
 // src/lib/countedExpense.ts
 var COUNTED_EXPENSE_STATUSES = ["approved"];
 
+// src/lib/spendClassification.ts
+var NON_SPENDING_NATURES = [
+  "correction",
+  // Rezervirano: vrijednost još ne postoji u bazi.
+  "krug_settlement"
+];
+function isExcludedFromSpend(row) {
+  if (!row) return true;
+  if (row.type === "transfer") return true;
+  if (row.deleted_at != null) return true;
+  if (row.expense_nature != null && NON_SPENDING_NATURES.includes(row.expense_nature)) return true;
+  if (row.movement_kind != null) return true;
+  return false;
+}
+function isRealSpend(row) {
+  return !!row && row.type === "expense" && !isExcludedFromSpend(row);
+}
+function isRealIncome(row) {
+  return !!row && row.type === "income" && !isExcludedFromSpend(row);
+}
+
 // src/lib/mcp/tools/get-budget-details.ts
 var get_budget_details_default = defineTool5({
   name: "get_budget_details",
@@ -235,14 +256,14 @@ var get_budget_details_default = defineTool5({
     const [plan, categories, spent] = await Promise.all([
       sb.from("budget_plans").select("*").eq("id", budget_id).maybeSingle(),
       sb.from("budget_categories").select("id,category,limit_amount,icon,color").eq("budget_id", budget_id),
-      sb.from("expenses").select("category,amount,type").eq("budget_id", budget_id).is("deleted_at", null).in("status", COUNTED_EXPENSE_STATUSES)
+      sb.from("expenses").select("category,amount,type,expense_nature").eq("budget_id", budget_id).is("deleted_at", null).in("status", COUNTED_EXPENSE_STATUSES)
     ]);
     if (plan.error) return { content: [{ type: "text", text: plan.error.message }], isError: true };
     if (!plan.data) return { content: [{ type: "text", text: "Budget not found" }], isError: true };
     const spentByCat = /* @__PURE__ */ new Map();
     let totalSpent = 0;
     for (const e of spent.data ?? []) {
-      if (e.type !== "expense") continue;
+      if (!isRealSpend(e)) continue;
       const cur = spentByCat.get(e.category) ?? 0;
       spentByCat.set(e.category, cur + Number(e.amount));
       totalSpent += Number(e.amount);
@@ -363,12 +384,12 @@ var list_projects_default = defineTool8({
     const ids = (projects ?? []).map((p) => p.id);
     let totals = /* @__PURE__ */ new Map();
     if (ids.length) {
-      const { data: exp } = await sb.from("expenses").select("project_id,type,amount").in("project_id", ids).is("deleted_at", null).in("status", COUNTED_EXPENSE_STATUSES);
+      const { data: exp } = await sb.from("expenses").select("project_id,type,amount,expense_nature").in("project_id", ids).is("deleted_at", null).in("status", COUNTED_EXPENSE_STATUSES);
       for (const e of exp ?? []) {
         const key = e.project_id;
         const cur = totals.get(key) ?? { income: 0, expense: 0 };
-        if (e.type === "income") cur.income += Number(e.amount);
-        else if (e.type === "expense") cur.expense += Number(e.amount);
+        if (isRealIncome(e)) cur.income += Number(e.amount);
+        else if (isRealSpend(e)) cur.expense += Number(e.amount);
         totals.set(key, cur);
       }
     }
@@ -403,14 +424,14 @@ var get_project_details_default = defineTool9({
       sb.from("projects").select("*").eq("id", project_id).is("deleted_at", null).maybeSingle(),
       sb.from("project_milestones_scoped").select("id,name,status,budget,start_date,due_date,actual_start_date,actual_end_date,completed_at").eq("project_id", project_id).is("deleted_at", null).order("sort_order"),
       sb.from("project_members").select("*").eq("project_id", project_id),
-      sb.from("expenses").select("type,amount").eq("project_id", project_id).is("deleted_at", null).in("status", COUNTED_EXPENSE_STATUSES)
+      sb.from("expenses").select("type,amount,expense_nature").eq("project_id", project_id).is("deleted_at", null).in("status", COUNTED_EXPENSE_STATUSES)
     ]);
     if (project.error) return { content: [{ type: "text", text: project.error.message }], isError: true };
     if (!project.data) return { content: [{ type: "text", text: "Project not found" }], isError: true };
     let income = 0, expense = 0;
     for (const e of expenses.data ?? []) {
-      if (e.type === "income") income += Number(e.amount);
-      else if (e.type === "expense") expense += Number(e.amount);
+      if (isRealIncome(e)) income += Number(e.amount);
+      else if (isRealSpend(e)) expense += Number(e.amount);
     }
     const result = {
       project: project.data,
@@ -576,8 +597,8 @@ var get_krug_summary_default = defineTool14({
     let recent_expense_total = 0;
     if (srcIds.length) {
       const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1e3).toISOString();
-      const { data: exp } = await sb.from("expenses").select("amount,type").in("payment_source", srcIds).gte("date", since).is("deleted_at", null).in("status", COUNTED_EXPENSE_STATUSES);
-      for (const e of exp ?? []) if (e.type === "expense") recent_expense_total += Number(e.amount);
+      const { data: exp } = await sb.from("expenses").select("amount,type,expense_nature").in("payment_source", srcIds).gte("date", since).is("deleted_at", null).in("status", COUNTED_EXPENSE_STATUSES);
+      for (const e of exp ?? []) if (isRealSpend(e)) recent_expense_total += Number(e.amount);
     }
     const result = {
       krug: krug.data,

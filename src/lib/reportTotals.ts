@@ -1,3 +1,4 @@
+import { isRealIncome, isRealSpend } from '@/lib/spendClassification';
 // Pure helpers for the transactions PDF/CSV report layer.
 // Report-only: never used by the balance engine, import or persistence paths.
 
@@ -31,8 +32,8 @@ export const computeReportTotals = <T extends ReportTotalsTx>(
   const acc = list.reduce<ReportTotals>(
     (a, e) => {
       if (isCorrectionTx(e)) return a;
-      if (e.type === 'income') a.income += e.amount;
-      else if (e.type === 'expense') a.expenses += e.amount;
+      if (isRealIncome(e)) a.income += e.amount;
+      else if (isRealSpend(e)) a.expenses += e.amount;
       else if (e.type === 'transfer') a.transfers += e.amount;
       return a;
     },
@@ -49,7 +50,7 @@ export const buildCategoryTotalsById = <T extends ReportTotalsTx>(
   const byCategory: Record<string, number> = {};
   for (const e of list) {
     if (isCorrectionTx(e)) continue;
-    if (e.type !== 'expense') continue;
+    if (!isRealSpend(e)) continue;
     const key = e.category || 'other';
     byCategory[key] = (byCategory[key] || 0) + e.amount;
   }
@@ -477,7 +478,7 @@ export const findLargestExpense = <T extends ReportTotalsTx & { description?: st
   let best: T | null = null;
   for (const e of list) {
     if (isCorrectionTx(e)) continue;
-    if (e.type !== 'expense') continue;
+    if (!isRealSpend(e)) continue;
     if (!best || e.amount > best.amount) best = e;
   }
   return best;

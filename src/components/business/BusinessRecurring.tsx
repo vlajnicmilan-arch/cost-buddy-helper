@@ -13,6 +13,7 @@ import { RecurringTransactionDialog } from '@/components/recurring/RecurringTran
 import { useRecurringTransactions } from '@/hooks/useRecurringTransactions';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { useWriteGuard } from '@/hooks/useWriteGuard';
+import { isIncomeType, isRealSpend } from '@/lib/spendClassification';
 
 
 interface RecurringTx {
@@ -78,7 +79,7 @@ export const BusinessRecurring = () => {
 
   const monthlyTotal = active.reduce((sum, i) => {
     const factor = i.frequency === 'daily' ? 30 : i.frequency === 'weekly' ? 4.33 : i.frequency === 'yearly' ? 1 / 12 : 1;
-    return sum + (i.type === 'expense' ? i.amount * factor : 0);
+    return sum + (isRealSpend(i) ? i.amount * factor : 0);
   }, 0);
 
   return (
@@ -121,7 +122,7 @@ export const BusinessRecurring = () => {
                       </span>
                     </div>
                   </div>
-                  <span className={`text-sm font-bold ${item.type === 'income' ? 'text-income' : 'text-expense'}`}>
+                  <span className={`text-sm font-bold ${isIncomeType(item) ? 'text-income' : 'text-expense'}`}>
                     {formatAmount(item.amount)}
                   </span>
                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => toggleActive(item.id, true)}>

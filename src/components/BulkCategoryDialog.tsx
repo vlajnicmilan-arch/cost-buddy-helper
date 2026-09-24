@@ -12,6 +12,7 @@ import { Tags, Search, CheckSquare, Square, Loader2 } from 'lucide-react';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { useTranslation } from 'react-i18next';
+import { isIncomeType } from '@/lib/spendClassification';
 
 interface BulkCategoryDialogProps {
   expenses: Expense[];
@@ -258,9 +259,9 @@ export const BulkCategoryDialog = ({ expenses, onUpdateExpenses }: BulkCategoryD
                     </div>
                     
                     <p className={`font-mono text-sm font-medium ${
-                      expense.type === 'income' ? 'text-income' : 'text-expense'
+                      isIncomeType(expense) ? 'text-income' : 'text-expense'
                     }`}>
-                      {expense.type === 'income' ? '+' : '-'}{formatAmount(expense.amount)}
+                      {isIncomeType(expense) ? '+' : '-'}{formatAmount(expense.amount)}
                     </p>
                   </div>
                 );

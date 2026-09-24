@@ -12,6 +12,7 @@ import { applyBrandFont, brandTableTheme, formatBrandCurrency } from '@/lib/pdfB
 import { exportPDFDoc, type ExportMode } from '@/lib/fileExport';
 import { ExportButton } from '@/components/ui/export-button';
 import { useTranslation } from 'react-i18next';
+import { isRealIncome, isRealSpend } from '@/lib/spendClassification';
 
 type Period = 'monthly' | 'quarterly' | 'yearly';
 
@@ -44,8 +45,8 @@ export const BusinessReports = ({ expenses, companyName }: Props) => {
     return Array.from({ length: count }, (_, i) => {
       const { start, end, label } = getPeriodRange(period, count - 1 - i);
       const periodExpenses = expenses.filter(e => e.date >= start && e.date <= end);
-      const income = periodExpenses.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0);
-      const expense = periodExpenses.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0);
+      const income = periodExpenses.filter(e => isRealIncome(e)).reduce((s, e) => s + e.amount, 0);
+      const expense = periodExpenses.filter(e => isRealSpend(e)).reduce((s, e) => s + e.amount, 0);
       return { label, income, expense, profit: income - expense, count: periodExpenses.length };
     });
   }, [expenses, period]);

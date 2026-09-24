@@ -88,6 +88,7 @@ import { hr } from 'date-fns/locale';
 import { Search, CheckSquare, Square, Loader2 } from 'lucide-react';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
+import { isIncomeType } from '@/lib/spendClassification';
 
 interface BulkPaymentSourceDialogControlledProps {
   expenses: Expense[];
@@ -250,8 +251,8 @@ const BulkPaymentSourceDialogControlled = ({ expenses, onUpdateExpenses, open, o
                         <span className="flex items-center gap-1">{sourceInfo.icon} {sourceInfo.name}</span>
                       </div>
                     </div>
-                    <p className={`font-mono text-sm font-medium ${expense.type === 'income' ? 'text-income' : 'text-expense'}`}>
-                      {expense.type === 'income' ? '+' : '-'}{formatAmount(expense.amount)}
+                    <p className={`font-mono text-sm font-medium ${isIncomeType(expense) ? 'text-income' : 'text-expense'}`}>
+                      {isIncomeType(expense) ? '+' : '-'}{formatAmount(expense.amount)}
                     </p>
                   </div>
                 );
@@ -451,8 +452,8 @@ const BulkCategoryDialogControlled = ({ expenses, onUpdateExpenses, open, onOpen
                         <span className="flex items-center gap-1">{categoryInfo.icon} {categoryInfo.name}</span>
                       </div>
                     </div>
-                    <p className={`font-mono text-sm font-medium ${expense.type === 'income' ? 'text-income' : 'text-expense'}`}>
-                      {expense.type === 'income' ? '+' : '-'}{formatAmount(expense.amount)}
+                    <p className={`font-mono text-sm font-medium ${isIncomeType(expense) ? 'text-income' : 'text-expense'}`}>
+                      {isIncomeType(expense) ? '+' : '-'}{formatAmount(expense.amount)}
                     </p>
                   </div>
                 );
