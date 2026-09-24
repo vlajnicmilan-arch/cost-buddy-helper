@@ -39,13 +39,28 @@ apply_list "$BAL/BALANCE_MIGRATIONS.txt"
 psql -v ON_ERROR_STOP=1 -q -f "$HERE/baseline_extra.sql"
 apply_list "$HERE/MERGE_MIGRATIONS.txt"
 
-# Drizzle migracija 0012 mijenja merge_manual_with_bank (nasljeđivanje event_at /
-# time_confidence s bankovnog retka). Ostatak te migracije (anchor_audit, align,
-# preview) ne pripada kuriranom baselineu, pa se primjenjuje samo taj blok.
-MERGE_FN_SRC="$(ls "$ROOT"/drizzle/migrations/0012_*.sql | head -1)"
-sed -n '/C) spajanje ne pomi/,$p' "$MERGE_FN_SRC" > /tmp/merge_fn_0012.sql
+# Zadnja Drizzle migracija koja redefinira merge_manual_with_bank (0012, 0013,
+# i svaka buduća). Iz nje se primjenjuje samo blok funkcije (CREATE OR REPLACE
+# ... do njezina GRANT EXECUTE), jer ostatak migracije ne pripada baselineu.
+MERGE_FN_SRC="$(grep -l 'CREATE OR REPLACE FUNCTION public.merge_manual_with_bank' "$ROOT"/drizzle/migrations/*.sql | sort | tail -1)"
+if [ -z "$MERGE_FN_SRC" ]; then
+  echo "ERROR: no drizzle migration redefines merge_manual_with_bank" >&2
+  exit 1
+fi
+awk '/CREATE OR REPLACE FUNCTION public\.merge_manual_with_bank/{on=1}
+     on{print}
+     on && /GRANT EXECUTE ON FUNCTION public\.merge_manual_with_bank/{exit}' \
+  "$MERGE_FN_SRC" > /tmp/merge_fn_latest.sql
 echo "-- applying $(basename "$MERGE_FN_SRC") (merge_manual_with_bank block)"
-psql -v ON_ERROR_STOP=1 -q -f /tmp/merge_fn_0012.sql
+psql -v ON_ERROR_STOP=1 -q -f /tmp/merge_fn_latest.sql
+
+# Brana: testirana funkcija mora imati živo pravilo valute (NULL = EUR).
+if ! psql -Atc "SELECT pg_get_functiondef('public.merge_manual_with_bank(uuid,uuid)'::regprocedure)" \
+     | grep -q "COALESCE(v_manual.currency, *'EUR')"; then
+  echo "ERROR: tested merge_manual_with_bank lacks COALESCE(currency,'EUR') — harness is not testing the live definition (source: $(basename "$MERGE_FN_SRC"))" >&2
+  exit 1
+fi
+echo "-- gate OK: merge_manual_with_bank has COALESCE(currency,'EUR')"
 
 psql -v ON_ERROR_STOP=1 -f "$HERE/manual_bank_merge.sql"
 echo "merge SQL harness: OK"
