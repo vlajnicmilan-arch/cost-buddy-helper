@@ -144,11 +144,14 @@ export function KrugSettlementHistory({ krugId, isFullMember, readOnly = false, 
         onConfirm={handleVoid}
       />
 
-      <KrugConfirmReceiptDialog
-        krugId={krugId}
-        target={confirmTarget}
-        onOpenChange={(v) => { if (!v) setConfirmTarget(null); }}
-      />
+      {/* Mounted only when needed so the history never loads payment sources on its own. */}
+      {confirmTarget && (
+        <KrugConfirmReceiptDialog
+          krugId={krugId}
+          target={confirmTarget}
+          onOpenChange={(v) => { if (!v) setConfirmTarget(null); }}
+        />
+      )}
     </>
   );
 }
