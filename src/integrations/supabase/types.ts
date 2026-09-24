@@ -3571,6 +3571,7 @@ export type Database = {
       krug_settlement_ledger: {
         Row: {
           amount: number
+          client_request_id: string | null
           created_at: string
           currency: string
           from_user: string
@@ -3579,6 +3580,13 @@ export type Database = {
           marked_at: string
           marked_by: string
           note: string | null
+          payer_amount: number | null
+          payer_currency: string | null
+          payer_expense_id: string | null
+          payer_source_id: string | null
+          recipient_confirmed_at: string | null
+          recipient_expense_id: string | null
+          recipient_source_id: string | null
           to_user: string
           updated_at: string
           void_reason: string | null
@@ -3587,6 +3595,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          client_request_id?: string | null
           created_at?: string
           currency: string
           from_user: string
@@ -3595,6 +3604,13 @@ export type Database = {
           marked_at?: string
           marked_by: string
           note?: string | null
+          payer_amount?: number | null
+          payer_currency?: string | null
+          payer_expense_id?: string | null
+          payer_source_id?: string | null
+          recipient_confirmed_at?: string | null
+          recipient_expense_id?: string | null
+          recipient_source_id?: string | null
           to_user: string
           updated_at?: string
           void_reason?: string | null
@@ -3603,6 +3619,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          client_request_id?: string | null
           created_at?: string
           currency?: string
           from_user?: string
@@ -3611,6 +3628,13 @@ export type Database = {
           marked_at?: string
           marked_by?: string
           note?: string | null
+          payer_amount?: number | null
+          payer_currency?: string | null
+          payer_expense_id?: string | null
+          payer_source_id?: string | null
+          recipient_confirmed_at?: string | null
+          recipient_expense_id?: string | null
+          recipient_source_id?: string | null
           to_user?: string
           updated_at?: string
           void_reason?: string | null
@@ -3623,6 +3647,34 @@ export type Database = {
             columns: ["krug_id"]
             isOneToOne: false
             referencedRelation: "krug"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "krug_settlement_ledger_payer_expense_id_fkey"
+            columns: ["payer_expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "krug_settlement_ledger_payer_source_id_fkey"
+            columns: ["payer_source_id"]
+            isOneToOne: false
+            referencedRelation: "custom_payment_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "krug_settlement_ledger_recipient_expense_id_fkey"
+            columns: ["recipient_expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "krug_settlement_ledger_recipient_source_id_fkey"
+            columns: ["recipient_source_id"]
+            isOneToOne: false
+            referencedRelation: "custom_payment_sources"
             referencedColumns: ["id"]
           },
         ]
@@ -7893,6 +7945,15 @@ export type Database = {
       }
       krug_cancel_deletion: { Args: { p_krug_id: string }; Returns: Json }
       krug_cleanup_act_dedup: { Args: never; Returns: Json }
+      krug_confirm_settlement_receipt: {
+        Args: {
+          p_client_request_id: string
+          p_ledger_id: string
+          p_recipient_amount?: number
+          p_recipient_source_id: string
+        }
+        Returns: Json
+      }
       krug_cron_freeze_fx_snapshots: { Args: never; Returns: number }
       krug_decline_invitation: {
         Args: { p_invitation_id?: string; p_token?: string }
@@ -7957,6 +8018,20 @@ export type Database = {
         }
         Returns: Json
       }
+      krug_mark_settled_with_source: {
+        Args: {
+          p_amount: number
+          p_client_request_id: string
+          p_currency: string
+          p_from_user: string
+          p_krug_id: string
+          p_note?: string
+          p_payer_amount?: number
+          p_payer_source_id: string
+          p_to_user: string
+        }
+        Returns: Json
+      }
       krug_notify_all_members: {
         Args: { p_krug_id: string }
         Returns: string[]
@@ -8001,6 +8076,10 @@ export type Database = {
           p_new_privacy: Database["public"]["Enums"]["krug_privacy"]
         }
         Returns: Json
+      }
+      krug_settlement_description: {
+        Args: { p_other: string; p_user: string }
+        Returns: string
       }
       krug_settlement_preview: {
         Args: {
