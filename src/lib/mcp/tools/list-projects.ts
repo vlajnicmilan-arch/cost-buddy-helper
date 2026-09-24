@@ -35,7 +35,7 @@ export default defineTool({
     if (ids.length) {
       const { data: exp } = await sb
         .from("expenses")
-        .select("project_id,type,amount")
+        .select("project_id,type,amount,expense_nature")
         .in("project_id", ids)
         .is("deleted_at", null)
         .in("status", COUNTED_EXPENSE_STATUSES);

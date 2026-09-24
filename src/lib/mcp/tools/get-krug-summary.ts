@@ -32,7 +32,7 @@ export default defineTool({
       const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
       const { data: exp } = await sb
         .from("expenses")
-        .select("amount,type")
+        .select("amount,type,expense_nature")
         .in("payment_source", srcIds)
         .gte("date", since)
         .is("deleted_at", null)

@@ -256,7 +256,7 @@ var get_budget_details_default = defineTool5({
     const [plan, categories, spent] = await Promise.all([
       sb.from("budget_plans").select("*").eq("id", budget_id).maybeSingle(),
       sb.from("budget_categories").select("id,category,limit_amount,icon,color").eq("budget_id", budget_id),
-      sb.from("expenses").select("category,amount,type").eq("budget_id", budget_id).is("deleted_at", null).in("status", COUNTED_EXPENSE_STATUSES)
+      sb.from("expenses").select("category,amount,type,expense_nature").eq("budget_id", budget_id).is("deleted_at", null).in("status", COUNTED_EXPENSE_STATUSES)
     ]);
     if (plan.error) return { content: [{ type: "text", text: plan.error.message }], isError: true };
     if (!plan.data) return { content: [{ type: "text", text: "Budget not found" }], isError: true };
@@ -384,7 +384,7 @@ var list_projects_default = defineTool8({
     const ids = (projects ?? []).map((p) => p.id);
     let totals = /* @__PURE__ */ new Map();
     if (ids.length) {
-      const { data: exp } = await sb.from("expenses").select("project_id,type,amount").in("project_id", ids).is("deleted_at", null).in("status", COUNTED_EXPENSE_STATUSES);
+      const { data: exp } = await sb.from("expenses").select("project_id,type,amount,expense_nature").in("project_id", ids).is("deleted_at", null).in("status", COUNTED_EXPENSE_STATUSES);
       for (const e of exp ?? []) {
         const key = e.project_id;
         const cur = totals.get(key) ?? { income: 0, expense: 0 };
@@ -424,7 +424,7 @@ var get_project_details_default = defineTool9({
       sb.from("projects").select("*").eq("id", project_id).is("deleted_at", null).maybeSingle(),
       sb.from("project_milestones_scoped").select("id,name,status,budget,start_date,due_date,actual_start_date,actual_end_date,completed_at").eq("project_id", project_id).is("deleted_at", null).order("sort_order"),
       sb.from("project_members").select("*").eq("project_id", project_id),
-      sb.from("expenses").select("type,amount").eq("project_id", project_id).is("deleted_at", null).in("status", COUNTED_EXPENSE_STATUSES)
+      sb.from("expenses").select("type,amount,expense_nature").eq("project_id", project_id).is("deleted_at", null).in("status", COUNTED_EXPENSE_STATUSES)
     ]);
     if (project.error) return { content: [{ type: "text", text: project.error.message }], isError: true };
     if (!project.data) return { content: [{ type: "text", text: "Project not found" }], isError: true };
@@ -597,7 +597,7 @@ var get_krug_summary_default = defineTool14({
     let recent_expense_total = 0;
     if (srcIds.length) {
       const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1e3).toISOString();
-      const { data: exp } = await sb.from("expenses").select("amount,type").in("payment_source", srcIds).gte("date", since).is("deleted_at", null).in("status", COUNTED_EXPENSE_STATUSES);
+      const { data: exp } = await sb.from("expenses").select("amount,type,expense_nature").in("payment_source", srcIds).gte("date", since).is("deleted_at", null).in("status", COUNTED_EXPENSE_STATUSES);
       for (const e of exp ?? []) if (isRealSpend(e)) recent_expense_total += Number(e.amount);
     }
     const result = {

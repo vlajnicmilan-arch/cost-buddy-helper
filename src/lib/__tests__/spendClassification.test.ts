@@ -56,6 +56,8 @@ describe('spendClassification — pravilo', () => {
 const ALLOWED = new Set([
   'src/lib/spendClassification.ts',
   'supabase/functions/_shared/spendClassification.ts',
+  // generirani MCP paket nosi ugrađenu kopiju helpera
+  'supabase/functions/mcp/index.ts',
   // motor salda — korekcija MORA mijenjati saldo
   'src/lib/balance/anchorBalance.ts',
   'src/lib/balance/balanceEngineMirror.ts',

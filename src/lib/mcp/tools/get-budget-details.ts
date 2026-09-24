@@ -26,7 +26,7 @@ export default defineTool({
         .eq("budget_id", budget_id),
       sb
         .from("expenses")
-        .select("category,amount,type")
+        .select("category,amount,type,expense_nature")
         .eq("budget_id", budget_id)
         .is("deleted_at", null)
         .in("status", COUNTED_EXPENSE_STATUSES),

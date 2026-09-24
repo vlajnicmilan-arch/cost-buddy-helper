@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
     const { data: milestones } = await supabase.from('project_milestones')
       .select('name, status, budget, due_date').eq('project_id', project_id);
     const { data: recentExpenses } = await supabase.from('expenses')
-      .select('description, amount, date, category, work_type, type')
+      .select('description, amount, date, category, work_type, type, expense_nature')
       .eq('project_id', project_id)
       .gte('date', sevenDaysAgo)
       .in('status', COUNTED_EXPENSE_STATUSES)
