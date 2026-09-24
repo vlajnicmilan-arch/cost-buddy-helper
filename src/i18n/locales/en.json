@@ -6005,7 +6005,8 @@
           "manualFallback": "Manual mode: fell back to equal shares.",
           "missingIncome": "Missing income ratios — equal shares used."
         }
-      }
+      },
+      "transactionDescription": "Debt settlement — {{name}}"
     },
     "settle": {
       "error": {

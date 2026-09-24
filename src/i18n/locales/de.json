@@ -6005,7 +6005,8 @@
           "manualFallback": "Manueller Modus: Rückfall auf gleiche Anteile.",
           "missingIncome": "Einkommensverhältnisse fehlen — gleiche Anteile verwendet."
         }
-      }
+      },
+      "transactionDescription": "Schuldenausgleich — {{name}}"
     },
     "settle": {
       "error": {

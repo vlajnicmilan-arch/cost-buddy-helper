@@ -6017,7 +6017,8 @@
           "manualFallback": "Manual mod: fallback na jednake udjele.",
           "missingIncome": "Nedostaju omjeri prihoda — korišteni jednaki udjeli."
         }
-      }
+      },
+      "transactionDescription": "Podmirenje duga — {{name}}"
     },
     "settle": {
       "error": {

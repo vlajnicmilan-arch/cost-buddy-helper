@@ -10,6 +10,8 @@ on:
     paths:
       - 'supabase/migrations/**'
       - 'supabase/tests/merge/**'
+      - 'supabase/tests/krug_settle/**'
+      - 'drizzle/migrations/**'
       - 'src/lib/manualBankMergePair.ts'
       - 'src/lib/mergeOfferCandidate.ts'
       - 'src/lib/featureFlags.ts'
@@ -19,6 +21,8 @@ on:
     paths:
       - 'supabase/migrations/**'
       - 'supabase/tests/merge/**'
+      - 'supabase/tests/krug_settle/**'
+      - 'drizzle/migrations/**'
       - 'src/lib/manualBankMergePair.ts'
       - 'src/lib/mergeOfferCandidate.ts'
       - 'src/lib/featureFlags.ts'
@@ -86,3 +90,19 @@ jobs:
             exit 1
           fi
           echo "Merge SQL suite: $pass_count assertions PASS"
+
+      - name: Run Krug settle-with-source SQL guards
+        run: |
+          set -euo pipefail
+          psql -d postgres -c "DROP DATABASE IF EXISTS krug_settle_test" -c "CREATE DATABASE krug_settle_test"
+          PGDATABASE=krug_settle_test bash supabase/tests/krug_settle/run.sh 2>&1 | tee /tmp/krug_settle.out
+          if grep -E '^(psql:.*ERROR|ERROR:|FAIL )' /tmp/krug_settle.out; then
+            echo "Krug settle SQL guards reported failures" >&2
+            exit 1
+          fi
+          pass_count=$(grep -c 'PASS G' /tmp/krug_settle.out || true)
+          if [ "$pass_count" -lt 45 ]; then
+            echo "Krug settle guards ran only $pass_count assertions (expected >= 45)" >&2
+            exit 1
+          fi
+          echo "Krug settle guards: $pass_count assertions PASS"
