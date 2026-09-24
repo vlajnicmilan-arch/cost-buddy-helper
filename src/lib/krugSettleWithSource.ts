@@ -87,6 +87,11 @@ export const KRUG_SETTLE_ERROR_CODES = [
   'payer_amount_mismatch',
   'client_request_id_required',
   'unauthenticated',
+  'only_recipient_can_confirm',
+  'already_confirmed',
+  'legacy_settlement',
+  'recipient_amount_required',
+  'recipient_amount_mismatch',
 ] as const;
 
 export type KrugSettleErrorCode = (typeof KRUG_SETTLE_ERROR_CODES)[number];
@@ -102,6 +107,7 @@ export const resolveKrugSettleErrorCode = (message: string | null | undefined): 
 export const krugSettleErrorKey = (code: KrugSettleErrorCode): string => `krug.settle.error.${code}`;
 
 export interface LedgerStatusRow {
+  to_user?: string;
   payer_expense_id?: string | null;
   recipient_confirmed_at?: string | null;
   voided_at?: string | null;
@@ -110,3 +116,7 @@ export interface LedgerStatusRow {
 /** Only new-flow rows (with a payer transaction) can await receipt; legacy rows render as before. */
 export const isAwaitingReceipt = (r: LedgerStatusRow): boolean =>
   !!r.payer_expense_id && !r.recipient_confirmed_at && !r.voided_at;
+
+/** Confirm / "not received" actions: only the recipient, only while the row awaits receipt. */
+export const canActOnReceipt = (r: LedgerStatusRow, userId: string | null | undefined, readOnly = false): boolean =>
+  !readOnly && !!userId && r.to_user === userId && isAwaitingReceipt(r);

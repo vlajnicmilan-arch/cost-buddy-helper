@@ -31,6 +31,8 @@ interface Props {
     placeholder?: string;
     required?: boolean;
     maxLength?: number;
+    /** Pre-filled reason the user may edit. */
+    defaultValue?: string;
   };
   confirmLabel: string;
   cancelLabel?: string;
@@ -59,7 +61,10 @@ export function ConfirmActionDialog({
     if (!open) {
       setValue('');
       setBusy(false);
+      return;
     }
+    setValue(reason?.defaultValue ?? '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const trimmed = value.trim();

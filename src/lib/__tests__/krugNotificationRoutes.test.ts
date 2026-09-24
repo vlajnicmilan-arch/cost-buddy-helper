@@ -26,6 +26,7 @@ const NON_NOTIFICATION = new Set([
   'krug_id',
   'krug_membership',
   'krug_ownership',
+  'krug_settlement_ledger',
   'krug_notify_internal_key',
 ]);
 

@@ -60,6 +60,8 @@ interface Props {
   focusExpenseId?: string | null;
   /** Deep-link iz obavijesti: otkrij i istakni ovaj zapis podmirenja. */
   focusSettlementId?: string | null;
+  /** Deep-link za primatelja: otvori prozor potvrde primitka za taj zapis. */
+  focusConfirmReceipt?: boolean;
   onFocusConsumed?: () => void;
 }
 
@@ -68,6 +70,7 @@ export function KrugDetailScreen({
   onLeft,
   focusExpenseId = null,
   focusSettlementId = null,
+  focusConfirmReceipt = false,
   onFocusConsumed,
 }: Props) {
   const { t } = useTranslation();
@@ -420,6 +423,7 @@ export function KrugDetailScreen({
         isOwner={isOwner && !isArchived}
         readOnly={isArchived}
         focusSettlementId={focusSettlementId}
+        focusConfirmReceipt={focusConfirmReceipt}
       />
 
 

@@ -2876,6 +2876,14 @@
       "ownership_received": {
         "title": "Du bist jetzt Eigentümer des Krug",
         "message": "Der bisherige Eigentümer hat den Krug verlassen und das Eigentum an dich übertragen. Du verwaltest diesen Krug jetzt."
+      },
+      "settlement_receipt_pending": {
+        "title": "Du hast eine Zahlung erhalten",
+        "message": "{{name}} hat dir {{amount}} {{currency}} bezahlt — wo ist es angekommen?"
+      },
+      "settlement_receipt_pending_anon": {
+        "title": "Du hast eine Zahlung erhalten",
+        "message": "Ein Krug-Mitglied hat dir {{amount}} {{currency}} bezahlt — wo ist es angekommen?"
       }
     },
     "payment_source_transaction": {
@@ -6027,11 +6035,17 @@
         "payer_amount_required": "Die Quelle hat eine andere Währung — gib den tatsächlich bezahlten Betrag ein.",
         "payer_amount_mismatch": "Bei gleicher Währung muss der bezahlte Betrag dem Ausgleichsbetrag entsprechen.",
         "client_request_id_required": "Ungültige Anfrage. Schließe den Dialog und öffne ihn erneut.",
-        "unauthenticated": "Deine Sitzung ist abgelaufen. Bitte melde dich erneut an."
+        "unauthenticated": "Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.",
+        "only_recipient_can_confirm": "Nur die Person, die bezahlt wurde, kann den Empfang bestätigen.",
+        "already_confirmed": "Der Empfang wurde bereits bestätigt.",
+        "legacy_settlement": "Dies ist ein älterer Ausgleich ohne Quelle — eine Empfangsbestätigung ist nicht möglich.",
+        "recipient_amount_required": "Die Quelle hat eine andere Währung — gib den tatsächlich erhaltenen Betrag ein.",
+        "recipient_amount_mismatch": "Bei gleicher Währung muss der erhaltene Betrag dem Ausgleichsbetrag entsprechen."
       },
       "success": {
         "marked": "Ausgleich erfasst.",
-        "voided": "Ausgleich storniert."
+        "voided": "Ausgleich storniert.",
+        "confirmed": "Empfang bestätigt."
       },
       "dialog": {
         "title": "Als ausgeglichen markieren",
@@ -6065,7 +6079,19 @@
           "confirm": "Stornieren"
         },
         "paidFrom": "Bezahlt von: {{source}}",
-        "awaitingReceipt": "Wartet auf Empfangsbestätigung"
+        "awaitingReceipt": "Wartet auf Empfangsbestätigung",
+        "confirmReceipt": "Empfang bestätigen",
+        "notReceived": "Nicht erhalten",
+        "notReceivedReason": "Ich habe die Zahlung nicht erhalten",
+        "receivedOn": "Erhalten auf: {{source}}",
+        "received": "Erhalten"
+      },
+      "confirm": {
+        "title": "Empfang bestätigen",
+        "body": "{{from}} hat dir {{amount}} {{currency}} bezahlt.",
+        "sourceLabel": "Angekommen auf:",
+        "receivedAmountLabel": "Tatsächlich erhalten ({{currency}})",
+        "submit": "Empfang bestätigen"
       }
     },
     "override": {

@@ -2884,6 +2884,14 @@
       "ownership_received": {
         "title": "Postao si vlasnik Kruga",
         "message": "Dosadašnji vlasnik je izašao i prenio vlasništvo na tebe. Sada ti upravljaš ovim Krugom."
+      },
+      "settlement_receipt_pending": {
+        "title": "Primio si uplatu",
+        "message": "{{name}} ti je platio {{amount}} {{currency}} — gdje je stiglo?"
+      },
+      "settlement_receipt_pending_anon": {
+        "title": "Primio si uplatu",
+        "message": "Član Kruga ti je platio {{amount}} {{currency}} — gdje je stiglo?"
       }
     },
     "payment_source_transaction": {
@@ -6039,11 +6047,17 @@
         "payer_amount_required": "Izvor je u drugoj valuti — upiši stvarno plaćeni iznos.",
         "payer_amount_mismatch": "Plaćeni iznos mora biti jednak iznosu podmirenja kad je valuta ista.",
         "client_request_id_required": "Zahtjev nije valjan. Zatvori i ponovno otvori prozor.",
-        "unauthenticated": "Prijava je istekla. Prijavi se ponovno."
+        "unauthenticated": "Prijava je istekla. Prijavi se ponovno.",
+        "only_recipient_can_confirm": "Primitak može potvrditi samo onaj kome je plaćeno.",
+        "already_confirmed": "Primitak je već potvrđen.",
+        "legacy_settlement": "Ovo je starije podmirenje bez izvora — potvrda primitka nije moguća.",
+        "recipient_amount_required": "Izvor je u drugoj valuti — upiši stvarno primljeni iznos.",
+        "recipient_amount_mismatch": "Primljeni iznos mora biti jednak iznosu podmirenja kad je valuta ista."
       },
       "success": {
         "marked": "Podmirenje zabilježeno.",
-        "voided": "Podmirenje poništeno."
+        "voided": "Podmirenje poništeno.",
+        "confirmed": "Primitak potvrđen."
       },
       "dialog": {
         "title": "Označi podmireno",
@@ -6077,7 +6091,19 @@
           "confirm": "Poništi podmirenje"
         },
         "paidFrom": "Plaćeno iz: {{source}}",
-        "awaitingReceipt": "Čeka potvrdu primitka"
+        "awaitingReceipt": "Čeka potvrdu primitka",
+        "confirmReceipt": "Potvrdi primitak",
+        "notReceived": "Nisam primio",
+        "notReceivedReason": "Nisam primio uplatu",
+        "receivedOn": "Primljeno na: {{source}}",
+        "received": "Primljeno"
+      },
+      "confirm": {
+        "title": "Potvrdi primitak",
+        "body": "{{from}} ti je platio {{amount}} {{currency}}.",
+        "sourceLabel": "Stiglo je na:",
+        "receivedAmountLabel": "Stvarno primljeno ({{currency}})",
+        "submit": "Potvrdi primitak"
       }
     },
     "override": {

@@ -2,21 +2,22 @@
  * Collapsed povijest podmirenja. Voidani zapisi prekriženi.
  * Poništi otvara prompt za razlog.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { History, ArrowRight, X, Loader2 } from 'lucide-react';
+import { History, Loader2 } from 'lucide-react';
 import { CollapsibleSection } from '@/components/common/CollapsibleSection';
 import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
-import { useKrugSettlementLedger, useKrugVoidSettlement } from '@/hooks/useKrugSettlementMutations';
+import { useKrugSettlementLedger, useKrugVoidSettlement, type KrugSettlementLedgerRow } from '@/hooks/useKrugSettlementMutations';
 import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { getMemberDisplayName } from '@/lib/krugDisplay';
 import { useAuth } from '@/hooks/useAuth';
 import { useShowMore } from '@/hooks/useShowMore';
 import { ShowMoreButton } from '@/components/common/ShowMoreButton';
 import { useAllPaymentSourceNames } from '@/hooks/useAllPaymentSourceNames';
-import { isAwaitingReceipt } from '@/lib/krugSettleWithSource';
+import { canActOnReceipt } from '@/lib/krugSettleWithSource';
+import { KrugSettlementHistoryRow } from './KrugSettlementHistoryRow';
+import { KrugConfirmReceiptDialog, type ConfirmReceiptTarget } from './KrugConfirmReceiptDialog';
 
 interface Props {
   krugId: string;
@@ -25,13 +26,19 @@ interface Props {
   readOnly?: boolean;
   /** Deep-link iz obavijesti — otvori povijest da HighlightTarget nađe zapis. */
   focusSettlementId?: string | null;
+  /** Deep-link za primatelja: otvori prozor potvrde primitka za focusSettlementId. */
+  focusConfirmReceipt?: boolean;
 }
 
-export function KrugSettlementHistory({ krugId, isFullMember, readOnly = false, focusSettlementId = null }: Props) {
+export function KrugSettlementHistory({ krugId, isFullMember, readOnly = false, focusSettlementId = null, focusConfirmReceipt = false }: Props) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [voidTarget, setVoidTarget] = useState<string | null>(null);
+  // "Nisam primio" reuses the existing void flow with a pre-filled, editable reason.
+  const [voidPrefill, setVoidPrefill] = useState<string | undefined>(undefined);
+  const [confirmTarget, setConfirmTarget] = useState<ConfirmReceiptTarget | null>(null);
+  const autoConfirmDone = useRef<string | null>(null);
   // Brojka u naslovu mora biti točna i dok je sekcija zatvorena, pa se ledger
   // dohvaća čim je korisnik punopravan član (ne tek na otvaranje).
   const { data = [], isLoading } = useKrugSettlementLedger(krugId, isFullMember);
@@ -51,6 +58,22 @@ export function KrugSettlementHistory({ krugId, isFullMember, readOnly = false, 
   const sourceNames = useAllPaymentSourceNames();
   const sourceNameFor = (id: string | null | undefined) =>
     (id && sourceNames.find((s) => s.id === id)?.name) || null;
+
+  const openConfirm = (r: KrugSettlementLedgerRow) => setConfirmTarget({
+    ledgerId: r.id, amount: Number(r.amount), currency: r.currency, fromName: nameFor(r.from_user),
+  });
+
+  // Recipient deep link (`&confirm=1`): open the confirm dialog once for that row.
+  const focusedRow = focusConfirmReceipt && focusSettlementId
+    ? data.find((r) => r.id === focusSettlementId) ?? null
+    : null;
+  const canAutoConfirm = !!focusedRow && canActOnReceipt(focusedRow, user?.id, readOnly);
+  useEffect(() => {
+    if (!canAutoConfirm || !focusedRow || autoConfirmDone.current === focusedRow.id) return;
+    autoConfirmDone.current = focusedRow.id;
+    openConfirm(focusedRow);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canAutoConfirm, focusedRow?.id]);
 
   if (!isFullMember) return null;
 
@@ -85,56 +108,20 @@ export function KrugSettlementHistory({ krugId, isFullMember, readOnly = false, 
               {t('krug.settle.history.empty', 'Još nema zabilježenih podmirenja.')}
             </div>
           )}
-          {visible.map((r) => {
-            const voided = !!r.voided_at;
-            return (
-              <div
-                key={r.id}
-                data-highlight-id={`settlement:${r.id}`}
-                className="px-4 py-2.5 flex items-center justify-between gap-2 text-sm"
-              >
-                <div className={`min-w-0 flex-1 ${voided ? 'line-through opacity-60' : ''}`}>
-                  <div className="flex items-center gap-1.5 text-sm">
-                    <span className="truncate">{nameFor(r.from_user)}</span>
-                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                    <span className="truncate font-medium">{nameFor(r.to_user)}</span>
-                  </div>
-                  <div className="text-[11px] text-muted-foreground">
-                    {new Date(r.marked_at).toLocaleDateString()} · {r.note || t('krug.settle.history.noNote', 'bez napomene')}
-                  </div>
-                  {r.payer_expense_id && sourceNameFor(r.payer_source_id) && (
-                    <div className="text-[11px] text-muted-foreground">
-                      {t('krug.settle.history.paidFrom', { source: sourceNameFor(r.payer_source_id) })}
-                    </div>
-                  )}
-                  {isAwaitingReceipt(r) && (
-                    <div className="text-[11px] text-muted-foreground" data-testid="settle-awaiting-receipt">
-                      {t('krug.settle.history.awaitingReceipt')}
-                    </div>
-                  )}
-                  {voided && (
-                    <div className="text-[11px] text-destructive">
-                      {t('krug.settle.history.voidedLabel', 'Poništeno')}: {r.void_reason}
-                    </div>
-                  )}
-                </div>
-                <div className={`text-sm font-semibold tabular-nums shrink-0 ${voided ? 'line-through opacity-60' : ''}`}>
-                  {Number(r.amount).toFixed(2)} {r.currency}
-                </div>
-                {/* Poništenje je zaštita obiju strana duga. */}
-                {!readOnly && !voided && (user?.id === r.from_user || user?.id === r.to_user) && (
-                  <Button
-                    size="icon" variant="ghost" className="h-8 w-8 shrink-0"
-                    disabled={voidMut.isPending}
-                    onClick={() => setVoidTarget(r.id)}
-                    aria-label={t('krug.settle.history.void', 'Poništi')}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-            );
-          })}
+          {visible.map((r) => (
+            <KrugSettlementHistoryRow
+              key={r.id}
+              row={r}
+              userId={user?.id}
+              readOnly={readOnly}
+              voidPending={voidMut.isPending}
+              nameFor={nameFor}
+              sourceNameFor={sourceNameFor}
+              onVoid={(id) => { setVoidPrefill(undefined); setVoidTarget(id); }}
+              onConfirmReceipt={openConfirm}
+              onNotReceived={(id) => { setVoidPrefill(t('krug.settle.history.notReceivedReason')); setVoidTarget(id); }}
+            />
+          ))}
           <ShowMoreButton hasMore={hasMore} remaining={remaining} onClick={showMore} />
         </Card>
       </CollapsibleSection>
@@ -149,12 +136,22 @@ export function KrugSettlementHistory({ krugId, isFullMember, readOnly = false, 
           label: t('krug.settle.history.voidDialog.reasonLabel', 'Razlog poništenja (obavezno)'),
           placeholder: t('krug.settle.history.voidDialog.reasonPlaceholder', 'npr. novac nije stigao'),
           required: true,
+          defaultValue: voidPrefill,
         }}
         confirmLabel={t('krug.settle.history.voidDialog.confirm', 'Poništi podmirenje')}
         destructive
         pending={voidMut.isPending}
         onConfirm={handleVoid}
       />
+
+      {/* Mounted only when needed so the history never loads payment sources on its own. */}
+      {confirmTarget && (
+        <KrugConfirmReceiptDialog
+          krugId={krugId}
+          target={confirmTarget}
+          onOpenChange={(v) => { if (!v) setConfirmTarget(null); }}
+        />
+      )}
     </>
   );
 }

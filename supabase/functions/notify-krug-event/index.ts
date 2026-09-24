@@ -244,6 +244,44 @@ Deno.serve(async (req) => {
     message_vars: vars && typeof vars === "object" ? vars : {},
   };
 
+  // -------- Receipt-pending variant (settlement with source) --------
+  // The existing krug_settlement_marked_settled event is reused. For a ledger
+  // row created with a payer source that the recipient has not confirmed yet,
+  // the RECIPIENT gets "<name> paid you <amount> — where did it arrive?" and a
+  // deep link to the confirm dialog. Everyone else keeps the generic copy.
+  let receiptPending: { toUser: string; data: Record<string, unknown> } | null = null;
+  if (event_type === "krug_settlement_marked_settled") {
+    const ledgerId = /^settled:/.test(dedup_ref) ? dedup_ref.slice("settled:".length) : null;
+    if (isUuid(ledgerId)) {
+      const { data: row, error: rowErr } = await admin
+        .from("krug_settlement_ledger")
+        .select("id, to_user, amount, currency, payer_expense_id, recipient_confirmed_at, voided_at")
+        .eq("id", ledgerId)
+        .maybeSingle();
+      if (rowErr) console.error(`[notify-krug-event] receipt_lookup_error: ${rowErr.message}`);
+      if (row && row.payer_expense_id && !row.recipient_confirmed_at && !row.voided_at && isUuid(row.to_user)) {
+        const { data: prof } = await admin
+          .from("profiles").select("display_name").eq("user_id", actor_id).maybeSingle();
+        const name = typeof prof?.display_name === "string" ? prof.display_name.trim() : "";
+        const shortKey = name ? "settlement_receipt_pending" : "settlement_receipt_pending_anon";
+        const msgVars = { name, amount: Number(row.amount).toFixed(2), currency: String(row.currency) };
+        receiptPending = {
+          toUser: row.to_user,
+          data: {
+            ...dataCore,
+            ledger_id: row.id,
+            receipt_pending: true,
+            route: `/krug?id=${krug_id}&settlement=${row.id}&confirm=1`,
+            i18n_title_key: `notifications.krug.${shortKey}.title`,
+            i18n_body_key: `notifications.krug.${shortKey}.message`,
+            title_vars: msgVars,
+            message_vars: msgVars,
+          },
+        };
+      }
+    }
+  }
+
   let delivered = 0;
   const errors: string[] = [];
   const skipped: Array<{ user_id: string; reason: string; detail?: string }> = [];
@@ -298,12 +336,16 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      const isReceiptRecipient = receiptPending?.toUser === userId;
+      const rowData = isReceiptRecipient ? receiptPending!.data : dataCore;
+      const rowTitle = String(rowData.i18n_title_key);
+      const rowBody = String(rowData.i18n_body_key);
       const { error: insErr } = await admin.from("notifications").insert({
         user_id: userId,
         type: event_type,
-        title: titleKey,
-        message: bodyKey,
-        data: dataCore,
+        title: rowTitle,
+        message: rowBody,
+        data: rowData,
       });
       if (insErr) {
         console.error(
@@ -321,10 +363,10 @@ Deno.serve(async (req) => {
         await admin.functions.invoke("send-push", {
           body: {
             user_id: userId,
-            title: titleKey,
-            body: bodyKey,
+            title: rowTitle,
+            body: rowBody,
             source: "notify-krug-event",
-            data: dataCore,
+            data: rowData,
           },
         });
       } catch (e) {

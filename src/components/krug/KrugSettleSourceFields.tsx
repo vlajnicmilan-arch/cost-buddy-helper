@@ -21,11 +21,16 @@ interface Props {
   sourceCurrency: string | null;
   fxSnapshot: KrugFxSnapshot | null | undefined;
   disabled?: boolean;
+  /** Recipient side reuses the fields with its own labels. */
+  sourceLabelKey?: string;
+  amountLabelKey?: string;
 }
 
 export function KrugSettleSourceFields({
   sources, sourceId, onSourceChange, showPayerAmount, payerAmount, onPayerAmountChange,
   settlementAmount, settlementCurrency, sourceCurrency, fxSnapshot, disabled,
+  sourceLabelKey = 'krug.settle.dialog.sourceLabel',
+  amountLabelKey = 'krug.settle.dialog.paidAmountLabel',
 }: Props) {
   const { t } = useTranslation();
   const srcCur = normalizeCurrency(sourceCurrency);
@@ -37,7 +42,7 @@ export function KrugSettleSourceFields({
     <div className="space-y-3">
       <div className="space-y-1.5">
         <Label htmlFor="settle-source" className="text-xs">
-          {t('krug.settle.dialog.sourceLabel')}
+          {t(sourceLabelKey)}
         </Label>
         {sources.length === 0 ? (
           <p className="text-xs text-muted-foreground">{t('krug.settle.dialog.noSources')}</p>
@@ -60,7 +65,7 @@ export function KrugSettleSourceFields({
       {showPayerAmount && (
         <div className="space-y-1.5">
           <Label htmlFor="settle-payer-amount" className="text-xs">
-            {t('krug.settle.dialog.paidAmountLabel', { currency: srcCur })}
+            {t(amountLabelKey, { currency: srcCur })}
           </Label>
           <Input
             id="settle-payer-amount"
