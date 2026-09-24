@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 
 const mutateAsync = vi.fn().mockResolvedValue({ ok: true, id: 'l1' });
+vi.mock('@/hooks/useBackButton', () => ({ useBackButton: () => {} }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }));
 vi.mock('@/hooks/useKrugSettlementMutations', () => ({
   useKrugMarkSettledWithSource: () => ({ mutateAsync, isPending: false }),
