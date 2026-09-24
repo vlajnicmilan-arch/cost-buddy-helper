@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import type { MergeCandidateOffer } from '@/hooks/useMergeCandidate';
+import { isExpenseType, isIncomeType } from '@/lib/spendClassification';
 
 const RAW_PREVIEW_CHARS = 90;
 /** Znak za prazno polje (nije tekst). */
@@ -43,8 +44,8 @@ export const MergeOfferCandidateCard = ({ offer, walletName, disabled, onMerge }
         <span className="text-xs text-muted-foreground">
           {t('duplicates.offer.bookedOn')}: <span className="font-medium text-foreground">{fmtDate(row.date as string)}</span>
         </span>
-        <span className={`font-bold ${row.type === 'income' ? 'text-income' : 'text-destructive'}`}>
-          {row.type === 'expense' ? '-' : ''}{formatAmount(Number(row.amount))}
+        <span className={`font-bold ${isIncomeType(row) ? 'text-income' : 'text-destructive'}`}>
+          {isExpenseType(row) ? '-' : ''}{formatAmount(Number(row.amount))}
         </span>
       </div>
 

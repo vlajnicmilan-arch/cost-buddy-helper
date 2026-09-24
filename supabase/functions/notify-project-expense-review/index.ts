@@ -2,6 +2,7 @@
 //  - action 'submitted': voditelj je poslao trošak → obavijest vlasniku projekta
 //  - action 'reviewed' : vlasnik je odlučio → obavijest podnositelju (s razlogom)
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { isIncomeType } from '../_shared/spendClassification.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -89,7 +90,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       if (project.user_id === user.id) return jsonRes({ success: true, delivered: 0, reason: 'owner_is_submitter' });
       recipient = project.user_id;
       titleKey = 'notifications.project_expense_review.submitted.title';
-      messageKey = `notifications.project_expense_review.submitted.message.${expense.type === 'income' ? 'income' : 'expense'}`;
+      messageKey = `notifications.project_expense_review.submitted.message.${isIncomeType(expense) ? 'income' : 'expense'}`;
       messageVars = {
         actor: actorName,
         description: expense.description,

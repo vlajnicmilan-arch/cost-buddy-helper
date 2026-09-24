@@ -18,6 +18,7 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { isExpenseType, isRealSpend } from '@/lib/spendClassification';
 
 interface CategoryTransactionsDialogProps {
   open: boolean;
@@ -51,7 +52,7 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
   const categoryExpenses = useMemo(() => {
     if (!category) return [];
     return expenses
-      .filter(e => e.type === 'expense' && e.category === category.id)
+      .filter(e => isRealSpend(e) && e.category === category.id)
       .sort((a, b) => b.date.getTime() - a.date.getTime());
   }, [expenses, category]);
 
@@ -321,7 +322,7 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
                             <p className="min-w-0 font-medium text-foreground truncate text-sm leading-tight">
                               {expense.merchant_name || expense.description}
                             </p>
-                            {expense.type === 'expense' && expense.owner_funding_choice === 'owner_loan' && (
+                            {isExpenseType(expense) && expense.owner_funding_choice === 'owner_loan' && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-amber-500/40 text-amber-600 dark:text-amber-400 shrink-0">

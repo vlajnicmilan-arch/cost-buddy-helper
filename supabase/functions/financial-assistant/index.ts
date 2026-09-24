@@ -4,6 +4,7 @@ import { captureEdgeError } from "../_shared/sentry.ts";
 import { checkAiQuota } from "../_shared/aiQuota.ts";
 import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
 import { callGemini } from "../_shared/geminiClient.ts";
+import { isRealIncome, isRealSpend } from '../_shared/spendClassification.ts';
 
 interface PendingProposal {
   proposal_id: string;
@@ -681,8 +682,8 @@ async function executeTool(
           const catTotals: Record<string, number> = {};
           (data || []).forEach((t: any) => {
             const amt = Number(t.amount);
-            if (t.type === "income") income += amt;
-            else if (t.type === "expense") {
+            if (isRealIncome(t)) income += amt;
+            else if (isRealSpend(t)) {
               expense += amt;
               catTotals[t.category] = (catTotals[t.category] || 0) + amt;
             }

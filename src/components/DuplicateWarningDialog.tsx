@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { hr, de, enUS } from 'date-fns/locale';
 import { MergeOfferCandidateCard } from '@/components/add-expense/MergeOfferCandidateCard';
 import type { MergeCandidateOffer } from '@/hooks/useMergeCandidate';
+import { isExpenseType, isIncomeType } from '@/lib/spendClassification';
 
 interface DuplicateWarningDialogProps {
   open: boolean;
@@ -101,8 +102,8 @@ export const DuplicateWarningDialog = ({
                   <span className="text-lg">{newCategoryInfo.icon}</span>
                   <p className="font-medium text-sm truncate">{newTransaction.merchant_name || newTransaction.description}</p>
                 </div>
-                <p className={`font-bold ${newTransaction.type === 'income' ? 'text-income' : 'text-destructive'}`}>
-                  {newTransaction.type === 'expense' ? '-' : ''}{formatAmount(newTransaction.amount)}
+                <p className={`font-bold ${isIncomeType(newTransaction) ? 'text-income' : 'text-destructive'}`}>
+                  {isExpenseType(newTransaction) ? '-' : ''}{formatAmount(newTransaction.amount)}
                 </p>
               </div>
             </div>
@@ -177,8 +178,8 @@ export const DuplicateWarningDialog = ({
                     )}
                   </div>
                 </div>
-                <p className={`font-bold ${duplicateOf.type === 'income' ? 'text-income' : 'text-destructive'}`}>
-                  {duplicateOf.type === 'expense' ? '-' : ''}{formatAmount(duplicateOf.amount)}
+                <p className={`font-bold ${isIncomeType(duplicateOf) ? 'text-income' : 'text-destructive'}`}>
+                  {isExpenseType(duplicateOf) ? '-' : ''}{formatAmount(duplicateOf.amount)}
                 </p>
               </div>
             </div>
@@ -203,8 +204,8 @@ export const DuplicateWarningDialog = ({
                     )}
                   </div>
                 </div>
-                <p className={`font-bold ${newTransaction.type === 'income' ? 'text-income' : 'text-destructive'}`}>
-                  {newTransaction.type === 'expense' ? '-' : ''}{formatAmount(newTransaction.amount)}
+                <p className={`font-bold ${isIncomeType(newTransaction) ? 'text-income' : 'text-destructive'}`}>
+                  {isExpenseType(newTransaction) ? '-' : ''}{formatAmount(newTransaction.amount)}
                 </p>
               </div>
             </div>

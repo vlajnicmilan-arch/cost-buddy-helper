@@ -19,6 +19,7 @@ import { TransactionItemsExpander } from './TransactionItemsExpander';
 import { ImportBatchDialog } from './ImportBatchDialog';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { isExpenseType } from '@/lib/spendClassification';
 
 interface TransactionListDialogProps {
   open: boolean;
@@ -377,7 +378,7 @@ export const TransactionListDialog = ({
                             <p className="min-w-0 font-medium text-foreground truncate text-sm leading-tight">
                               {expense.merchant_name || expense.description}
                             </p>
-                            {expense.type === 'expense' && expense.owner_funding_choice === 'owner_loan' && (
+                            {isExpenseType(expense) && expense.owner_funding_choice === 'owner_loan' && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-amber-500/40 text-amber-600 dark:text-amber-400 shrink-0">

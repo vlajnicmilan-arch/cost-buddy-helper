@@ -2,6 +2,7 @@ import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { supabaseForUser } from "./_client";
 import { COUNTED_EXPENSE_STATUSES } from '../../countedExpense';
+import { isRealSpend } from '@/lib/spendClassification';
 
 export default defineTool({
   name: "get_krug_summary",
@@ -36,7 +37,7 @@ export default defineTool({
         .gte("date", since)
         .is("deleted_at", null)
         .in("status", COUNTED_EXPENSE_STATUSES);
-      for (const e of exp ?? []) if (e.type === "expense") recent_expense_total += Number(e.amount);
+      for (const e of exp ?? []) if (isRealSpend(e)) recent_expense_total += Number(e.amount);
     }
     const result = {
       krug: krug.data,

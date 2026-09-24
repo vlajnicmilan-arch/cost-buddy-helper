@@ -9,6 +9,7 @@ import {
   isCountedProjectTransaction,
   type RawProjectExpense,
 } from '@/lib/projectCalculations';
+import { isRealSpend } from '@/lib/spendClassification';
 
 interface ProjectExpense {
   id: string;
@@ -112,7 +113,7 @@ export const useProjectStats = (projectId: string | null, totalBudget: number) =
     const expensesByMilestone: Record<string, number> = {};
     expenses.forEach(e => {
       const row = e as unknown as RawProjectExpense;
-      if (!isCountedProjectTransaction(row) || row.type !== 'expense') return;
+      if (!isCountedProjectTransaction(row) || !isRealSpend(row)) return;
       const netAmount = calculateNetExpenseAmount(row, raw);
       if (netAmount <= 0) return;
       expensesByCategory[e.category] = (expensesByCategory[e.category] || 0) + netAmount;

@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { FloatingAIAvatar, useAvatarMood, AvatarMood } from './FloatingAIAvatar';
+import { isRealSpend } from '@/lib/spendClassification';
 
 interface AIInsightBubbleProps {
   expenses: Expense[];
@@ -65,7 +66,7 @@ export const AIInsightBubble = ({
     const thisMonth = new Date().getMonth();
     const thisYear = new Date().getFullYear();
     const thisMonthExpenses = expenses.filter(e => 
-      e.type === 'expense' && 
+      isRealSpend(e) && 
       e.date.getMonth() === thisMonth && 
       e.date.getFullYear() === thisYear
     );
@@ -73,7 +74,7 @@ export const AIInsightBubble = ({
     const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
     const lastMonthYear = thisMonth === 0 ? thisYear - 1 : thisYear;
     const lastMonthExpenses = expenses.filter(e => 
-      e.type === 'expense' && 
+      isRealSpend(e) && 
       e.date.getMonth() === lastMonth && 
       e.date.getFullYear() === lastMonthYear
     );

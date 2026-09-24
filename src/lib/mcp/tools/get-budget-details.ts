@@ -2,6 +2,7 @@ import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { supabaseForUser } from "./_client";
 import { COUNTED_EXPENSE_STATUSES } from '../../countedExpense';
+import { isRealSpend } from '@/lib/spendClassification';
 
 export default defineTool({
   name: "get_budget_details",
@@ -36,7 +37,7 @@ export default defineTool({
     const spentByCat = new Map<string, number>();
     let totalSpent = 0;
     for (const e of spent.data ?? []) {
-      if (e.type !== "expense") continue;
+      if (!isRealSpend(e)) continue;
       const cur = spentByCat.get(e.category) ?? 0;
       spentByCat.set(e.category, cur + Number(e.amount));
       totalSpent += Number(e.amount);

@@ -8,6 +8,7 @@
  * Sve funkcije su čiste (bez mreže i okoline).
  */
 import { isPersonalSourceForProfile } from '@/lib/receiptBusinessRouting';
+import { isRealSpend } from '@/lib/spendClassification';
 
 export type AccountingCategory = 'project' | 'tool' | 'fixed_asset';
 
@@ -83,7 +84,7 @@ export const isHandoverExpense = (
   projects: readonly HandoverProjectLite[],
   businessProfileId: string,
 ): boolean => {
-  if (expense.type !== 'expense') return false;
+  if (!isRealSpend(expense)) return false;
   if (expense.deleted_at) return false;
   if (expense.invoice_id) return false;
   if (!expense.receipt_url) return false;

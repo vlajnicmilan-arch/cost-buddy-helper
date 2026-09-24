@@ -23,6 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { isExpenseType, isIncomeType } from '@/lib/spendClassification';
 
 interface RecurringTransactionsPanelProps {
   onClose?: () => void;
@@ -277,9 +278,9 @@ const RecurringItem = ({ item, formatAmount, getPaymentSourceName, getCatDisplay
         <div className="flex flex-col items-end gap-1.5">
           <span className={cn(
             "text-sm font-mono font-semibold",
-            item.type === 'expense' ? 'text-expense' : item.type === 'income' ? 'text-income' : 'text-muted-foreground'
+            isExpenseType(item) ? 'text-expense' : isIncomeType(item) ? 'text-income' : 'text-muted-foreground'
           )}>
-            {item.type === 'expense' ? '-' : item.type === 'income' ? '+' : ''}{formatAmount(item.amount)}
+            {isExpenseType(item) ? '-' : isIncomeType(item) ? '+' : ''}{formatAmount(item.amount)}
           </span>
           <div className="flex items-center gap-1">
             <Switch

@@ -15,6 +15,7 @@ import { CalendarDayDetail } from '@/components/calendar/CalendarDayDetail';
 import { BottomNav } from '@/components/BottomNav';
 import { PageHeader } from '@/components/PageHeader';
 import { getHolidays } from '@/lib/holidays';
+import { isIncomeType } from '@/lib/spendClassification';
 
 const Calendar = () => {
   const { t, i18n } = useTranslation();
@@ -80,7 +81,7 @@ const Calendar = () => {
     const types = new Set<string>();
     events.forEach(e => {
       if (e.source === 'holiday') types.add('holiday');
-      else if (e.source === 'expense' && e.type === 'income') types.add('income');
+      else if (e.source === 'expense' && isIncomeType(e)) types.add('income');
       else if (e.source === 'expense') types.add('expense');
       else if (e.type === 'deadline') types.add('deadline');
       else if (e.source === 'recurring') types.add('recurring');

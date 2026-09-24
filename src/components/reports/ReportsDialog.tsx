@@ -75,6 +75,7 @@ import { ItemsAnalysisTab } from './ItemsAnalysisTab';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { ExportButton } from '@/components/ui/export-button';
+import { isRealIncome, isRealSpend } from '@/lib/spendClassification';
 
 interface ReportsDialogProps {
   expenses: Expense[];
@@ -152,9 +153,9 @@ const calculateStats = (expenseList: Expense[]) => {
       if (!byIncomeSource[e.income_source_id!]) {
         byIncomeSource[e.income_source_id!] = { income: 0, expenses: 0, balance: 0 };
       }
-      if (e.type === 'income') {
+      if (isRealIncome(e)) {
         byIncomeSource[e.income_source_id!].income += e.amount;
-      } else if (e.type === 'expense') {
+      } else if (isRealSpend(e)) {
         byIncomeSource[e.income_source_id!].expenses += e.amount;
       }
     });
@@ -426,14 +427,14 @@ export const ReportsDialog = ({ expenses, triggerClassName, triggerLabel }: Repo
   const selectedCategoryTransactions = useMemo(() => {
     if (!selectedReportCategory) return [];
     return filteredExpenses
-      .filter(e => e.type === 'expense' && e.category === selectedReportCategory)
+      .filter(e => isRealSpend(e) && e.category === selectedReportCategory)
       .sort((a, b) => b.date.getTime() - a.date.getTime());
   }, [filteredExpenses, selectedReportCategory]);
 
   // Income transactions for the filtered period
   const incomeTransactions = useMemo(() => {
     return filteredExpenses
-      .filter(e => e.type === 'income')
+      .filter(e => isRealIncome(e))
       .sort((a, b) => b.date.getTime() - a.date.getTime());
   }, [filteredExpenses]);
 

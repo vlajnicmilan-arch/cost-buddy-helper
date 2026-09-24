@@ -8,6 +8,7 @@ import { PendingRevisionInput } from '@/types/milestoneRevision';
 import { notifyProjectActivity } from '@/lib/notifyProjectActivity';
 import { applyContractAmendment, calculateNetExpenseAmount, isCountedProjectTransaction, type RawProjectExpense } from '@/lib/projectCalculations';
 import { readMilestoneAmount } from '@/lib/milestoneAmounts';
+import { isRealSpend } from '@/lib/spendClassification';
 
 export const useProjectMilestones = (projectId: string | null) => {
   const { user } = useAuth();
@@ -59,7 +60,7 @@ export const useProjectMilestones = (projectId: string | null) => {
       const spentByMilestone = new Map<string, number>();
       allRows.forEach(row => {
         if (!isCountedProjectTransaction(row)) return;
-        if (row.type !== 'expense') return;
+        if (!isRealSpend(row)) return;
         const mid = (row as any).milestone_id as string | null | undefined;
         if (!mid) return;
         const net = calculateNetExpenseAmount(row, allRows);

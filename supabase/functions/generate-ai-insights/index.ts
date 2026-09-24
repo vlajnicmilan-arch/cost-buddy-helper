@@ -6,6 +6,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkAiQuota } from "../_shared/aiQuota.ts";
 import { callGemini } from "../_shared/geminiClient.ts";
 import { COUNTED_EXPENSE_STATUSES } from "../_shared/countedExpense.ts";
+import { isRealIncome, isRealSpend } from '../_shared/spendClassification.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -101,7 +102,7 @@ Deno.serve(async (req) => {
       !e.business_profile_id && e.expense_nature !== "correction"
     );
     const personalExpenses = personalRows; // legacy alias used by personal candidates (they filter type internally below)
-    const personalExpenseCount = personalRows.filter((e: any) => e.type === "expense").length;
+    const personalExpenseCount = personalRows.filter((e: any) => isRealSpend(e)).length;
     const hasPersonalSignal = personalExpenseCount >= 10;
 
 
@@ -199,9 +200,9 @@ Deno.serve(async (req) => {
           const rows = (projectExpenses || []).filter((e: any) =>
             e.project_id === p.id && e.expense_nature !== "correction"
           );
-          const revenue = rows.filter((e: any) => e.type === "income")
+          const revenue = rows.filter((e: any) => isRealIncome(e))
             .reduce((s: number, e: any) => s + Number(e.amount), 0);
-          const cost = rows.filter((e: any) => e.type === "expense")
+          const cost = rows.filter((e: any) => isRealSpend(e))
             .reduce((s: number, e: any) => s + Number(e.amount), 0);
           const contractRef = Number(p.contract_value || 0) || revenue;
           if (contractRef > 0 && cost > 0) {
@@ -269,14 +270,14 @@ Deno.serve(async (req) => {
         .gte("next_due_date", todayISO)
         .lte("next_due_date", in30.toISOString().slice(0, 10));
 
-      const outflow = (upcomingRec || []).filter((r: any) => r.type === "expense")
+      const outflow = (upcomingRec || []).filter((r: any) => isRealSpend(r))
         .reduce((s: number, r: any) => s + Number(r.amount || 0), 0);
-      const inflow = (upcomingRec || []).filter((r: any) => r.type === "income")
+      const inflow = (upcomingRec || []).filter((r: any) => isRealIncome(r))
         .reduce((s: number, r: any) => s + Number(r.amount || 0), 0);
 
       // Last-30d realized income avg as fallback inflow comparator
       const realIncomeLast30 = personalExpenses
-        .filter((e: any) => e.type === "income")
+        .filter((e: any) => isRealIncome(e))
         .reduce((s: number, e: any) => s + Number(e.amount), 0);
       const expectedInflow = inflow > 0 ? inflow : realIncomeLast30;
 
@@ -305,7 +306,7 @@ Deno.serve(async (req) => {
     const sumByCat = (from: Date, to: Date) => {
       const map = new Map<string, number>();
       for (const e of personalExpenses) {
-        if (e.type !== "expense") continue;
+        if (!isRealSpend(e)) continue;
         const d = new Date(e.date);
         if (d >= from && d < to) {
           map.set(e.category, (map.get(e.category) || 0) + Number(e.amount));
@@ -343,7 +344,7 @@ Deno.serve(async (req) => {
 
     // 2) Month projection
     const monthSpend = personalExpenses
-      .filter((e: any) => e.type === "expense" && new Date(e.date) >= monthStart)
+      .filter((e: any) => isRealSpend(e) && new Date(e.date) >= monthStart)
       .reduce((s: number, e: any) => s + Number(e.amount), 0);
     const projection = (monthSpend / Math.max(1, dayOfMonth)) * daysInMonth;
 

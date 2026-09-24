@@ -3,6 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireAuth, checkAiQuota, corsHeaders } from "../_shared/aiQuota.ts";
 import { callGemini } from "../_shared/geminiClient.ts";
 import { robustParseJson, logParseFailure } from "../_shared/jsonSalvage.ts";
+import { isExpenseType, isIncomeType } from '../_shared/spendClassification.ts';
 
 function getTransactionDirection(tx: { amount: number; type?: string }) {
   const amount = Number(tx.amount);
@@ -11,8 +12,8 @@ function getTransactionDirection(tx: { amount: number; type?: string }) {
     return amount > 0 ? "uplata" : "isplata";
   }
 
-  if (tx.type === "income") return "uplata";
-  if (tx.type === "expense") return "isplata";
+  if (isIncomeType(tx)) return "uplata";
+  if (isExpenseType(tx)) return "isplata";
 
   return "nepoznato";
 }

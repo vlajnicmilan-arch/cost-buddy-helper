@@ -2,6 +2,7 @@ import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { supabaseForUser } from "./_client";
 import { COUNTED_EXPENSE_STATUSES } from '../../countedExpense';
+import { isRealIncome, isRealSpend } from '@/lib/spendClassification';
 
 export default defineTool({
   name: "list_projects",
@@ -41,8 +42,8 @@ export default defineTool({
       for (const e of exp ?? []) {
         const key = e.project_id as string;
         const cur = totals.get(key) ?? { income: 0, expense: 0 };
-        if (e.type === "income") cur.income += Number(e.amount);
-        else if (e.type === "expense") cur.expense += Number(e.amount);
+        if (isRealIncome(e)) cur.income += Number(e.amount);
+        else if (isRealSpend(e)) cur.expense += Number(e.amount);
         totals.set(key, cur);
       }
     }

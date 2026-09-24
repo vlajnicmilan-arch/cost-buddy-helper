@@ -10,6 +10,7 @@ import { TransactionItemsExpander } from '@/components/TransactionItemsExpander'
 import { TransactionNotesThread } from '@/components/TransactionNotesThread';
 import type { ProjectMilestone } from '@/types/project';
 import type { ProjectExpense } from './types';
+import { isIncomeType } from '@/lib/spendClassification';
 
 interface ProjectTransactionDetailDialogProps {
   open: boolean;
@@ -78,10 +79,10 @@ export const ProjectTransactionDetailDialog = ({
               <div
                 className={cn(
                   'font-mono font-medium shrink-0',
-                  expense.type === 'income' ? 'text-income' : 'text-expense',
+                  isIncomeType(expense) ? 'text-income' : 'text-expense',
                 )}
               >
-                {expense.type === 'income' ? '+' : '-'}
+                {isIncomeType(expense) ? '+' : '-'}
                 {formatAmount(expense.amount)}
               </div>
             </div>

@@ -31,6 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { useModuleGate } from '@/hooks/useModuleGate';
+import { isExpenseType } from '@/lib/spendClassification';
 
 interface ProjectsPanelProps {
   onRefreshExpenses?: () => void;
@@ -158,7 +159,7 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
             if (pid) {
               resolvedProjectId = pid;
               resolvedTab = pending.tab ?? undefined;
-              if (pending.type === 'expense') resolvedExpenseId = pending.id;
+              if (isExpenseType(pending)) resolvedExpenseId = pending.id;
             }
           } catch { /* ignore */ }
         }

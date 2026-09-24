@@ -19,6 +19,7 @@ import { loadJsPdf } from '@/lib/loadJsPdf';
 import { exportPDFDoc, exportTextFile, type ExportMode } from '@/lib/fileExport';
 import { ExportButton } from '@/components/ui/export-button';
 import { applyBrandFont, brandTableTheme, BRAND_TEAL, BRAND_TEAL_LIGHT, brandAutoTable } from '@/lib/pdfBranding';
+import { isRealSpend } from '@/lib/spendClassification';
 
 interface ItemWithCategory extends ReceiptItem {
   category: string;
@@ -69,7 +70,7 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
   // Fetch receipt items for all filtered expense-type transactions
   useEffect(() => {
     const fetchItems = async () => {
-      const expenseOnly = filteredExpenses.filter(e => e.type === 'expense');
+      const expenseOnly = filteredExpenses.filter(e => isRealSpend(e));
       if (expenseOnly.length === 0) {
         setAllItems([]);
         return;

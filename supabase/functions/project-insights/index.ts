@@ -2,6 +2,7 @@ import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { callGemini } from '../_shared/geminiClient.ts';
 import { COUNTED_EXPENSE_STATUSES } from "../_shared/countedExpense.ts";
+import { isRealIncome, isRealSpend } from '../_shared/spendClassification.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -93,10 +94,10 @@ Deno.serve(async (req) => {
       .gte('work_date', sevenDaysAgo);
 
     const totalSpentRecent = (recentExpenses || [])
-      .filter(e => e.type === 'expense')
+      .filter(e => isRealSpend(e))
       .reduce((s, e) => s + Number(e.amount), 0);
     const totalIncomeRecent = (recentExpenses || [])
-      .filter(e => e.type === 'income')
+      .filter(e => isRealIncome(e))
       .reduce((s, e) => s + Number(e.amount), 0);
     const totalHours = (workEntries || []).reduce((s, w) => s + Number(w.hours || 0), 0);
 
@@ -106,7 +107,7 @@ Deno.serve(async (req) => {
     const prompt = `Generiraj kratki tjedni sažetak za projekt "${project.name}".
 
 Statistika zadnjih 7 dana:
-- Trošak: ${totalSpentRecent.toFixed(2)} EUR (${recentExpenses?.filter(e => e.type === 'expense').length || 0} transakcija)
+- Trošak: ${totalSpentRecent.toFixed(2)} EUR (${recentExpenses?.filter(e => isRealSpend(e)).length || 0} transakcija)
 - Prihod: ${totalIncomeRecent.toFixed(2)} EUR
 - Sati rada: ${totalHours}h
 - Završene faze: ${completedMs.length} / ${milestones?.length || 0}

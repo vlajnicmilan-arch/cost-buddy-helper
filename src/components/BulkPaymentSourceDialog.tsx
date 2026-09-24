@@ -13,6 +13,7 @@ import { hr } from 'date-fns/locale';
 import { CreditCard, Search, CheckSquare, Square, Loader2 } from 'lucide-react';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
+import { isIncomeType } from '@/lib/spendClassification';
 
 interface BulkPaymentSourceDialogProps {
   expenses: Expense[];
@@ -228,9 +229,9 @@ export const BulkPaymentSourceDialog = ({ expenses, onUpdateExpenses }: BulkPaym
                     </div>
                     
                     <p className={`font-mono text-sm font-medium ${
-                      expense.type === 'income' ? 'text-income' : 'text-expense'
+                      isIncomeType(expense) ? 'text-income' : 'text-expense'
                     }`}>
-                      {expense.type === 'income' ? '+' : '-'}{formatAmount(expense.amount)}
+                      {isIncomeType(expense) ? '+' : '-'}{formatAmount(expense.amount)}
                     </p>
                   </div>
                 );

@@ -11,6 +11,7 @@
 import { useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Expense } from '@/types/expense';
+import { isExpenseType } from '@/lib/spendClassification';
 
 export interface CollaboratorAdvanceSummary {
   collaboratorId: string;
@@ -56,7 +57,7 @@ export const getCollaboratorSummary = (
   const unlinkedTotal = unlinkedAdvances.reduce((s, e) => s + toNumber(e.amount), 0);
 
   const invoices = expenses.filter(
-    e => e.collaborator_id === collaboratorId && !e.is_advance && e.type === 'expense'
+    e => e.collaborator_id === collaboratorId && !e.is_advance && isExpenseType(e)
   );
   const totalInvoices = invoices.reduce((s, e) => s + toNumber(e.amount), 0);
 

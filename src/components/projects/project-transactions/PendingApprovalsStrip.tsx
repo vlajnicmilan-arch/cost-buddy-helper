@@ -5,6 +5,7 @@ import { hr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { resolveCategory } from '@/hooks/useResolvedCategory';
 import { useTranslation } from 'react-i18next';
+import { isIncomeType } from '@/lib/spendClassification';
 
 interface PendingTx {
   id: string;
@@ -47,7 +48,7 @@ export const PendingApprovalsStrip = ({
       <div className="space-y-2">
         {pendingTransactions.map((tx) => {
           const categoryInfo = resolveCategory(tx.category, customCategories);
-          const isIncome = tx.type === 'income';
+          const isIncome = isIncomeType(tx);
 
           return (
             <div

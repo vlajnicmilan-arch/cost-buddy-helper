@@ -17,6 +17,7 @@ import { BankDuplicateSheet } from './bank/BankDuplicateSheet';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { TransactionAttribution } from './transactions/TransactionAttribution';
+import { isExpenseType, isIncomeType } from '@/lib/spendClassification';
 
 export interface TransactionContextLookup {
   budgets?: { id: string; name: string; icon?: string | null; color?: string | null }[];
@@ -131,7 +132,7 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
   const isOwnerLoan = useMemo(
     () =>
       (expense as any).owner_funding_choice === 'owner_loan' &&
-      expense.type === 'expense',
+      isExpenseType(expense),
     [expense],
   );
 
@@ -404,7 +405,7 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
               </span>
             )}
             <span className="text-muted-foreground/50">•</span>
-            {expense.type === 'expense' && (
+            {isExpenseType(expense) && (
               <span className="inline-flex items-center gap-0.5 truncate max-w-[80px]">
                 <span className="truncate">{category.name}</span>
                 {(expense.category_origin === 'ai_suggested' || expense.category_origin === 'ai_receipt' || expense.category_origin === 'habit') && (
@@ -426,7 +427,7 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
             {expense.type === 'transfer' && (
               <span className="text-primary">{t('transactions.transfer')}</span>
             )}
-            {expense.type === 'income' && (
+            {isIncomeType(expense) && (
               <span className="text-income">{t('transactions.income', 'Prihod')}</span>
             )}
             {budgetInfo && (
@@ -469,10 +470,10 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
         <div className="flex flex-col items-end shrink-0 gap-0.5">
           <p className={cn(
             "font-mono font-bold text-base leading-tight",
-            expense.type === 'expense' ? 'text-expense' :
+            isExpenseType(expense) ? 'text-expense' :
             expense.type === 'transfer' ? 'text-muted-foreground' : 'text-income'
           )}>
-            {expense.type === 'expense' ? '-' : expense.type === 'transfer' ? '↔' : '+'}{formatAmount(Number(expense.amount), expense.currency as any)}
+            {isExpenseType(expense) ? '-' : expense.type === 'transfer' ? '↔' : '+'}{formatAmount(Number(expense.amount), expense.currency as any)}
           </p>
           <div className="flex items-center gap-1">
             {installmentLabel && (

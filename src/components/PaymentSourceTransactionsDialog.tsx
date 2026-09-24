@@ -53,6 +53,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { compareImportRowsDesc } from '@/lib/importRowSort';
 import { isOnOrBeforeDay } from '@/lib/dayKey';
+import { isExpenseType, isIncomeType } from '@/lib/spendClassification';
 
 interface PaymentSourceTransactionsDialogProps {
   open: boolean;
@@ -289,8 +290,8 @@ export const PaymentSourceTransactionsDialog = ({
       const isInboundTransfer = e.type === 'transfer' && e.income_source_id === paymentSource.id;
       const isOutboundTransfer = e.type === 'transfer' && !isInboundTransfer;
 
-      if (e.type === 'income') return e.amount;          // income increases balance
-      if (e.type === 'expense') return -e.amount;         // expense decreases balance
+      if (isIncomeType(e)) return e.amount;          // income increases balance
+      if (isExpenseType(e)) return -e.amount;         // expense decreases balance
       if (isInboundTransfer) return e.amount;             // incoming transfer increases balance
       if (isOutboundTransfer) return -e.amount;           // outgoing transfer decreases balance
       return 0;
@@ -727,9 +728,9 @@ export const PaymentSourceTransactionsDialog = ({
     const feedItems: FeedItem[] = list.map(e => {
       const cat = resolveCategory(e.category, customCategories);
       const isInbound = e.type === 'transfer' && e.income_source_id === paymentSource.id;
-      const isPos = e.type === 'income' || isInbound;
+      const isPos = isIncomeType(e) || isInbound;
       const sign = isPos ? '+' : '-';
-      const typeLabel = e.type === 'income'
+      const typeLabel = isIncomeType(e)
         ? t('transactions.income')
         : e.type === 'transfer'
           ? t('transactions.transfer')
@@ -1253,7 +1254,7 @@ export const PaymentSourceTransactionsDialog = ({
                                     <p className="min-w-0 font-medium text-foreground truncate text-[15px] leading-tight">
                                       {expense.merchant_name || expense.description}
                                     </p>
-                                    {expense.type === 'expense' && expense.owner_funding_choice === 'owner_loan' && (
+                                    {isExpenseType(expense) && expense.owner_funding_choice === 'owner_loan' && (
                                       <Tooltip>
                                         <TooltipTrigger asChild>
                                           <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-amber-500/40 text-amber-600 dark:text-amber-400 shrink-0">
@@ -1304,10 +1305,10 @@ export const PaymentSourceTransactionsDialog = ({
 
                                   {(() => {
                                     const isInboundTransfer = expense.type === 'transfer' && expense.income_source_id === paymentSource?.id;
-                                    const colorClass = expense.type === 'income' || isInboundTransfer ? 'text-income' : 
-                                      expense.type === 'expense' ? 'text-expense' : 'text-muted-foreground';
-                                    const prefix = expense.type === 'expense' ? '-' : 
-                                      (expense.type === 'income' || isInboundTransfer) ? '+' : '↔';
+                                    const colorClass = isIncomeType(expense) || isInboundTransfer ? 'text-income' : 
+                                      isExpenseType(expense) ? 'text-expense' : 'text-muted-foreground';
+                                    const prefix = isExpenseType(expense) ? '-' : 
+                                      (isIncomeType(expense) || isInboundTransfer) ? '+' : '↔';
                                     return (
                                       <p className={cn("font-mono font-semibold text-[13px] leading-tight shrink-0 whitespace-nowrap text-right", colorClass)}>
                                         {prefix}{formatAmount(expense.amount)}
@@ -1316,7 +1317,7 @@ export const PaymentSourceTransactionsDialog = ({
                                   })()}
 
                                   <div className="min-w-0 flex items-center gap-1 text-xs text-muted-foreground leading-tight truncate">
-                                    {expense.type === 'expense' && (
+                                    {isExpenseType(expense) && (
                                       <span className="truncate max-w-[84px]">{categoryInfo.name}</span>
                                     )}
                                     {expense.type === 'transfer' && expense.income_source_id === paymentSource?.id && (
@@ -1325,7 +1326,7 @@ export const PaymentSourceTransactionsDialog = ({
                                     {expense.type === 'transfer' && expense.income_source_id !== paymentSource?.id && (
                                       <span className="text-primary whitespace-nowrap">{t('transactions.transfer', 'Prijenos')} ↑</span>
                                     )}
-                                    {expense.type === 'income' && (
+                                    {isIncomeType(expense) && (
                                       <span className="text-income whitespace-nowrap">{t('transactions.income', 'Prihod')}</span>
                                     )}
                                     {cardInfo && (
@@ -1557,9 +1558,9 @@ export const PaymentSourceTransactionsDialog = ({
                         </p>
                       </div>
                       <p className={cn("font-mono font-bold shrink-0",
-                        tx.type === 'income' ? 'text-income' : tx.type === 'transfer' ? 'text-muted-foreground' : 'text-expense'
+                        isIncomeType(tx) ? 'text-income' : tx.type === 'transfer' ? 'text-muted-foreground' : 'text-expense'
                       )}>
-                        {tx.type === 'income' ? '+' : tx.type === 'transfer' ? '↔' : '-'}{formatAmount(tx.amount)}
+                        {isIncomeType(tx) ? '+' : tx.type === 'transfer' ? '↔' : '-'}{formatAmount(tx.amount)}
                       </p>
                     </div>
                   ))}
@@ -1645,8 +1646,8 @@ export const PaymentSourceTransactionsDialog = ({
                             <p className="font-medium truncate text-xs">{tx.description}</p>
                             <p className="text-xs text-muted-foreground">{tx.date.toLocaleDateString()}</p>
                           </div>
-                          <p className={cn("font-mono text-xs shrink-0", tx.type === 'income' ? 'text-income' : 'text-expense')}>
-                            {tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}
+                          <p className={cn("font-mono text-xs shrink-0", isIncomeType(tx) ? 'text-income' : 'text-expense')}>
+                            {isIncomeType(tx) ? '+' : '-'}{formatAmount(tx.amount)}
                           </p>
                         </div>
                       ))}
@@ -1687,8 +1688,8 @@ export const PaymentSourceTransactionsDialog = ({
                                 <p className="font-medium truncate text-xs">{matchedExpense.description}</p>
                                 <p className="text-[10px] text-muted-foreground">{matchedExpense.date.toLocaleDateString()}</p>
                               </div>
-                              <p className={cn("font-mono text-xs shrink-0", matchedExpense.type === 'income' ? 'text-income' : 'text-expense')}>
-                                {matchedExpense.type === 'income' ? '+' : '-'}{formatAmount(Number(matchedExpense.amount))}
+                              <p className={cn("font-mono text-xs shrink-0", isIncomeType(matchedExpense) ? 'text-income' : 'text-expense')}>
+                                {isIncomeType(matchedExpense) ? '+' : '-'}{formatAmount(Number(matchedExpense.amount))}
                               </p>
                             </div>
                             <div className={`flex items-center gap-2 p-2 ${selectedFuzzy.has(idx) ? 'bg-primary/5' : 'bg-amber-500/5'}`}>
@@ -1701,8 +1702,8 @@ export const PaymentSourceTransactionsDialog = ({
                                 <p className="font-medium truncate text-xs">{tx.description}</p>
                                 <p className="text-[10px] text-muted-foreground">{tx.date.toLocaleDateString()}</p>
                               </div>
-                              <p className={cn("font-mono text-xs shrink-0", tx.type === 'income' ? 'text-income' : 'text-expense')}>
-                                {tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}
+                              <p className={cn("font-mono text-xs shrink-0", isIncomeType(tx) ? 'text-income' : 'text-expense')}>
+                                {isIncomeType(tx) ? '+' : '-'}{formatAmount(tx.amount)}
                               </p>
                             </div>
                           </button>

@@ -2,6 +2,7 @@ import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { supabaseForUser } from "./_client";
 import { COUNTED_EXPENSE_STATUSES } from '../../countedExpense';
+import { isRealIncome, isRealSpend } from '@/lib/spendClassification';
 
 export default defineTool({
   name: "get_project_details",
@@ -27,8 +28,8 @@ export default defineTool({
     if (!project.data) return { content: [{ type: "text", text: "Project not found" }], isError: true };
     let income = 0, expense = 0;
     for (const e of expenses.data ?? []) {
-      if (e.type === "income") income += Number(e.amount);
-      else if (e.type === "expense") expense += Number(e.amount);
+      if (isRealIncome(e)) income += Number(e.amount);
+      else if (isRealSpend(e)) expense += Number(e.amount);
     }
     const result = {
       project: project.data,

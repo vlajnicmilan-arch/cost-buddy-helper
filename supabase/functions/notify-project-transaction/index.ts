@@ -4,6 +4,7 @@
 // Instant push remains disabled for project transactions — everyone goes through
 // the 19h participant digest via enqueue_participant_digest_event.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { isIncomeType } from '../_shared/spendClassification.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -88,7 +89,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       style: 'currency',
       currency: 'EUR'
     }).format(expense.amount);
-    const messageKey = `notifications.project_transaction.message.${action}.${expense.type === 'income' ? 'income' : 'expense'}`;
+    const messageKey = `notifications.project_transaction.message.${action}.${isIncomeType(expense) ? 'income' : 'expense'}`;
     const titleKey = 'notifications.project_transaction.title';
     const titleVars = { project: project.name };
     const messageVars = {

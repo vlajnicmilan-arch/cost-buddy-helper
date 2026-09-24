@@ -39,6 +39,7 @@ import {
   ArrowUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { isIncomeType } from '@/lib/spendClassification';
 
 interface BudgetFullScreenViewProps {
   open: boolean;
@@ -245,7 +246,7 @@ export const BudgetFullScreenView = ({
                         <div className="space-y-2">
                           {pendingTransactions.map((tx) => {
                             const categoryInfo = getCategoryInfo(tx.category as any);
-                            const isIncome = tx.type === 'income';
+                            const isIncome = isIncomeType(tx);
                             
                             return (
                               <div 

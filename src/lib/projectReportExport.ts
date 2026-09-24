@@ -9,6 +9,7 @@ import { drawReportHeader, drawReportFooter, REPORT_MARGIN_X } from '@/lib/pdfRe
 import { ensureReportLogo } from '@/lib/reportLogo';
 import { buildReportFileName, loadLastConfidentiality, type ReportBrandOptions } from '@/lib/reportDesign';
 import { getReportOwner } from '@/hooks/useReportOwner';
+import { isExpenseType, isRealSpend } from '@/lib/spendClassification';
 
 let pdfLibsPromise: Promise<{ jsPDF: typeof JsPDFType; autoTable: typeof import('jspdf-autotable').default }> | null = null;
 const loadPdfLibs = () => {
@@ -339,7 +340,7 @@ export const generateProjectPDFReport = async (
         formatDate(t.date),
         toAscii(t.description),
         toAscii(t.milestone_name || '-'),
-        t.type === 'expense' 
+        isRealSpend(t) 
           ? `-${formatCurrency(t.amount, data.currency)}` 
           : formatCurrency(t.amount, data.currency),
       ]);
@@ -421,7 +422,7 @@ export const generateProjectCSVReport = async (data: ProjectReportData, mode: Ex
   data.transactions
     .sort((a, b) => b.date.getTime() - a.date.getTime())
     .forEach(t => {
-      const amount = t.type === 'expense' ? -t.amount : t.amount;
+      const amount = isExpenseType(t) ? -t.amount : t.amount;
       summaryRows.push(`"${formatDate(t.date)}","${s(t.description)}","${s(t.milestone_name || '-')}","${s(t.type)}","${amount}"`);
     });
 

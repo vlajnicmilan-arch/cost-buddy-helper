@@ -32,6 +32,7 @@ import {
   type LaborRateHistoryRow,
   type LaborWorkerDetail,
 } from './projectLaborCost';
+import { isRealIncome, isRealSpend } from '@/lib/spendClassification';
 
 export interface PLProjectRow {
   contract_value?: number | string | null;
@@ -183,15 +184,15 @@ export const computeProjectProfitLoss = (input: PLInput): PLResult => {
   let totalExpenses = 0;
   for (const t of txs) {
     if (!isCountedTx(t)) continue;
-    if (t.type === 'income') totalIncome += num(t.amount);
-    else if (t.type === 'expense') totalExpenses += netExpenseAmount(t, txs);
+    if (isRealIncome(t)) totalIncome += num(t.amount);
+    else if (isRealSpend(t)) totalExpenses += netExpenseAmount(t, txs);
   }
   // Paid labor (CASH). Source of truth: expense rows written by the payout RPCs.
   // Hours are deliberately NOT used here — that money already sits in `expenses`.
   let laborCost = 0;
   for (const t of txs) {
     if (!isCountedTx(t)) continue;
-    if (t.type !== 'expense') continue;
+    if (!isRealSpend(t)) continue;
     if (!t.worker_payout_id) continue;
     laborCost += netExpenseAmount(t, txs);
   }
