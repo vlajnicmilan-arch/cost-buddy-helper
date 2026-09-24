@@ -6020,7 +6020,14 @@
         "not_found": "Record not found.",
         "generic": "Could not save the settlement.",
         "only_debtor_can_settle": "Only the person who owes can mark a settlement.",
-        "only_party_can_void": "Only the two parties of this debt can void the settlement."
+        "only_party_can_void": "Only the two parties of this debt can void the settlement.",
+        "source_required": "Choose the source you paid from.",
+        "source_not_found": "The selected source no longer exists.",
+        "source_not_writable": "You are not allowed to record transactions in the selected source.",
+        "payer_amount_required": "The source uses another currency — enter the amount actually paid.",
+        "payer_amount_mismatch": "The paid amount must equal the settlement amount when the currency is the same.",
+        "client_request_id_required": "Invalid request. Close and reopen the dialog.",
+        "unauthenticated": "Your session expired. Please sign in again."
       },
       "success": {
         "marked": "Settlement recorded.",
@@ -6035,7 +6042,13 @@
         "confirmCountdown": "Confirm ({{s}}s)",
         "titleSelf": "Mark as paid",
         "bodySelf": "You are marking that you paid {{to}} the amount of {{amount}} {{currency}}.",
-        "confirmSelf": "Confirm I paid"
+        "confirmSelf": "Confirm I paid",
+        "sourceLabel": "I paid from:",
+        "sourcePlaceholder": "Choose a source",
+        "noSources": "You have no source you can record a transaction in.",
+        "paidAmountLabel": "Actually paid ({{currency}})",
+        "fxHint": "Hint: {{amount}} {{currency}} at the rate from {{date}} — enter the amount actually charged.",
+        "fxHintMissing": "No recorded rate for {{currency}} — enter the amount actually charged."
       },
       "history": {
         "title": "Settlement history",
@@ -6050,7 +6063,9 @@
           "reasonLabel": "Reason (required)",
           "reasonPlaceholder": "e.g. money never arrived",
           "confirm": "Void settlement"
-        }
+        },
+        "paidFrom": "Paid from: {{source}}",
+        "awaitingReceipt": "Awaiting receipt confirmation"
       }
     },
     "override": {

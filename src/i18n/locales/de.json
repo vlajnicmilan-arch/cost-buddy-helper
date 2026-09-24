@@ -6020,7 +6020,14 @@
         "not_found": "Datensatz nicht gefunden.",
         "generic": "Ausgleich konnte nicht gespeichert werden.",
         "only_debtor_can_settle": "Nur wer schuldet, kann eine Zahlung vermerken.",
-        "only_party_can_void": "Nur die beiden Parteien dieser Schuld können die Zahlung stornieren."
+        "only_party_can_void": "Nur die beiden Parteien dieser Schuld können die Zahlung stornieren.",
+        "source_required": "Wähle die Quelle, von der du bezahlt hast.",
+        "source_not_found": "Die gewählte Quelle existiert nicht mehr.",
+        "source_not_writable": "Du darfst in die gewählte Quelle keine Buchungen eintragen.",
+        "payer_amount_required": "Die Quelle hat eine andere Währung — gib den tatsächlich bezahlten Betrag ein.",
+        "payer_amount_mismatch": "Bei gleicher Währung muss der bezahlte Betrag dem Ausgleichsbetrag entsprechen.",
+        "client_request_id_required": "Ungültige Anfrage. Schließe den Dialog und öffne ihn erneut.",
+        "unauthenticated": "Deine Sitzung ist abgelaufen. Bitte melde dich erneut an."
       },
       "success": {
         "marked": "Ausgleich erfasst.",
@@ -6035,7 +6042,13 @@
         "confirmCountdown": "Bestätigen ({{s}}s)",
         "titleSelf": "Als bezahlt markieren",
         "bodySelf": "Du markierst, dass du {{to}} den Betrag {{amount}} {{currency}} bezahlt hast.",
-        "confirmSelf": "Bestätigen, dass ich bezahlt habe"
+        "confirmSelf": "Bestätigen, dass ich bezahlt habe",
+        "sourceLabel": "Bezahlt von:",
+        "sourcePlaceholder": "Quelle wählen",
+        "noSources": "Du hast keine Quelle, in die du Buchungen eintragen darfst.",
+        "paidAmountLabel": "Tatsächlich bezahlt ({{currency}})",
+        "fxHint": "Hilfe: {{amount}} {{currency}} zum Kurs vom {{date}} — gib den tatsächlich abgebuchten Betrag ein.",
+        "fxHintMissing": "Kein gespeicherter Kurs für {{currency}} — gib den tatsächlich abgebuchten Betrag ein."
       },
       "history": {
         "title": "Ausgleichs-Historie",
@@ -6050,7 +6063,9 @@
           "reasonLabel": "Grund (erforderlich)",
           "reasonPlaceholder": "z. B. Geld nie erhalten",
           "confirm": "Stornieren"
-        }
+        },
+        "paidFrom": "Bezahlt von: {{source}}",
+        "awaitingReceipt": "Wartet auf Empfangsbestätigung"
       }
     },
     "override": {
