@@ -99,6 +99,13 @@
       "when": 1790183993415,
       "tag": "0013_merge_currency_null_eur",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1790281354169,
+      "tag": "0014_merge_keeps_manual_expense_nature",
+      "breakpoints": true
     }
   ]
 }
