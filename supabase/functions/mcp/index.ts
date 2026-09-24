@@ -218,8 +218,28 @@ import { z as z4 } from "npm:zod@^3.25.76";
 // src/lib/countedExpense.ts
 var COUNTED_EXPENSE_STATUSES = ["approved"];
 
+// src/lib/spendClassification.ts
+var NON_SPENDING_NATURES = [
+  "correction",
+  // Rezervirano: vrijednost još ne postoji u bazi.
+  "krug_settlement"
+];
+function isExcludedFromSpend(row) {
+  if (!row) return true;
+  if (row.type === "transfer") return true;
+  if (row.deleted_at != null) return true;
+  if (row.expense_nature != null && NON_SPENDING_NATURES.includes(row.expense_nature)) return true;
+  if (row.movement_kind != null) return true;
+  return false;
+}
+function isRealSpend(row) {
+  return !!row && row.type === "expense" && !isExcludedFromSpend(row);
+}
+function isRealIncome(row) {
+  return !!row && row.type === "income" && !isExcludedFromSpend(row);
+}
+
 // src/lib/mcp/tools/get-budget-details.ts
-import { isRealSpend } from "npm:@/lib/spendClassification";
 var get_budget_details_default = defineTool5({
   name: "get_budget_details",
   title: "Get budget details",
@@ -342,7 +362,6 @@ var add_budget_category_default = defineTool7({
 // src/lib/mcp/tools/list-projects.ts
 import { defineTool as defineTool8 } from "npm:@lovable.dev/mcp-js@0.20.0";
 import { z as z7 } from "npm:zod@^3.25.76";
-import { isRealIncome, isRealSpend as isRealSpend2 } from "npm:@/lib/spendClassification";
 var list_projects_default = defineTool8({
   name: "list_projects",
   title: "List projects",
@@ -370,7 +389,7 @@ var list_projects_default = defineTool8({
         const key = e.project_id;
         const cur = totals.get(key) ?? { income: 0, expense: 0 };
         if (isRealIncome(e)) cur.income += Number(e.amount);
-        else if (isRealSpend2(e)) cur.expense += Number(e.amount);
+        else if (isRealSpend(e)) cur.expense += Number(e.amount);
         totals.set(key, cur);
       }
     }
@@ -388,7 +407,6 @@ var list_projects_default = defineTool8({
 // src/lib/mcp/tools/get-project-details.ts
 import { defineTool as defineTool9 } from "npm:@lovable.dev/mcp-js@0.20.0";
 import { z as z8 } from "npm:zod@^3.25.76";
-import { isRealIncome as isRealIncome2, isRealSpend as isRealSpend3 } from "npm:@/lib/spendClassification";
 var get_project_details_default = defineTool9({
   name: "get_project_details",
   title: "Get project details",
@@ -412,8 +430,8 @@ var get_project_details_default = defineTool9({
     if (!project.data) return { content: [{ type: "text", text: "Project not found" }], isError: true };
     let income = 0, expense = 0;
     for (const e of expenses.data ?? []) {
-      if (isRealIncome2(e)) income += Number(e.amount);
-      else if (isRealSpend3(e)) expense += Number(e.amount);
+      if (isRealIncome(e)) income += Number(e.amount);
+      else if (isRealSpend(e)) expense += Number(e.amount);
     }
     const result = {
       project: project.data,
@@ -555,7 +573,6 @@ var list_krugs_default = defineTool13({
 // src/lib/mcp/tools/get-krug-summary.ts
 import { defineTool as defineTool14 } from "npm:@lovable.dev/mcp-js@0.20.0";
 import { z as z12 } from "npm:zod@^3.25.76";
-import { isRealSpend as isRealSpend4 } from "npm:@/lib/spendClassification";
 var get_krug_summary_default = defineTool14({
   name: "get_krug_summary",
   title: "Get krug summary",
@@ -581,7 +598,7 @@ var get_krug_summary_default = defineTool14({
     if (srcIds.length) {
       const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1e3).toISOString();
       const { data: exp } = await sb.from("expenses").select("amount,type").in("payment_source", srcIds).gte("date", since).is("deleted_at", null).in("status", COUNTED_EXPENSE_STATUSES);
-      for (const e of exp ?? []) if (isRealSpend4(e)) recent_expense_total += Number(e.amount);
+      for (const e of exp ?? []) if (isRealSpend(e)) recent_expense_total += Number(e.amount);
     }
     const result = {
       krug: krug.data,

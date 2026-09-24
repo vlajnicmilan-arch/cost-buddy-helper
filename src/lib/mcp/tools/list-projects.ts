@@ -2,7 +2,7 @@ import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { supabaseForUser } from "./_client";
 import { COUNTED_EXPENSE_STATUSES } from '../../countedExpense';
-import { isRealIncome, isRealSpend } from '@/lib/spendClassification';
+import { isRealIncome, isRealSpend } from '../../spendClassification';
 
 export default defineTool({
   name: "list_projects",

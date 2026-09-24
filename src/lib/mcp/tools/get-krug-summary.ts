@@ -2,7 +2,7 @@ import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { supabaseForUser } from "./_client";
 import { COUNTED_EXPENSE_STATUSES } from '../../countedExpense';
-import { isRealSpend } from '@/lib/spendClassification';
+import { isRealSpend } from '../../spendClassification';
 
 export default defineTool({
   name: "get_krug_summary",
