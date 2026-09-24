@@ -6032,7 +6032,14 @@
         "not_found": "Zapis ne postoji.",
         "generic": "Nije moguće spremiti podmirenje.",
         "only_debtor_can_settle": "Samo onaj tko duguje može označiti podmirenje.",
-        "only_party_can_void": "Podmirenje mogu poništiti samo strane tog duga."
+        "only_party_can_void": "Podmirenje mogu poništiti samo strane tog duga.",
+        "source_required": "Odaberi izvor s kojeg si platio.",
+        "source_not_found": "Odabrani izvor više ne postoji.",
+        "source_not_writable": "U odabrani izvor ne smiješ upisivati transakcije.",
+        "payer_amount_required": "Izvor je u drugoj valuti — upiši stvarno plaćeni iznos.",
+        "payer_amount_mismatch": "Plaćeni iznos mora biti jednak iznosu podmirenja kad je valuta ista.",
+        "client_request_id_required": "Zahtjev nije valjan. Zatvori i ponovno otvori prozor.",
+        "unauthenticated": "Prijava je istekla. Prijavi se ponovno."
       },
       "success": {
         "marked": "Podmirenje zabilježeno.",
@@ -6047,7 +6054,13 @@
         "confirmCountdown": "Potvrdi ({{s}}s)",
         "titleSelf": "Označi da si platio",
         "bodySelf": "Označavaš da si platio {{to}} iznos {{amount}} {{currency}}.",
-        "confirmSelf": "Potvrdi da sam platio"
+        "confirmSelf": "Potvrdi da sam platio",
+        "sourceLabel": "Platio sam iz:",
+        "sourcePlaceholder": "Odaberi izvor",
+        "noSources": "Nemaš izvor u koji smiješ upisati trošak.",
+        "paidAmountLabel": "Stvarno plaćeno ({{currency}})",
+        "fxHint": "Pomoć: {{amount}} {{currency}} po tečaju od {{date}} — upiši iznos koji je stvarno skinut.",
+        "fxHintMissing": "Nema zabilježenog tečaja za {{currency}} — upiši iznos koji je stvarno skinut."
       },
       "history": {
         "title": "Povijest podmirenja",
@@ -6062,7 +6075,9 @@
           "reasonLabel": "Razlog poništenja (obavezno)",
           "reasonPlaceholder": "npr. novac nije stigao",
           "confirm": "Poništi podmirenje"
-        }
+        },
+        "paidFrom": "Plaćeno iz: {{source}}",
+        "awaitingReceipt": "Čeka potvrdu primitka"
       }
     },
     "override": {

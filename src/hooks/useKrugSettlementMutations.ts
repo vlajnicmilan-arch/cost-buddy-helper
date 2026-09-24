@@ -6,6 +6,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import i18n from '@/i18n';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { getBuildStamp } from '@/lib/buildStamp';
+import { resolveKrugSettleErrorCode, krugSettleErrorKey } from '@/lib/krugSettleWithSource';
 
 export interface KrugSettlementLedgerRow {
   id: string;
@@ -20,53 +23,114 @@ export interface KrugSettlementLedgerRow {
   voided_at: string | null;
   voided_by: string | null;
   void_reason: string | null;
+  payer_expense_id?: string | null;
+  payer_source_id?: string | null;
+  payer_amount?: number | null;
+  payer_currency?: string | null;
+  recipient_confirmed_at?: string | null;
 }
 
 function reportError(err: any, fallbackKey: string, fallback: string) {
-  const msg = err?.message || '';
-  const map: Record<string, string> = {
-    only_debtor_can_settle: i18n.t('krug.settle.error.only_debtor_can_settle', 'Samo onaj tko duguje može označiti podmirenje.'),
-    only_party_can_void: i18n.t('krug.settle.error.only_party_can_void', 'Podmirenje mogu poništiti samo strane tog duga.'),
-    not_full_member: i18n.t('krug.settle.error.not_full_member', 'Nemaš pravo označiti podmirenje u ovom Krugu.'),
-    from_equals_to: i18n.t('krug.settle.error.from_equals_to', 'Isti član ne može biti pošiljatelj i primatelj.'),
-    party_not_full_member: i18n.t('krug.settle.error.party_not_full_member', 'Odabrani član nije punopravni.'),
-    invalid_amount: i18n.t('krug.settle.error.invalid_amount', 'Neispravan iznos.'),
-    invalid_currency: i18n.t('krug.settle.error.invalid_currency', 'Neispravna valuta.'),
-    already_voided: i18n.t('krug.settle.error.already_voided', 'Podmirenje je već poništeno.'),
-    reason_required: i18n.t('krug.settle.error.reason_required', 'Razlog je obavezan.'),
-    not_found: i18n.t('krug.settle.error.not_found', 'Zapis ne postoji.'),
-  };
-  for (const k of Object.keys(map)) {
-    if (msg.includes(k)) { showError(map[k]); return; }
-  }
+  const code = resolveKrugSettleErrorCode(err?.message);
+  if (code) { showError(i18n.t(krugSettleErrorKey(code))); return; }
   // eslint-disable-next-line no-console
   console.error('[krug settle]', err);
   showError(i18n.t(fallbackKey, fallback));
 }
 
-export function useKrugMarkSettled(krugId: string) {
+export interface MarkSettledWithSourceVars {
+  fromUser: string;
+  toUser: string;
+  amount: number;
+  currency: string;
+  payerSourceId: string;
+  clientRequestId: string;
+  payerAmount?: number | null;
+  note?: string;
+}
+
+/**
+ * Debtor settles from a chosen source. Every failure is written to
+ * app_diagnostics_logs with the literal server code/message; the user gets
+ * the translated message for known codes, the generic one only otherwise.
+ */
+export function useKrugMarkSettledWithSource(krugId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (vars: {
-      fromUser: string; toUser: string; amount: number; currency: string; note?: string;
-    }) => {
-      const { data, error } = await (supabase as any).rpc('krug_mark_settled', {
+    mutationFn: async (vars: MarkSettledWithSourceVars) => {
+      const { data, error } = await (supabase as any).rpc('krug_mark_settled_with_source', {
         p_krug_id: krugId,
         p_from_user: vars.fromUser,
         p_to_user: vars.toUser,
         p_amount: vars.amount,
         p_currency: vars.currency,
+        p_payer_source_id: vars.payerSourceId,
+        p_client_request_id: vars.clientRequestId,
+        p_payer_amount: vars.payerAmount ?? null,
         p_note: vars.note ?? null,
       });
       if (error) throw error;
+      return data as { ok: boolean; id: string; payer_expense_id: string | null; idempotent?: boolean };
+    },
+    onSuccess: async (data) => {
+      showSuccess(i18n.t('krug.settle.success.marked', 'Podmirenje zabilježeno.'));
+      await Promise.allSettled([
+        qc.invalidateQueries({ queryKey: ['krug', 'settlement', krugId] }),
+        qc.invalidateQueries({ queryKey: ['krug', 'ledger', krugId] }),
+        qc.invalidateQueries({ queryKey: ['expenses'] }),
+        qc.invalidateQueries({ queryKey: ['paymentSources'] }),
+        qc.invalidateQueries({ queryKey: ['customPaymentSources'] }),
+        qc.invalidateQueries({ queryKey: ['balances'] }),
+      ]);
+      // Same signal the manual↔bank merge uses for local-state expense lists.
+      window.dispatchEvent(new CustomEvent('expenses-changed'));
       return data;
     },
-    onSuccess: () => {
-      showSuccess(i18n.t('krug.settle.success.marked', 'Podmirenje zabilježeno.'));
-      qc.invalidateQueries({ queryKey: ['krug', 'settlement', krugId] });
-      qc.invalidateQueries({ queryKey: ['krug', 'ledger', krugId] });
+    onError: (err: any, vars) => {
+      const code = resolveKrugSettleErrorCode(err?.message);
+      logDiagnostic({
+        event: 'krug_settle_error',
+        severity: 'error',
+        details: {
+          rpc: 'krug_mark_settled_with_source',
+          krug_id: krugId,
+          ledger_id: null,
+          source_id: vars?.payerSourceId ?? null,
+          client_request_id: vars?.clientRequestId ?? null,
+          db_code: err?.code ?? null,
+          db_message: String(err?.message ?? err),
+          resolved_code: code,
+          build: getBuildStamp(),
+        },
+      });
+      reportError(err, 'krug.settle.error.generic', 'Nije moguće spremiti podmirenje.');
     },
-    onError: (err) => reportError(err, 'krug.settle.error.generic', 'Nije moguće spremiti podmirenje.'),
+  });
+}
+
+export interface KrugFxSnapshot {
+  rates: Record<string, number>;
+  frozen_at: string;
+  display_currency: string;
+}
+
+/** Latest frozen FX snapshot of the Krug — used only as a conversion hint. */
+export function useLatestKrugFxSnapshot(krugId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['krug', 'fx-snapshot-latest', krugId],
+    enabled: !!krugId && enabled,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async (): Promise<KrugFxSnapshot | null> => {
+      const { data, error } = await supabase
+        .from('krug_settlement_fx_snapshot' as any)
+        .select('rates, frozen_at, display_currency')
+        .eq('krug_id', krugId)
+        .order('frozen_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as any) ?? null;
+    },
   });
 }
 

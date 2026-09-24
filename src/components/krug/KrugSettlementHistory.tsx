@@ -15,6 +15,8 @@ import { getMemberDisplayName } from '@/lib/krugDisplay';
 import { useAuth } from '@/hooks/useAuth';
 import { useShowMore } from '@/hooks/useShowMore';
 import { ShowMoreButton } from '@/components/common/ShowMoreButton';
+import { useAllPaymentSourceNames } from '@/hooks/useAllPaymentSourceNames';
+import { isAwaitingReceipt } from '@/lib/krugSettleWithSource';
 
 interface Props {
   krugId: string;
@@ -45,6 +47,10 @@ export function KrugSettlementHistory({ krugId, isFullMember, readOnly = false, 
   const profiles = useUserProfiles(uids);
   const nameFor = (uid: string) =>
     getMemberDisplayName(profiles.get(uid), uid, t('krug.member.unknown', 'Nepoznat član'));
+
+  const sourceNames = useAllPaymentSourceNames();
+  const sourceNameFor = (id: string | null | undefined) =>
+    (id && sourceNames.find((s) => s.id === id)?.name) || null;
 
   if (!isFullMember) return null;
 
@@ -96,6 +102,16 @@ export function KrugSettlementHistory({ krugId, isFullMember, readOnly = false, 
                   <div className="text-[11px] text-muted-foreground">
                     {new Date(r.marked_at).toLocaleDateString()} · {r.note || t('krug.settle.history.noNote', 'bez napomene')}
                   </div>
+                  {r.payer_expense_id && sourceNameFor(r.payer_source_id) && (
+                    <div className="text-[11px] text-muted-foreground">
+                      {t('krug.settle.history.paidFrom', { source: sourceNameFor(r.payer_source_id) })}
+                    </div>
+                  )}
+                  {isAwaitingReceipt(r) && (
+                    <div className="text-[11px] text-muted-foreground" data-testid="settle-awaiting-receipt">
+                      {t('krug.settle.history.awaitingReceipt')}
+                    </div>
+                  )}
                   {voided && (
                     <div className="text-[11px] text-destructive">
                       {t('krug.settle.history.voidedLabel', 'Poništeno')}: {r.void_reason}
