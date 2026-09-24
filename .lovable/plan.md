@@ -1,101 +1,96 @@
-# Plan: kategorije u dvije razine, oznake i zapisi koji nisu trošak
+# Krug — podmirenje s izborom izvora i transakcijom na obje strane (PLAN)
 
-Samo plan. Kod se ne mijenja dok ne kažeš „gradi“.
+## Utvrđeno stanje (provjereno u bazi)
+- `krug_settlement_ledger`: id, krug_id, from_user, to_user, amount, currency, note, marked_by, marked_at, voided_*, created/updated_at. Nema izvora ni veze na transakciju.
+- `krug_mark_settled`: provjera punopravnog člana, samo dužnik (`only_debtor_can_settle`), advisory lock po paru, insert, obavijest `krug_settlement_marked_settled` (best-effort). Nema idempotencije.
+- `krug_void_settlement`: dužnik ili vjerovnik, razlog obavezan, samo postavlja `voided_*`.
+- `can_write_payment_source(source, user)`: vlasnik ili član s ulogom full/limited/member.
+- `expenses.expense_nature` danas: NULL, regular, extraordinary, correction. `client_request_id` + indeks `uniq_expenses_client_request` postoje.
+- UI: `KrugSettleTransferDialog.tsx` (104 r.), poziva ga `KrugSettlementSection.tsx` (416 r.).
 
-## Provjereno u kodu (ovaj krug)
-- `expenses.category` je tekst. `TransactionType` = `expense | income | transfer`. `expense_nature` u TS-u je `regular | extraordinary` (s korekcijom kao dodatnom vrijednošću u bazi, prema memoriji projekta).
-- `custom_categories`: `id, user_id, name, icon, color`. Nema skupine ni roditelja.
-- `budget_categories.category` je tekst po budžetu.
-- `category_corrections` postoji (`original_category`, `corrected_category`, `merchant_name`, `description`, `expense_id`).
-- `accounting_category` čitaju `parse-receipt`, `handoverPackage`, `useHandoverExpenses`, `useIncomingInvoices`, `expenseColumns`.
-- Oko 83 datoteke u `src` čitaju `.category`. Točan popis je prvi korak naloga 2.
-- Broje iz baze (Ostalo 102.462 €, Jadrolinija 44 retka, pokvarene vrijednosti) uzimam iz tvog utvrđenog stanja. Ponovno ih ne provjeravam; provjeravam ih pri izradi popisa za pregled (nalog 5).
+## 1) Model podataka (aditivna migracija)
+Nove nullable kolone u `krug_settlement_ledger`:
+- `payer_expense_id uuid`, `payer_source_id uuid` (FK na expenses / custom_payment_sources, ON DELETE SET NULL)
+- `recipient_expense_id uuid`, `recipient_source_id uuid`, `recipient_confirmed_at timestamptz`
+- `client_request_id text` + parcijalni unique (marked_by, client_request_id)
+- `payer_amount numeric`, `payer_currency text` (samo kad se valuta izvora razlikuje, v. 7)
 
-## (a) Model skupina i kategorija
-- Novi ugrađeni registar skupina u kodu (`src/lib/categoryTree.ts`, uz zrcalo u `_shared` za AI): stalni ključevi skupina (`cafes`, `food`, `car`, `travel`, `work`, `home`, `loans`, `fees_taxes`, `personal`, `fun`, `other`, `income`) i ugrađeni ključevi podkategorija (`coffee`, `restaurants`, `delivery`, `marenda`, `groceries`, `fuel`, `car_service`, ...). Nazivi idu kroz i18n (hr/en/de).
-- Stari ugrađeni ključevi ostaju valjani. Registar ih mapira u skupinu kao alias (npr. `food` → Hrana/Namirnice, `transport` → Auto). Nijedan postojeći redak ne mora se mijenjati da bi se prikazao u skupini.
-- `custom_categories` dobiva stupac `group_key text NULL` (aditivna migracija, bez podrazumijevane vrijednosti). Korisnik može dodati, preimenovati i premjestiti svoju kategoriju unutar bilo koje skupine. Ugrađene kategorije može sakriti, ali ne i preimenovati.
-- Postojeće korisničke kategorije ostaju netaknute, s istim UUID-om. Kategorije s `group_key = NULL` prikazuju se u skupini „Moje kategorije“ dok ih korisnik ne smjesti.
-- „Pokrivanje drugih pizdarija“ ostaje s `group_key = NULL`, nazivom i svih 7 zapisa. Iznimka je zapisana po ID-u na popisu isključenja naloga 5.
-- `expenses.category` ostaje jedini izvor (list). Skupina se uvijek izvodi iz registra ili iz `custom_categories.group_key` i ne sprema se na retku.
+Postojeći zapisi ostaju NULL, bez backfilla. Status u povijesti izvodi se: `recipient_confirmed_at IS NULL AND payer_expense_id IS NOT NULL` → „čeka potvrdu primitka"; stari zapisi (`payer_expense_id IS NULL`) → prikaz kao danas.
 
-## (b) Oznake (Nepotrebno, Luksuz)
-- Novi stupac `expenses.tags text[] NOT NULL DEFAULT '{}'`, s ugrađenim ključevima `unnecessary` i `luxury` (proširivo, bez slobodnog teksta u prvoj fazi).
-- Kod upisa (ručni i OCR, osobni i poslovni) su dva gumba-čipa ispod kategorije, najmanje 44 px. Jedan dodir uključuje ili isključuje oznaku.
-- Na retku se prikazuje mala ikona uz iznos. U filtru je izbor „oznaka“.
-- U izvješću je kartica „Nepotrebno ovaj mjesec“ i „Luksuz ovaj mjesec“, sa zbrojem preko svih kategorija. Uključuje samo prave troškove (vidi c).
-- Postojeće korisničke kategorije „Nepotrebno“ i „Luksuz“ se ne brišu. Njihovi zapisi idu na popis za pregled s prijedlogom „dodaj oznaku + odaberi pravu kategoriju“.
+## 2) Atomičnost dužnika
+Nova RPC `krug_mark_settled_with_source(p_krug_id, p_to_user, p_amount, p_currency, p_source_id, p_note, p_client_request_id, p_payer_amount default null)` — SECURITY DEFINER, `REVOKE ALL FROM PUBLIC`, GRANT authenticated.
+- Iste provjere kao `krug_mark_settled` (kopira se iz žive definicije), plus `can_write_payment_source(p_source_id, auth.uid())`.
+- Idempotencija: ako postoji zapis s (marked_by, client_request_id) → vrati postojeći id, ništa novo.
+- U jednoj transakciji: insert u `expenses` (type expense, nature v. 3, `payment_source = 'custom:<id>'`, `client_request_id`, bez `krug_id`) → insert u ledger s `payer_expense_id`. Svaka greška poništava oboje.
+- Saldo se mijenja kroz postojeće triggere `expenses` (motor salda se ne dira).
+- Stara `krug_mark_settled` ostaje (kompatibilnost starih klijenata); novi UI zove samo novu.
 
-## (c) Zapisi koji nisu trošak ni prihod
-Postoji danas:
-- `type = 'transfer'` s kategorijom `transfer`. Parovi prijenosa (`transfer_pair_counterpart`, 0008) pokrivaju prebacivanje među vlastitim računima i bankomat (Keš je vlastiti novčanik).
-- `expense_nature`: `regular`, `extraordinary` i korekcija salda.
+## 3) Vrsta zapisa
+Novi `expense_nature = 'krug_settlement'` (text kolona, bez promjene tipa):
+- Motor salda gleda `type`, pa saldo izvora reagira normalno.
+- Svi putevi statistike moraju ga isključiti kao što isključuju `correction`: `reportTotals.ts`, `useExpenses.ts`, dashboard agregati, budžeti, AI uvidi, projektni P&L, izvoz (označen, ne izbačen). Popis mjesta se utvrđuje `rg` pretragom u koraku gradnje i dokazuje testom.
+- Uklapanje u plan „vrste zapisa koje nisu trošak": ovo je prva takva vrsta; kasnije se `correction` i `krug_settlement` mogu objediniti pod zajednički helper `isNonSpendingNature()`. Ovaj nalog uvodi helper i koristi ga na svim mjestima.
+- Bez `krug_id` → ne ulazi u podjele ni „Tko kome". Kategorija: fiksna nerazvrstana vrijednost koju registar kategorija ne broji.
+- Opis: `Podmirenje duga — <ime> (Krug <naziv>)` generira server iz i18n kataloga jezika korisnika.
 
-Dodaje se novi stupac `expenses.movement_kind text NULL` s CHECK vrijednostima:
-- `own_transfer`: vlastiti računi (uz `type='transfer'`)
-- `atm`: bankomat u Keš (uz `type='transfer'`)
-- `loan_given`, `loan_repaid_to_me`, `loan_received`, `loan_repaid_by_me`: pozajmica, oba smjera
-- `own_company_payment`: uplata u vlastitu firmu
+## 4) Strana primatelja
+RPC `krug_confirm_settlement_receipt(p_ledger_id, p_source_id, p_client_request_id)`:
+- samo `to_user`, zapis nije poništen, `recipient_confirmed_at IS NULL` (inače vrati postojeće ako je isti client_request_id, inače `already_confirmed`), `can_write_payment_source`.
+- Atomično: insert priljeva (type income, nature `krug_settlement`) + update ledger.
+- Obavijest: novi tip `krug_settlement_receipt_pending` u klijentskom i serverskom katalogu (hr/en/de) i u `krugNotificationRoutes.ts` s deep-linkom `?krug=<id>&settle_confirm=<ledger_id>` koji otvara prozor potvrde. Emitira se iz RPC-a iz točke 2 (best-effort, kao danas).
 
-Pravila:
-- `type` se za pozajmice i uplatu u firmu NE mijenja u `transfer`. Novac stvarno izlazi iz novčanika, pa saldo i sidro ostaju isti. Izvješća isključuju retke gdje je `movement_kind IS NOT NULL`.
-- Jedan zajednički helper `isRealSpend(row)` / `isRealIncome(row)` (`src/lib/spendClassification.ts`) koji koriste sva izvješća, PDF, budžeti, AI uvidi, dashboard i Krug podjela. Danas se `type === 'expense'` provjerava na desecima mjesta; to se svodi na ovaj helper.
-- Pozajmice dobivaju zaseban mali pregled „Dano / vraćeno“ po osobi, preko postojeće protustrane.
+## 5) Poništenje
+`krug_void_settlement` (od žive definicije) dodatno meko briše `payer_expense_id` i `recipient_expense_id` (postojećim soft-delete putem, `deleted_at`) → triggeri vraćaju saldo. Radi i nakon potvrde primatelja.
+Ako je povezana transakcija spojena s bankovnim retkom (`bank_match_status`/bankovni id postavljen): NE briše se, jer je sada stvarni bankovni pokret (novac je stvarno otišao). Umjesto toga `expense_nature` se vraća na `regular` (ulazi u potrošnju kao obična uplata), a void vraća `bank_linked_kept: true` i UI prikazuje poruku da je bankovni redak zadržan. Bankovni redak se nikad ne gubi.
 
-## (d) Prijenos postojećih zapisa
-Ništa se ne mijenja bez pregleda. Nalog 5 gradi zaslon „Pregled kategorija“: popis prijedloga koje korisnik potvrđuje pojedinačno ili grupno. Tek potvrda piše u bazu preko RPC-a sa zapisom u `category_corrections`.
+## 6) Banka
+Nova transakcija je običan ručni redak s `payment_source` i `bank_match_status = pending_bank` → ulazi u postojeće pravilo „isti trošak" (sync, uvoz, ponuda). Merge nasljeđuje bankovni redak, a `expense_nature` ručnog retka mora preživjeti merge — provjeriti u živoj definiciji `merge_manual_with_bank`; ako ga ne prenosi, otvoreno pitanje (ne mijenjam merge bez naloga). Test obaveznog para dodaje se.
 
-| Stara vrijednost | Prijedlog | Način |
-|---|---|---|
-| ugrađeni `food` | ostaje; prikaz Hrana › Namirnice | sigurno, bez upisa |
-| `transport`, `bills`, ostali ugrađeni | alias u skupinu | sigurno, bez upisa |
-| projektni `material`, `labor`, ... | alias u skupinu Posao | sigurno, bez upisa |
-| korisnička „Materijal“ | spoji u `material` | pregled |
-| „Namirnice“ / „Hrana i život“ | Hrana › Namirnice | pregled |
-| „Marenda“ | Kafići › Marenda | pregled |
-| korisnička „Nepotrebno“ / „Luksuz“ | oznaka + nova kategorija | pregled |
-| „Ostalo“: pozajmice (po imenu) | `movement_kind` loan_* | pregled |
-| „Ostalo“: radnici/izvođači | Posao › Radnici / Izvođači | pregled |
-| „Ostalo“: Aircash, Revolut, „sam sebi“ | `own_transfer` | pregled |
-| „Ostalo“: bankomat | `atm` | pregled |
-| „Ostalo“: vlastite firme | `own_company_payment` | pregled |
-| Jadrolinija (`transfer` + `transport`) | trošak, Putovanje › Trajekt | pregled (mijenja `type`, provjera salda) |
-| „0“, „8“, prazno, `custom_income_*` | bez prijedloga, korisnik bira | pregled |
-| „Pokrivanje drugih pizdarija“ | izuzeto | ne prikazuje se |
+## 7) Valuta
+- Ista valuta: iznos = iznos podmirenja.
+- Različita: dijalog traži OBAVEZAN unos stvarno plaćenog iznosa u valuti izvora (`payer_amount`); kao pomoć prikazuje preračun po zadnjem `krug_settlement_fx_snapshot` (ako postoji) s oznakom datuma, bez automatskog upisa. Ledger čuva iznos Kruga za „Tko kome", transakcija iznos izvora. Isto za primatelja.
 
-Promjena `type` (Jadrolinija) mijenja saldo. Zato ide kroz postojeći put ažuriranja uz BALANCE SQL paket, ne izravnim UPDATE-om.
+## 8) Dijeljeni izvori
+Dopušteno ako `can_write_payment_source` prolazi (vlasnik, full, limited). Ostali članovi izvora vide transakciju kao i svaki drugi upis u taj izvor; vidi se opis s imenom druge strane i nazivom Kruga (v. otvoreno pitanje o privatnosti). Viewer se odbija.
 
-## (e) Što čita kategoriju i što se prilagođava
-- Izvješća i PDF: grupiranje po skupini s mogućnošću otvaranja, `isRealSpend`, kartica oznaka.
-- Budžeti: `budget_categories.category` prihvaća i ključ skupine (`group:car`). Postojeći limiti po listu ostaju.
-- AI (`categorize-transaction`, `parse-receipt`, AI u sinkronizaciji): popis dopuštenih ključeva iz registra; projekt i dalje ima svoj popis. Učenje: prije poziva AI-ja traži se `category_corrections` po `merchant_name` za tog korisnika; ≥2 ista ispravka znači izravnu odluku bez AI-ja. Svaka ručna promjena kategorije upisuje ispravak (danas je tablica za korisnika prazna, pa put upisa treba provjeriti i spojiti).
-- Poslovni način: `accounting_category` i konto se ne diraju. Mapiranje konta čita list kategorije pa ga samo proširiti novim ključevima.
-- Projektni registar: ostaje zaseban; samo se aliasira u skupinu Posao za osobna izvješća.
-- Filtri: izbor skupine ili lista, oznaka, „prikaži i zapise koji nisu trošak“.
-- Izvoz (CSV/XLSX/backup): novi stupci `skupina`, `oznake`, `vrsta_zapisa`; postojeći stupci ostaju.
-- `useResolvedCategory` / `getCategoryInfo`: jedini ulaz za naziv, ikonu i skupinu; rješava i pokvarene vrijednosti kao „Nerazvrstano“ umjesto sirovog koda.
+## 9) Greške
+Klijent: postojeći `reportError` proširen kodovima `source_not_writable`, `already_confirmed`, `not_recipient`, `payer_amount_required`, `voided`. Svaka greška: insert u `app_diagnostics_logs` (event `krug_settle_error`, rpc ime, krug/ledger/source id, doslovan code/message, `buildStamp`), korisniku prevedena poruka po kodu; generička samo kad kod nije poznat, uz upis.
 
-## (f) Ostali korisnici
-- Postojeći korisnici: nijedan redak se ne mijenja. Stari ugrađeni ključevi prikazuju se u novim skupinama kroz aliase. Korisničke kategorije idu pod „Moje kategorije“. Zaslon pregleda je dobrovoljan i nudi se jednom obavijesti.
-- Novi korisnici: odmah dobivaju novo stablo u izborniku. Stari ključevi se više ne nude za nove upise, ali ostaju valjani.
-- Izvješća svih korisnika mijenjaju se samo ako imaju retke s `movement_kind`; bez toga je zbroj troška isti kao danas.
+## 10) Čuvari (SQL, `supabase/tests/krug/settlement_with_source.sql`, dokaz pada na današnjem stanju)
+1. točno jedna dužnikova transakcija na odabranom izvoru (danas: 0 → pada)
+2. ne-dužnik odbijen
+3. izvor bez prava pisanja odbijen
+4. potvrda samo primatelj, samo jednom
+5. void briše povezane i vraća saldo; spojeni bankovni redak ostaje
+6. `krug_settlement` ne ulazi u potrošnju/prihode (SQL + vitest na `reportTotals`)
+7. isti client_request_id dvaput = jedan zapis, jedna transakcija
+Dodaje se u `KRUG_SETTLE_MIGRATIONS.txt`; SQL suite salda mora biti zelen (deploy gate).
 
-## (g) Rizici i nalozi
-Rizici:
-- Mnogo mjesta s `type === 'expense'`: bez jednog helpera neka izvješća ostaju „lažna“. Brana je test koji traži izravne provjere izvan helpera.
-- Promjena `type` mijenja saldo. Zato samo kroz pregled, uz SQL paket salda.
-- AI s dvije razine može miješati stare i nove ključeve. Rješava se jednim registrom sa zrcalom i mirror testom.
-- Budžeti po skupini mogu dvaput brojati isti trošak (list + skupina). Pravilo: trošak se broji u najužem limitu.
+## 11) Velike datoteke
+`KrugSettlementSection.tsx` (416 r.): izdvaja se samo red/popis povijesti podmirenja u `KrugSettlementHistoryRow.tsx` bez promjene ponašanja; funkcionalno se mijenja samo dodavanje statusa „čeka potvrdu". Izvještaj će odvojeno navesti izdvojeno i promijenjeno.
 
-Nalozi, redom:
-1. Registar skupina i aliasa + zrcalo + i18n + `resolveCategory` sa skupinom. Bez migracije, bez promjene prikaza.
-2. Helper `isRealSpend` / `isRealIncome` i prevođenje svih čitača na njega (popis svih mjesta u izvještaju). Rezultat je isti kao danas jer `movement_kind` još ne postoji.
-3. Migracija: `custom_categories.group_key`, `expenses.tags`, `expenses.movement_kind` (aditivno, uz GRANT/RLS provjeru). Izbornik kategorija u dvije razine i upravljanje vlastitim kategorijama po skupini.
-4. Oznake pri upisu, na retku, u filtru i u izvješću. Vrste zapisa pri upisu (pozajmica, uplata u firmu) i pregled pozajmica.
-5. Zaslon „Pregled kategorija“ s prijedlozima iz (d), potvrda kroz RPC, upis u `category_corrections`, izuzeće „Pokrivanje drugih pizdarija“.
-6. AI: novi ključevi, učenje iz `category_corrections`, upis ispravaka pri svakoj ručnoj promjeni.
-7. Budžeti po skupini, PDF i izvoz s novim stupcima.
+## Datoteke
+- Migracija `drizzle/migrations/00xx_krug_settlement_with_source.sql` (kolone, 2 nove RPC, redefinicija `krug_void_settlement`, emit novog tipa obavijesti)
+- `src/hooks/useKrugSettlementMutations.ts` (nove mutacije, greške, dijagnostika)
+- `src/components/krug/KrugSettleTransferDialog.tsx` (izbor izvora, valuta)
+- novi `src/components/krug/KrugConfirmReceiptDialog.tsx`, `KrugSettlementHistoryRow.tsx`
+- `src/components/krug/KrugSettlementSection.tsx` (status, otvaranje potvrde)
+- `src/lib/krugNotificationRoutes.ts`, `supabase/functions/notify-krug-event/index.ts`, serverski i klijentski katalog obavijesti
+- novi `src/lib/nonSpendingNature.ts` + mjesta statistike (`reportTotals.ts`, `useExpenses.ts`, ...)
+- i18n hr/en/de
+- testovi: SQL iz točke 10, vitest za rute, reportTotals, dijalog
+
+## Podjela na naloge
+1. Migracija + RPC + SQL čuvari (bez UI)
+2. Isključenje iz statistike (`isNonSpendingNature`) + testovi
+3. UI dužnika + greške/dijagnostika
+4. Primatelj: obavijest, deep-link, potvrda
+Rizik najviši u 2 (propušteno mjesto statistike = dvostruko brojanje) i 5 (void + bank).
 
 ## Otvorena pitanja
-- Smije li stari ugrađeni `food` zadržati naziv „Hrana“ u skupini Hrana ili ga prikazati kao „Namirnice“?
-- Treba li pozajmica pratiti otvoreni dug po osobi (povezano s `business_debts`) ili samo zbroj?
+1. `expense_nature = 'krug_settlement'` kao nova vrijednost ili čekati zajednički model „vrsta zapisa" iz plana kategorija?
+2. Prenosi li `merge_manual_with_bank` `expense_nature` ručnog retka? Ako ne, smijem li to dodati u ovom opsegu?
+3. Void nad spojenim bankovnim retkom: prihvaćaš prijedlog (zadrži redak, vrati na `regular`) ili radije blokirati void?
+4. Treba li opis transakcije na dijeljenom izvoru sadržavati naziv Kruga (vidljivo ostalim članovima izvora)?
+5. Smije li primatelj odbiti potvrdu („nisam primio") ili je to samo void?
+6. Stari UI put (`krug_mark_settled` bez izvora) — ukloniti iz klijenta odmah ili ostaviti?
