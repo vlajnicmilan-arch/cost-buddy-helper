@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { TreeCategoryOptions } from '@/components/categories/TreeCategoryOptions';
 import { Input } from '@/components/ui/input';
 import { Expense, Category, CATEGORIES, getCategoryInfo } from '@/types/expense';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -103,7 +104,8 @@ export const BulkCategoryDialog = ({ expenses, onUpdateExpenses }: BulkCategoryD
       };
     }
     
-    return CATEGORIES[CATEGORIES.length - 1]; // 'other'
+    // Novi ključevi listova i stari široki ključevi idu kroz registar (nikad tiho 'Ostalo').
+    return getCategoryInfo(categoryId as Category);
   };
 
   const handleApply = async () => {
@@ -278,42 +280,7 @@ export const BulkCategoryDialog = ({ expenses, onUpdateExpenses }: BulkCategoryD
                 <SelectValue placeholder={t('bulk.selectNewCategory', 'Odaberi novu kategoriju...')} />
               </SelectTrigger>
               <SelectContent className="max-h-[300px] z-[100]">
-                {/* System categories grouped */}
-                {CATEGORY_GROUPS_KEYS.map((group) => (
-                  <div key={group.labelKey}>
-                    <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide bg-muted/50">
-                      {t(group.labelKey, group.label)}
-                    </div>
-                    {group.categories.map((catId) => {
-                      const info = getCategoryInfo(catId);
-                      return (
-                        <SelectItem key={catId} value={catId}>
-                          <span className="flex items-center gap-2">
-                            <span>{info.icon}</span>
-                            <span>{info.name}</span>
-                          </span>
-                        </SelectItem>
-                      );
-                    })}
-                  </div>
-                ))}
-                
-                {/* Custom categories */}
-                {customCategories.length > 0 && (
-                  <div>
-                    <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide bg-muted/50">
-                      {t('bulk.customCategories', 'Prilagođene kategorije')}
-                    </div>
-                    {customCategories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        <span className="flex items-center gap-2">
-                          <span>{cat.icon}</span>
-                          <span>{cat.name}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </div>
-                )}
+                <TreeCategoryOptions mode="expense" customCategories={customCategories} />
               </SelectContent>
             </Select>
           </div>

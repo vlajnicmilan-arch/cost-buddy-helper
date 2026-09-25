@@ -120,6 +120,13 @@
       "when": 1790356854308,
       "tag": "0016_work_entry_notify_never_blocks",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1790360171289,
+      "tag": "0017_category_tree_columns",
+      "breakpoints": true
     }
   ]
 }

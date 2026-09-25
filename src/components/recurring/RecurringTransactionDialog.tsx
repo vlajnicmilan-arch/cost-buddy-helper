@@ -7,6 +7,7 @@ import { MoneyInput } from '@/components/ui/money-input';
 import { parseLocaleAmount } from '@/lib/money';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { TreeCategoryOptions } from '@/components/categories/TreeCategoryOptions';
 import { CATEGORIES, getCategoryInfo, INCOME_CATEGORIES, Category, IncomeCategory, TransactionType } from '@/types/expense';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
@@ -115,12 +116,6 @@ export const RecurringTransactionDialog = ({ open, onOpenChange, onSave, editDat
     }
   };
 
-  const allCategories = type === 'income'
-    ? INCOME_CATEGORIES.map(c => ({ id: c.id, name: c.name, icon: c.icon }))
-    : [
-        ...customCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon })),
-        ...CATEGORIES.map(c => ({ id: c.id, name: c.name, icon: c.icon })),
-      ];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -193,11 +188,11 @@ export const RecurringTransactionDialog = ({ open, onOpenChange, onSave, editDat
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {allCategories.map(c => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.icon} {c.name}
-                    </SelectItem>
-                  ))}
+                  <TreeCategoryOptions
+                    mode={type === 'income' ? 'income' : 'expense'}
+                    customCategories={customCategories}
+                    currentValue={category}
+                  />
                 </SelectContent>
               </Select>
             </div>

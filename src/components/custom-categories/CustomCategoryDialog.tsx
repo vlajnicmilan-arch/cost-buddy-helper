@@ -12,12 +12,13 @@ import { Label } from '@/components/ui/label';
 import { CustomCategory, DEFAULT_CATEGORY_COLORS, DEFAULT_CATEGORY_ICON_GROUPS } from '@/types/customCategory';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTranslation } from 'react-i18next';
+import { CategoryGroupSelect } from '@/components/categories/CategoryGroupSelect';
 
 interface CustomCategoryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   category?: CustomCategory | null;
-  onSave: (category: { name: string; icon: string; color: string }) => Promise<void>;
+  onSave: (category: { name: string; icon: string; color: string; group_key: string | null }) => Promise<void>;
 }
 
 export const CustomCategoryDialog = ({
@@ -30,6 +31,7 @@ export const CustomCategoryDialog = ({
   const [icon, setIcon] = useState('📦');
   const [color, setColor] = useState('#6b7280');
   const [saving, setSaving] = useState(false);
+  const [groupKey, setGroupKey] = useState<string | null>(null);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -37,10 +39,12 @@ export const CustomCategoryDialog = ({
       setName(category.name);
       setIcon(category.icon);
       setColor(category.color);
+      setGroupKey(category.group_key ?? null);
     } else {
       setName('');
       setIcon('📦');
       setColor('#6b7280');
+      setGroupKey(null);
     }
   }, [category, open]);
 
@@ -48,7 +52,7 @@ export const CustomCategoryDialog = ({
     if (!name.trim()) return;
     setSaving(true);
     try {
-      await onSave({ name: name.trim(), icon, color });
+      await onSave({ name: name.trim(), icon, color, group_key: groupKey });
       onOpenChange(false);
     } finally {
       setSaving(false);
@@ -87,6 +91,8 @@ export const CustomCategoryDialog = ({
               maxLength={50}
             />
           </div>
+
+          <CategoryGroupSelect value={groupKey} onChange={setGroupKey} />
 
           {/* Icon Selection */}
           <div className="space-y-2">

@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, X } from 'lucide-react';
+import { CategoryGroupSelect } from '@/components/categories/CategoryGroupSelect';
 import {
   DEFAULT_CATEGORY_ICONS,
   DEFAULT_CATEGORY_COLORS,
@@ -20,7 +21,7 @@ export interface QuickAddCategoryInlineProps {
   /** All known category display names (custom + standard, already translated) used for duplicate detection. */
   existingNames: string[];
   /** Called when user confirms. Returns the newly created id (or null on failure). */
-  onCreate: (data: { name: string; icon: string; color: string }) => Promise<string | null>;
+  onCreate: (data: { name: string; icon: string; color: string; group_key?: string | null }) => Promise<string | null>;
   onCancel: () => void;
 }
 
@@ -42,6 +43,7 @@ export const QuickAddCategoryInline = ({
   const [icon, setIcon] = useState(QUICK_ICONS[0]);
   const [color, setColor] = useState(QUICK_COLORS[0]);
   const [saving, setSaving] = useState(false);
+  const [groupKey, setGroupKey] = useState<string | null>(null);
 
   useEffect(() => {
     const id = setTimeout(() => inputRef.current?.focus(), 50);
@@ -58,7 +60,7 @@ export const QuickAddCategoryInline = ({
     if (!trimmed || saving) return;
     setSaving(true);
     try {
-      const id = await onCreate({ name: trimmed, icon, color });
+      const id = await onCreate(mode === 'expense' ? { name: trimmed, icon, color, group_key: groupKey } : { name: trimmed, icon, color });
       if (id) {
         // Parent will close the panel via onCreated -> reset
         setName('');
@@ -100,6 +102,10 @@ export const QuickAddCategoryInline = ({
         className="h-10 rounded-lg"
         maxLength={40}
       />
+
+      {mode === 'expense' && (
+        <CategoryGroupSelect value={groupKey} onChange={setGroupKey} />
+      )}
 
       {duplicateMatch && (
         <div className="flex items-start gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30">

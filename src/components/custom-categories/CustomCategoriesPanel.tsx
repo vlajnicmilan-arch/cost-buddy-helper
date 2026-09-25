@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { CustomCategoryDialog } from './CustomCategoryDialog';
+import { buildCustomCategoryUpdates } from '@/lib/categoryTreeOptions';
 import { CustomCategory } from '@/types/customCategory';
 import {
   AlertDialog,
@@ -33,9 +34,11 @@ export const CustomCategoriesPanel = () => {
   const { guard } = useWriteGuard({ kind: 'module', feature: 'custom_categories' });
 
 
-  const handleSave = async (data: { name: string; icon: string; color: string }) => {
+  const handleSave = async (data: { name: string; icon: string; color: string; group_key: string | null }) => {
     if (editingCategory) {
-      await updateCustomCategory(editingCategory.id, data);
+      // Šalju se samo polja koja je korisnik promijenio (premještanje = samo group_key).
+      const updates = buildCustomCategoryUpdates(editingCategory, data);
+      if (Object.keys(updates).length) await updateCustomCategory(editingCategory.id, updates);
     } else {
       await addCustomCategory(data);
     }

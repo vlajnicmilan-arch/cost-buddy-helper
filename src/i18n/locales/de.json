@@ -1922,7 +1922,34 @@
       "save": "Speichern und auswählen",
       "duplicateWarning": "Eine ähnliche Kategorie existiert bereits: \"{{name}}\". Trotzdem hinzufügen?"
     },
-    "salary": "Gehalt"
+    "salary": "Gehalt",
+    "coffee": "Kaffee und Getränke",
+    "restaurants": "Restaurants",
+    "delivery": "Lieferung",
+    "marenda": "Frühstück bei der Arbeit",
+    "fuel": "Kraftstoff",
+    "car_service": "Service und Reparatur",
+    "car_parts": "Ersatzteile",
+    "tolls_parking": "Maut und Parken",
+    "car_registration": "Zulassung und Versicherung",
+    "ferry": "Fähre",
+    "taxi": "Taxi und Bolt",
+    "lodging": "Unterkunft",
+    "tools": "Werkzeug und Ausrüstung",
+    "workers": "Arbeiter",
+    "contractors": "Auftragnehmer",
+    "home_goods": "Haushaltswaren",
+    "loan_repayment": "Kredittilgung",
+    "installments": "Raten",
+    "bank_fees": "Bankgebühren",
+    "care": "Körperpflege",
+    "hobbies": "Hobbys und Veranstaltungen",
+    "cafes": "Cafés und Restaurants",
+    "work": "Arbeit",
+    "loans": "Kredite",
+    "fees_taxes": "Gebühren und Steuern",
+    "personal": "Persönlich",
+    "fun": "Freizeit"
   },
   "incomeCategories": {
     "salary": "Gehalt",
@@ -1936,7 +1963,9 @@
     "editCategory": "Einkommenskategorie bearbeiten",
     "dialogDescription": "Definieren Sie Name, Symbol und Farbe der Einkommenskategorie.",
     "namePlaceholder": "Z.B. Dividenden, Miete...",
-    "addNew": "Neue Kategorie hinzufügen"
+    "addNew": "Neue Kategorie hinzufügen",
+    "work_income": "Arbeit",
+    "refunds": "Erstattungen"
   },
   "paymentSources": {
     "correctionHelper": "Die Korrektur gilt für heute. Neue Einträge werden ab morgen gezählt.",
@@ -7529,6 +7558,10 @@
       "other_income": "Sonstige Einnahmen"
     },
     "unsorted": "Nicht zugeordnet",
-    "transfer": "Überweisung"
+    "transfer": "Überweisung",
+    "legacySection": "Ältere Kategorien",
+    "currentSection": "Aktuell",
+    "moveTo": "Gruppe",
+    "moveHint": "Kategorie in eine Gruppe verschieben oder unter „Meine Kategorien\" lassen."
   }
 }

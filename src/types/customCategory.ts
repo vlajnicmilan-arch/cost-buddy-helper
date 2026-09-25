@@ -4,6 +4,8 @@ export interface CustomCategory {
   name: string;
   icon: string;
   color: string;
+  /** Skupina iz registra (categoryTree); NULL = „Moje kategorije". */
+  group_key?: string | null;
   created_at: string;
   updated_at: string;
 }

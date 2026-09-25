@@ -1922,7 +1922,34 @@
       "save": "Save and select",
       "duplicateWarning": "A similar category already exists: \"{{name}}\". Add anyway?"
     },
-    "salary": "Salary"
+    "salary": "Salary",
+    "coffee": "Coffee and drinks",
+    "restaurants": "Restaurants",
+    "delivery": "Delivery",
+    "marenda": "Work breakfast",
+    "fuel": "Fuel",
+    "car_service": "Service and repair",
+    "car_parts": "Parts",
+    "tolls_parking": "Tolls and parking",
+    "car_registration": "Registration and insurance",
+    "ferry": "Ferry",
+    "taxi": "Taxi and Bolt",
+    "lodging": "Accommodation",
+    "tools": "Tools and equipment",
+    "workers": "Workers",
+    "contractors": "Contractors",
+    "home_goods": "Household items",
+    "loan_repayment": "Loan repayment",
+    "installments": "Installments",
+    "bank_fees": "Bank fees",
+    "care": "Personal care",
+    "hobbies": "Hobbies and events",
+    "cafes": "Cafés and restaurants",
+    "work": "Work",
+    "loans": "Loans",
+    "fees_taxes": "Fees and taxes",
+    "personal": "Personal",
+    "fun": "Entertainment"
   },
   "incomeCategories": {
     "salary": "Salary",
@@ -1936,7 +1963,9 @@
     "editCategory": "Edit income category",
     "dialogDescription": "Define the name, icon and color of the income category.",
     "namePlaceholder": "E.g. Dividends, Rent...",
-    "addNew": "Add new category"
+    "addNew": "Add new category",
+    "work_income": "Work",
+    "refunds": "Refunds"
   },
   "paymentSources": {
     "correctionHelper": "The correction applies to today. New entries are added from tomorrow.",
@@ -7529,6 +7558,10 @@
       "other_income": "Other income"
     },
     "unsorted": "Unsorted",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "legacySection": "Older categories",
+    "currentSection": "Current",
+    "moveTo": "Group",
+    "moveHint": "Move the category into a group or keep it in \"My categories\"."
   }
 }

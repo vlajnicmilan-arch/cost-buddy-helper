@@ -1,3 +1,5 @@
+import i18n from '@/i18n';
+import { resolveTreeCategory, CATEGORY_GROUPS, categoryGroupLabelKey } from '@/lib/categoryTree';
 import { getProjectExpenseCategoryInfo } from '@/lib/projectExpenseCategories';
 export type Category = 
   | 'food'
@@ -329,6 +331,16 @@ export const getCategoryInfo = (category: Category | IncomeCategory | 'transfer'
   const projectCategory = getProjectExpenseCategoryInfo(String(category ?? ''));
   if (projectCategory) {
     return projectCategory as CategoryInfo;
+  }
+  // Dvorazinski registar (novi ključevi listova, stari široki ključevi → skupina).
+  // Nikad ne vraća sirovi kod: naziv ide kroz i18n ključ registra.
+  const groupDef = CATEGORY_GROUPS.find((g) => g.key === category);
+  if (groupDef && !CATEGORIES.some((c) => c.id === category)) {
+    return { id: category as Category, name: i18n.t(categoryGroupLabelKey(groupDef.key)), icon: groupDef.icon, color: 'category-other' };
+  }
+  const tree = resolveTreeCategory(String(category ?? ''));
+  if (!tree.invalid && tree.label) {
+    return { id: category as Category, name: i18n.t(tree.label), icon: tree.icon, color: 'category-other' };
   }
   // Unknown key: show the raw key instead of silently relabelling it "Ostalo".
   if (category) {
