@@ -18,6 +18,9 @@ import { isRealSpend } from '@/lib/spendClassification';
 
 export const GROUP_LIMIT_PREFIX = 'group:';
 
+/** Tumačenje starog budžetnog limita „food" (samo budžeti). */
+export const LEGACY_FOOD_BUDGET_GROUPS: readonly CategoryGroupKey[] = ['food', 'cafes'];
+
 
 export interface GroupedCustomCategory {
   id: string;
