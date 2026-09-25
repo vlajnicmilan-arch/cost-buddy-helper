@@ -43,16 +43,21 @@ const cat = (category: string, limit: number): BudgetCategory => ({
 });
 
 describe('budžet: skupina i list', () => {
-  // Nalog traži da „food" broji coffee/restaurants, ali odobreni LEGACY_ALIASES
-  // stavlja food → skupina „Hrana" (groceries), a kavu u „Kafići i restorani".
-  // Test drži registar; odluka je otvorena u izvještaju.
-  it('stari „food" limit = cijela skupina Hrana (po LEGACY_ALIASES), kava nije u njoj', () => {
+  it('stari „food" limit broji Hranu i Kafiće (coffee, restaurants), osim kad postoji uži limit', () => {
     const rows = computeBudgetCategoryStats({ id: BUDGET, project_id: null }, [cat('food', 300)], [
       tx('coffee', 10), tx('restaurants', 40), tx('food', 5), tx('groceries', 20),
     ]);
-    // food je u registru skupina „food" (namirnice); kava je u „cafes" — vidi sljedeći test.
-    expect(parseBudgetLimitScope('food')).toEqual({ kind: 'group', group: 'food' });
-    expect(rows.find((r) => r.category === 'food')!.spent).toBe(25);
+    expect(parseBudgetLimitScope('food')).toEqual({ kind: 'groups', groups: ['food', 'cafes'] });
+    expect(rows.find((r) => r.category === 'food')!.spent).toBe(75);
+    const { perLimit } = allocateToLimits([tx('coffee', 10), tx('restaurants', 40)], ['food', 'coffee']);
+    expect(perLimit[0].map((e) => e.category)).toEqual(['restaurants']);
+    expect(perLimit[1].map((e) => e.category)).toEqual(['coffee']);
+  });
+
+  it('novi limit group:food pokriva samo svoju skupinu', () => {
+    const { perLimit, unassigned } = allocateToLimits([tx('coffee', 10), tx('groceries', 5)], ['group:food']);
+    expect(perLimit[0].map((e) => e.category)).toEqual(['groceries']);
+    expect(unassigned.map((e) => e.category)).toEqual(['coffee']);
   });
 
   it('limit skupine cafes broji coffee i restaurants; stari ključ se ne prepisuje', () => {
@@ -88,13 +93,12 @@ describe('budžet: skupina i list', () => {
     expect(unassigned).toHaveLength(0);
   });
 
-  it('izuzeta kategorija se ne broji ni u limit ni u „ručno dodijeljeno"', () => {
-    const rows = computeBudgetCategoryStats({ id: BUDGET, project_id: null }, [cat('group:other', 100)], [
+  it('Kredit (d4d31ee6): izuzeta kategorija se broji — 3.047,59 €', () => {
+    const rows = computeBudgetCategoryStats({ id: BUDGET, project_id: null }, [], [
       tx(EXEMPT_CATEGORY_ID, 1419.98), tx(EXEMPT_CATEGORY_ID, 1627.61),
     ]);
-    expect(rows).toHaveLength(1);
-    expect(rows[0].spent).toBe(0);
-    expect(rows.find((r) => r.category === MANUAL_ASSIGNED_CATEGORY)).toBeUndefined();
+    const total = rows.reduce((s, r) => s + r.spent, 0);
+    expect(Math.round(total * 100) / 100).toBe(3047.59);
   });
 
   it('vlastita kategorija broji se po group_key', () => {
@@ -118,7 +122,8 @@ describe('filtar skupine', () => {
     expect(matchesCategoryFilter('fuel', 'group:car', ids)).toBe(true);
     expect(matchesCategoryFilter('c1', 'group:car', ids)).toBe(true);
     expect(matchesCategoryFilter('coffee', 'group:car', ids)).toBe(false);
-    expect(matchesCategoryFilter(EXEMPT_CATEGORY_ID, 'group:other', [])).toBe(false);
+    expect(matchesCategoryFilter(EXEMPT_CATEGORY_ID, EXEMPT_CATEGORY_ID)).toBe(true);
+    expect(matchesCategoryFilter('coffee', EXEMPT_CATEGORY_ID)).toBe(false);
   });
   it('običan ključ i dalje traži točno podudaranje', () => {
     expect(matchesCategoryFilter('food', 'food')).toBe(true);
@@ -132,9 +137,12 @@ describe('PDF i izvoz', () => {
     const groups = rows.map((r) => r.group);
     expect(groups.filter((g) => g === 'food')).toHaveLength(1);
     expect(rows.find((r) => r.group === 'food')!.amount).toBe(25);
-    expect(groups).not.toContain(null);
+    const own = rows.find((r) => r.group === null)!;
+    expect(own.amount).toBe(999);
+    expect(own.leaves[0].customId).toBe(EXEMPT_CATEGORY_ID);
+    expect(rows.reduce((t, r) => t + r.amount, 0)).toBe(1034);
     const table = buildGroupedTableRows(rows, [], (x) => String(x));
-    expect(table.filter((r) => r[0] !== '')).toHaveLength(2);
+    expect(table.filter((r) => r[0] !== '')).toHaveLength(3);
   });
 
   it('stupac skupine uz kategoriju', () => {
