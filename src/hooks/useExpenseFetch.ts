@@ -5,7 +5,7 @@ import { Expense, Category, PaymentSource, TransactionType } from '@/types/expen
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 
-import { showError, showSuccess, showWarning } from '@/hooks/useStatusFeedback';
+import { showError, showWarning } from '@/hooks/useStatusFeedback';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { runWithTransientRetry, classifyFetchFailure } from '@/lib/expenseFetchRetry';
 import { withTimeoutAndDrain, EXPENSES_FETCH_TIMEOUT_MS } from '@/lib/fetchTimeout';
@@ -20,8 +20,6 @@ import {
 } from '@/lib/authTokenReady';
 import { isSessionGone, shouldWarnOnRetry } from '@/lib/sessionGone';
 
-import i18n from '@/i18n';
-import { detectAuthorOutcome } from '@/lib/krugAuthorOutcome';
 import { tr } from '@/lib/errorMessages';
 import { getLocalExpenses, initLocalDB } from '@/lib/storage/indexedDB';
 import { withAuthRetry } from '@/lib/supabaseRetry';
@@ -658,18 +656,9 @@ export const useExpenseFetch = () => {
         },
         (payload) => {
           markLiveDirty('transactions');
-          const prevRow = payload.old as Record<string, unknown> | undefined;
           const nextRow = payload.new as Record<string, unknown>;
-          // Author outcome signal — jedini user-facing kanal dok server-side
-          // notifikacije (notify-krug-event) ne dostavljaju krug_expense_*
-          // eventove. Detekcija se veže isključivo na stvarnu tranziciju
-          // predlozena → potvrdjena / nepotvrdjena za vlastiti prijedlog.
-          const outcome = detectAuthorOutcome(prevRow ?? null, nextRow, user.id);
-          if (outcome === 'confirmed') {
-            showSuccess(i18n.t('notifications.krug.expense_confirmed.toast'));
-          } else if (outcome === 'rejected') {
-            showError(i18n.t('notifications.krug.expense_rejected.toast'));
-          }
+          // Ishod prijedloga autoru stiže isključivo serverskom obaviješću
+          // (krug_emit_notification → notify-krug-event, outbox + retry).
           if (!inScope(nextRow)) {
             // Row may have moved out of scope — drop it from local state.
             const id = (nextRow as { id?: string })?.id;

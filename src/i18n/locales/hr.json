@@ -2862,13 +2862,11 @@
       },
       "expense_confirmed": {
         "title": "Tvoj prijedlog je potvrđen",
-        "message": "Član Kruga je potvrdio tvoj prijedlog.",
-        "toast": "Prijedlog za Krug je potvrđen."
+        "message": "Član Kruga je potvrdio tvoj prijedlog."
       },
       "expense_rejected": {
         "title": "Tvoj prijedlog je odbijen",
-        "message": "Član Kruga je odbio tvoj prijedlog. Razlog: {{reason}}",
-        "toast": "Prijedlog za Krug je odbijen."
+        "message": "Član Kruga je odbio tvoj prijedlog. Razlog: {{reason}}"
       },
       "deletion_requested": {
         "title": "Pokrenuto brisanje Kruga",

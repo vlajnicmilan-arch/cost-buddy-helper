@@ -35,6 +35,7 @@
 // functions.invoke). Any other caller is rejected 401 before any work runs.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { markOutboxDelivered } from "./outbox.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -386,6 +387,11 @@ Deno.serve(async (req) => {
   console.log(
     `[notify-krug-event] done delivered=${delivered} skipped=${skipped.length} errors=${errors.length}`,
   );
+
+  // Outbox: obrada je završena i kad je namjerno preskočeno (dedup pogodak ili
+  // isključene postavke) — takvi redovi se ne ponavljaju. Kvar oznake ne smije
+  // srušiti odgovor.
+  await markOutboxDelivered(admin, dedup_ref);
 
   return json({
     ok: true,
