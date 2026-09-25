@@ -4,6 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
+import { resolveCategory } from '@/hooks/useResolvedCategory';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { BudgetWithStats, BUDGET_PERIOD_LABELS } from '@/types/budget';
 import { useBudgetMembers } from '@/hooks/useBudgetMembers';
 import { BudgetMembersTab } from './BudgetMembersTab';
@@ -36,6 +38,7 @@ export const BudgetDetailDialog = ({
 }: BudgetDetailDialogProps) => {
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
+  const { customCategories } = useCustomCategories();
   const { members, invitations, loading: membersLoading, isOwner, refetch: refetchMembers } = useBudgetMembers(budget?.id || null);
 
   if (!budget) return null;

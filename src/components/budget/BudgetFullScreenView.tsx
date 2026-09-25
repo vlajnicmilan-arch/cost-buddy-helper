@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
+import { resolveCategory } from '@/hooks/useResolvedCategory';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { BudgetWithStats, BUDGET_PERIOD_LABELS } from '@/types/budget';
 import { useBudgetMembers } from '@/hooks/useBudgetMembers';
 import { useBudgetPendingTransactions } from '@/hooks/useBudgetPendingTransactions';
@@ -58,6 +60,7 @@ export const BudgetFullScreenView = ({
 }: BudgetFullScreenViewProps) => {
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
+  const { customCategories } = useCustomCategories();
   const [activeTab, setActiveTab] = useState('overview');
   useBackButton(open, onClose, BACK_PRIORITY.FULLSCREEN, 'FULLSCREEN:budget');
   useBackNavigationTab(activeTab, 'overview', (prev) => setActiveTab(prev), open, 'TAB:budget');
