@@ -7240,6 +7240,51 @@ export type Database = {
         }
         Relationships: []
       }
+      worker_payout_receipt_reports: {
+        Row: {
+          amount: number
+          batch_id: string | null
+          client_request_id: string
+          created_at: string
+          currency: string
+          id: string
+          note: string | null
+          owner_user_id: string
+          payout_id: string | null
+          payout_ids: string[]
+          project_id: string
+          worker_user_id: string
+        }
+        Insert: {
+          amount: number
+          batch_id?: string | null
+          client_request_id: string
+          created_at?: string
+          currency?: string
+          id?: string
+          note?: string | null
+          owner_user_id: string
+          payout_id?: string | null
+          payout_ids: string[]
+          project_id: string
+          worker_user_id: string
+        }
+        Update: {
+          amount?: number
+          batch_id?: string | null
+          client_request_id?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          note?: string | null
+          owner_user_id?: string
+          payout_id?: string | null
+          payout_ids?: string[]
+          project_id?: string
+          worker_user_id?: string
+        }
+        Relationships: []
+      }
       workers: {
         Row: {
           archived_at: string | null
@@ -7861,6 +7906,19 @@ export type Database = {
           project_id: string
           project_name: string
           status: string
+        }[]
+      }
+      get_my_pending_payouts: {
+        Args: never
+        Returns: {
+          batch_id: string
+          created_at: string
+          currency: string
+          paid_amount: number
+          paid_at: string
+          payout_id: string
+          project_id: string
+          project_name: string
         }[]
       }
       get_project_member_profiles: {
@@ -8658,6 +8716,15 @@ export type Database = {
           p_client_request_id: string
           p_payout_id?: string
           p_source_id: string
+        }
+        Returns: Json
+      }
+      worker_report_payout_not_received: {
+        Args: {
+          p_batch_id?: string
+          p_client_request_id: string
+          p_note?: string
+          p_payout_id?: string
         }
         Returns: Json
       }

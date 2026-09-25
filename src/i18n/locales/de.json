@@ -2824,7 +2824,11 @@
           "message": "Sammelauszahlung {{amount}} für {{count}} Projekte wurde storniert."
         }
       },
-      "fallback_project": "Projekt"
+      "fallback_project": "Projekt",
+      "not_received": {
+        "title": "Auszahlung nicht erhalten",
+        "message": "{{worker}} meldet, dass die Auszahlung von {{amount}} nicht angekommen ist."
+      }
     },
     "work_entry_recorded": {
       "title": "Stunden erfasst — {{project}}",
@@ -4738,7 +4742,11 @@
       "hoursInPeriod": "Stunden",
       "payout": "Auszahlung",
       "noRateSet": "Der Projektinhaber hat noch keinen Stundensatz festgelegt.",
-      "notLinkedYet": "Der Inhaber hat dich noch nicht als Mitarbeiter in diesem Projekt hinzugefügt. Dein Verdienst erscheint, sobald dein Stundensatz festgelegt ist."
+      "notLinkedYet": "Der Inhaber hat dich noch nicht als Mitarbeiter in diesem Projekt hinzugefügt. Dein Verdienst erscheint, sobald dein Stundensatz festgelegt ist.",
+      "pending": {
+        "title": "Ausstehende Auszahlungen",
+        "hint": "Tippen, um in einer Geldbörse zu erfassen"
+      }
     },
     "hours": "Arbeitsstunden",
     "hoursPlaceholder": "z. B. 8",
@@ -6290,7 +6298,27 @@
     "errors": {
       "loadFailed": "Auszahlungsdaten können nicht geladen werden",
       "alreadyAttributed": "Bereits zugeordnet",
-      "generic": "Zuordnung fehlgeschlagen, bitte erneut versuchen"
+      "generic": "Zuordnung fehlgeschlagen, bitte erneut versuchen",
+      "codes": {
+        "unauthenticated": "Bitte melde dich erneut an.",
+        "client_request_id_required": "Etwas ist schiefgelaufen. Schließen und erneut versuchen.",
+        "exactly_one_target": "Etwas ist schiefgelaufen. Schließen und erneut versuchen.",
+        "not_found": "Diese Auszahlung gibt es nicht mehr.",
+        "not_payout_recipient": "Diese Auszahlung gehört nicht dir.",
+        "client_request_id_reused": "Etwas ist schiefgelaufen. Schließen und erneut versuchen.",
+        "payout_voided": "Die Auszahlung wurde storniert.",
+        "already_confirmed": "Du hast diese Auszahlung bereits erfasst.",
+        "source_required": "Wähle eine Geldbörse.",
+        "source_not_found": "Diese Geldbörse gibt es nicht mehr.",
+        "source_not_writable": "In diese Geldbörse kannst du nichts eintragen.",
+        "mixed_currency": "Die Auszahlungen haben verschiedene Währungen — erfasse sie einzeln.",
+        "amount_mismatch": "Der Betrag stimmt nicht mit der Auszahlung überein.",
+        "amount_required": "Die Geldbörse hat eine andere Währung — gib ein, wie viel angekommen ist.",
+        "amount_unknown": "Der Auszahlungsbetrag ist unbekannt.",
+        "already_reported": "Du hast bereits gemeldet, dass diese Auszahlung nicht angekommen ist.",
+        "note_too_long": "Die Notiz ist zu lang (höchstens 500 Zeichen).",
+        "mixed_owner": "Die Auszahlungen stammen von verschiedenen Eigentümern — melde sie einzeln."
+      }
     },
     "voidedPrompt": {
       "title": "Auszahlung storniert",
@@ -6299,6 +6327,16 @@
       "remove": "Zuordnung entfernen",
       "removed": "Zuordnung entfernt",
       "removeFailed": "Entfernen fehlgeschlagen"
+    },
+    "notReceived": {
+      "action": "Nicht erhalten",
+      "title": "Auszahlung nicht angekommen?",
+      "description": "Der Eigentümer wird benachrichtigt. Die Auszahlung bleibt unverändert.",
+      "noteLabel": "Notiz (optional)",
+      "notePlaceholder": "z. B. kein Eingang auf dem Konto",
+      "confirm": "Eigentümer benachrichtigen",
+      "cancel": "Abbrechen",
+      "success": "Der Eigentümer wurde benachrichtigt"
     }
   },
   "invitations": {

@@ -22,6 +22,10 @@ export default {
     "Sammelauszahlung storniert — {{count}} Projekte",
   "notifications.worker_payout.voided.batch.message":
     "Sammelauszahlung {{amount}} für {{count}} Projekte wurde storniert.",
+  "notifications.worker_payout.not_received.title":
+    "Auszahlung nicht erhalten",
+  "notifications.worker_payout.not_received.message":
+    "{{worker}} meldet, dass die Auszahlung von {{amount}} nicht angekommen ist.",
   "notifications.worker_payout.fallback_project":
     "Projekt",
   "notifications.project_transaction.title":

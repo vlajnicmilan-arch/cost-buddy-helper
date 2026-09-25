@@ -22,6 +22,10 @@ export default {
     "Zbirna isplata poništena — {{count}} projekta",
   "notifications.worker_payout.voided.batch.message":
     "Zbirna isplata {{amount}} za {{count}} projekata je poništena.",
+  "notifications.worker_payout.not_received.title":
+    "Isplata nije primljena",
+  "notifications.worker_payout.not_received.message":
+    "{{worker}} javlja da nije primio isplatu {{amount}}.",
   "notifications.worker_payout.fallback_project":
     "projekt",
   "notifications.project_transaction.title":

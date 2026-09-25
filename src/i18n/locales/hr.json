@@ -2832,7 +2832,11 @@
           "message": "Zbirna isplata {{amount}} za {{count}} projekata je poništena."
         }
       },
-      "fallback_project": "projekt"
+      "fallback_project": "projekt",
+      "not_received": {
+        "title": "Isplata nije primljena",
+        "message": "{{worker}} javlja da nije primio isplatu {{amount}}."
+      }
     },
     "work_entry_recorded": {
       "title": "Sati upisani — {{project}}",
@@ -4747,7 +4751,11 @@
       "hoursInPeriod": "Sati",
       "payout": "Za isplatu",
       "noRateSet": "Vlasnik projekta još nije postavio satnicu.",
-      "notLinkedYet": "Vlasnik te još nije dodao kao radnika na ovom projektu. Zarada će se prikazati nakon što ti postavi satnicu."
+      "notLinkedYet": "Vlasnik te još nije dodao kao radnika na ovom projektu. Zarada će se prikazati nakon što ti postavi satnicu.",
+      "pending": {
+        "title": "Isplate na čekanju",
+        "hint": "Dodirni za pripis u novčanik"
+      }
     },
     "hours": "Sati rada",
     "hoursPlaceholder": "npr. 8",
@@ -6302,7 +6310,27 @@
     "errors": {
       "loadFailed": "Ne mogu učitati podatke o isplati",
       "alreadyAttributed": "Već pripisano ovoj isplati",
-      "generic": "Pripis nije uspio, pokušaj ponovno"
+      "generic": "Pripis nije uspio, pokušaj ponovno",
+      "codes": {
+        "unauthenticated": "Prijavi se ponovno.",
+        "client_request_id_required": "Nešto je pošlo krivo. Zatvori i pokušaj ponovno.",
+        "exactly_one_target": "Nešto je pošlo krivo. Zatvori i pokušaj ponovno.",
+        "not_found": "Isplata više ne postoji.",
+        "not_payout_recipient": "Ova isplata nije tvoja.",
+        "client_request_id_reused": "Nešto je pošlo krivo. Zatvori i pokušaj ponovno.",
+        "payout_voided": "Isplata je stornirana.",
+        "already_confirmed": "Isplatu si već pripisao.",
+        "source_required": "Odaberi novčanik.",
+        "source_not_found": "Novčanik više ne postoji.",
+        "source_not_writable": "U ovaj novčanik ne možeš upisivati.",
+        "mixed_currency": "Isplate su u različitim valutama — pripiši ih posebno.",
+        "amount_mismatch": "Iznos se ne slaže s isplatom.",
+        "amount_required": "Novčanik je u drugoj valuti — upiši koliko je stiglo.",
+        "amount_unknown": "Iznos isplate nije poznat.",
+        "already_reported": "Već si javio da ova isplata nije stigla.",
+        "note_too_long": "Napomena je preduga (najviše 500 znakova).",
+        "mixed_owner": "Isplate su od različitih vlasnika — javi ih posebno."
+      }
     },
     "voidedPrompt": {
       "title": "Isplata je poništena",
@@ -6311,6 +6339,16 @@
       "remove": "Ukloni pripis",
       "removed": "Pripis uklonjen",
       "removeFailed": "Uklanjanje nije uspjelo"
+    },
+    "notReceived": {
+      "action": "Nisam primio",
+      "title": "Isplata nije stigla?",
+      "description": "Vlasnik će dobiti obavijest. Isplata se ne mijenja.",
+      "noteLabel": "Napomena (neobavezno)",
+      "notePlaceholder": "npr. na računu nema uplate",
+      "confirm": "Javi vlasniku",
+      "cancel": "Odustani",
+      "success": "Vlasnik je obaviješten"
     }
   },
   "invitations": {

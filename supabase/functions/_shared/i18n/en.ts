@@ -22,6 +22,10 @@ export default {
     "Batch payout voided — {{count}} projects",
   "notifications.worker_payout.voided.batch.message":
     "Batch payout {{amount}} for {{count}} projects was voided.",
+  "notifications.worker_payout.not_received.title":
+    "Payout not received",
+  "notifications.worker_payout.not_received.message":
+    "{{worker}} reports not receiving the payout of {{amount}}.",
   "notifications.worker_payout.fallback_project":
     "project",
   "notifications.project_transaction.title":
