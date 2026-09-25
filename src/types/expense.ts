@@ -338,6 +338,13 @@ export const getCategoryInfo = (category: Category | IncomeCategory | 'transfer'
   }
   // Dvorazinski registar (novi ključevi listova, stari široki ključevi → skupina).
   // Nikad ne vraća sirovi kod: naziv ide kroz i18n ključ registra.
+  // Limit budžeta za cijelu skupinu: `group:<groupKey>`.
+  const groupLimit = String(category ?? '').startsWith('group:')
+    ? CATEGORY_GROUPS.find((g) => `group:${g.key}` === category)
+    : undefined;
+  if (groupLimit) {
+    return { id: category as Category, name: i18n.t(categoryGroupLabelKey(groupLimit.key)), icon: groupLimit.icon, color: 'category-other' };
+  }
   const groupDef = CATEGORY_GROUPS.find((g) => g.key === category);
   if (groupDef && !CATEGORIES.some((c) => c.id === category)) {
     return { id: category as Category, name: i18n.t(categoryGroupLabelKey(groupDef.key)), icon: groupDef.icon, color: 'category-other' };

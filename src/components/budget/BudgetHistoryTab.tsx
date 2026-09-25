@@ -51,6 +51,7 @@ interface PeriodData {
 export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
+  const { customCategories } = useCustomCategories();
   const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPeriodIndex, setSelectedPeriodIndex] = useState(0); // 0 = current
@@ -189,7 +190,7 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
     }
 
     return result;
-  }, [allExpenses, budget]);
+  }, [allExpenses, budget, customCategories]);
 
   // Current and comparison periods
   const currentPeriod = periods[selectedPeriodIndex];

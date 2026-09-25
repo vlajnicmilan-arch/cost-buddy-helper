@@ -187,8 +187,8 @@ export const BudgetDetailDialog = ({
                   {budget.categories.map((cat) => {
                     // Get category info for displaying original categories
                     const getCategoryDisplay = (categoryId: string) => {
-                      const catInfo = CATEGORIES.find(c => c.id === categoryId);
-                      return catInfo ? { name: catInfo.name, icon: catInfo.icon } : { name: categoryId, icon: '📂' };
+                      const info = resolveCategory(categoryId, customCategories);
+                      return { name: info.name, icon: info.icon || '📂' };
                     };
                     
                     return (
@@ -197,7 +197,7 @@ export const BudgetDetailDialog = ({
                         <div className="flex items-center gap-2">
                           <span className="text-lg">{cat.icon || '📂'}</span>
                           <div className="flex flex-col">
-                            <span className="text-sm font-medium">{cat.category === '__budget_manual_assigned__' ? t('budget.manualAssigned') : cat.category}</span>
+                            <span className="text-sm font-medium">{cat.category === '__budget_manual_assigned__' ? t('budget.manualAssigned') : resolveCategory(cat.category, customCategories).name}</span>
                             {/* Show original categories for manually assigned expenses */}
                             {cat.originalCategories && cat.originalCategories.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-1">

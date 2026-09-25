@@ -414,7 +414,7 @@ export const BudgetFullScreenView = ({
                               <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-3">
                                   <span className="text-2xl">{cat.icon || '📂'}</span>
-                                  <span className="font-medium">{cat.category === '__budget_manual_assigned__' ? t('budget.manualAssigned') : cat.category}</span>
+                                  <span className="font-medium">{cat.category === '__budget_manual_assigned__' ? t('budget.manualAssigned') : resolveCategory(cat.category, customCategories).name}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <span className="font-medium">{cat.percentage.toFixed(0)}%</span>

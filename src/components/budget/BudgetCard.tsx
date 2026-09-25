@@ -68,8 +68,8 @@ export const BudgetCard = ({
   const getBorderColor = () => budgetColor;
 
   const getCategoryDisplay = (categoryId: string) => {
-    const catInfo = CATEGORIES.find(c => c.id === categoryId);
-    return catInfo ? { name: catInfo.name, icon: catInfo.icon } : { name: categoryId, icon: '📂' };
+    const info = resolveCategory(categoryId, customCategories);
+    return { name: info.name, icon: info.icon || '📂' };
   };
 
   const allOriginalCategories = budget.categories
