@@ -46,11 +46,14 @@ echo "-- applying $(basename "$SETTLE_SRC")"
 psql -v ON_ERROR_STOP=1 -q -f "$SETTLE_SRC"
 
 if [ "$TODAY" != "1" ]; then
+  # Kao Supabase: zadane privilegije daju anon/authenticated sve na nove objekte u public.
+  psql -v ON_ERROR_STOP=1 -q -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated; ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO anon, authenticated;"
   psql -v ON_ERROR_STOP=1 -q -f "$ROOT/drizzle/migrations/0020_krug_notify_outbox_table.sql"
   psql -v ON_ERROR_STOP=1 -q -f "$ROOT/drizzle/migrations/0021_krug_notify_outbox_mark_delivered.sql"
   psql -v ON_ERROR_STOP=1 -q -f "$HERE/live_emit_v1.sql"
   EMIT_V2="${EMIT_V2:-$(ls "$ROOT"/drizzle/migrations/*krug_emit_v2*.sql 2>/dev/null | tail -1)}"
   psql -v ON_ERROR_STOP=1 -q -f "$EMIT_V2"
+  psql -v ON_ERROR_STOP=1 -q -f "$ROOT/drizzle/migrations/0023_krug_outbox_privileges.sql"
   psql -v ON_ERROR_STOP=1 -f "$HERE/outbox.sql"
 else
   # Svaki čuvar je zaseban DO blok; bez outbox migracija svaki mora pasti.

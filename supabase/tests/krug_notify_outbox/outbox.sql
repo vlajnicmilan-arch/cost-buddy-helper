@@ -187,3 +187,33 @@ BEGIN
     NOT has_function_privilege('anon','public._krug_emit_http(text,uuid,uuid,uuid,uuid,text,uuid[],jsonb)','EXECUTE')
     AND NOT has_function_privilege('authenticated','public._krug_emit_http(text,uuid,uuid,uuid,uuid,text,uuid[],jsonb)','EXECUTE'));
 END $$;
+
+-- O9: stvarni poziv pod ulogom — anon/authenticated dobivaju permission denied,
+-- service_role smije. Isto za tablicu i ostale outbox funkcije.
+DO $$
+DECLARE r text; f text;
+BEGIN
+  FOREACH r IN ARRAY ARRAY['anon','authenticated'] LOOP
+    FOREACH f IN ARRAY ARRAY[
+      'SELECT public.krug_notify_outbox_mark_delivered(''t:x'')',
+      'SELECT public.krug_notify_outbox_retry()',
+      'SELECT public._krug_emit_http(''e'',NULL,NULL)',
+      'SELECT public.krug_emit_notification(''e'',NULL,NULL)',
+      'SELECT count(*) FROM public.krug_notify_outbox',
+      'UPDATE public.krug_notify_outbox SET delivered_at = now()'] LOOP
+      BEGIN
+        EXECUTE format('SET LOCAL ROLE %I', r);
+        EXECUTE f;
+        RESET ROLE;
+        RAISE EXCEPTION 'FAIL O9 % smije: %', r, f;
+      EXCEPTION WHEN insufficient_privilege THEN
+        RESET ROLE;
+      END;
+    END LOOP;
+  END LOOP;
+  RAISE NOTICE 'PASS O9.1 anon/authenticated: permission denied na sve outbox funkcije i tablicu';
+  SET LOCAL ROLE service_role;
+  PERFORM public.krug_notify_outbox_mark_delivered('t:x');
+  RESET ROLE;
+  RAISE NOTICE 'PASS O9.2 service_role smije mark_delivered';
+END $$;
