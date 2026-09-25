@@ -114,6 +114,7 @@ export const BACKUP_TABLES: readonly string[] = [
   "user_memories",
   "user_roles",
   "user_subscriptions",
+  "worker_payout_receipt_reports",
   "workers",
 ] as const;
 
