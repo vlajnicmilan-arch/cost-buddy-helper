@@ -41,8 +41,13 @@ vi.mock('@/integrations/supabase/client', () => {
   };
 });
 
+const stableUsers = new Map<string, { id: string }>();
 vi.mock('@/hooks/useAuth', () => ({
-  useAuth: () => ({ user: rt.userId ? { id: rt.userId } : null, authReady: true }),
+  useAuth: () => {
+    if (!rt.userId) return { user: null, authReady: true };
+    if (!stableUsers.has(rt.userId)) stableUsers.set(rt.userId, { id: rt.userId });
+    return { user: stableUsers.get(rt.userId), authReady: true };
+  },
 }));
 vi.mock('@/lib/diagnosticLogger', () => ({ logDiagnostic: vi.fn() }));
 vi.mock('@/contexts/StorageContext', () => ({ useStorage: () => ({ storageMode: 'cloud' }) }));
@@ -145,7 +150,7 @@ describe('Budgets', () => {
       ({ list }) => useBudgets({ externalExpenses: list as never }),
       { initialProps: { list: [exp('e1', 10)] } },
     );
-    await vi.advanceTimersByTimeAsync(0);
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
     expect(result.current.budgets[0]?.spent).toBe(10);
     rerender({ list: [exp('e1', 10), exp('e2', 25)] });
     expect(result.current.budgets[0]?.spent).toBe(35);
