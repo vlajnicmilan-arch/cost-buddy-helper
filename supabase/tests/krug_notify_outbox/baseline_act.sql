@@ -11,6 +11,12 @@ DO $$ BEGIN
   END IF;
 END $$;
 
+ALTER TABLE public.expenses
+  ADD COLUMN IF NOT EXISTS krug_id uuid,
+  ADD COLUMN IF NOT EXISTS krug_privacy public.krug_privacy,
+  ADD COLUMN IF NOT EXISTS krug_shared_status public.krug_shared_status,
+  ADD COLUMN IF NOT EXISTS krug_reject_reason text;
+
 CREATE OR REPLACE FUNCTION public.krug_is_member(_krug uuid, _user uuid)
  RETURNS boolean
  LANGUAGE sql
