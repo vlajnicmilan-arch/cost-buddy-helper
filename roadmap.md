@@ -24,7 +24,7 @@
 - [x] Nalog 3: migracija (`custom_categories.group_key`, `expenses.tags`, `expenses.movement_kind`) + izbornik u dvije razine (nije objavljeno)
 - [x] Nalog 5: zaslon „Pregled kategorija" (prijedlozi, potvrda, poništavanje; nije objavljeno)
 - [x] Nalog 4: oznake (Nepotrebno, Luksuz) + vrste zapisa + pregled pozajmica (nije objavljeno)
-- [ ] Nalog 6: AI s novim ključevima + učenje iz `category_corrections`
+- [x] Nalog 6: AI s novim ključevima + učenje iz `category_corrections` (prekidač za bank-sync isključen; nije objavljeno)
 - [ ] Nalog 7: budžeti po skupini, PDF, izvoz
 
 Pravila za sve naloge:
