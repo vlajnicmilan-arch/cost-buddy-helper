@@ -17,7 +17,7 @@ if [ "$TODAY" = "1" ]; then
 else
   FN_SRC="$(grep -l 'CREATE OR REPLACE FUNCTION public.trg_work_entry_notify_worker' "$ROOT"/drizzle/migrations/*.sql | sort | tail -1)"
   [ -n "$FN_SRC" ] || { echo "ERROR: no migration defines trg_work_entry_notify_worker" >&2; exit 1; }
-  grep -q 'full_name' "$FN_SRC" && { echo "ERROR: $FN_SRC still reads profiles.full_name" >&2; exit 1; }
+  grep -v '^[[:space:]]*--' "$FN_SRC" | grep -q 'full_name' && { echo "ERROR: $FN_SRC still reads profiles.full_name" >&2; exit 1; }
 fi
 echo "-- applying $(basename "$FN_SRC")"
 psql -v ON_ERROR_STOP=1 -q -f "$FN_SRC" || exit 1
