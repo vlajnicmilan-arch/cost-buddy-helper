@@ -24,7 +24,9 @@
 - [x] Nalog 3: migracija (`custom_categories.group_key`, `expenses.tags`, `expenses.movement_kind`) + izbornik u dvije razine (nije objavljeno)
 - [x] Nalog 5: zaslon „Pregled kategorija" (prijedlozi, potvrda, poništavanje; nije objavljeno)
 - [x] Nalog 4: oznake (Nepotrebno, Luksuz) + vrste zapisa + pregled pozajmica (nije objavljeno)
-- [x] Nalog 6: AI s novim ključevima + učenje iz `category_corrections` (prekidač za bank-sync isključen; nije objavljeno)
+- [x] Nalog 6: AI s novim ključevima + učenje iz `category_corrections`
+- [x] Nalog 6b: prekidač SERVER_CATEGORY_TREE_ENABLED uključen, bank-sync-transactions objavljena
+- [ ] Živa salda: plan odobren (6 koraka); nalog 1 dijagnoza prijavljena
 - [x] Nalog 7: budžeti po skupini, filtri, PDF i izvoz (nije objavljeno)
 
 Pravila za sve naloge:
