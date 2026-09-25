@@ -14,7 +14,7 @@
 
 - [x] Isti trošak — Nalog 1: modul pravila + testovi (nitko ga ne zove)
 - [ ] Isti trošak — Nalog 2: sinkronizacija
-- [ ] Isti trošak — Nalog 3: uvoz izvoda
+- [ ] Isti trošak — Nalog 3: uvoz izvoda ✅
 - [ ] Isti trošak — Nalog 4: ručni unos (bez trajnog pamćenja odbijenog para; prikaz izbora s podacima banke)
 
 ## Kategorije u dvije razine (plan odobren 24.9.2026 uz ispravke)
@@ -26,7 +26,7 @@
 - [x] Nalog 4: oznake (Nepotrebno, Luksuz) + vrste zapisa + pregled pozajmica (nije objavljeno)
 - [x] Nalog 6: AI s novim ključevima + učenje iz `category_corrections`
 - [x] Nalog 6b: prekidač SERVER_CATEGORY_TREE_ENABLED uključen, bank-sync-transactions objavljena
-- [ ] Živa salda: plan odobren (6 koraka); nalog 1 dijagnoza prijavljena; nalog 2 migracija objave (0019) primijenjena, čuvari zeleni; sljedeći nalog 3: zajednički slušač
+- [ ] Živa salda: plan odobren (6 koraka); nalog 1 dijagnoza prijavljena; nalog 2 migracija objave (0019) primijenjena, čuvari zeleni; sljedeći nalog 3: zajednički slušač ✅
 - [x] Nalog 7: budžeti po skupini, filtri, PDF i izvoz (nije objavljeno)
 
 Pravila za sve naloge:
