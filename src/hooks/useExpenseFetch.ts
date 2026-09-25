@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { markLiveDirty } from '@/lib/liveData/walletsRefreshBus';
 import { Expense, Category, PaymentSource, TransactionType } from '@/types/expense';
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
@@ -638,6 +639,7 @@ export const useExpenseFetch = () => {
           table: 'expenses',
         },
         (payload) => {
+          markLiveDirty('transactions');
           if (!inScope(payload.new as Record<string, unknown>)) return;
           const newExpense = parseExpense(payload.new as Record<string, unknown>);
           setExpenses(prev => {
@@ -655,6 +657,7 @@ export const useExpenseFetch = () => {
           table: 'expenses',
         },
         (payload) => {
+          markLiveDirty('transactions');
           const prevRow = payload.old as Record<string, unknown> | undefined;
           const nextRow = payload.new as Record<string, unknown>;
           // Author outcome signal — jedini user-facing kanal dok server-side
@@ -685,6 +688,7 @@ export const useExpenseFetch = () => {
           table: 'expenses',
         },
         (payload) => {
+          markLiveDirty('transactions');
           const deletedId = (payload.old as { id: string }).id;
           setExpenses(prev => prev.filter(e => e.id !== deletedId));
         }
