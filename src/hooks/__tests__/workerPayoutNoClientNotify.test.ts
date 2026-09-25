@@ -22,7 +22,8 @@ vi.mock('@/hooks/useStatusFeedback', () => ({
   showSuccess: vi.fn(), showError: vi.fn(),
 }));
 vi.mock('@/lib/diagnosticLogger', () => ({ logDiagnostic: vi.fn() }));
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }));
+const i18n = vi.hoisted(() => ({ t: (k: string) => k }));
+vi.mock('react-i18next', () => ({ useTranslation: () => i18n }));
 
 import { useWorkerPayouts } from '../useWorkerPayouts';
 import { usePersonPayoutVoid } from '../usePersonPayoutVoid';
