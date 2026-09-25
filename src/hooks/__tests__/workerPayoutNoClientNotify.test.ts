@@ -16,8 +16,9 @@ vi.mock('@/integrations/supabase/client', () => ({
   supabase: { functions: { invoke }, rpc, from: () => chain },
 }));
 vi.mock('@/hooks/useStatusFeedback', () => ({
-  useStatusFeedback: () => ({ showSuccess: vi.fn(), showError: vi.fn() }),
+  showSuccess: vi.fn(), showError: vi.fn(),
 }));
+vi.mock('@/lib/diagnosticLogger', () => ({ logDiagnostic: vi.fn() }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }));
 
 import { useWorkerPayouts } from '../useWorkerPayouts';
