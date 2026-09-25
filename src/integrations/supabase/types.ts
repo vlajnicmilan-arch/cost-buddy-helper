@@ -3522,6 +3522,39 @@ export type Database = {
           },
         ]
       }
+      krug_notify_outbox: {
+        Row: {
+          attempts: number
+          created_at: string
+          dedup_ref: string
+          delivered_at: string | null
+          event_type: string
+          last_error: string | null
+          last_status: number | null
+          payload: Json
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          dedup_ref: string
+          delivered_at?: string | null
+          event_type: string
+          last_error?: string | null
+          last_status?: number | null
+          payload: Json
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          dedup_ref?: string
+          delivered_at?: string | null
+          event_type?: string
+          last_error?: string | null
+          last_status?: number | null
+          payload?: Json
+        }
+        Relationships: []
+      }
       krug_ownership: {
         Row: {
           created_at: string
