@@ -1,9 +1,12 @@
 /**
  * LiveDataProvider — one realtime channel per signed-in user.
  *
- * Scope (Živa salda, nalog 3): listens ONLY to `custom_payment_sources`.
- * An event is a "wallets dirty" signal; the truth is always the existing
- * server fetch in `useCustomPaymentSources`. Row payloads are never read.
+ * Listens to `custom_payment_sources` (nalog 3) and `krug_settlement_ledger`
+ * (nalog 4) on the same channel. An event is only a "dirty" signal; the truth
+ * is always the existing server fetch (`useCustomPaymentSources`, Krug
+ * TanStack queries). Row data never goes into state; a ledger row's
+ * `krug_id` is used only to narrow which Krug queries are invalidated.
+ * It also installs the `transactions` batcher marked by `useExpenseFetch`.
  * RLS decides which rows reach this subscriber; no user_id filter is applied.
  *
  * Lifecycle: hidden for 30 s → channel removed; visible/online → channel
@@ -12,13 +15,30 @@
  */
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { createRefreshBatcher } from '@/lib/liveData/refreshBatcher';
-import { refreshAllWallets } from '@/lib/liveData/walletsRefreshBus';
+import { refreshAllWallets, refreshLiveTopic, setLiveDirtyMarker } from '@/lib/liveData/walletsRefreshBus';
 import { logChannelState, type ChannelDiagState } from '@/lib/liveData/channelDiagnostics';
 
 export const LIVE_BACKGROUND_DISCONNECT_MS = 30_000;
+
+/** Invalidates Krug settlement state + ledger history; only active (open) queries refetch. */
+export async function invalidateKrugSettlement(qc: QueryClient, krugIds: Set<string> | null): Promise<void> {
+  const ids: Array<string | undefined> = krugIds ? Array.from(krugIds) : [undefined];
+  await Promise.all(
+    ids.flatMap((id) => [
+      qc.invalidateQueries({ queryKey: id ? ['krug', 'settlement', id] : ['krug', 'settlement'] }),
+      qc.invalidateQueries({ queryKey: id ? ['krug', 'ledger', id] : ['krug', 'ledger'] }),
+    ]),
+  );
+}
+
+const readKrugId = (row: unknown): string | null => {
+  const id = (row as { krug_id?: unknown } | null | undefined)?.krug_id;
+  return typeof id === 'string' && id.length > 0 ? id : null;
+};
 
 interface LiveDataContextValue {
   connected: boolean;
@@ -30,6 +50,7 @@ export const useLiveData = () => useContext(LiveDataContext);
 
 export const LiveDataProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const userId = user?.id ?? null;
   const [connected, setConnected] = useState(false);
 
@@ -48,6 +69,20 @@ export const LiveDataProvider = ({ children }: { children: ReactNode }) => {
         return refreshAllWallets({ force });
       },
     });
+
+    // Pending Krug ids for the next flush; `null` = refresh all open Krugs.
+    let krugIds: Set<string> | null = new Set();
+    const krugBatcher = createRefreshBatcher({
+      run: () => {
+        const ids = krugIds;
+        krugIds = new Set();
+        return invalidateKrugSettlement(queryClient, ids && ids.size > 0 ? ids : null);
+      },
+    });
+    const txBatcher = createRefreshBatcher({
+      run: () => refreshLiveTopic('transactions', { force: true }),
+    });
+    setLiveDirtyMarker('transactions', txBatcher.mark);
 
     let backgroundTimer: ReturnType<typeof setTimeout> | null = null;
     let active = true;
@@ -77,6 +112,17 @@ export const LiveDataProvider = ({ children }: { children: ReactNode }) => {
             forceNextRef.current = true;
             batcher.mark();
           },
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'krug_settlement_ledger' },
+          (payload) => {
+            // Only krug_id is read, to narrow invalidation. DELETE has no krug_id → all.
+            const id = readKrugId(payload.new);
+            if (id && krugIds) krugIds.add(id);
+            else krugIds = null;
+            krugBatcher.mark();
+          },
         );
       channelRef.current = ch;
       ch.subscribe((status, err) => {
@@ -90,6 +136,8 @@ export const LiveDataProvider = ({ children }: { children: ReactNode }) => {
             logChannelState({ state: 'RECONNECTED', channel: channelName, outageMs });
             // Catch up on events missed during the outage (reuses a fresh resume fetch).
             batcher.mark();
+            krugIds = null;
+            krugBatcher.mark();
           }
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           noteFailure(status, err);
@@ -128,11 +176,14 @@ export const LiveDataProvider = ({ children }: { children: ReactNode }) => {
       window.removeEventListener('online', onOnline);
       if (backgroundTimer !== null) clearTimeout(backgroundTimer);
       batcher.dispose();
+      krugBatcher.dispose();
+      txBatcher.dispose();
+      setLiveDirtyMarker('transactions', null);
       outageStartRef.current = null;
       forceNextRef.current = false;
       teardown();
     };
-  }, [userId]);
+  }, [userId, queryClient]);
 
   const value = useMemo(() => ({ connected }), [connected]);
   return <LiveDataContext.Provider value={value}>{children}</LiveDataContext.Provider>;
