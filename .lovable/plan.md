@@ -1,97 +1,62 @@
-# Radnici: potvrda isplate na strani radnika (plan, bez izmjena)
+# Isplate radnika: jedan ekran po osobi (samo plan)
 
-## 0. Glavni nalaz: tok već postoji (v1.0)
-Veći dio priče je već izgrađen:
-- `AttributionSheet` (globalni host u `App.tsx`) radnik otvara dodirom na obavijest `worker_payout_created` ili `worker_payout_voided` (`useNotificationNavigation`).
-- U njemu radnik bira svoj novčanik. Klijent kroz `addExpense` upisuje prihod (`type='income'`, `category='salary'`) s poveznicom `worker_payout_id`, a za zbirnu isplatu `worker_payout_batch_id`.
-- Dvostruki upis sprječava jedinstveni indeks (user_id, worker_payout*_id); greška 23505 prikazuje se kao „Već pripisano".
-- Podatke o isplati radnik čita samo kroz `get_my_incoming_payouts` (SECURITY DEFINER, `w.user_id = auth.uid()`).
-- Storno prikazuje info panel i ne dira ništa radnikovo.
+## 1. Funkcije ekrana (1) i ekvivalent u (2)
 
-Ne gradi se nova paralelna funkcija. Postojeći tok se učvršćuje na tri mjesta: isporuka obavijesti, upis na serveru i „Nisam primio".
+| Funkcija u `WorkerPayoutsDialog` (1) | Ekvivalent u `PersonPayoutDialog` / `PersonDetailDialog` (2) |
+|---|---|
+| Razdoblje Od–Do | Kalendar „Razdoblje" (od 13.9.) |
+| Izračun iz sati + „Primijeni izračun" | „Izračunaj iz sati" |
+| Raščlamba po satnici (sati × satnica, bruto) | Djelomično: prikaz po angažmanu, bez raščlambe po satnici |
+| Iznos, novčanik, bilješka | Ima |
+| Zbirna isplata kroz više projekata (odabir redaka) | Ima, kroz FIFO raspodjelu (`create_person_payout`, zajednički batch_id) |
+| „Zaključaj radne unose" (prekidač, zadano uključen) | Zaključava uvijek (RPC zadano `p_lock_entries = true`), bez prekidača |
+| Povijest isplata (po radniku, jedan projekt) | Ima u `PersonDetailDialog`, po osobi kroz sve projekte, grupirano po mjesecu, stornirane skrivene |
+| Storno pojedinačne i cijele zbirne isplate | Ima (`usePersonPayoutVoid`) |
+| CSV izvoz povijesti | Nema |
+| Ulaz: gumb na radniku u tabu Tim projekta | Ulaz: Ljudi → osoba |
 
-## 1. Tok podataka (provjereno upitima)
-- **Veza s računom:** `project_worker_payouts.worker_id` → `project_workers.user_id`. Ako je taj stupac prazan, radnik je nepovezan i nema obavijesti ni greške (JOIN s uvjetom `w.user_id IS NOT NULL`).
-- **Obavijest u aplikaciji:** upisuje je `enqueue_worker_payout_notifications`, sinkronim INSERT-om u `notifications`.
-  - Zovu je samo `create_person_payout` i `create_worker_payout_batch`.
-  - `create_worker_payout` (pojedinačna isplata) i `void_worker_payout` je NE zovu.
-- **Push:** klijent nakon RPC-a zove `notify-worker-payout` bez čekanja i bez ponovnog pokušaja (`useWorkerPayouts.ts` 201, 227, 261, 274). Ta funkcija sama piše da više ne upisuje red u `notifications`.
-- **Stanje u bazi:** povezanih isplata je 8, a obavijest `worker_payout_created` ima samo jedna (19.8.). Za ostalih 7 red u `notifications` nije pronađen. Svih 8 ipak ima pripisan prihod: radnik je unosio ručno ili na drugi način. Uzrok nije potvrđen; vjerojatno je riječ o putu kroz `create_worker_payout`.
-- Petrova isplata od 13.9. (`f60d70ae…`) već ima pripisan prihod.
+## 2. Stvarna upotreba — vlasnik d4d31ee6 (upit na bazi, 25.9.2026)
 
-Prvi korak gradnje: potvrditi kojim RPC-om nastaje koja isplata i gdje se obavijest gubi. Također treba potvrditi koji klijent zove `create_person_payout` (u `src` nisam našao poziv).
+- Isplate ukupno: 8 (sve za istog radnika). Pojedinačne 6, zbirne 2 retka (jedna zbirna isplata 7.7., dva projekta).
+- Stornirane: 4 (tri „Test" 7.–9.7., jedna 25.8.).
+- Zapisi zaključavanja (`project_work_entry_locks`) na njegovim projektima: 135 (zaključavanja i otključavanja zajedno; u cijeloj bazi 102 `locked`, 34 `unlocked`). Zaključavanje se, dakle, stvarno koristi.
+- Zadnjih 60 dana: 3 isplate (19.8. djelomična, 25.8. stornirana, 13.9. djelomična), sve pojedinačne.
+- Kojim ekranom je koja isplata nastala: **ne znam**. Oba puta upisuju isti opis („Isplata: <ime>"), isti batch_id NULL za jednu stavku, a u bazi nema oznake ekrana ni statistike poziva RPC-a. Pouzdano se može reći samo da zbirna isplata 7.7. dolazi iz batch puta.
+- CSV: nema traga u bazi (izvoz je lokalna datoteka) — upotreba nepoznata.
 
-## 2. Obavijest pouzdano
-- Obavijest za `created` i `voided` upisuje server, unutar istog RPC-a u kojem nastaje ili se stornira isplata. Uključuje `create_worker_payout` i `void_worker_payout`, kroz postojeći `enqueue_worker_payout_notifications`.
-  - Upis je sinkron i u istoj transakciji, pa se ne može tiho izgubiti kao HTTP poziv.
-  - Upis je u EXCEPTION bloku (uzorak 0016) i nikad ne ruši isplatu; greška ide u `app_diagnostics_logs` kao `worker_payout_notify_error`.
-- Push: zajednički outbox za sve obavijesti ne postoji; `krug_notify_outbox` je samo za Krug. Dvije mogućnosti:
-  - (a) **preporuka:** poopćiti outbox, tj. dodati `source` (krug | worker_payout) i isti retry cron. Klijentski fire-and-forget poziv se uklanja.
-  - (b) push ostaje klijentski, a red u aplikaciji je jamstvo.
-  Odluka je na tebi.
-- Dedup ključ je `worker_payout:<payout_id|batch_id>:<created|voided>`.
+Zaključak: zaključavanje, povijest i storno se koriste; CSV i raščlamba po satnici — nepoznato, prenose se da ništa ne nestane.
 
-## 3. Potvrda primitka na serveru: `worker_confirm_payout_receipt`
-Parametri: `(p_payout_id uuid | p_batch_id uuid, p_source_id uuid, p_client_request_id uuid, p_amount numeric DEFAULT NULL)`. Obrazac je `krug_confirm_settlement_receipt`:
-- zvati je smije samo `auth.uid() = project_workers.user_id` za sve isplate u zahtjevu;
-- isplata ne smije biti stornirana;
-- `can_write_payment_source(source, uid)`;
-- ista valuta traži točan iznos; druga valuta traži `p_amount > 0`;
-- ponovni poziv s istim `client_request_id` vraća `idempotent: true`, a drugi zahtjev za istu isplatu vraća `already_confirmed`. Uz to vrijedi i postojeći jedinstveni indeks.
-- Upis: `type='income'`, `category='salary'`, `expense_nature` ostaje NULL, `movement_kind` NULL, `status='approved'`, plus `worker_payout_id` ili `worker_payout_batch_id`.
-  - **Zašto NULL:** `isRealIncome` isključuje svaki `movement_kind` i sve `NON_SPENDING_NATURES`. Za radnika je isplata stvarni prihod (plaća), za razliku od Krug podmirenja, koje je samo vraćanje duga. Zato prihod mora ući u izvješća.
-- Opis: „Isplata za rad" ili „Isplata za rad: <projekt>". Preporuka je bez imena projekta, jer radnik ionako vidi projekt kroz poveznicu. Ime projekta nije tajna prema radniku, pa odluku prepuštam tebi.
-- `AttributionSheet` prelazi s `addExpense` na ovu RPC funkciju. Izgled ostaje isti.
+## 3. Što dodati u (2) (FIFO i iznosi se ne mijenjaju)
 
-## 4. Storno kod vlasnika — usporedba
-| | (A) samo javiti (preporuka) | (B) meko poništenje kao void u Krugu |
-|---|---|---|
-| Radnikovi podaci | netaknuti | server mu označi prihod kao poništen |
-| Pristanak | poštuje „nitko ne piše u tuđe financije" | vlasnik mijenja radnikove brojke |
-| Stvarni novac | radnik je novac možda stvarno primio, a storno je knjigovodstveni | pogrešno ako je novac primljen |
+- **Zaključavanje:** prekidač „Zaključaj radne unose u razdoblju" uz kalendar, zadano uključen (isto ponašanje kao danas); prosljeđuje `lockEntries` koji `usePersonPayout` već prima.
+- **Raščlamba po satnici:** ispod „Izračunaj iz sati" sklopivi prikaz sati × satnica po angažmanu, iz postojećeg preview-a (isti izračun, samo prikaz).
+- **CSV:** gumb u povijesti osobe u `PersonDetailDialog`, isti stupci kao danas + stupac projekt; ide kroz `exportTextFile`.
+- **Povijest i storno:** već po osobi kroz sve projekte — dodaje se samo filter „projekt" kad se dođe iz projekta.
 
-Preporuka je (A): obavijest `voided`, postojeći info panel s gumbom „Otvori moj unos". Radnik sam odlučuje hoće li unos obrisati.
+## 4. Povlačenje (1) bez gubitka
 
-## 5. „Nisam primio"
-- RPC `worker_report_payout_not_received(payout_id|batch_id, client_request_id)`: zvati je smije samo povezani radnik, jednom po isplati.
-- Upisuje oznaku u novu tablicu `worker_payout_receipt_reports` i obavijest vlasniku `worker_payout_not_received` s rutom na isplatu.
-- Nema automatskog storna. Dedup ključ je `worker_payout_nr:<id>`.
+1. Gumb isplate u tabu Tim više ne otvara (1), nego Ljudi → osoba s već odabranim projektom (filter povijesti + kalendar usmjeren na taj angažman). Nepovezan radnik bez osobe: ostaje stari ekran dok se ne utvrdi da takvih nema (provjera upitom prije koraka).
+2. `WorkerPayoutsDialog` ostaje u kodu, bez ulaza, jedno razdoblje (npr. 30 dana) bez korištenja; prati se kroz postojeću dijagnostiku.
+3. Tek onda brisanje komponente, njenih testova i neiskorištenih prijevoda — zaseban nalog.
+4. Baza se ne mijenja ni u jednom koraku.
 
-## 6. Ekrani
-- Obavijest otvara postojeći `AttributionSheet` s ciljem `confirm=1`.
-- U „Moja zarada na projektu" dolazi odjeljak „Isplate na čekanju": isplate bez pripisa i bez prijave, čitane kroz novu `get_my_pending_payouts()` (SECURITY DEFINER, samo moje).
-- `AttributionSheet` dobiva gumb „Nisam primio". Izgled ostaje uz postojeći sheet; `KrugConfirmReceiptDialog` služi kao uzor za tekstove i stanja.
-- Novi tekstovi na hr, en i de.
+## 5. Sigurnosni rez u spojenom ekranu
 
-## 7. Postojeće isplate
-Nema naknadnog slanja. Serverska obavijest vrijedi samo za isplate nastale nakon migracije. „Isplate na čekanju" prikazuju samo isplate s `created_at` nakon datuma uvođenja, da se stare ne pojave.
+- Otvaranje iz projekta: predloženi iznos i raspodjela samo za taj projekt; ostali angažmani vidljivi, ali s 0 i neoznačeni — uključuju se samo ručno.
+- FIFO prijedlog kroz sve projekte samo kad se ekran otvori iz Ljudi bez odabranog projekta, ili nakon izričite radnje „Raspodijeli na sve".
+- Stalno vidljiv sažetak iznad gumba: „Isplaćuješ X · Zarađeno Y · Ostaje Z" (za odabrane angažmane).
+- Pravilo FIFO i provjera `payout_exceeds_remaining` na serveru ostaju iste.
 
-## Tehnički detalji
-- **Migracije:**
-  1. `enqueue` pozivi u `create_worker_payout` i `void_worker_payout`, polazeći od žive definicije;
-  2. `worker_confirm_payout_receipt` i `worker_report_payout_not_received`;
-  3. tablica `worker_payout_receipt_reports` (GRANT, RLS: radnik čita svoje, vlasnik čita za svoje projekte, upis samo kroz RPC);
-  4. `get_my_pending_payouts`;
-  5. po odluci (a), stupac `source` u outboxu i proširenje retryja.
-  Sve SECURITY DEFINER funkcije dobivaju `REVOKE ALL … FROM PUBLIC, anon`.
-- **Balance deploy gate:** RPC upisuje u `expenses` i mijenja saldo novčanika, pa je obavezan zeleni `supabase/tests/balance`.
-- **SQL čuvari (novi paket `worker_payout_receipt`):**
-  - samo povezani radnik smije potvrditi, a vlasnik i treća osoba dobivaju 42501;
-  - točno jedan prihod, a ponovni poziv je idempotentan;
-  - storniranu isplatu nije moguće potvrditi;
-  - druga valuta traži iznos;
-  - `isRealIncome`: prihod bez `expense_nature` i bez `movement_kind`;
-  - pojedinačna isplata i storno upisuju točno jednu obavijest;
-  - greška obavijesti ne ruši isplatu i ostavlja trag;
-  - „Nisam primio" šalje obavijest vlasniku i ne mijenja isplatu;
-  - anon i authenticated nemaju pristup tablici izvan RLS-a.
-- **vitest:** `AttributionSheet` zove RPC, a ne `addExpense`; gumb „Nisam primio"; `useWorkerPayouts` bez klijentskog `notify-worker-payout` (po odluci a); odjeljak „Isplate na čekanju".
-- **Procjena:** 3 naloga.
-  1. Dijagnoza i server: obavijest na serveru i outbox.
-  2. RPC-ovi za potvrdu i „Nisam primio" uz SQL čuvare.
-  3. Ekrani i vitest.
+## 6. Procjena
 
-## Otvorene odluke
-1. Push kroz poopćeni outbox (a) ili ostaje klijentski (b)?
-2. Opis prihoda s imenom projekta ili bez njega?
-3. Storno: (A) samo javiti, ili (B) meko poništenje?
+- **Nalozi:** 3.
+  1. Prekidač zaključavanja, raščlamba, sažetak i sigurnosni rez u (2).
+  2. CSV + filter projekta u povijesti; ulaz iz projekta preusmjeren na osobu.
+  3. Nakon razdoblja bez korištenja: brisanje (1).
+- **Migracije:** nijedna.
+- **Testovi (vitest):** prekidač šalje `lockEntries`; otvaranje iz projekta ne puni druge projekte; sažetak X/Y/Z; CSV stupci; gumb u tabu Tim otvara osobu s projektom. SQL paketi (balance, worker_payout_*, krug_*) pokreću se kao regresija, ne mijenjaju se.
+- **Rizik za saldo:** nizak — isti RPC (`create_person_payout` → `create_worker_payout`), isti trošak i storno. Glavni rizik je UX: slučajna isplata na drugi projekt — pokriva ga točka 5. Drugi rizik: radnik bez povezane osobe gubi ulaz — pokriva korak 4.1.
+
+## Otvoreno pitanje za vlasnika
+
+- Treba li prekidač zaključavanja uopće (danas oba puta zaključavaju zadano), ili je dovoljno uvijek zaključavati kao sada u (2)?
