@@ -3,8 +3,8 @@
  *
  * PREKIDAČ: funkcije koje rade BEZ klijenta (bank-sync-transactions …) koriste
  * nove ključeve i učenje SAMO kad je `SERVER_CATEGORY_TREE_ENABLED = true`.
- * Zadano ISKLJUČENO → ponašanje točno kao prije naloga 6.
- * Uključuje se jednom izmjenom ove konstante (i ponovnom objavom funkcija).
+ * Nalog 6b: UKLJUČENO nakon objave niza kategorija (nalozi 3–7b).
+ * Isključuje se jednom izmjenom ove konstante (i ponovnom objavom funkcija).
  *
  * Funkcije koje zove klijent (categorize-transaction, parse-receipt) ne gledaju
  * prekidač nego oznaku verzije stabla u zahtjevu (`category_tree_version`).
@@ -22,7 +22,7 @@ import {
 } from './categoryAssign.ts';
 import { CATEGORY_TREE_LABELS_HR } from './categoryTreeLabels.ts';
 
-export const SERVER_CATEGORY_TREE_ENABLED = false;
+export const SERVER_CATEGORY_TREE_ENABLED = true;
 
 /** Klijent je nova aplikacija i zna prikazati nove ključeve. */
 export const clientWantsTree = (body: unknown): boolean =>

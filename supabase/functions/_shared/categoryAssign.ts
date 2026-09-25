@@ -100,7 +100,7 @@ export const normalizeAssignedCategory = (
   const customs = (opts.customCategories ?? []).filter((c) => c.id !== EXEMPT_CATEGORY_ID);
   const value = (raw ?? '').trim().replace(/^["'`]+|["'`.]+$/g, '').trim();
   const lower = value.toLowerCase();
-  const fallback: AssignedCategory = { category: FALLBACK_CATEGORY, source: 'fallback', unknown: true };
+  const fallback: AssignedCategory = { category: opts.direction === 'income' ? 'other_income' : FALLBACK_CATEGORY, source: 'fallback', unknown: true };
   if (!value) return fallback;
 
   if (lower === 'transfer') {
