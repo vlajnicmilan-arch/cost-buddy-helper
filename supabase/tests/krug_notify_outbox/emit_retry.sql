@@ -117,11 +117,13 @@ AS $function$
 DECLARE
   _url text := 'https://fzalxjretvtvokiotvkf.supabase.co/functions/v1/notify-krug-event';
   _internal_key text;
+  _key_ok boolean := false;
   _version text := 'krug_notify_outbox_retry v1';
   _row record;
   _sent integer := 0;
 BEGIN
-  -- Konačni neuspjeh: jedan zapis po dedup_ref (radi i bez vault ključa).
+  -- Blok 1: konačni neuspjeh, jedan zapis po dedup_ref. Odvojen blok da ga
+  -- kasnija iznimka (npr. vault) ne poništi.
   BEGIN
     INSERT INTO public.app_diagnostics_logs (event, severity, details, app_version)
     SELECT 'krug_emit_failed',
@@ -145,13 +147,19 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN NULL;
   END;
 
-  SELECT decrypted_secret
-    INTO _internal_key
-    FROM vault.decrypted_secrets
-   WHERE name = 'krug_notify_internal_key'
-   LIMIT 1;
+  -- Blok 2: ključ iz vaulta.
+  BEGIN
+    SELECT decrypted_secret
+      INTO _internal_key
+      FROM vault.decrypted_secrets
+     WHERE name = 'krug_notify_internal_key'
+     LIMIT 1;
+    _key_ok := _internal_key IS NOT NULL AND length(_internal_key) > 0;
+  EXCEPTION WHEN OTHERS THEN
+    _key_ok := false;
+  END;
 
-  IF _internal_key IS NULL OR length(_internal_key) = 0 THEN
+  IF NOT _key_ok THEN
     BEGIN
       INSERT INTO public.app_diagnostics_logs (event, severity, details, app_version)
       VALUES (
@@ -165,6 +173,7 @@ BEGIN
     RETURN 0;
   END IF;
 
+  -- Blok 3: ponovno slanje.
   FOR _row IN
     SELECT dedup_ref, payload
       FROM public.krug_notify_outbox
@@ -199,18 +208,6 @@ BEGIN
   END LOOP;
 
   RETURN _sent;
-EXCEPTION WHEN OTHERS THEN
-  BEGIN
-    INSERT INTO public.app_diagnostics_logs (event, severity, details, app_version)
-    VALUES (
-      'krug_emit_error',
-      'error',
-      jsonb_build_object('code', SQLSTATE, 'message', left(SQLERRM, 300)),
-      _version
-    );
-  EXCEPTION WHEN OTHERS THEN NULL;
-  END;
-  RETURN 0;
 END;
 $function$;
 
