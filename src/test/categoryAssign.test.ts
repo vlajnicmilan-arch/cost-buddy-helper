@@ -8,6 +8,7 @@ import {
   buildAllowedCategoryLines,
   FALLBACK_CATEGORY,
   EXEMPT_CATEGORY_ID,
+  merchantKey,
   type LearnedCorrection,
 } from '@/lib/categoryAssign';
 import { CATEGORY_LEAVES } from '@/lib/categoryTree';
