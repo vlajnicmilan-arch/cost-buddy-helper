@@ -2,6 +2,14 @@ import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireAuth, checkAiQuota, corsHeaders } from "../_shared/aiQuota.ts";
 import { callGemini } from "../_shared/geminiClient.ts";
+import {
+  assignTreeCategory,
+  clientWantsTree,
+  loadLearnedCorrections,
+  loadTreeCustomCategories,
+  logUnknownAiCategory,
+  treePromptLines,
+} from "../_shared/categoryAutoAssign.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -15,7 +23,8 @@ serve(async (req) => {
     const quota = await checkAiQuota(auth.supabase, auth.userId, "categorize-transaction");
     if (quota) return quota;
 
-    const { description, merchant_name, custom_categories, items, allowed_categories } = await req.json();
+    const body = await req.json();
+    const { description, merchant_name, custom_categories, items, allowed_categories } = body;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
@@ -24,6 +33,52 @@ serve(async (req) => {
 
     if (!description && !merchant_name && (!items || items.length === 0)) {
       return new Response(JSON.stringify({ category: null }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // NALOG 6: nova aplikacija šalje oznaku verzije stabla. Projektni popis
+    // (allowed_categories) i stari klijenti idu starim putem, nepromijenjeno.
+    const hasRestricted = Array.isArray(allowed_categories) && allowed_categories.length > 0;
+    if (clientWantsTree(body) && !hasRestricted) {
+      const customs = await loadTreeCustomCategories(auth.supabase, auth.userId);
+      const corrections = await loadLearnedCorrections(auth.supabase, auth.userId);
+      const { lines } = treePromptLines(customs, "expense");
+      const itemsCtx = items && items.length > 0
+        ? `\nReceipt items: ${items.map((i: any) => i.name).join(", ")}`
+        : "";
+      const result = await assignTreeCategory({
+        row: { merchant_name, description },
+        userId: auth.userId,
+        direction: "expense",
+        customCategories: customs,
+        corrections,
+        onUnknown: (raw) => { void logUnknownAiCategory("categorize-transaction", auth.userId, raw); },
+        askAi: async () => {
+          const cap = await checkAiCostCap(auth.supabase);
+          if (cap) return null;
+          const resp = await callGemini({
+            model: "google/gemini-2.5-flash-lite",
+            messages: [
+              {
+                role: "system",
+                content: `You are a transaction categorizer. Choose exactly ONE category key from this list (Croatian names, group in parentheses):\n${lines}\n\nIf receipt items are provided, prioritize them. If unsure, return: other\nReturn ONLY the category key, nothing else.`,
+              },
+              { role: "user", content: `Description: ${description || "N/A"}\nMerchant: ${merchant_name || "N/A"}${itemsCtx}` },
+            ],
+            max_tokens: 40,
+          });
+          if (!resp.ok) {
+            if (resp.status !== 429) recordAiCost(auth.supabase, "categorize-transaction").catch(() => {});
+            return null;
+          }
+          const data = await resp.json();
+          return data.choices?.[0]?.message?.content?.trim() || null;
+        },
+      });
+      // Samo kategorija — nikad movement_kind ni tags.
+      const category = result.learned || result.fromAi ? result.category : null;
+      return new Response(JSON.stringify({ category, learned: result.learned }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
