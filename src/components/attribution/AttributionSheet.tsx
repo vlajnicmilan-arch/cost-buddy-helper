@@ -10,8 +10,7 @@
  *    warningom (Varijanta B). Cross-currency izvori DISABLED s hintom.
  *  - Batch payout → jedan zbirni `expenses` red, worker_payout_batch_id.
  *  - Single payout  → jedan red, worker_payout_id (backward-compat).
- *  - Race guard: already_confirmed / unique index (23505) → „Već pripisano“ i
- *    prikazujemo "Već pripisano". Nakon inicijalnog loada iste podatke drži
+ *  - Race guard: already_confirmed / unique index (23505) → „Već pripisano“. Nakon inicijalnog loada iste podatke drži
  *    `useIncomingPayoutAttribution.existing`.
  *  - Storno (`voided`): read-only info panel + link na eventualno pripisan
  *    unos. Bez auto-diranja radnikovih podataka.
