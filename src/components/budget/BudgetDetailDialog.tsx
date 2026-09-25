@@ -9,7 +9,7 @@ import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { BudgetWithStats, BUDGET_PERIOD_LABELS } from '@/types/budget';
 import { useBudgetMembers } from '@/hooks/useBudgetMembers';
 import { BudgetMembersTab } from './BudgetMembersTab';
-import { getCategoryInfo, CATEGORIES } from '@/types/expense';
+import { getCategoryInfo } from '@/types/expense';
 import { computeFrameAllocation } from '@/lib/budgetPaceSignal';
 import { getDeviationVisual } from '@/lib/deviationVisual';
 import { cn } from '@/lib/utils';
