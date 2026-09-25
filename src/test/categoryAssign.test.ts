@@ -141,10 +141,10 @@ describe('ispravak u uređivanju → category_corrections', () => {
   });
 });
 
-describe('objava — stari klijent i isključen prekidač', () => {
+describe('objava — stari klijent i uključen prekidač (nalog 6b)', () => {
   const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8');
-  it('prekidač je zadano isključen', () => {
-    expect(read('supabase/functions/_shared/categoryAutoAssign.ts')).toMatch(/export const SERVER_CATEGORY_TREE_ENABLED = false;/);
+  it('prekidač je uključen (nalog 6b)', () => {
+    expect(read('supabase/functions/_shared/categoryAutoAssign.ts')).toMatch(/export const SERVER_CATEGORY_TREE_ENABLED = true;/);
   });
   it('stari put u funkcijama ostaje (stari popis ključeva i validacija)', () => {
     const cat = read('supabase/functions/categorize-transaction/index.ts');
