@@ -10,7 +10,8 @@ const s = vi.hoisted(() => ({
   lastSave: null as null | ((d: any) => Promise<void> | void),
 }));
 
-vi.mock('react-i18next', () => ({
+vi.mock('react-i18next', async () => ({
+  ...(await import('@/test/mocks/reactI18next')).createReactI18nextMock(),
   useTranslation: () => ({ t: (k: string, o?: any) => (o && typeof o === 'object' ? `${k}:${o.days}/${o.hours}` : k) }),
 }));
 vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'owner' } }) }));
