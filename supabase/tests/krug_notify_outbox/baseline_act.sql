@@ -2,6 +2,15 @@
 -- Isti obrazac kao krug_settle/baseline.sql: kurirane žive definicije umjesto
 -- povijesnih migracija (koje vuku ovisnosti koje baciva baza nema).
 
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'krug_privacy') THEN
+    CREATE TYPE public.krug_privacy AS ENUM ('personal','private','shared');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'krug_shared_status') THEN
+    CREATE TYPE public.krug_shared_status AS ENUM ('predlozena','potvrdjena','nepotvrdjena');
+  END IF;
+END $$;
+
 CREATE OR REPLACE FUNCTION public.krug_is_member(_krug uuid, _user uuid)
  RETURNS boolean
  LANGUAGE sql
