@@ -7563,5 +7563,87 @@
     "currentSection": "Current",
     "moveTo": "Group",
     "moveHint": "Move the category into a group or keep it in \"My categories\"."
+  },
+  "categoryReview": {
+    "title": "Category review",
+    "subtitle": "Categorisation suggestions — nothing changes without your confirmation",
+    "now": "Now",
+    "pickCategory": "Pick a category",
+    "change": "Change",
+    "skip": "Skip",
+    "examples": "Examples",
+    "confirmAll_one": "Confirm {{count}} entry",
+    "confirmAll_other": "Confirm {{count}} entries",
+    "countTotal_one": "{{count}} entry, {{total}}",
+    "countTotal_other": "{{count}} entries, {{total}}",
+    "moreRows": "{{count}} more…",
+    "moreGroups": "{{count}} more groups — confirm these to see them",
+    "empty": "Nothing to review.",
+    "loadError": "The review could not be loaded.",
+    "manualHint": "No suggestion here — pick the category yourself.",
+    "decisionHint": "Changing these would change the entry type and balance, so it is not done here. Needs your decision.",
+    "historyEmpty": "No confirmed changes yet.",
+    "revertedLabel": "Undone",
+    "undo": "Undo",
+    "applied_one": "{{count}} entry changed",
+    "applied_other": "{{count}} entries changed",
+    "reverted_one": "{{count}} entry restored",
+    "reverted_other": "{{count}} entries restored",
+    "revertSkipped": "Not restored ({{count}}): the entry was changed or deleted since.",
+    "cardTitle_one": "{{count}} entry awaits categorisation",
+    "cardTitle_other": "{{count}} entries await categorisation",
+    "cardBody": "Review the suggestions and confirm what you want.",
+    "tabs": {
+      "suggestions": "Suggestions ({{count}})",
+      "manual": "No suggestion",
+      "decision": "Your decision",
+      "history": "History"
+    },
+    "confidence": {
+      "high": "Certain",
+      "medium": "Likely",
+      "low": "Maybe"
+    },
+    "reasons": {
+      "history": "You categorised this merchant this way before.",
+      "history_siblings": "Other entries from this merchant are already in this category.",
+      "rule": "Recognised by merchant name or description.",
+      "alias": "The old category has only one matching subcategory.",
+      "own_transfer": "Looks like a transfer to your own account or wallet.",
+      "atm": "ATM cash withdrawal.",
+      "loan": "The description mentions a loan.",
+      "loan_person": "You already have a loan entry for this person.",
+      "worker": "Payment to a worker or contractor.",
+      "own_company": "Payment into your company.",
+      "tag_category": "\"Unnecessary\"/\"Luxury\" becomes a tag; the category stays until you decide.",
+      "type_change": "Recorded as a transfer, but the category is an expense.",
+      "broken_value": "Invalid category value.",
+      "no_match": "No suggestion."
+    },
+    "movement": {
+      "own_transfer": "Transfer to own account",
+      "atm": "ATM",
+      "loan_given": "Loan given",
+      "loan_repaid_to_me": "Loan repaid to me",
+      "loan_received": "Loan received",
+      "loan_repaid_by_me": "Loan repaid by me",
+      "own_company_payment": "Payment into own company"
+    },
+    "tags": {
+      "unnecessary": "Unnecessary",
+      "luxury": "Luxury"
+    },
+    "errors": {
+      "not_authenticated": "Your session expired. Please sign in again.",
+      "not_allowed": "You are not allowed to change one of these entries.",
+      "expense_not_found": "One of the entries no longer exists. Refresh the review.",
+      "exempt_category": "This category is excluded from review.",
+      "invalid_category": "The selected category is not valid.",
+      "invalid_tags": "Invalid tag.",
+      "too_many_items": "Too many entries at once.",
+      "no_items": "No entry selected.",
+      "invalid_value": "Value not allowed.",
+      "unknown": "The change was not saved. Please try again."
+    }
   }
 }

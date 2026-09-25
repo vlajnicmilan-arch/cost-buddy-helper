@@ -100,6 +100,7 @@ const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 const ImportReview = lazy(() => import("./pages/ImportReview"));
 const Documents = lazy(() => import("./pages/Documents"));
 const BriefGate = lazy(() => import("./pages/BriefGate"));
+const CategoryReview = lazy(() => import("./pages/CategoryReview"));
 
 
 
@@ -414,6 +415,7 @@ const AppRoutes = () => {
       <Route path="/import/review" element={<Suspense fallback={<PageLoader />}>{requireOnboarding(<ImportReview />)}</Suspense>} />
       <Route path="/brief" element={<BriefGateBoundary><Suspense fallback={null}>{requireOnboarding(<BriefGate />)}</Suspense></BriefGateBoundary>} />
       <Route path="/dokumenti" element={<Suspense fallback={<PageLoader />}>{requireOnboarding(<Documents />)}</Suspense>} />
+      <Route path="/kategorije/pregled" element={<Suspense fallback={<PageLoader />}>{requireOnboarding(<CategoryReview />)}</Suspense>} />
       
       <Route path="/admin" element={<Suspense fallback={<PageLoader />}><Admin /></Suspense>} />
       <Route path="/admin/security-audit" element={<Suspense fallback={<PageLoader />}><AdminSecurityAudit /></Suspense>} />

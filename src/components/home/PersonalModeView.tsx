@@ -20,6 +20,7 @@ import { useGuidedMode } from '@/hooks/useGuidedMode';
 
 import { AIInsightBubble } from '@/components/AIInsightBubble';
 import { ActiveIssuesSection } from '@/components/dashboard/ActiveIssuesSection';
+import { CategoryReviewCard } from '@/components/category-review/CategoryReviewCard';
 import { TrackSection } from '@/components/dashboard/TrackSection';
 import { useDashboardScrollDepth } from '@/hooks/useDashboardScrollDepth';
 import { BottomNav } from '@/components/BottomNav';
@@ -462,6 +463,8 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
             />
           </TrackSection>
         )}
+
+        {!props.isLocalMode && !isBusinessChip && <CategoryReviewCard />}
 
         {/* Owner-loan / business debts strip — only in business chip view */}
         {isBusinessChip && (totalReceivable > 0 || totalPayable > 0) && (

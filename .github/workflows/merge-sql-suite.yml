@@ -12,6 +12,7 @@ on:
       - 'supabase/tests/merge/**'
       - 'supabase/tests/krug_settle/**'
       - 'supabase/tests/work_entry_notify/**'
+      - 'supabase/tests/category_review/**'
       - 'drizzle/migrations/**'
       - 'src/lib/manualBankMergePair.ts'
       - 'src/lib/mergeOfferCandidate.ts'
@@ -24,6 +25,7 @@ on:
       - 'supabase/tests/merge/**'
       - 'supabase/tests/krug_settle/**'
       - 'supabase/tests/work_entry_notify/**'
+      - 'supabase/tests/category_review/**'
       - 'drizzle/migrations/**'
       - 'src/lib/manualBankMergePair.ts'
       - 'src/lib/mergeOfferCandidate.ts'
@@ -124,3 +126,19 @@ jobs:
             exit 1
           fi
           echo "Work entry notify guards: $pass_count assertions PASS"
+
+      - name: Run category review SQL guards
+        run: |
+          set -euo pipefail
+          psql -d postgres -c "DROP DATABASE IF EXISTS category_review_test" -c "CREATE DATABASE category_review_test"
+          PGDATABASE=category_review_test bash supabase/tests/category_review/run.sh 2>&1 | tee /tmp/cr.out
+          if grep -E '^(psql:.*ERROR|ERROR:|FAIL )' /tmp/cr.out; then
+            echo "Category review guards reported failures" >&2
+            exit 1
+          fi
+          pass_count=$(grep -c '^PASS C' /tmp/cr.out || true)
+          if [ "$pass_count" -lt 13 ]; then
+            echo "Category review guards ran only $pass_count assertions (expected >= 13)" >&2
+            exit 1
+          fi
+          echo "Category review guards: $pass_count assertions PASS"

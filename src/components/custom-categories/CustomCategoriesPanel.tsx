@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ListChecks } from 'lucide-react';
 import { Plus, Pencil, Trash2, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,6 +31,7 @@ export const CustomCategoriesPanel = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<CustomCategory | null>(null);
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { hasAccess } = useFeatureAccess();
   const isReadOnly = !hasAccess('custom_categories');
   const { guard } = useWriteGuard({ kind: 'module', feature: 'custom_categories' });
@@ -100,6 +103,10 @@ export const CustomCategoriesPanel = () => {
               {t('common.new')}
             </Button>
           </div>
+          <Button variant="outline" size="sm" className="mt-3 w-full min-h-11" onClick={() => navigate('/kategorije/pregled')}>
+            <ListChecks className="h-4 w-4 mr-1" />
+            {t('categoryReview.title')}
+          </Button>
           {isReadOnly && (
             <ReadOnlyBanner
               className="mt-3"
