@@ -4,12 +4,13 @@
  * ili native push tap-a.
  *
  * Ključna pravila (v1.0):
- *  - Intent: `manual_entry` (event_at = now(), C2), date = paid_at::date.
+ *  - Upis prihoda radi server: RPC worker_confirm_payout_receipt (date = paid_at,
+ *    opis bez imena projekta, idempotentno po client_request_id — jedan po otvaranju).
  *  - Ciljni izvor: svi izvori dopušteni. Bank-linkani izvori idu s inline
  *    warningom (Varijanta B). Cross-currency izvori DISABLED s hintom.
  *  - Batch payout → jedan zbirni `expenses` red, worker_payout_batch_id.
  *  - Single payout  → jedan red, worker_payout_id (backward-compat).
- *  - Race guard: unique index (user_id, worker_payout*_id) — hvatamo 23505 i
+ *  - Race guard: already_confirmed / unique index (23505) → „Već pripisano“ i
  *    prikazujemo "Već pripisano". Nakon inicijalnog loada iste podatke drži
  *    `useIncomingPayoutAttribution.existing`.
  *  - Storno (`voided`): read-only info panel + link na eventualno pripisan
