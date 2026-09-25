@@ -253,6 +253,7 @@ export const EXPORT_REGISTRY: Record<string, TableRule> = {
   krug_membership_audit: excluded(R.others),
   krug_act_dedup: excluded(R.internal),
   krug_notify_outbox: excluded(R.internal),
+  worker_payout_receipt_reports: { rule: { via: 'column', column: 'worker_user_id' } },
 
   // — Pogledi —
   // Role-scoped pogled na faze: pokriven, ali se izvozi pod imenom `project_milestones`.

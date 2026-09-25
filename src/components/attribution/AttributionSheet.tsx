@@ -20,6 +20,8 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { MY_PENDING_PAYOUTS_KEY } from '@/hooks/useMyPendingPayouts';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Info, Loader2, Wallet as WalletIcon, ArrowRight } from 'lucide-react';
 
@@ -76,6 +78,7 @@ export function AttributionSheet({ open, payload, onClose }: Props) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { formatAmount } = useCurrency();
   const { customPaymentSources, loading: sourcesLoading } = useCustomPaymentSources();
 
@@ -185,6 +188,7 @@ export function AttributionSheet({ open, payload, onClose }: Props) {
         amount: totalAmount,
       }).catch(() => {});
 
+      qc.invalidateQueries({ queryKey: [MY_PENDING_PAYOUTS_KEY] });
       showSuccess(t('attribution.success', 'Isplata pripisana izvoru'));
       onClose();
     } catch (e: unknown) {
@@ -413,7 +417,11 @@ export function AttributionSheet({ open, payload, onClose }: Props) {
           batchId={batchId}
           clientRequestId={reportRequestId}
           onOpenChange={setNotReceivedOpen}
-          onReported={() => { setNotReceivedOpen(false); onClose(); }}
+          onReported={() => {
+            qc.invalidateQueries({ queryKey: [MY_PENDING_PAYOUTS_KEY] });
+            setNotReceivedOpen(false);
+            onClose();
+          }}
         />
 
         {(isVoided || existing) && (
