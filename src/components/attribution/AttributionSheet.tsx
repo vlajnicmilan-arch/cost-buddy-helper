@@ -14,11 +14,14 @@
  *    `useIncomingPayoutAttribution.existing`.
  *  - Storno (`voided`): read-only info panel + link na eventualno pripisan
  *    unos. Bez auto-diranja radnikovih podataka.
+ *  - „Nisam primio": NotReceivedDialog → RPC worker_report_payout_not_received (obavijest vlasniku, isplata se ne mijenja).
  *  - Empty state (radnik nema izvora): CTA na `/wallet` čuvajući payoutIds
  *    kroz sessionStorage kako se sheet automatski otvara natrag.
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { MY_PENDING_PAYOUTS_KEY } from '@/hooks/useMyPendingPayouts';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Info, Loader2, Wallet as WalletIcon, ArrowRight } from 'lucide-react';
 
@@ -33,7 +36,8 @@ import { Button } from '@/components/ui/button';
 
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { supabase } from '@/integrations/supabase/client';
-import { logWorkerPayoutReceiptError, workerPayoutReceiptErrorKey } from '@/lib/attribution/receiptError';
+import { logWorkerPayoutReceiptError, resolveWorkerPayoutErrorCode, workerPayoutErrorKey } from '@/lib/attribution/receiptError';
+import { NotReceivedDialog } from './NotReceivedDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
@@ -74,6 +78,7 @@ export function AttributionSheet({ open, payload, onClose }: Props) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { formatAmount } = useCurrency();
   const { customPaymentSources, loading: sourcesLoading } = useCustomPaymentSources();
 
@@ -81,6 +86,8 @@ export function AttributionSheet({ open, payload, onClose }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [clientRequestId, setClientRequestId] = useState<string | null>(null);
+  const [reportRequestId, setReportRequestId] = useState<string | null>(null);
+  const [notReceivedOpen, setNotReceivedOpen] = useState(false);
 
   const payoutIds = useMemo(() => payload?.payoutIds ?? [], [payload]);
   const batchId = payload?.batchId ?? null;
@@ -98,6 +105,8 @@ export function AttributionSheet({ open, payload, onClose }: Props) {
       setSelectedId(null);
       setSaving(false);
       setClientRequestId(crypto.randomUUID());
+      setReportRequestId(crypto.randomUUID());
+      setNotReceivedOpen(false);
     }
   }, [open, payoutIds.join(',')]);
 
@@ -179,6 +188,7 @@ export function AttributionSheet({ open, payload, onClose }: Props) {
         amount: totalAmount,
       }).catch(() => {});
 
+      qc.invalidateQueries({ queryKey: [MY_PENDING_PAYOUTS_KEY] });
       showSuccess(t('attribution.success', 'Isplata pripisana izvoru'));
       onClose();
     } catch (e: unknown) {
@@ -187,9 +197,8 @@ export function AttributionSheet({ open, payload, onClose }: Props) {
         batchId,
         clientRequestId,
       });
-      const key = workerPayoutReceiptErrorKey(e);
-      if (key === 'attribution.errors.alreadyAttributed') await refetch();
-      showError(t(key));
+      if (resolveWorkerPayoutErrorCode(e) === 'already_confirmed') await refetch();
+      showError(t(workerPayoutErrorKey(e)));
     } finally {
       setSaving(false);
     }
@@ -389,6 +398,31 @@ export function AttributionSheet({ open, payload, onClose }: Props) {
             </Button>
           </div>
         )}
+
+        {!isVoided && !existing && !loading && (
+          <div className="mt-2">
+            <Button
+              variant="outline"
+              className="w-full min-h-[44px] text-destructive"
+              onClick={() => setNotReceivedOpen(true)}
+              disabled={saving}
+            >
+              {t('attribution.notReceived.action')}
+            </Button>
+          </div>
+        )}
+        <NotReceivedDialog
+          open={notReceivedOpen}
+          payoutId={batchId ? null : payoutIds[0] ?? null}
+          batchId={batchId}
+          clientRequestId={reportRequestId}
+          onOpenChange={setNotReceivedOpen}
+          onReported={() => {
+            qc.invalidateQueries({ queryKey: [MY_PENDING_PAYOUTS_KEY] });
+            setNotReceivedOpen(false);
+            onClose();
+          }}
+        />
 
         {(isVoided || existing) && (
           <div className="mt-6">

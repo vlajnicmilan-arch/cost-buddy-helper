@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Wallet, Clock, Coins, Loader2 } from 'lucide-react';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useWorkerEarningsPreview } from '@/hooks/useWorkerEarningsPreview';
+import { PendingPayoutsSection } from './PendingPayoutsSection';
 
 interface MyWorkerPayCardProps {
   /**
@@ -109,6 +110,7 @@ export const MyWorkerPayCard = ({
             {t('workLog.myPay.noRateSet', 'Vlasnik projekta još nije postavio satnicu.')}
           </p>
         )}
+        {isLinked && <PendingPayoutsSection projectId={projectId} />}
       </CardContent>
     </Card>
   );

@@ -8,6 +8,7 @@ const m = vi.hoisted(() => ({
   showError: vi.fn(),
   showSuccess: vi.fn(),
   refetch: vi.fn(() => Promise.resolve()),
+  invalidate: vi.fn(),
   t: (k: string) => k,
   auth: { user: { id: 'worker' } },
   noopNavigate: () => {},
@@ -24,6 +25,7 @@ vi.mock('react-i18next', async () => {
   const { createReactI18nextMock } = await import('@/test/mocks/reactI18next');
   return { ...createReactI18nextMock(), useTranslation: () => ({ t: m.t }) };
 });
+vi.mock('@tanstack/react-query', () => ({ useQueryClient: () => ({ invalidateQueries: m.invalidate }) }));
 vi.mock('@/hooks/useBackButton', () => ({ useBackButton: () => {} }));
 vi.mock('react-router-dom', () => ({ useNavigate: () => m.noopNavigate }));
 vi.mock('@/hooks/useAuth', () => ({ useAuth: () => m.auth }));
@@ -88,14 +90,47 @@ describe('AttributionSheet → worker_confirm_payout_receipt', () => {
       db_code: '22023', db_message: 'already_confirmed', build: 'assets/index-TEST.js',
       payout_id: 'p1', client_request_id: m.rpc.mock.calls[0][1].p_client_request_id,
     });
-    expect(m.showError).toHaveBeenCalledWith('attribution.errors.alreadyAttributed');
+    expect(m.showError).toHaveBeenCalledWith('attribution.errors.codes.already_confirmed');
     expect(m.refetch).toHaveBeenCalled();
   });
 
-  it('unknown errors map to the generic translated message', async () => {
+  it('known codes map to their own message, unknown to generic', async () => {
     m.rpc.mockResolvedValue({ data: null, error: { code: '42501', message: 'source_not_writable' } });
+    const { unmount } = render(<AttributionSheet open payload={payload} onClose={vi.fn()} />);
+    await attribute();
+    await waitFor(() => expect(m.showError).toHaveBeenCalledWith('attribution.errors.codes.source_not_writable'));
+    unmount();
+    m.rpc.mockResolvedValue({ data: null, error: { code: 'XX000', message: 'boom' } });
     render(<AttributionSheet open payload={payload} onClose={vi.fn()} />);
     await attribute();
     await waitFor(() => expect(m.showError).toHaveBeenCalledWith('attribution.errors.generic'));
+  });
+
+  it('„Nisam primio" asks for confirmation, sends the note and closes', async () => {
+    m.rpc.mockResolvedValue({ data: { ok: true }, error: null });
+    const onClose = vi.fn();
+    render(<AttributionSheet open payload={payload} onClose={onClose} />);
+    fireEvent.click(await screen.findByText('attribution.notReceived.action'));
+    expect(m.rpc).not.toHaveBeenCalled();
+    fireEvent.change(await screen.findByLabelText('attribution.notReceived.noteLabel'), { target: { value: ' nema uplate ' } });
+    fireEvent.click(screen.getByText('attribution.notReceived.confirm'));
+    await waitFor(() => expect(m.rpc).toHaveBeenCalledWith('worker_report_payout_not_received', expect.objectContaining({
+      p_payout_id: 'p1', p_note: 'nema uplate', p_client_request_id: expect.any(String),
+    })));
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(m.showSuccess).toHaveBeenCalledWith('attribution.notReceived.success');
+    expect(m.addExpense).not.toHaveBeenCalled();
+  });
+
+  it('„Nisam primio" failure is logged as worker_payout_report_error and translated', async () => {
+    m.rpc.mockResolvedValue({ data: null, error: { code: '22023', message: 'payout_voided' } });
+    render(<AttributionSheet open payload={payload} onClose={vi.fn()} />);
+    fireEvent.click(await screen.findByText('attribution.notReceived.action'));
+    fireEvent.click(await screen.findByText('attribution.notReceived.confirm'));
+    await waitFor(() => expect(m.logDiagnostic).toHaveBeenCalledTimes(1));
+    const arg = m.logDiagnostic.mock.calls[0][0];
+    expect(arg.event).toBe('worker_payout_report_error');
+    expect(arg.details).toMatchObject({ db_code: '22023', db_message: 'payout_voided', build: 'assets/index-TEST.js', payout_id: 'p1' });
+    expect(m.showError).toHaveBeenCalledWith('attribution.errors.codes.payout_voided');
   });
 });

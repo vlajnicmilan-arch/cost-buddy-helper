@@ -190,6 +190,20 @@
       "when": 1790377825796,
       "tag": "0026_worker_confirm_payout_receipt",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1790379018870,
+      "tag": "0027_worker_payout_not_received",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1790379070076,
+      "tag": "0028_worker_payout_not_received_real",
+      "breakpoints": true
     }
   ]
 }

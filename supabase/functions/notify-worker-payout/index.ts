@@ -11,6 +11,7 @@
 // Legacy path: client JWT call from older app builds — skipped when the event is queued.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { isInternalBearer, markOutboxDelivered, payoutEventKey } from './outbox.ts';
+import { deliverNotReceived } from './notReceived.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -65,7 +66,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       // Server path: the outbox row (written by enqueue_worker_payout_notifications) is the only input.
       const { data: row, error } = await admin
         .from('krug_notify_outbox')
-        .select('dedup_ref, payload, delivered_at, source')
+        .select('dedup_ref, event_type, payload, delivered_at, source')
         .eq('dedup_ref', body.outbox_dedup_ref)
         .eq('source', 'worker_payout')
         .maybeSingle();
@@ -73,6 +74,12 @@ Deno.serve(async (req: Request): Promise<Response> => {
       if (!row) return jsonRes({ error: 'Outbox red nije pronađen' }, 404);
       if (row.delivered_at) return jsonRes({ success: true, skipped: 'already_delivered' });
       outboxRef = row.dedup_ref as string;
+      if (row.event_type === 'worker_payout_not_received') {
+        const res = await deliverNotReceived(admin, row.payload as { report_id?: string });
+        if (!res.ok) return jsonRes({ error: res.error }, 500);
+        await markOutboxDelivered(admin, outboxRef);
+        return jsonRes({ success: true, delivered: res.delivered });
+      }
       const p = (row.payload ?? {}) as { payout_ids?: string[]; batch_id?: string | null; action?: string; actor_id?: string };
       actorId = p.actor_id ?? undefined;
       action = p.action as NotifyRequest['action'];

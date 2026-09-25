@@ -2824,7 +2824,11 @@
           "message": "Batch payout {{amount}} for {{count}} projects has been voided."
         }
       },
-      "fallback_project": "project"
+      "fallback_project": "project",
+      "not_received": {
+        "title": "Payout not received",
+        "message": "{{worker}} reports not receiving the payout of {{amount}}."
+      }
     },
     "work_entry_recorded": {
       "title": "Hours recorded — {{project}}",
@@ -4738,7 +4742,11 @@
       "hoursInPeriod": "Hours",
       "payout": "Payout",
       "noRateSet": "The project owner hasn't set an hourly rate yet.",
-      "notLinkedYet": "The owner hasn't added you as a worker on this project yet. Your earnings will appear once they set your hourly rate."
+      "notLinkedYet": "The owner hasn't added you as a worker on this project yet. Your earnings will appear once they set your hourly rate.",
+      "pending": {
+        "title": "Pending payouts",
+        "hint": "Tap to record in a wallet"
+      }
     },
     "hours": "Work hours",
     "hoursPlaceholder": "e.g. 8",
@@ -6290,7 +6298,27 @@
     "errors": {
       "loadFailed": "Cannot load payout data",
       "alreadyAttributed": "Already attributed",
-      "generic": "Attribution failed, try again"
+      "generic": "Attribution failed, try again",
+      "codes": {
+        "unauthenticated": "Please sign in again.",
+        "client_request_id_required": "Something went wrong. Close and try again.",
+        "exactly_one_target": "Something went wrong. Close and try again.",
+        "not_found": "This payout no longer exists.",
+        "not_payout_recipient": "This payout isn’t yours.",
+        "client_request_id_reused": "Something went wrong. Close and try again.",
+        "payout_voided": "This payout was voided.",
+        "already_confirmed": "You already recorded this payout.",
+        "source_required": "Pick a wallet.",
+        "source_not_found": "This wallet no longer exists.",
+        "source_not_writable": "You can’t add entries to this wallet.",
+        "mixed_currency": "These payouts are in different currencies — record them separately.",
+        "amount_mismatch": "The amount doesn’t match the payout.",
+        "amount_required": "This wallet uses another currency — enter how much arrived.",
+        "amount_unknown": "The payout amount is unknown.",
+        "already_reported": "You already reported this payout as not received.",
+        "note_too_long": "The note is too long (500 characters max).",
+        "mixed_owner": "These payouts are from different owners — report them separately."
+      }
     },
     "voidedPrompt": {
       "title": "Payout was voided",
@@ -6299,6 +6327,16 @@
       "remove": "Remove attribution",
       "removed": "Attribution removed",
       "removeFailed": "Removal failed"
+    },
+    "notReceived": {
+      "action": "Not received",
+      "title": "Payout didn’t arrive?",
+      "description": "The owner will be notified. The payout stays unchanged.",
+      "noteLabel": "Note (optional)",
+      "notePlaceholder": "e.g. nothing on my account",
+      "confirm": "Notify owner",
+      "cancel": "Cancel",
+      "success": "The owner has been notified"
     }
   },
   "invitations": {
