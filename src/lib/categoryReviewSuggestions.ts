@@ -8,6 +8,7 @@
  */
 import { CATEGORY_GROUPS, LEGACY_ALIASES, resolveTreeCategory } from '@/lib/categoryTree';
 import { isExpenseType, isIncomeType } from '@/lib/spendClassification';
+import { normalizeText, merchantKey } from '@/lib/categoryAssign';
 
 /** „Pokrivanje drugih pizdarija" — izuzeta iz svega, po ID-u. */
 export const REVIEW_EXEMPT_CATEGORY_ID = 'ab61e917-645c-465c-94f4-aec2645062e9';
@@ -93,27 +94,8 @@ export interface CategoryReviewResult {
 // ---------------------------------------------------------------------------
 // Normalizacija
 // ---------------------------------------------------------------------------
-export const normalizeText = (s: string | null | undefined): string =>
-  (s ?? '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-/** Ključ trgovca: bez broja kartice, brojeva i repa iza „ - " / zareza; prve 3 riječi. */
-export const merchantKey = (row: { merchant_name?: string | null; description?: string | null }): string => {
-  const base = normalizeText(row.merchant_name || row.description);
-  const head = base.split(/ - |,/)[0] ?? '';
-  const cleaned = head
-    .replace(/\*+/g, ' ')
-    .replace(/\d[\dx]*/g, ' ')
-    .replace(/[^a-z&.\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  return cleaned.split(' ').slice(0, 3).join(' ');
-};
+// Ista normalizacija kao automatsko razvrstavanje (categoryAssign, zrcalo u _shared).
+export { normalizeText, merchantKey };
 
 const rowText = (row: ReviewRow): string =>
   ` ${normalizeText(`${row.merchant_name ?? ''} ${row.description ?? ''}`)} `;

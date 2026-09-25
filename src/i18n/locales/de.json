@@ -7667,5 +7667,8 @@
       "invalidMarker": "Markierung oder Eintragsart ist ungültig.",
       "filterTag": "Markierung"
     }
+  },
+  "categoryCorrection": {
+    "saveError": "Kategorie geändert, aber die Korrektur wurde nicht für später gespeichert."
   }
 }

@@ -1,6 +1,7 @@
 import { useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCustomCategories } from './useCustomCategories';
+import { CATEGORY_TREE_VERSION } from '@/lib/categoryAssign';
 
 export const useAICategorization = () => {
   const { customCategories } = useCustomCategories();
@@ -17,7 +18,9 @@ export const useAICategorization = () => {
        * Dopušteni ključevi kategorije (ključ + hrvatski naziv). Postavlja se kad
        * je odabran projekt — AI tada bira ISKLJUČIVO iz kategorija te vrste projekta.
        */
-      allowedCategories?: { id: string; name: string }[]
+      allowedCategories?: { id: string; name: string }[],
+      /** Nalog 6: osobni upis → ključevi stabla + korisnikovi ispravci. */
+      categoryTree?: boolean
     ) => {
       // Clear previous debounce
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -40,6 +43,7 @@ export const useAICategorization = () => {
               allowed_categories: allowedCategories && allowedCategories.length > 0
                 ? allowedCategories.map(c => ({ id: c.id, name: c.name }))
                 : undefined,
+              ...(categoryTree ? { category_tree_version: CATEGORY_TREE_VERSION } : {}),
             },
           });
 
