@@ -40,4 +40,4 @@ Pravila za sve naloge:
 - [x] Obavijest o upisanim satima ne ruši upis (0016) + greške „Poveži" u dijagnostiku, poruka s danima i satima
 - [ ] Kašteli: vlasnik sam povezuje Petra kroz aplikaciju nakon objave (čeka korisnika)
 
-- [ ] Krug: pouzdana isporuka obavijesti (outbox + retry + uklanjanje detectAuthorOutcome) — u izradi
+- [x] Krug: pouzdana isporuka obavijesti — outbox+retry izgrađeni, čuvari 13/13; emit/retry SQL čeka ručnu primjenu (alat odbija vault), cron zakazan, notify-krug-event objavljena
