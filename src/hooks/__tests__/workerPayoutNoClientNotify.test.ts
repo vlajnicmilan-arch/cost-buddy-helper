@@ -23,7 +23,10 @@ vi.mock('@/hooks/useStatusFeedback', () => ({
 }));
 vi.mock('@/lib/diagnosticLogger', () => ({ logDiagnostic: vi.fn() }));
 const i18n = vi.hoisted(() => ({ t: (k: string) => k }));
-vi.mock('react-i18next', () => ({ useTranslation: () => i18n }));
+vi.mock('react-i18next', async () => {
+  const { createReactI18nextMock } = await import('@/test/mocks/reactI18next');
+  return { ...createReactI18nextMock(), useTranslation: () => i18n };
+});
 
 import { useWorkerPayouts } from '../useWorkerPayouts';
 import { usePersonPayoutVoid } from '../usePersonPayoutVoid';

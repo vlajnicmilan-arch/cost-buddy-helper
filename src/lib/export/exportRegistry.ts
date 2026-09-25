@@ -252,6 +252,7 @@ export const EXPORT_REGISTRY: Record<string, TableRule> = {
   krug_invitations: { rule: { via: 'column', column: 'invited_by' }, redact: ['token'] }, // tuđe pozivnice u istom krugu ne izlaze
   krug_membership_audit: excluded(R.others),
   krug_act_dedup: excluded(R.internal),
+  krug_notify_outbox: excluded(R.internal),
 
   // — Pogledi —
   // Role-scoped pogled na faze: pokriven, ali se izvozi pod imenom `project_milestones`.

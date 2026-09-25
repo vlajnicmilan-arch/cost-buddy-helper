@@ -8651,6 +8651,16 @@ export type Database = {
         Args: { _decision_id: string }
         Returns: Json
       }
+      worker_confirm_payout_receipt: {
+        Args: {
+          p_amount?: number
+          p_batch_id?: string
+          p_client_request_id: string
+          p_payout_id?: string
+          p_source_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       admin_grant_module: "projects" | "business"
