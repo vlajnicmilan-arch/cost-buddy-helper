@@ -169,6 +169,13 @@
       "when": 1790375352085,
       "tag": "0023_krug_outbox_privileges",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790376634649,
+      "tag": "0024_worker_payout_notify_outbox",
+      "breakpoints": true
     }
   ]
 }
