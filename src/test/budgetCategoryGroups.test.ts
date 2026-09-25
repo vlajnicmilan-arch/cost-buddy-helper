@@ -133,7 +133,8 @@ describe('filtar skupine', () => {
 
 describe('PDF i izvoz', () => {
   it('jedan redak zbroja po skupini, listovi ispod; stari i novi ključ spojeni', () => {
-    const rows = buildGroupedCategoryTotals({ food: 5, groceries: 20, coffee: 10, [EXEMPT_CATEGORY_ID]: 999 });
+    const own7 = [{ id: EXEMPT_CATEGORY_ID, name: 'Pokrivanje drugih pizdarija', group_key: null }];
+    const rows = buildGroupedCategoryTotals({ food: 5, groceries: 20, coffee: 10, [EXEMPT_CATEGORY_ID]: 999 }, own7);
     const groups = rows.map((r) => r.group);
     expect(groups.filter((g) => g === 'food')).toHaveLength(1);
     expect(rows.find((r) => r.group === 'food')!.amount).toBe(25);
@@ -141,7 +142,8 @@ describe('PDF i izvoz', () => {
     expect(own.amount).toBe(999);
     expect(own.leaves[0].customId).toBe(EXEMPT_CATEGORY_ID);
     expect(rows.reduce((t, r) => t + r.amount, 0)).toBe(1034);
-    const table = buildGroupedTableRows(rows, [], (x) => String(x));
+    const table = buildGroupedTableRows(rows, own7, (x) => String(x));
+    expect(table.some((r) => r.join(' ').includes('Pokrivanje drugih pizdarija'))).toBe(true);
     expect(table.filter((r) => r[0] !== '')).toHaveLength(3);
   });
 
