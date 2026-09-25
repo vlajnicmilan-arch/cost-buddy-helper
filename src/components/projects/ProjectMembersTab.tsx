@@ -19,6 +19,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 import { invitationErrorMessage } from '@/lib/invitationErrors';
+import { useUnratedWorkerMembers } from '@/hooks/useUnratedWorkerMembers';
+import { UnratedWorkerSetup } from './UnratedWorkerSetup';
 
 interface ProjectMembersTabProps {
   projectId: string;
@@ -73,6 +75,7 @@ export const ProjectMembersTab = ({
   const isProjectClosed =
     !!archivedAt || projectStatus === 'completed' || projectStatus === 'cancelled';
   const { updateMemberRole, removeMember, cancelInvitation, generateInviteLink, updateMemberContext } = useProjectMembers(projectId);
+  const { pending: unratedPending, refetch: refetchUnrated } = useUnratedWorkerMembers(projectId, members, isManager);
 
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [generatingLink, setGeneratingLink] = useState(false);
@@ -508,6 +511,15 @@ export const ProjectMembersTab = ({
               <p className="text-xs text-muted-foreground">
                 {member.role === 'owner' ? t('projects.owner') : t(`projectRoles.${member.role}`, PROJECT_ROLE_LABELS[member.role as ProjectRole])}
               </p>
+              {isManager && unratedPending.has(member.user_id) && (
+                <UnratedWorkerSetup
+                  projectId={projectId}
+                  memberUserId={member.user_id}
+                  memberName={member.display_name || ''}
+                  pending={unratedPending.get(member.user_id)!}
+                  onDone={refetchUnrated}
+                />
+              )}
             </div>
 
             {isManager && member.role !== 'owner' && (
