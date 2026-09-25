@@ -8538,6 +8538,8 @@ export type Database = {
         Args: { p_effective_from: string; p_rate: number; p_worker_id: string }
         Returns: Json
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       soft_delete_record: {
         Args: { p_id: string; p_table: string }
         Returns: undefined
