@@ -128,7 +128,7 @@ BEGIN
     ('t:maxed',     'krug_expense_confirmed', '{}', 5, NULL, now() - interval '1 hour'),
     ('t:fresh',     'krug_expense_confirmed', '{}', 0, NULL, now());
   v_sent := public.krug_notify_outbox_retry();
-  PERFORM pg_temp.ok('O5.1 retry ništa ne šalje bez ključa', v_sent = 0, v_sent::text);
+  PERFORM pg_temp.ok('O5.1 retry ne dira svježe redove', v_sent = 0, v_sent::text);
   PERFORM pg_temp.ok('O5.2 isporučeni i maxed redovi netaknuti',
     (SELECT attempts FROM public.krug_notify_outbox WHERE dedup_ref='t:delivered') = 1
     AND (SELECT attempts FROM public.krug_notify_outbox WHERE dedup_ref='t:maxed') = 5);
@@ -165,4 +165,25 @@ BEGIN
   PERFORM pg_temp.ok('O7.2 authenticated bez prava na tablicu outbox',
     NOT has_table_privilege('authenticated','public.krug_notify_outbox','SELECT')
     AND NOT has_table_privilege('anon','public.krug_notify_outbox','SELECT'));
+END $$;
+
+-- O8: retry ponovno šalje star neisporučen red kroz _krug_emit_http (attempts +1),
+-- jedan oblik funkcije, _krug_emit_http nedostupan korisnicima.
+DO $$
+DECLARE v_sent int;
+BEGIN
+  DELETE FROM public.krug_notify_outbox;
+  INSERT INTO public.krug_notify_outbox (dedup_ref, event_type, payload, attempts, created_at) VALUES
+    ('t:old', 'krug_expense_confirmed',
+     '{"krug_id":"11111111-1111-1111-1111-111111111111","actor_id":"00000000-0000-0000-0000-0000000000b2","recipient_override":["00000000-0000-0000-0000-0000000000a1"],"vars":null}',
+     1, now() - interval '10 minutes');
+  v_sent := public.krug_notify_outbox_retry();
+  PERFORM pg_temp.ok('O8.1 retry je pokušao stari red',
+    (SELECT attempts FROM public.krug_notify_outbox WHERE dedup_ref='t:old') = 2);
+  PERFORM pg_temp.ok('O8.2 jedan oblik krug_emit_notification i _krug_emit_http',
+    (SELECT count(*) FROM pg_proc WHERE proname='krug_emit_notification') = 1
+    AND (SELECT count(*) FROM pg_proc WHERE proname='_krug_emit_http') = 1);
+  PERFORM pg_temp.ok('O8.3 anon/authenticated bez EXECUTE na _krug_emit_http',
+    NOT has_function_privilege('anon','public._krug_emit_http(text,uuid,uuid,uuid,uuid,text,uuid[],jsonb)','EXECUTE')
+    AND NOT has_function_privilege('authenticated','public._krug_emit_http(text,uuid,uuid,uuid,uuid,text,uuid[],jsonb)','EXECUTE'));
 END $$;

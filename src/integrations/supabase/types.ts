@@ -7399,6 +7399,19 @@ export type Database = {
         Args: { p_payment_source: string }
         Returns: string
       }
+      _krug_emit_http: {
+        Args: {
+          p_actor_id: string
+          p_dedup_ref?: string
+          p_deletion_request_id?: string
+          p_event_type: string
+          p_expense_id?: string
+          p_krug_id: string
+          p_recipient_override?: string[]
+          p_vars?: Json
+        }
+        Returns: undefined
+      }
       _log_person_link_conflict: {
         Args: {
           p_existing_engagement_id: string
@@ -8114,6 +8127,7 @@ export type Database = {
         Args: { p_dedup_ref: string }
         Returns: undefined
       }
+      krug_notify_outbox_retry: { Args: never; Returns: number }
       krug_override_confirm: { Args: { p_override_id: string }; Returns: Json }
       krug_override_propose: {
         Args: { p_expense_id: string; p_shares: Json }
@@ -8538,6 +8552,8 @@ export type Database = {
         Args: { p_effective_from: string; p_rate: number; p_worker_id: string }
         Returns: Json
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       soft_delete_record: {
         Args: { p_id: string; p_table: string }
         Returns: undefined
