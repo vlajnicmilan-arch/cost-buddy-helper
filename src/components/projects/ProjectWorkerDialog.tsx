@@ -21,6 +21,8 @@ interface ProjectWorkerDialogProps {
   onOpenChange: (open: boolean) => void;
   worker?: ProjectWorker | null;
   projectId?: string | null;
+  /** New-worker mode only: initial name and rate (e.g. from the "no hourly rate" warning). */
+  prefill?: { first_name: string; last_name: string; hourly_rate: number | null } | null;
   onSave: (data: {
     first_name: string;
     last_name: string;
@@ -37,6 +39,7 @@ export const ProjectWorkerDialog = ({
   onOpenChange,
   worker,
   projectId,
+  prefill,
   onSave
 }: ProjectWorkerDialogProps) => {
   const { t } = useTranslation();
@@ -92,11 +95,11 @@ export const ProjectWorkerDialog = ({
       setWorkStartTime(worker.work_start_time?.slice(0, 5) || '08:00');
       setWorkEndTime(worker.work_end_time?.slice(0, 5) || '16:00');
     } else {
-      setFirstName('');
-      setLastName('');
+      setFirstName(prefill?.first_name ?? '');
+      setLastName(prefill?.last_name ?? '');
       setPosition('');
       setWorkHours('');
-      setHourlyRate('');
+      setHourlyRate(prefill?.hourly_rate != null ? String(prefill.hourly_rate) : '');
       setWorkStartTime('08:00');
       setWorkEndTime('16:00');
     }
@@ -105,7 +108,7 @@ export const ProjectWorkerDialog = ({
     setInviteEmail('');
     setEmailSentTo(null);
     setSelectedMemberId('');
-  }, [worker, open]);
+  }, [worker, open, prefill]);
 
   const handleLinkToMember = async () => {
     if (!worker?.id || !selectedMemberId) return;
