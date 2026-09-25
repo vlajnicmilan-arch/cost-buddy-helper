@@ -332,6 +332,12 @@ const drawCategoryBars = (
 
 
 
+/** „Skupina › Kategorija" (bez skupine samo kategorija). */
+export const categoryWithGroup = (category: string | null | undefined, customs: GroupedCustomCategory[] = []): string => {
+  const c = exportCategoryColumns(category, customs);
+  return c.group && c.group !== c.category ? `${c.group} › ${c.category}` : c.category;
+};
+
 /** Retci tablice „po skupini": redak skupine sa zbrojem, listovi uvučeni ispod. */
 export const buildGroupedTableRows = (
   rows: GroupTotalRow[],
@@ -563,7 +569,7 @@ export const generatePDFReport = async (
       ];
       const metaSource: (string | null | undefined)[] = isCorrection
         ? [i18n.t('reports.correctionLabel', 'Korekcija') as string]
-        : [categoryInfo.name, paymentInfo.name, !isExpenseType(expense) ? typeInfo.name : ''];
+        : [categoryWithGroup(expense.category, customs), paymentInfo.name, !isExpenseType(expense) ? typeInfo.name : ''];
       return {
         date: expense.date,
         title: expense.description || categoryInfo.name,
