@@ -43,13 +43,16 @@ const cat = (category: string, limit: number): BudgetCategory => ({
 });
 
 describe('budžet: skupina i list', () => {
-  it('stari „food" limit broji i coffee i restaurants', () => {
+  // Nalog traži da „food" broji coffee/restaurants, ali odobreni LEGACY_ALIASES
+  // stavlja food → skupina „Hrana" (groceries), a kavu u „Kafići i restorani".
+  // Test drži registar; odluka je otvorena u izvještaju.
+  it('stari „food" limit = cijela skupina Hrana (po LEGACY_ALIASES), kava nije u njoj', () => {
     const rows = computeBudgetCategoryStats({ id: BUDGET, project_id: null }, [cat('food', 300)], [
-      tx('coffee', 10), tx('restaurants', 40), tx('food', 5),
+      tx('coffee', 10), tx('restaurants', 40), tx('food', 5), tx('groceries', 20),
     ]);
     // food je u registru skupina „food" (namirnice); kava je u „cafes" — vidi sljedeći test.
     expect(parseBudgetLimitScope('food')).toEqual({ kind: 'group', group: 'food' });
-    expect(rows.find((r) => r.category === 'food')!.spent).toBe(5);
+    expect(rows.find((r) => r.category === 'food')!.spent).toBe(25);
   });
 
   it('limit skupine cafes broji coffee i restaurants; stari ključ se ne prepisuje', () => {
