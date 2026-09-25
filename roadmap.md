@@ -41,3 +41,6 @@ Pravila za sve naloge:
 - [ ] Kašteli: vlasnik sam povezuje Petra kroz aplikaciju nakon objave (čeka korisnika)
 
 - [x] Krug: pouzdana isporuka obavijesti — outbox+retry izgrađeni, čuvari 13/13; emit/retry SQL čeka ručnu primjenu (alat odbija vault), cron zakazan, notify-krug-event objavljena
+- [x] Radnici nalog 1/3: obavijest o isplati na serveru + push kroz outbox (0025), čuvari WP 19/19
+- [ ] Radnici nalog 2/3: upis prihoda na serveru
+- [ ] Radnici nalog 3/3: „Nisam primio“ + AttributionSheet
