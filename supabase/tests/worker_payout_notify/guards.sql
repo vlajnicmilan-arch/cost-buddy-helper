@@ -99,6 +99,9 @@ BEGIN
        AND details->>'payout_id' = v_id::text AND details->>'code' IS NOT NULL
        AND app_version LIKE 'enqueue_worker_payout_notifications@%'
        AND NOT (details ? 'amount') AND NOT (details ? 'paid_amount')) = 1);
+  PERFORM pg_temp.ok('WP5.4 outbox red preživio kvar pusha (retry ga preuzima)',
+    (SELECT count(*) FROM public.krug_notify_outbox WHERE dedup_ref='worker_payout:'||v_id||':created'
+       AND last_error IS NOT NULL) = 1);
   PERFORM set_config('test.net_fail', '0', false);
 END $$;
 
