@@ -49,7 +49,7 @@ async function fetchAllPersonalRows(userId: string): Promise<ReviewRow[]> {
   for (let from = 0; ; from += PAGE) {
     const base = supabase
       .from('expenses')
-      .select('id,type,amount,date,category,description,merchant_name,movement_kind,tags,expense_nature,deleted_at')
+      .select('id,type,amount,date,category,description,merchant_name,movement_kind,tags,expense_nature,deleted_at,status')
       .eq('user_id', userId)
       .is('deleted_at', null)
       .is('project_id', null)
