@@ -1,6 +1,14 @@
 // Sync transactions from Enable Banking into expenses table.
 // Auth: requires JWT (validated in code).
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import {
+  SERVER_CATEGORY_TREE_ENABLED,
+  assignTreeCategory,
+  loadLearnedCorrections,
+  loadTreeCustomCategories,
+  logUnknownAiCategory,
+  treePromptLines,
+} from "../_shared/categoryAutoAssign.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { ebFetch } from "../_shared/enableBankingJwt.ts";
 import { callGemini } from "../_shared/geminiClient.ts";
@@ -325,6 +333,35 @@ Deno.serve(async (req) => {
       "investments", "charity", "kids", "home", "car", "insurance", "taxes", "other",
     ];
     const allCategories = [...defaultCategories, ...customCategoryNames];
+
+    // NALOG 6 — prekidač (zadano isključen): dok je isključen, ništa od ovoga
+    // se ne učitava i razvrstavanje je točno kao prije.
+    const treeCustoms = SERVER_CATEGORY_TREE_ENABLED ? await loadTreeCustomCategories(admin, userId) : [];
+    const treeCorrections = SERVER_CATEGORY_TREE_ENABLED ? await loadLearnedCorrections(admin, userId) : [];
+
+    async function askTreeAI(description: string): Promise<string | null> {
+      if (!LOVABLE_API_KEY || !description) return null;
+      if (/^[\d\s\-\/]+$/.test(description.trim())) return null;
+      try {
+        const capResp = await checkAiCostCap(admin);
+        if (capResp) return null;
+        const { lines } = treePromptLines(treeCustoms, "expense");
+        const resp = await callGemini({
+          model: "google/gemini-2.5-flash-lite",
+          messages: [
+            { role: "system", content: `You are a transaction categorizer for bank transactions. Choose exactly ONE category key from this list (Croatian names, group in parentheses):\n${lines}\n\nIf unsure, return: other\nReturn ONLY the category key, nothing else.` },
+            { role: "user", content: `Description: ${description}` },
+          ],
+          max_tokens: 40,
+        });
+        if (!resp.ok) return null;
+        recordAiCost(admin, "bank-sync-transactions").catch(() => {});
+        const data = await resp.json();
+        return data.choices?.[0]?.message?.content?.trim() || null;
+      } catch {
+        return null;
+      }
+    }
 
     async function categorizeViaAI(description: string): Promise<string | null> {
       if (!LOVABLE_API_KEY || !description) return null;
@@ -880,7 +917,20 @@ Deno.serve(async (req) => {
       // INSERT novi bank_only.
       // AI categorization (samo expense, samo ako nemamo kandidata).
       let category = "other";
-      if (!isIncome) {
+      if (SERVER_CATEGORY_TREE_ENABLED) {
+        // Naučeni ispravak → AI (samo trošak) → jedna provjera. Nikad movement_kind/tags.
+        const assigned = await assignTreeCategory({
+          row: { description },
+          userId,
+          direction: isIncome ? "income" : "expense",
+          customCategories: treeCustoms,
+          corrections: treeCorrections,
+          askAi: isIncome ? undefined : () => askTreeAI(description),
+          onUnknown: (raw) => { void logUnknownAiCategory("bank-sync-transactions", userId, raw); },
+        });
+        category = assigned.category;
+        if (assigned.fromAi || assigned.learned) aiCategorized += 1;
+      } else if (!isIncome) {
         const aiCat = await categorizeViaAI(description);
         if (aiCat) {
           category = aiCat;
