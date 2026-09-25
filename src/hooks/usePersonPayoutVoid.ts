@@ -38,14 +38,8 @@ export const usePersonPayoutVoid = () => {
               p_reason: input.reason,
             });
         if (error) throw error;
+        // Worker notification + push are sent server-side (enqueue_worker_payout_notifications → outbox).
 
-        supabase.functions
-          .invoke('notify-worker-payout', {
-            body: input.batchId
-              ? { batch_id: input.batchId, action: 'voided' }
-              : { payout_id: input.payoutId, action: 'voided' },
-          })
-          .catch(() => undefined);
 
         return { ok: true };
       } catch (e: any) {
