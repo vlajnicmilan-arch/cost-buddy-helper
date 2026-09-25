@@ -5,6 +5,10 @@
 -- Pretpostavka: 0020_krug_notify_outbox_table i 0021_krug_notify_outbox_mark_delivered
 -- su već primijenjeni.
 
+-- Uklanja staru 7-parametarsku inačicu ako postoji (u produkciji je nema;
+-- postoji samo u kuriranim testnim bazama), da pozivi ne idu u krivi overload.
+DROP FUNCTION IF EXISTS public.krug_emit_notification(text,uuid,uuid,uuid,uuid,text,jsonb);
+
 CREATE OR REPLACE FUNCTION public.krug_emit_notification(p_event_type text, p_krug_id uuid, p_actor_id uuid, p_expense_id uuid DEFAULT NULL::uuid, p_deletion_request_id uuid DEFAULT NULL::uuid, p_dedup_ref text DEFAULT NULL::text, p_recipient_override uuid[] DEFAULT NULL::uuid[], p_vars jsonb DEFAULT NULL::jsonb)
  RETURNS void
  LANGUAGE plpgsql
