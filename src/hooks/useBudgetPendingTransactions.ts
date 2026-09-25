@@ -5,6 +5,7 @@ import { useAuthedFetchGate } from '@/hooks/useAuthedFetchGate';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { isSessionGone } from '@/lib/sessionGone';
+import { registerLiveRefresher } from '@/lib/liveData/walletsRefreshBus';
 
 export interface BudgetPendingTransaction {
   id: string;
@@ -102,6 +103,13 @@ export const useBudgetPendingTransactions = (budgetId: string | null) => {
   useEffect(() => {
     fetchPending();
   }, [fetchPending]);
+
+  // Živa salda: own expenses fetch, so it re-runs when the expenses channel
+  // in useExpenseFetch signals "transactions changed" (batched in LiveDataProvider).
+  useEffect(() => {
+    if (!budgetId) return;
+    return registerLiveRefresher('transactions', () => fetchPending());
+  }, [budgetId, fetchPending]);
 
   const approveTransaction = async (transactionId: string) => {
     try {
