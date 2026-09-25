@@ -124,6 +124,8 @@ interface ManualExpenseFormProps {
   ) => Promise<string | null>;
   /** OZNAKA "BEZ OBJAŠNJENJA" — korisnikova kvačica, nikad automatika. */
   needsExplanation?: boolean;
+  /** Oznake + vrsta zapisa (osobni upis); roditelj odlučuje kad se prikazuju. */
+  markerSlot?: ReactNode;
   onNeedsExplanationChange?: (value: boolean) => void;
   // Note
   note: string;
@@ -733,6 +735,8 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
           )}
         </div>
       )}
+
+      {props.markerSlot}
 
       {/* Note */}
       <div className="space-y-2">

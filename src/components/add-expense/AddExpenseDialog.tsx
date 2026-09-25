@@ -55,6 +55,8 @@ import { useWriteGuard } from '@/hooks/useWriteGuard';
 
 import { ScannedDataPreview } from './ScannedDataPreview';
 import { ManualExpenseForm } from './ManualExpenseForm';
+import { ExpenseMarkerFields } from '@/components/expense-markers/ExpenseMarkerFields';
+import { buildMarkerFieldsForInsert, type ExpenseTag, type MovementKind } from '@/lib/expenseMarkers';
 
 interface AddExpenseDialogProps {
   onAdd: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[], isPendingMemberTransaction?: boolean) => Promise<Expense | void> | Expense | void;
@@ -172,6 +174,9 @@ export const AddExpenseDialog = ({
   const [note, setNote] = useState('');
   // OZNAKA "BEZ OBJAŠNJENJA" — pali je isključivo korisnik kvačicom u formi.
   const [needsExplanation, setNeedsExplanation] = useState(false);
+  // Oznake i vrsta zapisa (samo osobni upis) — vidi expenseMarkers.ts.
+  const [markerTags, setMarkerTags] = useState<ExpenseTag[]>([]);
+  const [movementKind, setMovementKind] = useState<MovementKind | null>(null);
   const [transferDestination, setTransferDestination] = useState<string | null>(null);
   const [totalWithTip, setTotalWithTip] = useState<string>('');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -891,6 +896,10 @@ export const AddExpenseDialog = ({
         // Krug WS1 — personal-only kontekst; efektivni profil NAKON routinga.
         ...buildKrugFields(saveBusinessProfileId, krugId, krugPrivacy),
 
+        ...buildMarkerFieldsForInsert({
+          enabled: !saveBusinessProfileId && !selectedProjectId,
+          type: finalType, tags: markerTags, movementKind,
+        }),
         note: (isInstallment && scannedData.installment_count) 
           ? `${scannedData.installment_count}x rata${tipNote ? ' • ' + tipNote : ''}`
           : (tipNote || undefined),
@@ -1050,6 +1059,8 @@ export const AddExpenseDialog = ({
     setShowScannedPreview(false);
     setNote('');
     setNeedsExplanation(false);
+    setMarkerTags([]);
+    setMovementKind(null);
     setSelectedProjectId(null);
     setSelectedMilestoneId(null);
 
@@ -1310,6 +1321,10 @@ export const AddExpenseDialog = ({
         ...buildKrugFields(effectiveBusinessProfileId, krugId, krugPrivacy),
 
         needs_explanation: needsExplanation,
+        ...buildMarkerFieldsForInsert({
+          enabled: !attributedBusinessProfileId && !selectedProjectId,
+          type, tags: markerTags, movementKind,
+        }),
       };
       try {
         await onAdd(installmentExpense, validItems.length > 0 ? validItems : undefined);
@@ -1372,6 +1387,10 @@ export const AddExpenseDialog = ({
       ...buildKrugFields(effectiveBusinessProfileId, krugId, krugPrivacy),
 
       needs_explanation: needsExplanation,
+      ...buildMarkerFieldsForInsert({
+        enabled: !attributedBusinessProfileId && !selectedProjectId,
+        type, tags: markerTags, movementKind,
+      }),
     };
 
     if (type !== 'transfer') {
@@ -1529,6 +1548,15 @@ export const AddExpenseDialog = ({
                 onReject={rejectScannedData}
                 onDateOrTimeEdited={() => { userEditedDateOrTimeRef.current = true; }}
                 showKrugSelector={!effectiveBusinessProfileId}
+                markerSlot={!effectiveBusinessProfileId && !scanTargetProfileId && !selectedProjectId ? (
+                  <ExpenseMarkerFields
+                    type={scannedData.transaction_type === 'transfer' ? 'transfer' : scannedData.transaction_type === 'income' ? 'income' : 'expense'}
+                    tags={markerTags}
+                    onTagsChange={setMarkerTags}
+                    movementKind={movementKind}
+                    onMovementKindChange={setMovementKind}
+                  />
+                ) : undefined}
                 krugId={krugId}
                 krugPrivacy={krugPrivacy}
                 onKrugChange={({ krugId: nextId, privacy }) => { setKrugId(nextId); setKrugPrivacy(privacy); }}
@@ -1655,6 +1683,15 @@ export const AddExpenseDialog = ({
               }}
               needsExplanation={needsExplanation}
               onNeedsExplanationChange={setNeedsExplanation}
+              markerSlot={!attributedBusinessProfileId && !selectedProjectId ? (
+                <ExpenseMarkerFields
+                  type={type}
+                  tags={markerTags}
+                  onTagsChange={setMarkerTags}
+                  movementKind={movementKind}
+                  onMovementKindChange={setMovementKind}
+                />
+              ) : undefined}
               note={note}
               onNoteChange={setNote}
               receiptImage={receiptImage}
