@@ -2331,7 +2331,11 @@
     "summaryMerchantsInsertOne": " — vor allem {{m1}}",
     "transfersSplit": "Überweisungen:",
     "transfersIn": "eingehend +{{amount}}",
-    "transfersOut": "ausgehend −{{amount}}"
+    "transfersOut": "ausgehend −{{amount}}",
+    "byGroupTitle": "Nach Gruppen",
+    "groupColumn": "Gruppe",
+    "categoryColumn": "Kategorie",
+    "amountColumn": "Betrag"
   },
   "update": {
     "available": "Neue Version verfügbar!",
@@ -2751,7 +2755,12 @@
       "tooEarly": "Zu früh für eine Tempo-Einschätzung"
     },
     "readOnlyTitle": "Smjer ist im Lesemodus",
-    "readOnlyBody": "Bestehende Pläne siehst du, neue Pläne und Änderungen erfordern die Aktivierung von Smjer."
+    "readOnlyBody": "Bestehende Pläne siehst du, neue Pläne und Änderungen erfordern die Aktivierung von Smjer.",
+    "wholeGroupSection": "Ganze Gruppe",
+    "wholeGroup": "{{group}} (ganze Gruppe)",
+    "errors": {
+      "duplicateLimit": "Diese Kategorie oder Gruppe hat in diesem Budget bereits ein Limit."
+    }
   },
   "projectStatus": {
     "draft": "Entwurf",

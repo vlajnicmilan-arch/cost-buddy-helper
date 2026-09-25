@@ -2338,7 +2338,11 @@
     "summaryMerchantsInsertOne": " — prvenstveno {{m1}}",
     "transfersSplit": "Prijenosi:",
     "transfersIn": "ulazni +{{amount}}",
-    "transfersOut": "izlazni −{{amount}}"
+    "transfersOut": "izlazni −{{amount}}",
+    "byGroupTitle": "Po skupinama",
+    "groupColumn": "Skupina",
+    "categoryColumn": "Kategorija",
+    "amountColumn": "Iznos"
   },
   "update": {
     "available": "Nova verzija dostupna!",
@@ -2758,7 +2762,12 @@
       "tooEarly": "Prerano za procjenu tempa"
     },
     "readOnlyTitle": "Smjer je u načinu samo za pregled",
-    "readOnlyBody": "Postojeće planove vidiš, ali nove planove i izmjene možeš raditi nakon aktivacije Smjera."
+    "readOnlyBody": "Postojeće planove vidiš, ali nove planove i izmjene možeš raditi nakon aktivacije Smjera.",
+    "wholeGroupSection": "Cijela skupina",
+    "wholeGroup": "{{group}} (cijela skupina)",
+    "errors": {
+      "duplicateLimit": "Ista kategorija ili skupina već ima limit u ovom budžetu."
+    }
   },
   "projectStatus": {
     "draft": "Nacrt",
