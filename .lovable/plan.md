@@ -1,50 +1,101 @@
-# Dijagnoza: Petar bez satnice u projektu „Kašteli"
+# Plan: „Živa salda" (samo plan, bez izmjena)
 
-Ovo je samo dijagnoza. Kod i baza nisu mijenjani. Ispod je prijedlog popravka koji čeka nalog „gradi".
+Cilj: svaka promjena salda ili transakcija vidi se na Početnoj, u Novčaniku, popisu transakcija i „Tko kome" za 1–2 s od upisa u bazu, bez ručnog osvježavanja. `useBundleFreshness` se ne dira.
 
-## 1. Kako vlasnik danas dodaje radnika sa satnicom
-- Ekran: Projekt → **Tim projekta** → podkartica **Radnici** (`ProjectTeamTab` → `ProjectWorkersTab`) → gumb za dodavanje radnika. Otvara se `ProjectWorkerDialog` s imenom, pozicijom i satnicom. Spremanje upisuje redak u `project_workers`.
-- Povezivanje s postojećim članom: u istom prozoru, kad zapis radnika već postoji (uređivanje), pojavi se okvir **„Već je član projekta?"** s izborom člana i gumbom **„Poveži"**. Gumb zove RPC `link_worker_to_member`, koji postavlja `project_workers.user_id` i **naknadno prenosi postojeće dnevnike** u `project_work_entries` (vraća `backfilled`).
-- Osoba iz „Ljudi": `useWorkerIdentityAttach` postavlja `project_workers.worker_id`. Postoji i drugi put: „+ Osoba" u „Ljudi" s odabranim projektom stvara angažman. Okidač `_person_link_inherit_down` tada sam upisuje `user_id`, ako osoba ima `linked_user_id`. Petrova osoba `99e0c1c4…` ima `linked_user_id`.
-- Iz pozivnice se zapis radnika ne stvara. Pozivnica s ulogom `worker` daje samo članstvo (`project_members`). Funkcija za prihvat pozivnice ne dira `project_workers`.
+## 1. Stanje danas (provjereno u kodu i bazi)
 
-## 2. Zašto u Kaštelima nema tog koraka
-- To nije regresija i nema commita koji je promijenio tok. Taj korak nikad nije bio automatski:
-  - Sve Petrove pozivnice (5.–7. mj. i 13.9.) imaju `worker_id` prazan.
-  - U ranijim projektima vlasnik je ručno napravio zapis radnika 30 s do 15 min nakon prihvata pozivnice (npr. 25.5. u 14:59:11 članstvo, u 14:59:42 zapis radnika).
-  - U Kaštelima taj ručni drugi korak jednostavno nije napravljen.
-- U datotekama tima, radnika i „Ljudi" od 1.9. postoji jedan commit (`ff47ad7c0`, 9.9.). Commit `6969e9c05` (9.9.) dira prava modula, ne radnike.
-- Stvarni kvar je u dizajnu:
-  - Aplikacija dopušta ulogu „Radnik" bez zapisa radnika i ništa ne upozorava.
-  - Okvir „Poveži" vidi se tek unutar postojećeg zapisa radnika, a ne na članu.
-  - Zato vlasnik s člana nema put do satnice.
-- Nisam provjerio u pregledniku vidi li Milan podkarticu „Radnici" (`hasAccess('workforce')`, razina `pro`). Ima aktivne dodjele `projekti` i `pro_legacy`, pa je vjerojatno vidi. To je nepotvrđeno.
+Publikacija `supabase_realtime` sadrži: app_diagnostics_logs, document_ingest_items, expenses, krug, krug_deletion_request, krug_deletion_vote, krug_membership, krug_shared_payment_source, notifications, payment_source_invitations, payment_source_members, project_activity_log, project_members, project_milestones, project_work_entries, reminders.
 
-## 3. Što vlasnik vidi od Petrovih 37 h
-- U **Dnevniku rada** vidi svih 5 zapisa s tekstom i satima (`useProjectWorkLogs` čita `project_work_logs`).
-- Ne vidi sažetak „sati po radniku" ni trošak rada. Oba se računaju iz `project_work_entries` × satnica iz `project_workers`.
-- Okidač `sync_work_log_to_entry` traži `project_workers` po (`project_id`, `user_id`). Kad ga ne nađe, preskače bez greške („Korisnik još nije mapiran"). Zato u Kaštelima ima 0 zapisa sati.
+NE sadrži: `custom_payment_sources` (saldo), `krug_settlement_ledger`, `budget_*`, `project_decisions*`.
 
-## 4. Prelaze li postojeći logovi automatski
-- **Samo stvaranje** zapisa radnika s `user_id` ne prenosi stare logove. Okidač radi samo na novi ili izmijenjeni dnevnik.
-- **Gumb „Poveži"** (`link_worker_to_member`) prenosi sve postojeće logove sa satima.
-- Put „+ Osoba" iz „Ljudi" (okidač `_person_link_inherit_down`) po kodu ne radi prijenos.
-- Dupli upis sprječava jedinstveni ključ `project_work_entries (worker_id, work_date)`. I okidač i prijenos rade upsert `ON CONFLICT (worker_id, work_date) DO UPDATE`. Ako Petar isti dan upiše ponovno, postojeći redak se prepisuje, ne nastaje drugi.
-- Siguran prijenos već postoji: vlasnik u Kaštelima doda radnika Petra sa satnicom, zatim ga otvori i klikne „Poveži" → Petar. Očekivano: `backfilled = 5`, 37 h.
-- Rizik: prijenos radi upsert, pa bi prepisao ručno upisane sate za isti dan. Za Kaštele takvih nema (0 redaka).
+| Hook / ekran | Tablica i filtar | Što radi kad stigne događaj |
+|---|---|---|
+| `useExpenseFetch` (Početna, popis, Novčanik – transakcije) | expenses, INSERT/UPDATE/DELETE, bez filtra; kanal `expenses-realtime-<user>` | Ručno mijenja lokalno stanje; `belongsToMyScope` odbacuje tuđe retke; ne invalidira saldo |
+| `useCustomPaymentSources` (saldo) | nema realtime-a | Samo `useAppResume` (povratak u prvi plan + online) |
+| `useKrug` | krug, krug_membership (user_id / krug_id), expenses (krug_id) | Invalidacija upita Kruga |
+| `useKrugSharedPaymentSources` | krug_shared_payment_source (krug_id) | Invalidacija |
+| `useKrugDeletion` | krug_deletion_request/vote (krug_id) | Invalidacija |
+| „Tko kome" / podmirenja (`useKrugSettlementMutations`) | ledger nije u publikaciji | Osvježava samo nakon vlastite mutacije |
+| `useProjectMilestones` | project_milestones, expenses (project_id) | Osvježava projekt |
+| `useProjectMembers`, `useProjectWorkEntries`, `useProjectActivity` | vlastite tablice po project_id / worker_id | Osvježavanje |
+| `useProjectDecisions` | project_decisions*, bez objave → događaji nikad ne stižu | Ništa u praksi |
+| Budžeti (`useBudgets`) | nema realtime-a | Ništa; ovise o popisu transakcija |
+| `useNotifications`, `useMailRealtime` | notifications, document_ingest_items | Za saldo nisu bitni |
 
-## 5. Drugi projekti u istom stanju
-Upit samo za čitanje: članovi s ulogom `worker`, bez `project_workers`, u neobrisanim projektima.
-- Rezultat: **1 projekt, 1 korisnik**. To su Kašteli (`533abe5a…`), Petar, 5 logova / 37 h.
-- Nijedan drugi projekt ni korisnik nije u tom stanju.
+Zamjenski put: `useAppResume` postoji u useExpenseFetch, useCustomPaymentSources, useNotifications, mail i ostalim hookovima.
 
-## 6. Prijedlog popravka (opis)
-1. **Upozorenje na članu:** na članu s ulogom „Radnik" bez zapisa radnika prikazati obavijest „Nema satnice — sati se ne obračunavaju" s gumbom „Postavi satnicu". Gumb otvara postojeći `ProjectWorkerDialog` s već odabranim članom.
-2. **Spremanje povezuje odmah:** u tom prozoru spremanje s odabranim članom stvara zapis radnika i odmah zove postojeći `link_worker_to_member`, pa se prošli dnevnici prenesu. Nema novog mehanizma ni SQL-a.
-3. **Poveznica s „Ljudi":** ako osoba iz „Ljudi" ima `linked_user_id` = taj član, ponuditi je kao osobu (postojeći `useWorkerIdentityAttach`).
-4. **Pri prihvatu pozivnice:** baza se ne mijenja. Vlasnik dobiva isti poziv na akciju u timu.
+`expenses` i `custom_payment_sources` imaju REPLICA IDENTITY DEFAULT: kod UPDATE/DELETE događaja stari red nosi samo `id`.
 
-Dokaz:
-- Vitest: član „Radnik" bez zapisa radnika pokazuje upozorenje. Spremanje s članom zove link RPC. Član sa zapisom ne pokazuje upozorenje.
-- SQL čuvar: dnevnik prije povezivanja, zatim povezivanje daje `backfilled = N`. Ponovni upis istog dana ne stvara duplikat. Drugo povezivanje ne udvostručuje sate.
-- Na živim podacima: vlasnik sam poveže Petra u Kaštelima. Zatim upit pokazuje 5 zapisa sati i 37 h u `project_work_entries`, a upit iz točke 5 vraća 0 redaka.
+## 2. Promjene salda bez realtime događaja za saldo
+
+SQL funkcije koje pišu `custom_payment_sources` (provjereno u bazi):
+- `_expenses_recompute_source_balance` (okidač na expenses): transakcija stiže realtime-om, ali novi saldo izvora ne.
+- `recompute_custom_source_balance`: preračun, bez transakcije.
+- `align_source_to_bank`: poravnanje s bankom.
+- `set_source_anchor`: sidro.
+- `apply_balance_delta_if_unanchored`.
+- Okidači na izvoru (`_cps_autoseed_anchor*`, `_cps_balance_guard_*`) mijenjaju isti redak.
+
+Serverske funkcije koje pišu izvore: `bank-sync-transactions` (+ `_shared/bankSyncDecision`), `bank-link-account`, `respond-to-invitation`, `mcp`, `financial-assistant`. Serverska funkcija `send-member-invitation` samo čita. Točan opseg pisanja za svaku provjerava se u Nalogu 1.
+
+Krug: RPC-ovi podmirenja pišu `krug_settlement_ledger`, a on nije u objavi. Transakcije podmirenja u expenses stižu realtime-om, ali stanje „Tko kome" ne. Merge (`merge_manual_with_bank`) piše expenses i stiže realtime-om, ali saldo ne.
+
+## 3. Prijedlog: jedan zajednički slušač
+
+**Tablice u objavi (zaseban nalog, migracija):**
+- `custom_payment_sources` i `krug_settlement_ledger`.
+- Opcionalno `budget_categories` i `budget_plans`. Najprije provjeriti treba li to uopće, jer se budžeti računaju iz transakcija.
+
+**Privatnost:**
+- Realtime `postgres_changes` provjerava SELECT RLS za INSERT/UPDATE. Svaki pretplatnik dobiva samo retke koje smije čitati.
+- Dijeljeni novčanik: postojeća SELECT politika na `custom_payment_sources` (vlasnik ili član) određuje primatelje. U Nalogu 1 provjeriti da politika ne pušta više od toga.
+- Krug: SELECT politika ledgera treba biti „samo članovi tog Kruga"; provjeriti politiku prije objave.
+- DELETE događaji se ne filtriraju po RLS-u i nose samo `id`. Slušač na DELETE zato samo pokreće osvježavanje po ključu, nikad ne čita podatke iz događaja.
+- Klijentska provjera dosega (`belongsToMyScope`) ostaje kao druga razina.
+
+**Jedan slušač (`LiveDataProvider` u postojećem kontekstnom sloju):**
+- Jedan kanal po korisniku umjesto više kanala po hooku.
+- Sluša expenses, custom_payment_sources, krug_settlement_ledger i krug_membership.
+- Događaj → oznaka „prljavo" za skupinu upita: transakcije, saldo, krug:<id>, budžeti.
+- Grupiranje: prvi događaj pokreće tajmer od 400 ms; svi događaji u tom prozoru spajaju se u jedno osvježavanje po skupini. Tvrda gornja granica je 1.500 ms od prvog događaja, što drži cilj ispod 2 s i kod velikog uvoza.
+- Postojeće ručno spajanje redaka u `useExpenseFetch` zamjenjuje se tim putem. Alternativno, ostaje za pojedinačni upis, a za pljusak (više od N događaja u prozoru) radi se jedan dohvat. Odluka u Nalogu 2.
+- Povratak veze ili prvog plana: postojeći `useAppResume` pokreće puno osvježavanje svih skupina i ponovno spajanje kanala, ako je pao.
+
+**Dijagnostika:**
+- Statusi kanala `CHANNEL_ERROR`, `TIMED_OUT` i `CLOSED` (neočekivano) te uspješno ponovno spajanje upisuju se u `app_diagnostics_logs`.
+- Event je `realtime_channel_state`, s doslovnim statusom i kodom greške, build stampom i trajanjem prekida.
+- Ograničenje: najviše jedan zapis po stanju u 60 s po uređaju, da se tablica ne napuni.
+
+**Mobitel (Capacitor):**
+- Jedan WebSocket i jedan kanal umjesto današnjih više kanala.
+- Kad aplikacija ide u pozadinu, kanal se odspaja nakon ~30 s. Po povratku se ponovno spaja i radi puno osvježavanje. Tako se ne troši baterija u pozadini.
+- Bez dodatnog pollinga.
+
+## 4. Rizici
+
+- **Optimistično stanje nasuprot realtime-u:** isti redak dođe dvaput, ili realtime prepiše optimističnu vrijednost. Rješenje: realtime samo invalidira, istina je serverski dohvat, a optimistični zapis se deduplicira po `id`.
+- **Redoslijed događaja:** transakcija i promjena salda stižu odvojeno i mogu doći obrnutim redom. Rješenje: grupirano osvježavanje uvijek dohvaća oboje zajedno, pa se ne prikazuje miješano stanje.
+- **Tuđi podaci:** RLS i klijentska provjera dosega. DELETE ne nosi podatke. SELECT politike za obje nove tablice provjeriti prije migracije.
+- **Trošak realtime poruka:** svaka promjena reda šalje jednu poruku svakom ovlaštenom pretplatniku. Veliki uvoz od npr. 500 redaka šalje oko 500 poruka za expenses i oko 500 za saldo izvora (okidač po retku). Stvarni broj izmjeriti na probi; po potrebi okidač preračuna svesti na jedan UPDATE po naredbi. To je zaseban, rizičan nalog (BALANCE DEPLOY GATE).
+- **Neaktivni kanali bez objave:** kanali za `project_decisions*` ne primaju ništa. Ili ih objaviti, ili ukloniti; odlučiti zasebno.
+- **REPLICA IDENTITY DEFAULT:** kod UPDATE događaja stari red nosi samo `id`. `detectAuthorOutcome` u `useExpenseFetch` čita stari red; provjeriti radi li danas.
+
+## 5. Dokaz
+
+- **Proba na dva uređaja (Milan i Vinka, dijeljeni novčanik):** tablica slučaj → vrijeme do prikaza na drugom uređaju, štopericom i iz dijagnostičkog zapisa.
+- **Slučajevi:** upis, uređivanje, brisanje, korekcija salda, sidro, poravnanje s bankom, preračun, bank sync, uvoz izvoda (velik), spajanje, Krug podmirenje (dužnik i primatelj), povratak iz pozadine i prekid mreže.
+- **Automatski:**
+  - Vitest za slušač: grupiranje, gornja granica 1.500 ms, preslikavanje događaja na skupine upita, DELETE bez podataka i zapis dijagnostike.
+  - Playwright s dvije sesije gdje je izvedivo: upis kroz jednu, mjerenje do prikaza u drugoj, prag 2 s.
+- **Mjera iz produkcije:** opcionalni zapis latencije (vrijeme `updated_at` → prikaz) u dijagnostiku, uzorkovano.
+
+## 6. Nalozi i redoslijed
+
+1. **Dijagnoza bez izmjena:** SELECT politike za `custom_payment_sources` i `krug_settlement_ledger`, točna pisanja serverskih funkcija, radi li `detectAuthorOutcome` bez punog starog reda.
+2. **Migracija:** dodati `custom_payment_sources` i `krug_settlement_ledger` u objavu, uz eventualno podešavanje REPLICA IDENTITY. Samo objava, bez promjene logike.
+3. **Klijent:** zajednički slušač, grupiranje, puno osvježavanje po povratku, dijagnostika kanala. Postojeći hookovi prelaze na njega, a stari kanali se uklanjaju. Testovi.
+4. **„Tko kome" i budžeti** na isti slušač.
+5. **Proba na dva uređaja** i mjerenje troška poruka kod velikog uvoza.
+6. **(Uvjetno)** smanjiti broj UPDATE-a salda po naredbi uvoza — samo ako mjerenje pokaže da je potrebno, uz SQL paket salda.
+
+Procjena: 4–5 naloga, šesti samo po potrebi.
