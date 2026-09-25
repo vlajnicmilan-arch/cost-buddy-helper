@@ -18,6 +18,7 @@ while read -r m; do
     psql -v ON_ERROR_STOP=1 -q -f "$f"
   done
 done < "$BAL/BALANCE_MIGRATIONS.txt"
+psql -v ON_ERROR_STOP=1 -q -f "$ROOT/supabase/tests/merge/baseline_extra.sql"
 psql -v ON_ERROR_STOP=1 -q -f "$ROOT/supabase/tests/krug_settle/baseline.sql"
 psql -v ON_ERROR_STOP=1 -q -f "$HERE/baseline.sql"
 MIG="${WPR_MIG:-$(grep -l 'FUNCTION public.worker_confirm_payout_receipt' "$ROOT"/drizzle/migrations/*.sql | sort | tail -1)}"
