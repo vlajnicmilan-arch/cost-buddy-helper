@@ -30,9 +30,14 @@ BEGIN
     'vars', p_vars
   );
 
-  INSERT INTO public.krug_notify_outbox (dedup_ref, event_type, payload)
-  VALUES (_dedup_ref, p_event_type, _payload)
-  ON CONFLICT (dedup_ref) DO NOTHING;
+  -- Outbox upis je u zasebnom bloku: iznimka u slanju ne smije ga poništiti
+  -- (plpgsql EXCEPTION radi rollback cijelog bloka do početka).
+  BEGIN
+    INSERT INTO public.krug_notify_outbox (dedup_ref, event_type, payload)
+    VALUES (_dedup_ref, p_event_type, _payload)
+    ON CONFLICT (dedup_ref) DO NOTHING;
+  EXCEPTION WHEN OTHERS THEN NULL;
+  END;
 
   SELECT decrypted_secret
     INTO _internal_key
