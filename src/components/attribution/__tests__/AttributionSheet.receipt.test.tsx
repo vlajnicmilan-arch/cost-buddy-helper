@@ -9,6 +9,8 @@ const m = vi.hoisted(() => ({
   showSuccess: vi.fn(),
   refetch: vi.fn(() => Promise.resolve()),
   t: (k: string) => k,
+  auth: { user: { id: 'worker' } },
+  noopNavigate: () => {},
   sources: [{ id: 'src-1', name: 'Tekući', icon: '💳', balance: 0, currency: 'EUR' }],
   payouts: [{ payout_id: 'p1', batch_id: null, project_name: 'X', paid_amount: 250, paid_at: '2026-09-16T10:00:00Z', status: 'paid' }],
 }));
@@ -20,8 +22,8 @@ vi.mock('@/lib/buildStamp', () => ({ getBuildStamp: () => 'assets/index-TEST.js'
 vi.mock('@/hooks/useStatusFeedback', () => ({ showError: m.showError, showSuccess: m.showSuccess }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: m.t }) }));
 vi.mock('@/hooks/useBackButton', () => ({ useBackButton: () => {} }));
-vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));
-vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'worker' } }) }));
+vi.mock('react-router-dom', () => ({ useNavigate: () => m.noopNavigate }));
+vi.mock('@/hooks/useAuth', () => ({ useAuth: () => m.auth }));
 vi.mock('@/contexts/CurrencyContext', () => ({ useCurrency: () => ({ formatAmount: (n: number) => String(n) }) }));
 vi.mock('@/hooks/useCustomPaymentSources', () => ({
   useCustomPaymentSources: () => ({ customPaymentSources: m.sources, loading: false }),
