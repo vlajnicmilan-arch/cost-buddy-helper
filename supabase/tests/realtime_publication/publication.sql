@@ -64,12 +64,14 @@ DROP TABLE IF EXISTS pg_temp.snap_after CASCADE;
 CREATE TEMP TABLE snap_after AS
   SELECT tablename FROM pg_publication_tables WHERE pubname = 'supabase_realtime';
 
+DROP TABLE IF EXISTS pg_temp.policies_after CASCADE;
 CREATE TEMP TABLE policies_after AS
   SELECT tablename, policyname, cmd, roles::text AS roles, qual, with_check
   FROM pg_policies
   WHERE schemaname = 'public'
     AND tablename IN ('custom_payment_sources','krug_settlement_ledger');
 
+DROP TABLE IF EXISTS pg_temp.repl_after CASCADE;
 CREATE TEMP TABLE repl_after AS
   SELECT c.relname, c.relreplident
   FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
