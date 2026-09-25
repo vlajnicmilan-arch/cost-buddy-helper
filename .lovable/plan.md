@@ -92,7 +92,7 @@ Krug: RPC-ovi podmirenja pišu `krug_settlement_ledger`, a on nije u objavi. Tra
 ## 6. Nalozi i redoslijed
 
 1. **Dijagnoza bez izmjena:** SELECT politike za `custom_payment_sources` i `krug_settlement_ledger`, točna pisanja serverskih funkcija, radi li `detectAuthorOutcome` bez punog starog reda.
-2. **Migracija:** dodati `custom_payment_sources` i `krug_settlement_ledger` u objavu, uz eventualno podešavanje REPLICA IDENTITY. Samo objava, bez promjene logike.
+2. **Migracija:** dodati `custom_payment_sources` i `krug_settlement_ledger` u objavu. Samo objava, bez promjene logike i bez REPLICA IDENTITY FULL za te dvije tablice (slušač samo invalidira). Nalaz iz naloga 1: `recompute_custom_source_balance` piše i kad se saldo ne mijenja, pa za novčanik sa sidrom svaki redak uvoza daje jedan UPDATE; mjeri se u koraku 5. Zasebna odluka izvan naloga 2: REPLICA IDENTITY FULL na `expenses` za potvrdu/odbijanje prijedloga u Krugu.
 3. **Klijent:** zajednički slušač, grupiranje, puno osvježavanje po povratku, dijagnostika kanala. Postojeći hookovi prelaze na njega, a stari kanali se uklanjaju. Testovi.
 4. **„Tko kome" i budžeti** na isti slušač.
 5. **Proba na dva uređaja** i mjerenje troška poruka kod velikog uvoza.
