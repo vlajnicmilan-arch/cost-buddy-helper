@@ -38,7 +38,8 @@ psql -v ON_ERROR_STOP=1 -q -f /tmp/krug_outbox_merge_fn.sql
 
 psql -v ON_ERROR_STOP=1 -q -f "$HERE/../krug_settle/baseline.sql"
 
-# krug_act_dedup + krug_apply_act (prva i zadnja definicija)
+# krug_is_member + krug_act_dedup + krug_apply_act (prva i zadnja definicija)
+psql -v ON_ERROR_STOP=1 -q -f "$ROOT/supabase/migrations/20260604191820_d11eb7b6-53fb-47a4-9c9c-89b7387210d4.sql"
 psql -v ON_ERROR_STOP=1 -q -f "$ROOT/supabase/migrations/20260604210100_75995acc-7985-499e-b6e9-c1ca4691a938.sql"
 psql -v ON_ERROR_STOP=1 -q -f "$ROOT/supabase/migrations/20260808183340_c42e3369-721d-4d55-959a-6a041c2fa120.sql"
 
