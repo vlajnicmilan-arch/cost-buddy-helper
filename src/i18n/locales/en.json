@@ -2506,7 +2506,9 @@
     "payoutExpenseLockedWorker": "This expense came from a worker payout — void the payout on the worker card.",
     "payoutExpenseLockedCollaborator": "This expense came from a collaborator payment — void the payment on the collaborator card.",
     "moduleWriteDenied": "The {{module}} module is not active",
-    "moduleWriteDeniedAction": "Unlock"
+    "moduleWriteDeniedAction": "Unlock",
+    "createBudget": "Error creating budget",
+    "updateBudget": "Error updating budget"
   },
   "onboarding": {
     "welcomeTitle": "Welcome!",

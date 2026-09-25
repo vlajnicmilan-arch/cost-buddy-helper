@@ -2513,7 +2513,9 @@
     "payoutExpenseLockedWorker": "Ovaj trošak je nastao isplatom radniku — poništi isplatu na kartici radnika.",
     "payoutExpenseLockedCollaborator": "Ovaj trošak je nastao plaćanjem suradniku — poništi plaćanje na kartici suradnika.",
     "moduleWriteDenied": "Modul {{module}} nije aktivan",
-    "moduleWriteDeniedAction": "Otključaj"
+    "moduleWriteDeniedAction": "Otključaj",
+    "createBudget": "Greška pri kreiranju budžeta",
+    "updateBudget": "Greška pri ažuriranju budžeta"
   },
   "onboarding": {
     "welcomeTitle": "Dobrodošli!",
