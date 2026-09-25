@@ -13,6 +13,7 @@ import { isSessionGone } from '@/lib/sessionGone';
 import { loadWithRetry } from '@/lib/loadWithRetry';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { wasDeleteApplied } from '@/lib/deleteConfirmation';
+import { registerWalletsRefresher } from '@/lib/liveData/walletsRefreshBus';
 
 /**
  * DIJELJENJE DOHVATA MEĐU INSTANCAMA
@@ -337,6 +338,18 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
   // Zajednički okidač (visibilitychange → visible + online) s debounceom živi
   // u `useAppResume`; ovaj hook samo tiho ponovi dohvat.
   useAppResume(fetchCustomPaymentSources, { enabled: !isLocalMode && !!userId });
+
+  // Živa salda: LiveDataProvider signals "wallets dirty"; this instance
+  // re-runs its own server fetch. A real change (force) drops the short share
+  // cache for this scope so the fetch reaches the server.
+  useEffect(() => {
+    if (isLocalMode || !userId) return;
+    const scopeKey = `payment_sources:${userId}:${allScopes ? 'all' : readProfileId || 'personal'}:${includePersonal ? 'incl' : 'excl'}`;
+    return registerWalletsRefresher(({ force }) => {
+      if (force) recentSourcesByScope.delete(scopeKey);
+      return fetchCustomPaymentSources();
+    });
+  }, [fetchCustomPaymentSources, isLocalMode, userId, allScopes, readProfileId, includePersonal]);
 
   // Subscribe to reorder events via Context to sync state across hook instances
   useEffect(() => {
