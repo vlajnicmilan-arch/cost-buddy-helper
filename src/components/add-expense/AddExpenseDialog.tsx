@@ -434,6 +434,10 @@ export const AddExpenseDialog = ({
 
   // Pripadnost tvrtki slijedi ODABRANI projekt; bez projekta ostaje današnji
   // izvor (aktivni poslovni profil). Popis projekata se ne mijenja.
+  // Nalog 6: ključeve stabla traži SAMO osobni upis (bez projekta i poslovnog
+  // profila). Poslovni i projektni način šalju zahtjev kao i prije.
+  const useCategoryTree = !selectedProjectId && !effectiveBusinessProfileId;
+
   const attributedBusinessProfileId = useMemo(
     () =>
       resolveExpenseBusinessProfileId({
@@ -464,10 +468,10 @@ export const AddExpenseDialog = ({
             categoryOriginRef.current = 'ai_suggested';
           }
           setAiSuggesting(false);
-        }, items.length > 0 ? items : undefined, aiAllowedCategories);
+        }, items.length > 0 ? items : undefined, aiAllowedCategories, useCategoryTree);
       }
     }
-  }, [type, getSuggestedCategory, aiCategorize, description, aiAllowedCategories]);
+  }, [type, getSuggestedCategory, aiCategorize, description, aiAllowedCategories, useCategoryTree]);
 
   const handleDescriptionChange = useCallback((value: string) => {
     setDescription(value);
@@ -484,10 +488,10 @@ export const AddExpenseDialog = ({
             categoryOriginRef.current = 'ai_suggested';
           }
           setAiSuggesting(false);
-        }, items.length > 0 ? items : undefined, aiAllowedCategories);
+        }, items.length > 0 ? items : undefined, aiAllowedCategories, useCategoryTree);
       }
     }
-  }, [type, getSuggestedCategory, aiCategorize, merchantName, aiAllowedCategories]);
+  }, [type, getSuggestedCategory, aiCategorize, merchantName, aiAllowedCategories, useCategoryTree]);
 
   useEffect(() => {
     if (open && customPaymentSources.length > 0 && paymentSource === 'cash') {
@@ -543,7 +547,7 @@ export const AddExpenseDialog = ({
       scanInProgressRef.current = true;
       setReceiptImage(base64);
       try {
-        const result = await scanReceipt(base64, customPaymentSources, customCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon })), aiAllowedCategories);
+        const result = await scanReceipt(base64, customPaymentSources, customCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon })), aiAllowedCategories, { categoryTree: useCategoryTree });
         if (result) {
           applyScannedResult(result);
         }
@@ -623,7 +627,7 @@ export const AddExpenseDialog = ({
 
   const handleScanMultipleImages = async () => {
     if (receiptImages.length === 0) return;
-    const result = await scanMultipleReceipts(receiptImages, customPaymentSources, customCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon })));
+    const result = await scanMultipleReceipts(receiptImages, customPaymentSources, customCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon })), undefined, { categoryTree: useCategoryTree });
     if (result) {
       applyScannedResult(result);
       setShowMultiImageCollector(false);

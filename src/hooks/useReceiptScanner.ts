@@ -1,3 +1,4 @@
+import { CATEGORY_TREE_VERSION } from '@/lib/categoryAssign';
 import { useState } from 'react';
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
@@ -72,6 +73,9 @@ import { compressImageDataUrl, RECEIPT_COMPRESS } from '@/lib/imageCompress';
 const compressImage = (base64: string): Promise<string> =>
   compressImageDataUrl(base64, RECEIPT_COMPRESS);
 
+/** Nalog 6: `categoryTree` = osobni upis → server vraća ključeve stabla. */
+export interface ScanCategoryOptions { categoryTree?: boolean }
+
 export const useReceiptScanner = () => {
   const { t } = useTranslation();
   const [scanning, setScanning] = useState(false);
@@ -82,16 +86,18 @@ export const useReceiptScanner = () => {
     customPaymentSources?: CustomPaymentSource[],
     customCategories?: { id: string; name: string; icon: string }[],
     /** Dopuštene kategorije ciljnog projekta (ključ + naziv); prazno = osobne. */
-    allowedCategories?: { id: string; name: string }[]
+    allowedCategories?: { id: string; name: string }[],
+    options?: ScanCategoryOptions
   ): Promise<ParsedReceipt | null> => {
-    return scanMultipleReceipts([imageBase64], customPaymentSources, customCategories, allowedCategories);
+    return scanMultipleReceipts([imageBase64], customPaymentSources, customCategories, allowedCategories, options);
   };
 
   const scanMultipleReceipts = async (
     imagesBase64: string[],
     customPaymentSources?: CustomPaymentSource[],
     customCategories?: { id: string; name: string; icon: string }[],
-    allowedCategories?: { id: string; name: string }[]
+    allowedCategories?: { id: string; name: string }[],
+    options?: ScanCategoryOptions
   ): Promise<ParsedReceipt | null> => {
     setScanning(true);
     setParsedData(null);
@@ -136,6 +142,8 @@ export const useReceiptScanner = () => {
           customPaymentSources: sourcesForApi,
           customCategories: customCategories || [],
           allowedCategories: allowedCategories && allowedCategories.length > 0 ? allowedCategories : undefined,
+          // Nalog 6: samo osobni upis traži ključeve stabla.
+          ...(options?.categoryTree ? { category_tree_version: CATEGORY_TREE_VERSION } : {}),
         };
 
         if (Capacitor.isNativePlatform()) {
