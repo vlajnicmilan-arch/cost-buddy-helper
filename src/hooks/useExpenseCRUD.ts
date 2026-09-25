@@ -1,3 +1,5 @@
+import { buildEditCorrection } from '@/lib/categoryCorrectionLog';
+import { getBuildStamp } from '@/lib/buildStamp';
 import { useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Expense, Category, PaymentSource, ReceiptItem, TransactionType } from '@/types/expense';
@@ -758,21 +760,27 @@ export const useExpenseCRUD = ({
 
         if (error) throw error;
 
-        // Feedback petlja: log korekciju samo ako je user promijenio AI/habit prijedlog.
+        // Nalog 6: svaki korisnikov ispravak kategorije (osobni zapis) ide u
+        // category_corrections — iz toga automatsko razvrstavanje uči.
         if (categoryChanged && !explicitOrigin) {
-          const oldOrigin = (oldExpense as any)?.category_origin as string | undefined;
-          if (oldOrigin === 'ai_suggested' || oldOrigin === 'ai_receipt' || oldOrigin === 'habit') {
-            supabase.from('category_corrections').insert({
-              user_id: user.id,
-              expense_id: expense.id,
-              original_category: oldExpense!.category,
-              corrected_category: expense.category,
-              original_origin: oldOrigin,
-              merchant_name: expense.merchant_name ?? null,
-              description: expense.description ?? null,
-            } as any).then(({ error: cErr }) => {
-              if (cErr) console.warn('[category_corrections] log failed', cErr.message);
-            });
+          const correction = buildEditCorrection(oldExpense as any, {
+            ...(expense as any),
+            category: (updatePayload as any).category,
+          }, user.id);
+          if (correction) {
+            const { error: cErr } = await supabase.from('category_corrections').insert(correction as any);
+            if (cErr) {
+              void import('@/lib/diagnosticLogger').then(({ logDiagnostic }) => logDiagnostic({
+                event: 'category_correction_save_error',
+                severity: 'error',
+                details: {
+                  code: (cErr as any).code ?? null,
+                  message: String(cErr.message ?? '').slice(0, 300),
+                  build: getBuildStamp(),
+                },
+              })).catch(() => {});
+              showError(t('categoryCorrection.saveError'));
+            }
           }
         }
 
