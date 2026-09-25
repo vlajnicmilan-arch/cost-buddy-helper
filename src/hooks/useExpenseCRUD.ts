@@ -384,6 +384,10 @@ export const useExpenseCRUD = ({
           // Parcijalni unique indeks `uniq_expenses_client_request` (user_id,
           // client_request_id) pretvara dupli klik / mrežni retry u no-op.
           client_request_id: (normalizedExpense as any).client_request_id ?? null,
+          // Oznake i vrsta zapisa (nalog 4): šalju se samo kad ih pozivatelj
+          // postavi; inače vrijedi DEFAULT stupca ('{}' / NULL).
+          ...(Array.isArray((normalizedExpense as any).tags) ? { tags: (normalizedExpense as any).tags } : {}),
+          ...((normalizedExpense as any).movement_kind !== undefined ? { movement_kind: (normalizedExpense as any).movement_kind } : {}),
           ...(precision ? { event_at: precision.event_at, time_confidence: precision.time_confidence } : {}),
         };
         const insertPayload = normalizeExpensePayload(basePayload, writerIntent);
@@ -403,6 +407,7 @@ export const useExpenseCRUD = ({
           attempts: number,
           rpcMs: number,
           message?: string,
+          code?: string | null,
         ) => {
           void import('@/lib/diagnosticLogger')
             .then(({ logDiagnostic }) => logDiagnostic({
@@ -416,6 +421,7 @@ export const useExpenseCRUD = ({
                 items: itemsPayload.length,
                 route: typeof window !== 'undefined' ? window.location.pathname : null,
                 message: (message || '').slice(0, 200),
+                ...(code ? { code } : {}),
               },
             }))
             .catch(() => { /* dijagnostika nikad ne blokira spremanje */ });
@@ -598,7 +604,7 @@ export const useExpenseCRUD = ({
                 return await applySaved(existing);
               }
             }
-            logSaveTiming('failed', err?.saveAttempts ?? 1, err?.saveMs ?? 0, err?.message);
+            logSaveTiming('failed', err?.saveAttempts ?? 1, err?.saveMs ?? 0, err?.message, err?.code ?? null);
             throw err;
           }
         };
@@ -739,6 +745,9 @@ export const useExpenseCRUD = ({
           krug_id: nextKrugId,
           krug_privacy: nextKrugPrivacy,
           krug_shared_status: nextKrugStatus,
+          // Oznake/vrsta zapisa: samo kad pozivatelj nosi polje (nikad ne briše tuđe).
+          ...(Array.isArray(expense.tags) ? { tags: expense.tags } : {}),
+          ...(expense.movement_kind !== undefined ? { movement_kind: expense.movement_kind } : {}),
           updated_at: new Date().toISOString(),
         }, 'default');
 
@@ -817,7 +826,18 @@ export const useExpenseCRUD = ({
       }
     } catch (error) {
       console.error('Error updating expense:', error);
-      showError(t('toasts.recategorizeError'));
+      const code = (error as any)?.code ?? null;
+      void import('@/lib/diagnosticLogger').then(({ logDiagnostic }) => logDiagnostic({
+        event: 'expense_update_error',
+        severity: 'error',
+        details: {
+          code,
+          message: String((error as any)?.message ?? error).slice(0, 300),
+          route: typeof window !== 'undefined' ? window.location.pathname : null,
+        },
+      })).catch(() => {});
+      // 23514 = CHECK (npr. neispravna oznaka/vrsta zapisa).
+      showError(code === '23514' ? t('expenseMarkers.errors.invalidMarker') : t('toasts.recategorizeError'));
     }
   }, [isLocalMode, user, expenses, setExpenses, handleTransactionUpdate, onBalanceUpdated, normalizePs, t, authReady, activeBusinessProfileId]);
 

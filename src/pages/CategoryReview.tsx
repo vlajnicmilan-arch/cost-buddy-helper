@@ -52,7 +52,7 @@ const CategoryReview = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-dvh bg-background pb-[calc(var(--bottom-nav-h)+1rem)]">
       <header className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b px-3 py-2 flex items-center gap-2">
         <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => navigate(-1)} aria-label={t('common.back')}>
           <ArrowLeft className="w-5 h-5" />

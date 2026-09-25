@@ -7,6 +7,7 @@
  * Prijedlog smije dirati SAMO category, movement_kind i tags.
  */
 import { CATEGORY_GROUPS, LEGACY_ALIASES, resolveTreeCategory } from '@/lib/categoryTree';
+import { isExpenseType, isIncomeType } from '@/lib/spendClassification';
 
 /** „Pokrivanje drugih pizdarija" — izuzeta iz svega, po ID-u. */
 export const REVIEW_EXEMPT_CATEGORY_ID = 'ab61e917-645c-465c-94f4-aec2645062e9';
@@ -152,7 +153,7 @@ export const LEAF_RULES: LeafRule[] = [
 
 export const matchLeafRule = (row: ReviewRow): string | null => {
   const text = rowText(row);
-  const isIncome = row.type === 'income';
+  const isIncome = isIncomeType(row);
   for (const r of LEAF_RULES) {
     if (!!r.income !== isIncome) continue;
     if (r.re.test(text)) return r.leaf;
@@ -178,7 +179,7 @@ interface MovementHit { proposal: ReviewProposal; reason: ReviewReason; confiden
 
 const matchMovement = (row: ReviewRow, ctx: ReviewContext, loanPersons: Set<string>): MovementHit | null => {
   const text = rowText(row);
-  const isExpense = row.type === 'expense';
+  const isExpense = isExpenseType(row);
   if (isExpense && ATM_RE.test(text)) {
     return { proposal: { movement_kind: 'atm' }, reason: 'atm', confidence: 'high' };
   }

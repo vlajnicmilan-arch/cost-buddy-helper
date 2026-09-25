@@ -7672,5 +7672,28 @@
       "invalid_value": "Vrijednost nije dopuštena.",
       "unknown": "Promjena nije spremljena. Pokušaj ponovno."
     }
+  },
+  "expenseMarkers": {
+    "kindToggle": "Ovo nije trošak ni prihod…",
+    "kindHint": "Odaberi ako je zapis pozajmica ili uplata u tvoju firmu. Ne broji se u potrošnju ni prihod; vrsta zapisa i iznos se ne mijenjaju.",
+    "kindNone": "Obični zapis",
+    "kindCurrent": "Trenutno: {{kind}}",
+    "card": {
+      "unnecessary": "Nepotrebno ovaj mjesec",
+      "luxury": "Luksuz ovaj mjesec",
+      "count_one": "{{count}} zapis",
+      "count_few": "{{count}} zapisa",
+      "count_other": "{{count}} zapisa"
+    },
+    "loans": {
+      "title": "Pozajmice po osobi",
+      "noName": "Bez imena",
+      "lent": "Dano {{given}} · vraćeno {{repaid}} · preostalo {{left}}",
+      "borrowed": "Primljeno {{received}} · vratio sam {{repaid}} · preostalo {{left}}"
+    },
+    "errors": {
+      "invalidMarker": "Oznaka ili vrsta zapisa nije valjana.",
+      "filterTag": "Oznaka"
+    }
   }
 }

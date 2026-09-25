@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -95,6 +96,8 @@ interface ScannedDataPreviewProps {
    * `showKrugSelector={false}` na roditelju (AddExpenseDialog).
    */
   showKrugSelector?: boolean;
+  /** Oznake + vrsta zapisa (osobni upis); roditelj odlučuje kad se prikazuju. */
+  markerSlot?: ReactNode;
   krugId?: string | null;
   krugPrivacy?: KrugSelectorPrivacy | null;
   onKrugChange?: (next: { krugId: string | null; privacy: KrugSelectorPrivacy | null }) => void;
@@ -141,6 +144,7 @@ export const ScannedDataPreview = ({
   onReject,
   onDateOrTimeEdited,
   showKrugSelector = false,
+  markerSlot,
   krugId = null,
   krugPrivacy = null,
 
@@ -420,6 +424,8 @@ export const ScannedDataPreview = ({
             </SelectContent>
           </Select>
         </div>
+
+        {markerSlot}
 
         {/* Tip field */}
         {scannedData.transaction_type !== 'transfer' && (

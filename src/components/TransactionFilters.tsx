@@ -14,6 +14,8 @@ import { cn } from '@/lib/utils';
 import { DateRange } from 'react-day-picker';
 import { PaymentSourceCard, CustomPaymentSource } from '@/types/customPaymentSource';
 import { useTranslation } from 'react-i18next';
+import { EXPENSE_TAGS, type ExpenseTag } from '@/lib/expenseMarkers';
+import { TAG_ICONS } from '@/components/expense-markers/ExpenseMarkerFields';
 import { CATEGORIES, INCOME_CATEGORIES, getCategoryInfo } from '@/types/expense';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { useModuleStates } from '@/hooks/useModuleStates';
@@ -39,6 +41,8 @@ export interface FilterState {
   paymentSource: string | undefined;
   /** Prikaži samo transakcije koje je korisnik označio s "Ne znam još što je ovo". */
   needsExplanationOnly: boolean;
+  /** Samo zapisi s ovom oznakom (Nepotrebno/Luksuz). */
+  tag?: ExpenseTag;
 }
 
 interface TransactionFiltersProps {
@@ -113,7 +117,8 @@ export const TransactionFilters = ({
     filters.scope !== 'all' ||
     filters.bankMatchStatus !== undefined ||
     filters.paymentSource !== undefined ||
-    filters.needsExplanationOnly;
+    filters.needsExplanationOnly ||
+    filters.tag !== undefined;
 
   const clearFilters = () => {
     onFiltersChange({
@@ -128,6 +133,7 @@ export const TransactionFilters = ({
       bankMatchStatus: undefined,
       paymentSource: undefined,
       needsExplanationOnly: false,
+      tag: undefined,
     });
   };
 
@@ -232,6 +238,27 @@ export const TransactionFilters = ({
           <AlertCircle className="w-3.5 h-3.5 text-muted-foreground" />
           {t('needsExplanation.filter', 'Bez objašnjenja')}
         </Button>
+
+        {/* Oznake — jedan dodir uključuje/isključuje filtar. */}
+        {EXPENSE_TAGS.map((tag) => {
+          const Icon = TAG_ICONS[tag];
+          const active = filters.tag === tag;
+          return (
+            <Button
+              key={tag}
+              type="button"
+              variant="outline"
+              size="sm"
+              aria-pressed={active}
+              data-testid={`filter-tag-${tag}`}
+              className={cn('h-8 text-xs gap-1.5', active && 'bg-muted border-foreground/30')}
+              onClick={() => updateFilter('tag', active ? undefined : tag)}
+            >
+              <Icon className="w-3.5 h-3.5 text-muted-foreground" />
+              {t(`categoryReview.tags.${tag}`)}
+            </Button>
+          );
+        })}
 
         {/* Preset Date Buttons */}
         {presetRanges.map((preset) => (
@@ -443,7 +470,7 @@ export const TransactionFilters = ({
 };
 
 // Helper function to apply filters to expenses
-export const applyFilters = <T extends { description: string; date: Date; amount: number; merchant_name?: string | null; user_id?: string; submitted_by?: string | null; payment_source_card_id?: string | null; project_id?: string | null; category?: string; bank_match_status?: string | null; payment_source?: string | null; needs_explanation?: boolean | null }>(
+export const applyFilters = <T extends { description: string; date: Date; amount: number; merchant_name?: string | null; user_id?: string; submitted_by?: string | null; payment_source_card_id?: string | null; project_id?: string | null; category?: string; bank_match_status?: string | null; payment_source?: string | null; needs_explanation?: boolean | null; tags?: readonly string[] | null }>(
   items: T[],
   filters: FilterState,
   currentUserId?: string
@@ -509,6 +536,7 @@ export const applyFilters = <T extends { description: string; date: Date; amount
     }
 
     if (filters.needsExplanationOnly && item.needs_explanation !== true) return false;
+    if (filters.tag !== undefined && !(Array.isArray(item.tags) && item.tags.includes(filters.tag))) return false;
 
     return true;
   });
@@ -527,4 +555,5 @@ export const defaultFilters: FilterState = {
   bankMatchStatus: undefined,
   paymentSource: undefined,
   needsExplanationOnly: false,
+  tag: undefined,
 };

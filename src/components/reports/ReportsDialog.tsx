@@ -76,6 +76,7 @@ import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { ExportButton } from '@/components/ui/export-button';
 import { isRealIncome, isRealSpend } from '@/lib/spendClassification';
+import { MarkersOverview } from './MarkersOverview';
 
 interface ReportsDialogProps {
   expenses: Expense[];
@@ -692,6 +693,7 @@ export const ReportsDialog = ({ expenses, triggerClassName, triggerLabel }: Repo
 
           {/* Report Tab */}
           <TabsContent value="report" className="space-y-6">
+            <MarkersOverview expenses={expenses} />
             {/* Period & Income Source Selection */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Period Selection */}
