@@ -2,7 +2,16 @@
  * Živa salda — nalog 3: shared live listener for custom_payment_sources.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, act } from '@testing-library/react';
+import { render as rtlRender, act } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ReactElement } from 'react';
+
+const qc = new QueryClient();
+const wrap = (ui: ReactElement) => <QueryClientProvider client={qc}>{ui}</QueryClientProvider>;
+const render = (ui: ReactElement) => {
+  const r = rtlRender(wrap(ui));
+  return { ...r, rerender: (next: ReactElement) => r.rerender(wrap(next)) };
+};
 import { createRefreshBatcher } from '@/lib/liveData/refreshBatcher';
 import {
   registerWalletsRefresher,
@@ -36,8 +45,10 @@ vi.mock('@/integrations/supabase/client', () => ({
         subCb: null,
         removed: false,
         on(_t, filter, h) {
-          this.filter = filter;
-          this.handler = h;
+          if (!this.handler) {
+            this.filter = filter;
+            this.handler = h;
+          }
           return this;
         },
         subscribe(cb) {
