@@ -1,46 +1,97 @@
-# Krug — obavijest autoru o ishodu prijedloga: dijagnoza isporuke i plan popravka
+# Radnici: potvrda isplate na strani radnika (plan, bez izmjena)
 
-## Dijagnoza isporuke (samo čitanje, 24.9.2026.)
+## 0. Glavni nalaz: tok već postoji (v1.0)
+Veći dio priče je već izgrađen:
+- `AttributionSheet` (globalni host u `App.tsx`) radnik otvara dodirom na obavijest `worker_payout_created` ili `worker_payout_voided` (`useNotificationNavigation`).
+- U njemu radnik bira svoj novčanik. Klijent kroz `addExpense` upisuje prihod (`type='income'`, `category='salary'`) s poveznicom `worker_payout_id`, a za zbirnu isplatu `worker_payout_batch_id`.
+- Dvostruki upis sprječava jedinstveni indeks (user_id, worker_payout*_id); greška 23505 prikazuje se kao „Već pripisano".
+- Podatke o isplati radnik čita samo kroz `get_my_incoming_payouts` (SECURITY DEFINER, `w.user_id = auth.uid()`).
+- Storno prikazuje info panel i ne dira ništa radnikovo.
 
-### 1. Zapisi serverske funkcije
-- `supabase--edge_function_logs` za `notify-krug-event`: **nema nijednog zapisa** (ni boot, ni poziv) u dostupnom prozoru.
-- Analitički zapisi (`function_edge_logs`) za `notify-krug-event`: **0 redaka**, i za 24.9. 17:30–18:10 i za cijeli dostupni raspon. Drugim funkcijama zapisi postoje, pa prozor nije prazan općenito.
-- `net._http_response` za 24.9.: istekao (čuva se 24 h) — ne mogu provjeriti je li HTTP poziv uopće stigao.
-- Zaključak: za dva propuštena čina **ne postoji nikakav trajni trag** ni na strani emit funkcije ni na strani notify funkcije. To je samo po sebi nalaz.
+Ne gradi se nova paralelna funkcija. Postojeći tok se učvršćuje na tri mjesta: isporuka obavijesti, upis na serveru i „Nisam primio".
 
-### 2. `krug_emit_notification` (živa definicija, provjerena)
-- Poziv: `net.http_post(url, headers, body)` — **bez `timeout_milliseconds`** (pg_net zadani timeout je kratak, red veličine ~2 s) i bez provjere povratnog `request_id`.
-- Ključ dolazi iz vaulta (`krug_notify_internal_key`); ako nedostaje: `RAISE WARNING` i tihi izlaz — bez zapisa.
-- Ako `net.http_post` baci iznimku: **nema EXCEPTION bloka** — iznimka se penje u `krug_apply_act` i može srušiti cijeli čin potvrde/odbijanja (rollback).
-- Ako HTTP poziv kasnije ne uspije (timeout, 4xx/5xx): jedini trag je `net._http_response`, koji istječe za 24 h. U `app_diagnostics_logs` se ne piše ništa.
-- `net.http_post` je asinkron: emit ne saznaje ishod isporuke.
+## 1. Tok podataka (provjereno upitima)
+- **Veza s računom:** `project_worker_payouts.worker_id` → `project_workers.user_id`. Ako je taj stupac prazan, radnik je nepovezan i nema obavijesti ni greške (JOIN s uvjetom `w.user_id IS NOT NULL`).
+- **Obavijest u aplikaciji:** upisuje je `enqueue_worker_payout_notifications`, sinkronim INSERT-om u `notifications`.
+  - Zovu je samo `create_person_payout` i `create_worker_payout_batch`.
+  - `create_worker_payout` (pojedinačna isplata) i `void_worker_payout` je NE zovu.
+- **Push:** klijent nakon RPC-a zove `notify-worker-payout` bez čekanja i bez ponovnog pokušaja (`useWorkerPayouts.ts` 201, 227, 261, 274). Ta funkcija sama piše da više ne upisuje red u `notifications`.
+- **Stanje u bazi:** povezanih isplata je 8, a obavijest `worker_payout_created` ima samo jedna (19.8.). Za ostalih 7 red u `notifications` nije pronađen. Svih 8 ipak ima pripisan prihod: radnik je unosio ručno ili na drugi način. Uzrok nije potvrđen; vjerojatno je riječ o putu kroz `create_worker_payout`.
+- Petrova isplata od 13.9. (`f60d70ae…`) već ima pripisan prihod.
 
-### 3. Dedup u `notify-krug-event`
-- Dedup je po `user_id + type + data @> {dedup_ref}` — točno podudaranje JSON sadržaja, **nema prefiksnog uspoređivanja**; `dedup_ref` nosi jedinstveni `krug_act_dedup.id` po činu (`krug_expense_confirmed:act:<dedup_id>`). Lažni dedup-pogodak između različitih činova **nije moguć**.
-- Preference gate: `is_push_category_enabled(user, 'krug')` — Milan ima `krug_enabled: true`; osim toga, Milan je za čin u 17:49 obavijest **zapravo primio**, pa preference nisu uzrok.
+Prvi korak gradnje: potvrditi kojim RPC-om nastaje koja isplata i gdje se obavijest gubi. Također treba potvrditi koji klijent zove `create_person_payout` (u `src` nisam našao poziv).
 
-### 4. Širi pregled (30 dana)
-- `krug_act_dedup` (cijela tablica): 3 uspješna A1 čina, sva 24.9. 17:44–17:53; A2: 0, A5: 0.
-- Obavijesti `krug_expense_*` u 30 dana: 2 retka, oba 24.9. (confirmed 17:49:42 → Milan; proposed 17:52:47 → Milan).
-- Starije obavijesti (8.8.: 3 confirmed + 3 rejected) nemaju odgovarajuće retke u `krug_act_dedup` — tada je drugačiji izvor emitirao; nisu mjerljive ovim spojem.
-- **Isporuka A1 u 30 dana: 1/3 (33 %).** Propušteno: 17:44:31 (00541759…, autor Milan) i 17:53:06 (d6ce9aee…, autor Petar). Dostavljeno: 17:49:38 (25711e43…).
-- Zanimljivo: između dva propuštena čina jedan je prošao — isporuka je povremena, ne potpuno pokvarena.
+## 2. Obavijest pouzdano
+- Obavijest za `created` i `voided` upisuje server, unutar istog RPC-a u kojem nastaje ili se stornira isplata. Uključuje `create_worker_payout` i `void_worker_payout`, kroz postojeći `enqueue_worker_payout_notifications`.
+  - Upis je sinkron i u istoj transakciji, pa se ne može tiho izgubiti kao HTTP poziv.
+  - Upis je u EXCEPTION bloku (uzorak 0016) i nikad ne ruši isplatu; greška ide u `app_diagnostics_logs` kao `worker_payout_notify_error`.
+- Push: zajednički outbox za sve obavijesti ne postoji; `krug_notify_outbox` je samo za Krug. Dvije mogućnosti:
+  - (a) **preporuka:** poopćiti outbox, tj. dodati `source` (krug | worker_payout) i isti retry cron. Klijentski fire-and-forget poziv se uklanja.
+  - (b) push ostaje klijentski, a red u aplikaciji je jamstvo.
+  Odluka je na tebi.
+- Dedup ključ je `worker_payout:<payout_id|batch_id>:<created|voided>`.
 
-### 5. Vjerojatan uzrok
-- Emit radi `net.http_post` bez timeouta i bez ikakve povratne provjere. Kad HTTP poziv ne uspije (hladni start funkcije, kratki pg_net timeout, mrežni prekid), čin je već zapisan u `krug_act_dedup`, obavijest se više **nikad ne pokušava**, a trag nestaje za 24 h. Uzrok pojedinačnog propuštanja ne mogu dokazati (tragovi istekli), ali arhitektura jamči da je svaki promašaj **tihan i neoporavljiv**.
-- Sekundarni rizik: iznimka iz `net.http_post` penje se u `krug_apply_act` bez zaštite.
+## 3. Potvrda primitka na serveru: `worker_confirm_payout_receipt`
+Parametri: `(p_payout_id uuid | p_batch_id uuid, p_source_id uuid, p_client_request_id uuid, p_amount numeric DEFAULT NULL)`. Obrazac je `krug_confirm_settlement_receipt`:
+- zvati je smije samo `auth.uid() = project_workers.user_id` za sve isplate u zahtjevu;
+- isplata ne smije biti stornirana;
+- `can_write_payment_source(source, uid)`;
+- ista valuta traži točan iznos; druga valuta traži `p_amount > 0`;
+- ponovni poziv s istim `client_request_id` vraća `idempotent: true`, a drugi zahtjev za istu isplatu vraća `already_confirmed`. Uz to vrijedi i postojeći jedinstveni indeks.
+- Upis: `type='income'`, `category='salary'`, `expense_nature` ostaje NULL, `movement_kind` NULL, `status='approved'`, plus `worker_payout_id` ili `worker_payout_batch_id`.
+  - **Zašto NULL:** `isRealIncome` isključuje svaki `movement_kind` i sve `NON_SPENDING_NATURES`. Za radnika je isplata stvarni prihod (plaća), za razliku od Krug podmirenja, koje je samo vraćanje duga. Zato prihod mora ući u izvješća.
+- Opis: „Isplata za rad" ili „Isplata za rad: <projekt>". Preporuka je bez imena projekta, jer radnik ionako vidi projekt kroz poveznicu. Ime projekta nije tajna prema radniku, pa odluku prepuštam tebi.
+- `AttributionSheet` prelazi s `addExpense` na ovu RPC funkciju. Izgled ostaje isti.
 
-## Plan popravka (za odobrenje; gradnja tek nakon naloga)
+## 4. Storno kod vlasnika — usporedba
+| | (A) samo javiti (preporuka) | (B) meko poništenje kao void u Krugu |
+|---|---|---|
+| Radnikovi podaci | netaknuti | server mu označi prihod kao poništen |
+| Pristanak | poštuje „nitko ne piše u tuđe financije" | vlasnik mijenja radnikove brojke |
+| Stvarni novac | radnik je novac možda stvarno primio, a storno je knjigovodstveni | pogrešno ako je novac primljen |
 
-1. **Trag neuspjeha (obavezno):** u `krug_emit_notification`:
-   - umotati cijeli emit u EXCEPTION blok (uzorak 0016) — obavijest nikad ne ruši čin;
-   - postaviti `timeout_milliseconds` (npr. 5000);
-   - pohraniti `request_id` iz `net.http_post`;
-   - zapisati u `app_diagnostics_logs` događaj `krug_emit_queued` (dedup_ref, krug_id, event_type, request_id, verzija funkcije) i pri iznimci `krug_emit_error` (code, message, build stamp).
-2. **Provjera ishoda i ponovni pokušaj:** lagani cron (npr. svakih 5 min) ili proširenje postojećeg drain mehanizma: za redke iz `krug_act_dedup` (A1/A2/A5, outcome `ok*`) bez odgovarajuće obavijesti starije od ~2 minute, ponovno pozvati emit (dedup u notify funkciji sprječava dvostruku obavijest). Ishod HTTP poziva čitati iz `net._http_response` dok je svjež; neuspjeh (status ≥ 400 ili error_msg) zapisati u `app_diagnostics_logs` kao `krug_emit_failed`.
-3. **Ukloniti `detectAuthorOutcome`** iz `useExpenseFetch` (uvijek vraća `null`; uz REPLICA IDENTITY FULL jednog dana stvorio bi dvostruki signal) — zajedno s `src/lib/krugAuthorOutcome.ts` i njegovim testom; toast ključeve ukloniti iz hr/en/de ako se ne koriste drugdje.
-4. **Testovi:**
-   - SQL čuvar (ROLLBACK): A1/A2 emitiraju točno jednom po novom činu; ponovljeni `client_request_id` ne emitira; iznimka u emitu ne ruši `krug_apply_act`; zapis u `app_diagnostics_logs` nastaje pri grešci.
-   - vitest: čuvar da `useExpenseFetch` više ne sadrži toast ishoda; postojeći `krugNotificationPayload`/route testovi ostaju.
+Preporuka je (A): obavijest `voided`, postojeći info panel s gumbom „Otvori moj unos". Radnik sam odlučuje hoće li unos obrisati.
 
-Bez promjene REPLICA IDENTITY, bez novog okidača na `expenses`, bez diranja saldo logike. Migracija je zaseban nalog; ne objavljivati.
+## 5. „Nisam primio"
+- RPC `worker_report_payout_not_received(payout_id|batch_id, client_request_id)`: zvati je smije samo povezani radnik, jednom po isplati.
+- Upisuje oznaku u novu tablicu `worker_payout_receipt_reports` i obavijest vlasniku `worker_payout_not_received` s rutom na isplatu.
+- Nema automatskog storna. Dedup ključ je `worker_payout_nr:<id>`.
+
+## 6. Ekrani
+- Obavijest otvara postojeći `AttributionSheet` s ciljem `confirm=1`.
+- U „Moja zarada na projektu" dolazi odjeljak „Isplate na čekanju": isplate bez pripisa i bez prijave, čitane kroz novu `get_my_pending_payouts()` (SECURITY DEFINER, samo moje).
+- `AttributionSheet` dobiva gumb „Nisam primio". Izgled ostaje uz postojeći sheet; `KrugConfirmReceiptDialog` služi kao uzor za tekstove i stanja.
+- Novi tekstovi na hr, en i de.
+
+## 7. Postojeće isplate
+Nema naknadnog slanja. Serverska obavijest vrijedi samo za isplate nastale nakon migracije. „Isplate na čekanju" prikazuju samo isplate s `created_at` nakon datuma uvođenja, da se stare ne pojave.
+
+## Tehnički detalji
+- **Migracije:**
+  1. `enqueue` pozivi u `create_worker_payout` i `void_worker_payout`, polazeći od žive definicije;
+  2. `worker_confirm_payout_receipt` i `worker_report_payout_not_received`;
+  3. tablica `worker_payout_receipt_reports` (GRANT, RLS: radnik čita svoje, vlasnik čita za svoje projekte, upis samo kroz RPC);
+  4. `get_my_pending_payouts`;
+  5. po odluci (a), stupac `source` u outboxu i proširenje retryja.
+  Sve SECURITY DEFINER funkcije dobivaju `REVOKE ALL … FROM PUBLIC, anon`.
+- **Balance deploy gate:** RPC upisuje u `expenses` i mijenja saldo novčanika, pa je obavezan zeleni `supabase/tests/balance`.
+- **SQL čuvari (novi paket `worker_payout_receipt`):**
+  - samo povezani radnik smije potvrditi, a vlasnik i treća osoba dobivaju 42501;
+  - točno jedan prihod, a ponovni poziv je idempotentan;
+  - storniranu isplatu nije moguće potvrditi;
+  - druga valuta traži iznos;
+  - `isRealIncome`: prihod bez `expense_nature` i bez `movement_kind`;
+  - pojedinačna isplata i storno upisuju točno jednu obavijest;
+  - greška obavijesti ne ruši isplatu i ostavlja trag;
+  - „Nisam primio" šalje obavijest vlasniku i ne mijenja isplatu;
+  - anon i authenticated nemaju pristup tablici izvan RLS-a.
+- **vitest:** `AttributionSheet` zove RPC, a ne `addExpense`; gumb „Nisam primio"; `useWorkerPayouts` bez klijentskog `notify-worker-payout` (po odluci a); odjeljak „Isplate na čekanju".
+- **Procjena:** 3 naloga.
+  1. Dijagnoza i server: obavijest na serveru i outbox.
+  2. RPC-ovi za potvrdu i „Nisam primio" uz SQL čuvare.
+  3. Ekrani i vitest.
+
+## Otvorene odluke
+1. Push kroz poopćeni outbox (a) ili ostaje klijentski (b)?
+2. Opis prihoda s imenom projekta ili bez njega?
+3. Storno: (A) samo javiti, ili (B) meko poništenje?
