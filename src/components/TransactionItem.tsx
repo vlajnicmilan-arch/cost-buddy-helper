@@ -18,6 +18,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { TransactionAttribution } from './transactions/TransactionAttribution';
 import { isExpenseType, isIncomeType } from '@/lib/spendClassification';
+import { ExpenseMarkerIcons } from './expense-markers/ExpenseMarkerIcons';
 
 export interface TransactionContextLookup {
   budgets?: { id: string; name: string; icon?: string | null; color?: string | null }[];
@@ -476,6 +477,7 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
             {isExpenseType(expense) ? '-' : expense.type === 'transfer' ? '↔' : '+'}{formatAmount(Number(expense.amount), expense.currency as any)}
           </p>
           <div className="flex items-center gap-1">
+            <ExpenseMarkerIcons tags={expense.tags} movementKind={expense.movement_kind} />
             {installmentLabel && (
               <span className="inline-flex items-center gap-0.5 px-1.5 py-0 rounded-full bg-primary/15 text-primary text-[10px] font-bold">
                 <CreditCard className="w-2.5 h-2.5" />
@@ -534,6 +536,8 @@ export const TransactionItem = React.memo((props: TransactionItemProps) => {
     prev.expense.bank_match_status === next.expense.bank_match_status &&
     prev.expense.possible_duplicate_of === next.expense.possible_duplicate_of &&
     prev.expense.needs_explanation === next.expense.needs_explanation &&
+    (prev.expense.tags ?? []).join(',') === (next.expense.tags ?? []).join(',') &&
+    prev.expense.movement_kind === next.expense.movement_kind &&
     (prev.expense as any).pending_sync === (next.expense as any).pending_sync &&
     prev.contextLookup === next.contextLookup &&
     prev.onDelete === next.onDelete &&
