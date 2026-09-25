@@ -17,6 +17,19 @@ ALTER TABLE public.expenses
   ADD COLUMN IF NOT EXISTS krug_shared_status public.krug_shared_status,
   ADD COLUMN IF NOT EXISTS krug_reject_reason text;
 
+CREATE TABLE IF NOT EXISTS public.app_diagnostics_logs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id text,
+  user_id uuid,
+  event text,
+  route text,
+  details jsonb,
+  device_info jsonb,
+  app_version text,
+  created_at timestamptz DEFAULT now(),
+  severity text
+);
+
 CREATE OR REPLACE FUNCTION public.krug_is_member(_krug uuid, _user uuid)
  RETURNS boolean
  LANGUAGE sql
