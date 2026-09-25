@@ -22,7 +22,7 @@
 - [x] Nalog 2: `isRealSpend` / `isRealIncome` za sve čitače (nije objavljeno)
 - [ ] Krug podmirenje s izborom izvora — plan napisan, čeka zaseban nalog
 - [x] Nalog 3: migracija (`custom_categories.group_key`, `expenses.tags`, `expenses.movement_kind`) + izbornik u dvije razine (nije objavljeno)
-- [ ] Nalog 5: zaslon „Pregled kategorija" (prijedlozi po trgovcu, potvrda korisnika)
+- [x] Nalog 5: zaslon „Pregled kategorija" (prijedlozi, potvrda, poništavanje; nije objavljeno)
 - [ ] Nalog 4: oznake (Nepotrebno, Luksuz) + vrste zapisa (pozajmica, uplata u firmu)
 - [ ] Nalog 6: AI s novim ključevima + učenje iz `category_corrections`
 - [ ] Nalog 7: budžeti po skupini, PDF, izvoz

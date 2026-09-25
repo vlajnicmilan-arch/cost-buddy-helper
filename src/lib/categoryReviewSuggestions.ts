@@ -296,7 +296,7 @@ export const buildCategoryReview = (rows: ReviewRow[], ctx: ReviewContext): Cate
 
     // 5) Promjena bi tražila promjenu type → samo lista „treba tvoju odluku".
     if (r.type === 'transfer') {
-      if (cat && !res.isTransfer) push('needs_decision', 'type_change', 'low', null, r);
+      if (cat && cat !== 'other' && !res.isTransfer) push('needs_decision', 'type_change', 'low', null, r);
       continue;
     }
 
