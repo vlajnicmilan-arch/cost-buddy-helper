@@ -8110,6 +8110,10 @@ export type Database = {
         Args: { p_krug_id: string }
         Returns: string[]
       }
+      krug_notify_outbox_mark_delivered: {
+        Args: { p_dedup_ref: string }
+        Returns: undefined
+      }
       krug_override_confirm: { Args: { p_override_id: string }; Returns: Json }
       krug_override_propose: {
         Args: { p_expense_id: string; p_shares: Json }

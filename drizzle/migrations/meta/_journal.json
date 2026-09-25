@@ -148,6 +148,13 @@
       "when": 1790373660092,
       "tag": "0020_krug_notify_outbox_table",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1790373688665,
+      "tag": "0021_krug_notify_outbox_mark_delivered",
+      "breakpoints": true
     }
   ]
 }
