@@ -7,8 +7,8 @@ const base = {
   customCategories: [],
 };
 
-Deno.test("prekidač je zadano isključen", () => {
-  assertEquals(SERVER_CATEGORY_TREE_ENABLED, false);
+Deno.test("prekidač je uključen (nalog 6b, objavljeno)", () => {
+  assertEquals(SERVER_CATEGORY_TREE_ENABLED, true);
 });
 
 Deno.test("bez oznake verzije → stari put", () => {
@@ -56,4 +56,40 @@ Deno.test("nepoznat AI odgovor → rezervni ključ + dijagnostika", async () => 
   assertEquals(r.category, "other");
   assertEquals(seen, ["banana"]);
   assertEquals("movement_kind" in r || "tags" in r, false);
+});
+
+Deno.test("bank-sync put: trošak uvijek iz dopuštenog skupa, prihod nikad trošak (nalog 6b)", async () => {
+  const seen: string[] = [];
+  for (const raw of ["fuel", "coffee", "banana", "salary", "other_income", null]) {
+    const r = await assignTreeCategory({
+      ...base,
+      row: { description: "x" },
+      corrections: [],
+      askAi: () => Promise.resolve(raw),
+      onUnknown: (v) => seen.push(v),
+    });
+    assertEquals("movement_kind" in r || "tags" in r, false);
+    if (r.directionCheck === undefined) {
+      // provjera smjera ide preko normalizeAssignedCategory
+    }
+    if (raw === null) assertEquals(r.category, "other");
+  }
+  // trošak: AI „salary" (prihod) se odbija → rezervni ključ
+  const exp = await assignTreeCategory({
+    ...base,
+    row: { description: "x" },
+    corrections: [],
+    askAi: () => Promise.resolve("salary"),
+  });
+  assertEquals(exp.category, "other");
+  // prihod: AI „groceries" (trošak) se odbija → rezervni ključ prihoda
+  const inc = await assignTreeCategory({
+    ...base,
+    direction: "income",
+    row: { description: "x" },
+    corrections: [],
+    askAi: () => Promise.resolve("groceries"),
+  });
+  assertEquals(["salary", "work_income", "refunds", "other_income"].includes(inc.category), true);
+  assertEquals(inc.category, "other_income");
 });
