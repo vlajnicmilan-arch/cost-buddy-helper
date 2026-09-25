@@ -1,4 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import {
+  assignTreeCategory,
+  clientWantsTree,
+  loadLearnedCorrections,
+  loadTreeCustomCategories,
+  logUnknownAiCategory,
+  treePromptLines,
+} from "../_shared/categoryAutoAssign.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { captureEdgeError } from "../_shared/sentry.ts";
 import { checkAiQuota, consumeCoreScanQuota, refundCoreScanQuota, isInternalSkipQuota } from "../_shared/aiQuota.ts";
@@ -220,7 +228,15 @@ serve(async (req) => {
     // Popis kategorija: kad je trošak vezan uz projekt, klijent šalje
     // dopuštene kategorije te vrste projekta i AI bira ISKLJUČIVO iz njih.
     const restrictedCategories = Array.isArray(allowedCategories) && allowedCategories.length > 0;
-    const categoriesBlock = restrictedCategories
+    // NALOG 6: nova aplikacija (oznaka verzije) bez projektnog popisa dobiva
+    // popis iz registra stabla; svi ostali — točno kao prije.
+    const useTree = clientWantsTree(body) && !restrictedCategories;
+    const treeCustoms = useTree ? await loadTreeCustomCategories(supabase, userId) : [];
+    const treeBlock = useTree
+      ? `KATEGORIJE (odaberi NAJSPECIFIČNIJI ključ; koristi ISKLJUČIVO ove ključeve; dopuna/bankomat → "transfer"; ako nisi siguran → "other"):\n`
+        + treePromptLines(treeCustoms, 'expense').lines
+      : '';
+    const categoriesBlock = useTree ? treeBlock : restrictedCategories
       ? `KATEGORIJE (odaberi NAJSPECIFIČNIJU koja odgovara; koristi ISKLJUČIVO ove ključeve):\n`
         + allowedCategories.map((c: any) => `- ${c.id} → ${c.name ?? c.id}`).join('\n')
       : `KATEGORIJE (odaberi NAJSPECIFIČNIJU koja odgovara):
@@ -253,7 +269,7 @@ serve(async (req) => {
 
     // Build custom categories context
     let customCategoriesContext = '';
-    if (!restrictedCategories && customCategories && customCategories.length > 0) {
+    if (!useTree && !restrictedCategories && customCategories && customCategories.length > 0) {
       const catList = customCategories.map((cat: any) => `- ${cat.id} → ${cat.icon} ${cat.name}`).join('\n');
       customCategoriesContext = `\n\nKORISNIKOVE PRILAGOĐENE KATEGORIJE (koristi ih ako odgovaraju sadržaju računa):\n${catList}\nAko nijedna prilagođena kategorija ne odgovara, koristi standardne kategorije.`;
     }
@@ -727,6 +743,24 @@ Vrati SAMO JSON bez dodatnog teksta.`;
             total_price: Number(it.total_price) || 0,
           }))
       : [];
+
+    // NALOG 6: naučeni ispravak pobjeđuje AI; AI izlaz prolazi jednu provjeru.
+    if (useTree) {
+      const txType = receiptData.transaction_type || 'expense';
+      const direction = txType === 'income' ? 'income' : 'expense';
+      const corrections = await loadLearnedCorrections(supabase, userId);
+      const assigned = await assignTreeCategory({
+        row: { merchant_name: receiptData.merchant ?? receiptData.issuer_name ?? null, description: receiptData.description ?? null },
+        userId,
+        direction,
+        customCategories: treeCustoms,
+        corrections: txType === 'transfer' ? [] : corrections,
+        allowTransfer: txType === 'transfer',
+        askAi: async () => (typeof receiptData.category === 'string' ? receiptData.category : null),
+        onUnknown: (raw) => { void logUnknownAiCategory('parse-receipt', userId, raw); },
+      });
+      receiptData.category = assigned.category;
+    }
 
     return new Response(
       JSON.stringify({
