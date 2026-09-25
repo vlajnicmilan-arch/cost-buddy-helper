@@ -26,7 +26,7 @@
 - [x] Nalog 4: oznake (Nepotrebno, Luksuz) + vrste zapisa + pregled pozajmica (nije objavljeno)
 - [x] Nalog 6: AI s novim ključevima + učenje iz `category_corrections`
 - [x] Nalog 6b: prekidač SERVER_CATEGORY_TREE_ENABLED uključen, bank-sync-transactions objavljena
-- [ ] Živa salda: nalozi 1–3 gotovi (3: LiveDataProvider za novčanike, nije objavljeno); sljedeći nalog 4
+- [ ] Živa salda: nalozi 1–4 gotovi (4: Krug ledger + signal transakcija za budžet, nije objavljeno); sljedeći nalog 5
 - [x] Nalog 7: budžeti po skupini, filtri, PDF i izvoz (nije objavljeno)
 
 Pravila za sve naloge:
