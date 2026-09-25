@@ -162,6 +162,13 @@
       "when": 1790374835029,
       "tag": "0022_krug_emit_v2",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790375352085,
+      "tag": "0023_krug_outbox_privileges",
+      "breakpoints": true
     }
   ]
 }
