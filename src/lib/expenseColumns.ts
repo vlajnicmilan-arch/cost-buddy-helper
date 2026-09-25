@@ -32,6 +32,8 @@ export const EXPENSE_LIST_COLUMNS = [
   'amount',
   'description',
   'category',
+  'tags',
+  'movement_kind',
   'type',
   'date',
   'receipt_url',
