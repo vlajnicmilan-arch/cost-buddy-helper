@@ -19,9 +19,12 @@ BEGIN
 END $$;
 
 -- Stanje PRIJE ponovne primjene iskaza objave.
+-- (DROP prije CREATE: pooler sesija može zadržati privremene tablice iz prethodnog pokretanja.)
+DROP TABLE IF EXISTS pg_temp.snap_before CASCADE;
 CREATE TEMP TABLE snap_before AS
   SELECT tablename FROM pg_publication_tables WHERE pubname = 'supabase_realtime';
 
+DROP TABLE IF EXISTS pg_temp.policies_before CASCADE;
 CREATE TEMP TABLE policies_before AS
   SELECT tablename, policyname, cmd, roles::text AS roles, qual, with_check
   FROM pg_policies
