@@ -162,3 +162,20 @@ describe('objava — stari klijent i isključen prekidač', () => {
     }
   });
 });
+
+describe('merchantKey: opći bankovni izrazi (7b)', () => {
+  it('„Kartično plaćanje 1234 KONZUM" uči po „konzum"', () => {
+    expect(merchantKey({ description: 'Kartično plaćanje 1234 KONZUM' })).toBe('konzum');
+  });
+  it('sam opći izraz ili kratki ključ → prazno (nema učenja)', () => {
+    for (const d of ['Kartično plaćanje', 'PLAĆANJE KARTICOM 5555', 'Uplata', 'Terećenje', 'POS', 'VISA', 'Trajni nalog', 'ab']) {
+      expect(merchantKey({ description: d })).toBe('');
+    }
+    expect(merchantKey({ merchant_name: 'Mastercard' })).toBe('');
+  });
+  it('ispravak s općim opisom se ne prenosi', () => {
+    const c = corr({ merchant_name: null, description: 'Kartično plaćanje', corrected_category: 'coffee' });
+    expect(pickLearnedCategory({ description: 'Kartično plaćanje' }, [c], { userId: UID, customCategories: customs })).toBeNull();
+  });
+});
+

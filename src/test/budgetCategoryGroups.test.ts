@@ -164,4 +164,19 @@ describe('PDF i izvoz', () => {
     expect(header.split(',')).toEqual(['Datum', 'Tip', 'Opis', 'Skupina', 'Kategorija', 'Način plaćanja', 'Iznos']);
     expect(row.split(',')).toHaveLength(7);
   });
+
+  it('CSV uključuje izuzetu kategoriju pod njenim imenom', async () => {
+    exportTextFile.mockClear();
+    await generateCSVReport({
+      expenses: [tx(EXEMPT_CATEGORY_ID, 1419.98)],
+      dateRange: { start: new Date('2026-04-01'), end: new Date('2026-04-30') },
+      totals: { income: 0, expenses: 1419.98, balance: -1419.98, transfers: 0 },
+      byCategory: { [EXEMPT_CATEGORY_ID]: 1419.98 },
+      byPaymentSource: {},
+      customCategories: [{ id: EXEMPT_CATEGORY_ID, name: 'Pokrivanje drugih pizdarija', group_key: null }],
+    } as Parameters<typeof generateCSVReport>[0]);
+    const csv = String(exportTextFile.mock.calls[0][0]);
+    expect(csv).toContain('Pokrivanje drugih pizdarija');
+    expect(csv).toContain('1419');
+  });
 });
