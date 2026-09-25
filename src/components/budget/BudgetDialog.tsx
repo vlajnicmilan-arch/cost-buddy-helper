@@ -17,7 +17,7 @@ import {
   DEFAULT_BUDGET_COLORS, 
   DEFAULT_BUDGET_ICONS 
 } from '@/types/budget';
-import { getCategoryInfo } from '@/types/expense';
+import { getCategoryInfo, type Category } from '@/types/expense';
 import { BudgetLimitCategorySelect } from '@/components/budget/BudgetLimitCategorySelect';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { Plus, Trash2, Loader2, Repeat, CalendarRange } from 'lucide-react';
@@ -108,7 +108,7 @@ export const BudgetDialog = ({
   const handleCategoryChange = (index: number, field: keyof CategoryLimit, value: string | number) => {
     const updated = [...categoryLimits];
     if (field === 'category') {
-      updated[index] = { ...updated[index], category: value as string, icon: getCategoryInfo(value as string).icon };
+      updated[index] = { ...updated[index], category: value as string, icon: getCategoryInfo(value as Category).icon };
     } else {
       updated[index] = { ...updated[index], [field]: value };
     }

@@ -81,7 +81,7 @@ describe('budžet: skupina i list', () => {
   it('movement_kind i korekcija ne ulaze', () => {
     const { perLimit, unassigned } = allocateToLimits([
       tx('coffee', 10, { movement_kind: 'loan_given' } as Partial<Expense>),
-      tx('coffee', 20, { expense_nature: 'correction' } as Partial<Expense>),
+      tx('coffee', 20, { expense_nature: 'correction' } as unknown as Partial<Expense>),
       tx('coffee', 3),
     ], ['coffee']);
     expect(perLimit[0].map((e) => e.amount)).toEqual([3]);
