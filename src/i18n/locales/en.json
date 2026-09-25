@@ -7667,5 +7667,8 @@
       "invalidMarker": "The tag or entry kind is not valid.",
       "filterTag": "Tag"
     }
+  },
+  "categoryCorrection": {
+    "saveError": "Category changed, but the correction was not remembered for next time."
   }
 }
