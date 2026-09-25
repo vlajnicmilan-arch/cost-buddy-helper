@@ -26,6 +26,7 @@ import { WalletViewModeProvider } from "@/contexts/WalletViewModeContext";
 import { AppLockProvider } from "@/contexts/AppLockContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { LiveDataProvider } from "@/contexts/LiveDataContext";
 import { resolveAuthReturnPath, readAuthReturn, consumeAuthReturn } from "@/lib/authReturn";
 
 import { LockScreen } from "@/components/LockScreen";
@@ -439,6 +440,7 @@ const App = () => (
       <AuthProvider>
         <StorageProvider>
           <AppStateProvider>
+            <LiveDataProvider>
             <WalletViewModeProvider>
               <AppLockProvider>
                 <CurrencyProvider>
@@ -483,6 +485,7 @@ const App = () => (
                 </CurrencyProvider>
               </AppLockProvider>
             </WalletViewModeProvider>
+            </LiveDataProvider>
           </AppStateProvider>
         </StorageProvider>
       </AuthProvider>
