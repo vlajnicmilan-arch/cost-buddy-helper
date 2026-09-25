@@ -134,6 +134,13 @@
       "when": 1790362121683,
       "tag": "0018_category_review",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1790369372523,
+      "tag": "0019_realtime_publication_wallet_ledger",
+      "breakpoints": true
     }
   ]
 }
