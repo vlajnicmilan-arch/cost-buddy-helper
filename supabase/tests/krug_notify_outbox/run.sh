@@ -38,6 +38,10 @@ psql -v ON_ERROR_STOP=1 -q -f /tmp/krug_outbox_merge_fn.sql
 
 psql -v ON_ERROR_STOP=1 -q -f "$HERE/../krug_settle/baseline.sql"
 
+# krug_act_dedup + krug_apply_act (prva i zadnja definicija)
+psql -v ON_ERROR_STOP=1 -q -f "$ROOT/supabase/migrations/20260604210100_75995acc-7985-499e-b6e9-c1ca4691a938.sql"
+psql -v ON_ERROR_STOP=1 -q -f "$ROOT/supabase/migrations/20260808183340_c42e3369-721d-4d55-959a-6a041c2fa120.sql"
+
 SETTLE_SRC="$(grep -l 'CREATE OR REPLACE FUNCTION public.krug_mark_settled_with_source' "$ROOT"/drizzle/migrations/*.sql | sort | tail -1)"
 echo "-- applying $(basename "$SETTLE_SRC")"
 psql -v ON_ERROR_STOP=1 -q -f "$SETTLE_SRC"
