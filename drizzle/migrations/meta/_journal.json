@@ -183,6 +183,13 @@
       "when": 1790376693802,
       "tag": "0025_worker_payout_notify_outbox_real",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1790377825796,
+      "tag": "0026_worker_confirm_payout_receipt",
+      "breakpoints": true
     }
   ]
 }
