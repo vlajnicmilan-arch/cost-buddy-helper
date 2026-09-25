@@ -69,9 +69,6 @@ Deno.test("bank-sync put: trošak uvijek iz dopuštenog skupa, prihod nikad tro�
       onUnknown: (v) => seen.push(v),
     });
     assertEquals("movement_kind" in r || "tags" in r, false);
-    if (r.directionCheck === undefined) {
-      // provjera smjera ide preko normalizeAssignedCategory
-    }
     if (raw === null) assertEquals(r.category, "other");
   }
   // trošak: AI „salary" (prihod) se odbija → rezervni ključ
