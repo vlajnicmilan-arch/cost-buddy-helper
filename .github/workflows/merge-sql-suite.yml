@@ -11,6 +11,7 @@ on:
       - 'supabase/migrations/**'
       - 'supabase/tests/merge/**'
       - 'supabase/tests/krug_settle/**'
+      - 'supabase/tests/work_entry_notify/**'
       - 'drizzle/migrations/**'
       - 'src/lib/manualBankMergePair.ts'
       - 'src/lib/mergeOfferCandidate.ts'
@@ -22,6 +23,7 @@ on:
       - 'supabase/migrations/**'
       - 'supabase/tests/merge/**'
       - 'supabase/tests/krug_settle/**'
+      - 'supabase/tests/work_entry_notify/**'
       - 'drizzle/migrations/**'
       - 'src/lib/manualBankMergePair.ts'
       - 'src/lib/mergeOfferCandidate.ts'
@@ -106,3 +108,19 @@ jobs:
             exit 1
           fi
           echo "Krug settle guards: $pass_count assertions PASS"
+
+      - name: Run work-entry notify + worker link SQL guards
+        run: |
+          set -euo pipefail
+          psql -d postgres -c "DROP DATABASE IF EXISTS work_entry_notify_test" -c "CREATE DATABASE work_entry_notify_test"
+          PGDATABASE=work_entry_notify_test bash supabase/tests/work_entry_notify/run.sh 2>&1 | tee /tmp/wen.out
+          if grep -E '^(psql:.*ERROR|ERROR:|FAIL )' /tmp/wen.out; then
+            echo "Work entry notify guards reported failures" >&2
+            exit 1
+          fi
+          pass_count=$(grep -c 'PASS W' /tmp/wen.out || true)
+          if [ "$pass_count" -lt 4 ]; then
+            echo "Work entry notify guards ran only $pass_count assertions (expected >= 4)" >&2
+            exit 1
+          fi
+          echo "Work entry notify guards: $pass_count assertions PASS"

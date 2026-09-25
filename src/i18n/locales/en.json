@@ -1136,7 +1136,9 @@
     "moveSummary": {
       "expenses": "{{count}} expenses, {{total}} € in total",
       "crossScope": "Expenses stay linked to the wallet they were paid from. No wallet balance changes."
-    }
+    },
+    "workerLinkedWithBackfillHours": "Linked — {{count}} days transferred, {{hours}} h in total",
+    "linkNotAuthenticated": "Your session expired — please sign in again"
   },
   "estimates": {
     "title": "Quotes & Estimates",

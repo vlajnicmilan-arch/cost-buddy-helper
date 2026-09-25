@@ -33,3 +33,7 @@ Pravila za sve naloge:
 - Pretvaranje troška u prijenos (Aircash, bankomat...) mijenja saldo drugog novčanika. Smije ići samo kroz korisnikov pregled, uz provjeru salda i upozorenje kad je zapis nakon sidra.
 - Pozajmice: stanje po osobi (dano / vraćeno / preostalo), bez veze s `business_debts` u ovom krugu.
 - „Pokrivanje drugih pizdarija" je izuzeta iz svega, po ID-u.
+
+## Radnici — povezivanje i obavijest o satima
+- [x] Obavijest o upisanim satima ne ruši upis (0016) + greške „Poveži" u dijagnostiku, poruka s danima i satima
+- [ ] Kašteli: vlasnik sam povezuje Petra kroz aplikaciju nakon objave (čeka korisnika)
