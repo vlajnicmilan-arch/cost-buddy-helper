@@ -8,7 +8,7 @@
  * - Prijenos na vlastiti račun i bankomat ostaju postojeći tok prijenosa
  *   (type='transfer'); ovdje se ne nude.
  */
-import { isRealSpend } from './spendClassification';
+import { isExpenseType, isRealSpend } from './spendClassification';
 
 export const EXPENSE_TAGS = ['unnecessary', 'luxury'] as const;
 export type ExpenseTag = (typeof EXPENSE_TAGS)[number];
@@ -80,7 +80,7 @@ export function buildMarkerFieldsForInsert(input: {
     ? input.movementKind
     : null;
   return {
-    tags: input.type === 'expense' ? sanitizeTags(input.tags) : [],
+    tags: isExpenseType(input) ? sanitizeTags(input.tags) : [],
     movement_kind: kind,
   };
 }
