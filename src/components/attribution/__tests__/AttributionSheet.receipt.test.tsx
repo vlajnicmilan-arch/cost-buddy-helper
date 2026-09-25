@@ -19,6 +19,7 @@ vi.mock('@/lib/diagnosticLogger', () => ({ logDiagnostic: m.logDiagnostic }));
 vi.mock('@/lib/buildStamp', () => ({ getBuildStamp: () => 'assets/index-TEST.js' }));
 vi.mock('@/hooks/useStatusFeedback', () => ({ showError: m.showError, showSuccess: m.showSuccess }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: m.t }) }));
+vi.mock('@/hooks/useBackButton', () => ({ useBackButton: () => {} }));
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));
 vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'worker' } }) }));
 vi.mock('@/contexts/CurrencyContext', () => ({ useCurrency: () => ({ formatAmount: (n: number) => String(n) }) }));
