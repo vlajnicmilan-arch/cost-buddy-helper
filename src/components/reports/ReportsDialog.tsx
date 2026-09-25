@@ -473,9 +473,9 @@ export const ReportsDialog = ({ expenses, triggerClassName, triggerLabel }: Repo
             color: INCOME_CATEGORY_COLORS[categoryId] || '#22c55e',
           };
         }
-        // Fallback
+        // Fallback (novi ključevi listova prihoda kroz registar)
         return {
-          name: categoryId,
+          name: getCategoryInfo(categoryId as IncomeCategory).name,
           value: amount,
           icon: '💰',
           color: '#22c55e',
@@ -1250,7 +1250,7 @@ export const ReportsDialog = ({ expenses, triggerClassName, triggerLabel }: Repo
                     const customCat = customIncomeCategories.find(c => c.id === transaction.category);
                     const incomeInfo = customCat || INCOME_CATEGORIES.find(c => c.id === transaction.category);
                     const icon = customCat?.icon || incomeInfo?.icon || '💰';
-                    const catName = customCat?.name || incomeInfo?.name || transaction.category;
+                    const catName = customCat?.name || incomeInfo?.name || getCategoryInfo(transaction.category as IncomeCategory).name;
                     
                     return (
                       <div 

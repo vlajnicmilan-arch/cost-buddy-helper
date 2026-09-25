@@ -350,7 +350,7 @@ const BulkCategoryDialogControlled = ({ expenses, onUpdateExpenses, open, onOpen
     if (customCategory) {
       return { id: customCategory.id as Category, name: customCategory.name, icon: customCategory.icon, color: customCategory.color };
     }
-    return CATEGORIES[CATEGORIES.length - 1];
+    return getCategoryInfo(categoryId as Category);
   };
 
   const toggleSelect = (id: string) => {

@@ -6,6 +6,8 @@ import { parseLocaleAmount } from '@/lib/money';
 import { formatDateHr } from '@/lib/dateFormat';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { TreeCategoryOptions } from '@/components/categories/TreeCategoryOptions';
+import { isTreeLeafKey } from '@/lib/categoryTreeOptions';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Check, RotateCcw, FolderKanban, PiggyBank, Smartphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -187,7 +189,7 @@ export const ScannedDataPreview = ({
       scannedData.category,
       !!nextId,
       nextType,
-      (c) => CATEGORIES.some((x) => x.id === c) || customCategories.some((x) => x.id === c),
+      (c) => CATEGORIES.some((x) => x.id === c) || isTreeLeafKey(c) || customCategories.some((x) => x.id === c),
     );
     if (next !== scannedData.category) {
       onScannedDataChange({ ...scannedData, category: next as Category });
@@ -405,39 +407,16 @@ export const ScannedDataPreview = ({
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {!projectCategories && customCategories.length > 0 && (
-                <>
-                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                    {t('categories.custom', 'Prilagođene')}
-                  </div>
-                  {customCategories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      <span className="flex items-center gap-2">
-                        <span 
-                          className="w-5 h-5 rounded flex items-center justify-center text-xs"
-                          style={{ backgroundColor: cat.color + '20', color: cat.color }}
-                        >
-                          {cat.icon}
-                        </span>
-                        <span>{cat.name}</span>
-                      </span>
-                    </SelectItem>
-                  ))}
-                </>
-              )}
-              {!projectCategories && (
-                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                  {t('paymentSources.standardSources', 'Standardne')}
-                </div>
-              )}
-              {(projectCategories ?? CATEGORIES).map((cat) => (
+              {projectCategories ? projectCategories.map((cat) => (
                 <SelectItem key={cat.id} value={cat.id}>
                   <span className="flex items-center gap-2">
                     <span>{cat.icon}</span>
                     <span>{t(`categories.${cat.id}`, cat.name)}</span>
                   </span>
                 </SelectItem>
-              ))}
+              )) : (
+                <TreeCategoryOptions mode="expense" customCategories={customCategories} currentValue={scannedData.category} />
+              )}
             </SelectContent>
           </Select>
         </div>

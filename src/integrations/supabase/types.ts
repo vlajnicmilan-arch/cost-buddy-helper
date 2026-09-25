@@ -1329,6 +1329,7 @@ export type Database = {
         Row: {
           color: string
           created_at: string
+          group_key: string | null
           icon: string
           id: string
           name: string
@@ -1338,6 +1339,7 @@ export type Database = {
         Insert: {
           color?: string
           created_at?: string
+          group_key?: string | null
           icon?: string
           id?: string
           name: string
@@ -1347,6 +1349,7 @@ export type Database = {
         Update: {
           color?: string
           created_at?: string
+          group_key?: string | null
           icon?: string
           id?: string
           name?: string
@@ -1862,6 +1865,7 @@ export type Database = {
           location_name: string | null
           merchant_name: string | null
           milestone_id: string | null
+          movement_kind: string | null
           needs_explanation: boolean
           note: string | null
           owner_funding_choice: string | null
@@ -1877,6 +1881,7 @@ export type Database = {
           reviewed_by: string | null
           status: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by: string | null
+          tags: string[]
           time_confidence: string
           transfer_counterpart_origin: string | null
           type: string
@@ -1934,6 +1939,7 @@ export type Database = {
           location_name?: string | null
           merchant_name?: string | null
           milestone_id?: string | null
+          movement_kind?: string | null
           needs_explanation?: boolean
           note?: string | null
           owner_funding_choice?: string | null
@@ -1949,6 +1955,7 @@ export type Database = {
           reviewed_by?: string | null
           status?: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by?: string | null
+          tags?: string[]
           time_confidence?: string
           transfer_counterpart_origin?: string | null
           type?: string
@@ -2006,6 +2013,7 @@ export type Database = {
           location_name?: string | null
           merchant_name?: string | null
           milestone_id?: string | null
+          movement_kind?: string | null
           needs_explanation?: boolean
           note?: string | null
           owner_funding_choice?: string | null
@@ -2021,6 +2029,7 @@ export type Database = {
           reviewed_by?: string | null
           status?: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by?: string | null
+          tags?: string[]
           time_confidence?: string
           transfer_counterpart_origin?: string | null
           type?: string
@@ -7460,6 +7469,7 @@ export type Database = {
           location_name: string | null
           merchant_name: string | null
           milestone_id: string | null
+          movement_kind: string | null
           needs_explanation: boolean
           note: string | null
           owner_funding_choice: string | null
@@ -7475,6 +7485,7 @@ export type Database = {
           reviewed_by: string | null
           status: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by: string | null
+          tags: string[]
           time_confidence: string
           transfer_counterpart_origin: string | null
           type: string

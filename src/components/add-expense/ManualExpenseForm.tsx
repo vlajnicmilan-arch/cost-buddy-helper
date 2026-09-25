@@ -18,6 +18,7 @@ import { CustomIncomeCategory } from '@/types/customIncomeCategory';
 import { ReceiptCaptureButtons } from './ReceiptCaptureButtons';
 import { AdvanceLinkSection } from './AdvanceLinkSection';
 import { QuickAddCategoryInline } from './QuickAddCategoryInline';
+import { TreeCategoryOptions } from '@/components/categories/TreeCategoryOptions';
 import { PaymentSourceSelector } from './PaymentSourceSelector';
 import { OwnerFundingChoiceBlock, OwnerFundingChoiceValue } from './OwnerFundingChoiceBlock';
 import { PaymentSourceOptions } from './PaymentSourceOptions';
@@ -119,7 +120,7 @@ interface ManualExpenseFormProps {
   onCancelQuickAddCategory: () => void;
   onCreateQuickCategory: (
     mode: 'expense' | 'income',
-    data: { name: string; icon: string; color: string }
+    data: { name: string; icon: string; color: string; group_key?: string | null }
   ) => Promise<string | null>;
   /** OZNAKA "BEZ OBJAŠNJENJA" — korisnikova kvačica, nikad automatika. */
   needsExplanation?: boolean;
@@ -658,39 +659,16 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
                 </SelectItem>
               </div>
               )}
-              {!projectCategories && props.customCategories.length > 0 && (
-                <>
-                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    {t('transactions.customSources', 'Prilagođene')}
-                  </div>
-                  {props.customCategories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      <span className="flex items-center gap-2">
-                        <span 
-                          className="w-5 h-5 rounded flex items-center justify-center text-xs"
-                          style={{ backgroundColor: cat.color + '20', color: cat.color }}
-                        >
-                          {cat.icon}
-                        </span>
-                        <span>{cat.name}</span>
-                      </span>
-                    </SelectItem>
-                  ))}
-                </>
-              )}
-              {!projectCategories && (
-                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                  {t('paymentSources.standardSources', 'Standardne')}
-                </div>
-              )}
-              {(projectCategories ?? CATEGORIES).map((cat) => (
+              {projectCategories ? projectCategories.map((cat) => (
                 <SelectItem key={cat.id} value={cat.id}>
                   <span className="flex items-center gap-2">
                     <span>{cat.icon}</span>
                     <span>{t(`categories.${cat.id}`, cat.name)}</span>
                   </span>
                 </SelectItem>
-              ))}
+              )) : (
+                <TreeCategoryOptions mode="expense" customCategories={props.customCategories} currentValue={props.category} />
+              )}
             </SelectContent>
           </Select>
           {!projectCategories && props.quickAddCategoryMode === 'expense' && (
@@ -736,37 +714,7 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
                   </span>
                 </SelectItem>
               </div>
-              {props.customIncomeCategories.length > 0 && (
-                <>
-                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    {t('transactions.customSources')}
-                  </div>
-                  {props.customIncomeCategories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      <span className="flex items-center gap-2">
-                        <span 
-                          className="w-5 h-5 rounded flex items-center justify-center text-xs"
-                          style={{ backgroundColor: cat.color + '20', color: cat.color }}
-                        >
-                          {cat.icon}
-                        </span>
-                        <span>{cat.name}</span>
-                      </span>
-                    </SelectItem>
-                  ))}
-                </>
-              )}
-              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                {t('paymentSources.standardSources')}
-              </div>
-              {INCOME_CATEGORIES.map((cat) => (
-                <SelectItem key={cat.id} value={cat.id}>
-                  <span className="flex items-center gap-2">
-                    <span>{cat.icon}</span>
-                    <span>{t(`incomeCategories.${cat.id}`)}</span>
-                  </span>
-                </SelectItem>
-              ))}
+              <TreeCategoryOptions mode="income" customIncomeCategories={props.customIncomeCategories} currentValue={props.category} />
             </SelectContent>
           </Select>
           {props.quickAddCategoryMode === 'income' && (

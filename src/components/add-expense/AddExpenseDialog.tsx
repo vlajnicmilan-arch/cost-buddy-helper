@@ -153,7 +153,7 @@ export const AddExpenseDialog = ({
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<Category | IncomeCategory>('food');
+  const [category, setCategory] = useState<Category | IncomeCategory>('groceries');
   const [locationName, setLocationName] = useState<string | null>(null);
   const [locationCoords, setLocationCoords] = useState<string | null>(null);
   const [merchantName, setMerchantName] = useState('');
@@ -1033,7 +1033,7 @@ export const AddExpenseDialog = ({
     scannedPreviewActiveRef.current = false;
     setAmount('');
     setDescription('');
-    setCategory('food');
+    setCategory('groceries');
     userManuallySetCategory.current = false;
     categoryOriginRef.current = null;
     setAiSuggesting(false);

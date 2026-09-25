@@ -1926,7 +1926,34 @@
       "save": "Spremi i odaberi",
       "duplicateWarning": "Slična kategorija već postoji: \"{{name}}\". Svejedno dodaj?"
     },
-    "salary": "Plaća"
+    "salary": "Plaća",
+    "coffee": "Kava i piće",
+    "restaurants": "Restorani",
+    "delivery": "Dostava",
+    "marenda": "Marenda",
+    "fuel": "Gorivo",
+    "car_service": "Servis i popravak",
+    "car_parts": "Dijelovi",
+    "tolls_parking": "Cestarine i parking",
+    "car_registration": "Registracija i osiguranje",
+    "ferry": "Trajekt",
+    "taxi": "Taxi i Bolt",
+    "lodging": "Smještaj",
+    "tools": "Alat i oprema",
+    "workers": "Radnici",
+    "contractors": "Izvođači",
+    "home_goods": "Stvari za dom",
+    "loan_repayment": "Otplata kredita",
+    "installments": "Rate",
+    "bank_fees": "Bankovne naknade",
+    "care": "Njega",
+    "hobbies": "Hobiji i događaji",
+    "cafes": "Kafići i restorani",
+    "work": "Posao",
+    "loans": "Krediti",
+    "fees_taxes": "Naknade i porezi",
+    "personal": "Osobno",
+    "fun": "Zabava"
   },
   "incomeCategories": {
     "salary": "Plaća",
@@ -1940,7 +1967,9 @@
     "editCategory": "Uredi kategoriju prihoda",
     "dialogDescription": "Definirajte naziv, ikonu i boju kategorije prihoda.",
     "namePlaceholder": "Npr. Dividende, Najam...",
-    "addNew": "Dodaj novu kategoriju"
+    "addNew": "Dodaj novu kategoriju",
+    "work_income": "Posao",
+    "refunds": "Povrati"
   },
   "paymentSources": {
     "correctionHelper": "Korekcija vrijedi za današnji dan. Novi unosi se zbrajaju od sutra.",
@@ -7551,6 +7580,10 @@
       "other_income": "Ostali prihodi"
     },
     "unsorted": "Nerazvrstano",
-    "transfer": "Prijenos"
+    "transfer": "Prijenos",
+    "legacySection": "Starije kategorije",
+    "currentSection": "Trenutno",
+    "moveTo": "Skupina",
+    "moveHint": "Premjesti kategoriju u skupinu ili je ostavi u „Mojim kategorijama\"."
   }
 }

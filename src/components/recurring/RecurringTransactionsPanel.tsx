@@ -61,7 +61,9 @@ export const RecurringTransactionsPanel = ({ onClose }: RecurringTransactionsPan
   const getCatDisplay = (type: string, category: string) => {
     if (type === 'income') {
       const ic = INCOME_CATEGORIES.find(c => c.id === category);
-      return ic ? `${ic.icon} ${ic.name}` : category;
+      if (ic) return `${ic.icon} ${ic.name}`;
+      const info = getCategoryInfo(category as any);
+      return `${info.icon} ${info.name}`;
     }
     if (type === 'transfer') return t('recurring.transferDisplay');
     const info = getCategoryInfo(category as any);

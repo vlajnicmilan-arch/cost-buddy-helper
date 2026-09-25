@@ -7,6 +7,8 @@ import { parseLocaleAmount } from '@/lib/money';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { TreeCategoryOptions } from '@/components/categories/TreeCategoryOptions';
+import { isTreeLeafKey } from '@/lib/categoryTreeOptions';
 import { Expense, Category, PaymentSource, CATEGORIES, PAYMENT_SOURCES, TransactionType, getPaymentSourceInfo, IncomeCategory, INCOME_CATEGORIES } from '@/types/expense';
 import { getCategoriesForProjectType, nextCategoryAfterProjectChange } from '@/lib/projectExpenseCategories';
 import { PaymentSourceOptions } from '@/components/add-expense/PaymentSourceOptions';
@@ -361,6 +363,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
                       !!nextId,
                       nextType,
                       (c) => CATEGORIES.some((x) => x.id === c)
+                        || isTreeLeafKey(c)
                         || INCOME_CATEGORIES.some((x) => x.id === c)
                         || customCategories.some((x) => x.id === c),
                     ) as Category;
@@ -411,39 +414,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
               <SelectContent className="bg-popover z-50">
                 {type === 'income' ? (
                   <>
-                    {/* Custom income categories first */}
-                    {customIncomeCategories.length > 0 && (
-                      <>
-                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                          {t('transactions.customSources')}
-                        </div>
-                        {customIncomeCategories.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            <span className="flex items-center gap-2">
-                              <span 
-                                className="w-5 h-5 rounded flex items-center justify-center text-xs"
-                                style={{ backgroundColor: cat.color + '20', color: cat.color }}
-                              >
-                                {cat.icon}
-                              </span>
-                              <span>{cat.name}</span>
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </>
-                    )}
-                    {/* Default income categories */}
-                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                      {t('paymentSources.standardSources')}
-                    </div>
-                    {INCOME_CATEGORIES.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        <span className="flex items-center gap-2">
-                          <span>{cat.icon}</span>
-                          <span>{t(`incomeCategories.${cat.id}`)}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
+                    <TreeCategoryOptions mode="income" customIncomeCategories={customIncomeCategories} currentValue={category} />
                     {/* Add new category option */}
                     <div className="border-t border-border mt-1 pt-1">
                       <SelectItem value="__add_new__" className="text-primary">
@@ -456,41 +427,16 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
                   </>
                 ) : (
                   <>
-                    {/* Custom expense categories first */}
-                    {!projectCategories && customCategories.length > 0 && (
-                      <>
-                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                          {t('transactions.customSources', 'Prilagođene')}
-                        </div>
-                        {customCategories.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            <span className="flex items-center gap-2">
-                              <span 
-                                className="w-5 h-5 rounded flex items-center justify-center text-xs"
-                                style={{ backgroundColor: cat.color + '20', color: cat.color }}
-                              >
-                                {cat.icon}
-                              </span>
-                              <span>{cat.name}</span>
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </>
-                    )}
-                    {/* Standard categories */}
-                    {!projectCategories && (
-                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                        {t('paymentSources.standardSources', 'Standardne')}
-                      </div>
-                    )}
-                    {(projectCategories ?? CATEGORIES).map((cat) => (
+                    {projectCategories ? projectCategories.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
                         <span className="flex items-center gap-2">
                           <span>{cat.icon}</span>
                           <span>{t(`categories.${cat.id}`, cat.name)}</span>
                         </span>
                       </SelectItem>
-                    ))}
+                    )) : (
+                      <TreeCategoryOptions mode="expense" customCategories={customCategories} currentValue={category} />
+                    )}
                   </>
                 )}
               </SelectContent>

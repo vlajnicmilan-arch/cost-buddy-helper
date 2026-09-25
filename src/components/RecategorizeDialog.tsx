@@ -44,7 +44,8 @@ export const RecategorizeDialog = ({ expenses, onUpdateExpenses, open, onOpenCha
     if (systemCat) return { name: systemCat.name, icon: systemCat.icon };
     const customCat = customCategories.find(c => c.id === categoryId || c.name === categoryId);
     if (customCat) return { name: customCat.name, icon: customCat.icon };
-    return { name: categoryId, icon: '📦' };
+    const info = getCategoryInfo(categoryId as Category);
+    return { name: info.name, icon: info.icon };
   };
 
   const startScanning = async () => {

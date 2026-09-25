@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { TreeCategoryOptions } from '@/components/categories/TreeCategoryOptions';
 import { Search, X, CalendarIcon, Filter, Users, CreditCard, FolderKanban, User, Tag, Landmark, Wallet, AlertCircle } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
@@ -74,12 +75,6 @@ export const TransactionFilters = ({
   const moduleStates = useModuleStates();
   const projectsActive = isModuleActive('projects', moduleStates.projects);
 
-  // Build combined category list: default + custom
-  const allCategories = [
-    ...CATEGORIES.map(c => ({ id: c.id, name: c.name, icon: c.icon })),
-    ...INCOME_CATEGORIES.map(c => ({ id: c.id, name: c.name, icon: c.icon })),
-    ...customCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon })),
-  ];
 
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
 
@@ -395,11 +390,8 @@ export const TransactionFilters = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t('filters.allCategories', 'Sve kategorije')}</SelectItem>
-              {allCategories.map((cat) => (
-                <SelectItem key={cat.id} value={cat.id}>
-                  {cat.icon} {cat.name}
-                </SelectItem>
-              ))}
+              <TreeCategoryOptions mode="expense" customCategories={customCategories} includeLegacy />
+              <TreeCategoryOptions mode="income" includeLegacy />
             </SelectContent>
           </Select>
 
