@@ -11,7 +11,7 @@ export const CategoryGroupFilterOptions = () => {
       <SelectLabel className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
         {t('budget.wholeGroupSection')}
       </SelectLabel>
-      {CATEGORY_GROUPS.filter((g) => g.key !== 'income' && g.key !== 'other').map((g) => (
+      {CATEGORY_GROUPS.filter((g) => g.key !== 'income').map((g) => (
         <SelectItem key={g.key} value={toGroupLimitKey(g.key)} className="pl-6">
           <span className="flex items-center gap-2">
             <span>{g.icon}</span>
