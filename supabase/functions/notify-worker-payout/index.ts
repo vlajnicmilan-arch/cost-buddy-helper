@@ -5,9 +5,12 @@
 // public.project_worker_payouts (see migration V2-B), which cannot be lost
 // when the client aborts. This function's sole job is best-effort push.
 //
-// Fire-and-forget: invoked from the client after create/void RPCs. Failures
-// (network abort, unmounted component) do NOT drop the in-app notification.
+// Primary path: invoked from the database with { outbox_dedup_ref } (first attempt
+// in enqueue_worker_payout_notifications, retries via krug-notify-outbox-retry cron).
+// Marks the outbox row delivered on success and on intentional skip.
+// Legacy path: client JWT call from older app builds — skipped when the event is queued.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { isInternalBearer, markOutboxDelivered, payoutEventKey } from './outbox.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -48,45 +51,75 @@ Deno.serve(async (req: Request): Promise<Response> => {
       return jsonRes({ error: 'Nedostaje autorizacija' }, 401);
     }
 
-    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabaseUser.auth.getClaims(token);
-    const actorId = claimsData?.claims?.sub as string | undefined;
-    if (claimsError || !actorId) {
-      return jsonRes({ error: 'Neautorizirani pristup' }, 401);
-    }
-
-    const body: NotifyRequest = await req.json();
-    const { payout_id, batch_id, action } = body;
-    if ((!payout_id && !batch_id) || !action) {
-      return jsonRes({ error: 'Nedostaju potrebni podaci' }, 400);
-    }
-
     const admin = createClient(supabaseUrl, supabaseServiceKey);
+    const body: NotifyRequest & { outbox_dedup_ref?: string } = await req.json();
+    const payoutCols = 'id, project_id, worker_id, paid_amount, period_start, period_end, status, void_reason, batch_id';
 
-    // Load payout rows (1 for single, N for batch).
+    let actorId: string | undefined;
+    let action: NotifyRequest['action'];
+    let batch_id: string | null | undefined;
     let payouts: PayoutRow[] = [];
-    if (batch_id) {
-      const { data, error } = await admin
-        .from('project_worker_payouts')
-        .select('id, project_id, worker_id, paid_amount, period_start, period_end, status, void_reason, batch_id')
-        .eq('batch_id', batch_id);
-      if (error) return jsonRes({ error: error.message }, 500);
-      payouts = (data ?? []) as PayoutRow[];
-    } else {
-      const { data, error } = await admin
-        .from('project_worker_payouts')
-        .select('id, project_id, worker_id, paid_amount, period_start, period_end, status, void_reason, batch_id')
-        .eq('id', payout_id!)
+    let outboxRef: string | null = null;
+
+    if (body.outbox_dedup_ref && isInternalBearer(authHeader, supabaseAnonKey, supabaseServiceKey)) {
+      // Server path: the outbox row (written by enqueue_worker_payout_notifications) is the only input.
+      const { data: row, error } = await admin
+        .from('krug_notify_outbox')
+        .select('dedup_ref, payload, delivered_at, source')
+        .eq('dedup_ref', body.outbox_dedup_ref)
+        .eq('source', 'worker_payout')
         .maybeSingle();
       if (error) return jsonRes({ error: error.message }, 500);
-      if (!data) return jsonRes({ error: 'Isplata nije pronađena' }, 404);
-      payouts = [data as PayoutRow];
+      if (!row) return jsonRes({ error: 'Outbox red nije pronađen' }, 404);
+      if (row.delivered_at) return jsonRes({ success: true, skipped: 'already_delivered' });
+      outboxRef = row.dedup_ref as string;
+      const p = (row.payload ?? {}) as { payout_ids?: string[]; batch_id?: string | null; action?: string; actor_id?: string };
+      actorId = p.actor_id ?? undefined;
+      action = p.action as NotifyRequest['action'];
+      batch_id = p.batch_id ?? null;
+      const ids = p.payout_ids ?? [];
+      if (ids.length > 0) {
+        const { data, error: pErr } = await admin.from('project_worker_payouts').select(payoutCols).in('id', ids);
+        if (pErr) return jsonRes({ error: pErr.message }, 500);
+        payouts = (data ?? []) as PayoutRow[];
+      }
+    } else {
+      // Legacy client path (published app still calls this). Push now goes through the outbox,
+      // so skip when the server already queued this event.
+      const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const token = authHeader.replace('Bearer ', '');
+      const { data: claimsData, error: claimsError } = await supabaseUser.auth.getClaims(token);
+      actorId = claimsData?.claims?.sub as string | undefined;
+      if (claimsError || !actorId) {
+        return jsonRes({ error: 'Neautorizirani pristup' }, 401);
+      }
+      const { payout_id } = body;
+      action = body.action;
+      batch_id = body.batch_id;
+      if ((!payout_id && !batch_id) || !action) {
+        return jsonRes({ error: 'Nedostaju potrebni podaci' }, 400);
+      }
+      if (batch_id) {
+        const { data, error } = await admin.from('project_worker_payouts').select(payoutCols).eq('batch_id', batch_id);
+        if (error) return jsonRes({ error: error.message }, 500);
+        payouts = (data ?? []) as PayoutRow[];
+      } else {
+        const { data, error } = await admin.from('project_worker_payouts').select(payoutCols).eq('id', payout_id!).maybeSingle();
+        if (error) return jsonRes({ error: error.message }, 500);
+        if (!data) return jsonRes({ error: 'Isplata nije pronađena' }, 404);
+        payouts = [data as PayoutRow];
+      }
+      if (payouts.length > 0) {
+        const key = payoutEventKey(payouts.map((p) => p.id), batch_id ?? payouts[0].batch_id, action);
+        const { data: queued } = await admin.from('krug_notify_outbox').select('dedup_ref').eq('dedup_ref', key).maybeSingle();
+        if (queued) return jsonRes({ success: true, skipped: 'server_outbox' });
+      }
     }
 
     if (payouts.length === 0) {
+      if (outboxRef) await markOutboxDelivered(admin, outboxRef);
       return jsonRes({ success: true, delivered: false, reason: 'no payouts in batch' });
     }
 
@@ -213,6 +246,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
 
 
+    // Delivered or intentionally skipped (e.g. unlinked worker) — either way the event is done.
+    if (outboxRef) await markOutboxDelivered(admin, outboxRef);
     return jsonRes({ success: true, delivered, recipients: byRecipient.size });
   } catch (error) {
     console.error('Error in notify-worker-payout:', error);

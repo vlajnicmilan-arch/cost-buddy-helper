@@ -196,11 +196,6 @@ export const useWorkerPayouts = (projectId: string | null, workerId: string | nu
       const result = (data as unknown) as CreatePayoutResult;
       showSuccess(t('workers.payouts.createdToast', 'Isplata evidentirana'));
       await fetchPayouts();
-      if (result?.payout_id) {
-        supabase.functions
-          .invoke('notify-worker-payout', { body: { payout_id: result.payout_id, action: 'created' } })
-          .catch((e) => console.error('[useWorkerPayouts] notify-worker-payout created failed:', e));
-      }
       return result;
     } catch (err: any) {
       console.error('create_worker_payout failed:', err);
@@ -222,11 +217,6 @@ export const useWorkerPayouts = (projectId: string | null, workerId: string | nu
       const result = (data as unknown) as CreateBatchResult;
       showSuccess(t('workers.payouts.batchCreatedToast', 'Zbirna isplata evidentirana'));
       await fetchPayouts();
-      if (result?.batch_id) {
-        supabase.functions
-          .invoke('notify-worker-payout', { body: { batch_id: result.batch_id, action: 'created' } })
-          .catch((e) => console.error('[useWorkerPayouts] notify batch created failed:', e));
-      }
       return result;
     } catch (err: any) {
       console.error('create_worker_payout_batch failed:', err);
@@ -257,9 +247,6 @@ export const useWorkerPayouts = (projectId: string | null, workerId: string | nu
         if (error) throw error;
         showSuccess(t('workers.payouts.batchVoidedToast', 'Zbirna isplata poništena'));
         await fetchPayouts();
-        supabase.functions
-          .invoke('notify-worker-payout', { body: { batch_id: batchId, action: 'voided' } })
-          .catch((e) => console.error('[useWorkerPayouts] notify batch voided failed:', e));
         return true;
       }
 
@@ -270,9 +257,6 @@ export const useWorkerPayouts = (projectId: string | null, workerId: string | nu
       if (error) throw error;
       showSuccess(t('workers.payouts.voidedToast', 'Isplata poništena'));
       await fetchPayouts();
-      supabase.functions
-        .invoke('notify-worker-payout', { body: { payout_id: payoutId, action: 'voided' } })
-        .catch((e) => console.error('[useWorkerPayouts] notify-worker-payout voided failed:', e));
       return true;
     } catch (err) {
       console.error('void_worker_payout failed:', err);

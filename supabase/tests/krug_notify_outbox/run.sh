@@ -54,6 +54,8 @@ if [ "$TODAY" != "1" ]; then
   EMIT_V2="${EMIT_V2:-$(ls "$ROOT"/drizzle/migrations/*krug_emit_v2*.sql 2>/dev/null | tail -1)}"
   psql -v ON_ERROR_STOP=1 -q -f "$EMIT_V2"
   psql -v ON_ERROR_STOP=1 -q -f "$ROOT/drizzle/migrations/0023_krug_outbox_privileges.sql"
+  # 0025: poopćeni outbox (source) + retry v3 — Krug mora ostati zelen.
+  psql -v ON_ERROR_STOP=1 -q -f "$ROOT/drizzle/migrations/0025_worker_payout_notify_outbox_real.sql"
   psql -v ON_ERROR_STOP=1 -f "$HERE/outbox.sql"
 else
   # Svaki čuvar je zaseban DO blok; bez outbox migracija svaki mora pasti.

@@ -3532,6 +3532,7 @@ export type Database = {
           last_error: string | null
           last_status: number | null
           payload: Json
+          source: string
         }
         Insert: {
           attempts?: number
@@ -3542,6 +3543,7 @@ export type Database = {
           last_error?: string | null
           last_status?: number | null
           payload: Json
+          source?: string
         }
         Update: {
           attempts?: number
@@ -3552,6 +3554,7 @@ export type Database = {
           last_error?: string | null
           last_status?: number | null
           payload?: Json
+          source?: string
         }
         Relationships: []
       }
@@ -7427,6 +7430,10 @@ export type Database = {
         Returns: number
       }
       _require_admin: { Args: never; Returns: undefined }
+      _worker_payout_push_http: {
+        Args: { p_dedup_ref: string }
+        Returns: undefined
+      }
       activate_module_trial: { Args: { _module: string }; Returns: Json }
       admin_account_emptiness: { Args: { p_user_id: string }; Returns: Json }
       admin_accounts_emptiness: {
