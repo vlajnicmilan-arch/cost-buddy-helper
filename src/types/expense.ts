@@ -256,6 +256,10 @@ export interface Expense {
   krug_id?: string | null;
   krug_privacy?: 'personal' | 'private' | 'shared' | null;
   krug_shared_status?: 'predlozena' | 'potvrdjena' | 'nepotvrdjena' | null;
+  /** Oznake osobnog troška: podskup {'unnecessary','luxury'} (vidi expenseMarkers.ts). */
+  tags?: string[] | null;
+  /** Vrsta zapisa (pozajmica, uplata u firmu…); ne mijenja type. */
+  movement_kind?: string | null;
 }
 
 // Helper to get transaction type display info
