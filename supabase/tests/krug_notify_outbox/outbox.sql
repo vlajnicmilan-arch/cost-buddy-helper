@@ -54,8 +54,8 @@ DECLARE v_exp uuid; v_res jsonb; v_cnt int;
 BEGIN
   DELETE FROM public.krug_notify_outbox;
   DELETE FROM public.krug_act_dedup;
-  v_exp := pg_temp.new_proposal(:petar);
-  PERFORM pg_temp.as_user(:milan);
+  v_exp := pg_temp.new_proposal('00000000-0000-0000-0000-0000000000a1');
+  PERFORM pg_temp.as_user('00000000-0000-0000-0000-0000000000b2');
   v_res := public.krug_apply_act(v_exp, 'A1', 'req-o1');
   PERFORM pg_temp.ok('O1.1 čin je prošao unatoč kvaru emita', v_res->>'outcome' = 'ok_confirmed', v_res::text);
   SELECT count(*) INTO v_cnt FROM public.krug_notify_outbox
@@ -70,8 +70,8 @@ DECLARE v_exp uuid; v_res jsonb; v_cnt int;
 BEGIN
   DELETE FROM public.krug_notify_outbox;
   DELETE FROM public.krug_act_dedup;
-  v_exp := pg_temp.new_proposal(:petar);
-  PERFORM pg_temp.as_user(:milan);
+  v_exp := pg_temp.new_proposal('00000000-0000-0000-0000-0000000000a1');
+  PERFORM pg_temp.as_user('00000000-0000-0000-0000-0000000000b2');
   PERFORM public.krug_apply_act(v_exp, 'A1', 'req-o2');
   v_res := public.krug_apply_act(v_exp, 'A1', 'req-o2');
   PERFORM pg_temp.ok('O2.1 ponovljivi poziv je replay', (v_res->>'replayed')::boolean, v_res::text);
@@ -87,8 +87,8 @@ DECLARE v_exp uuid; v_res jsonb; v_cnt int;
 BEGIN
   DELETE FROM public.krug_notify_outbox;
   DELETE FROM public.krug_act_dedup;
-  v_exp := pg_temp.new_proposal(:petar);
-  PERFORM pg_temp.as_user(:milan);
+  v_exp := pg_temp.new_proposal('00000000-0000-0000-0000-0000000000a1');
+  PERFORM pg_temp.as_user('00000000-0000-0000-0000-0000000000b2');
   v_res := public.krug_apply_act(v_exp, 'A2', 'req-o3', 'krivi iznos');
   PERFORM pg_temp.ok('O3.1 odbijanje je prošlo', v_res->>'outcome' = 'ok_negated', v_res::text);
   SELECT count(*) INTO v_cnt FROM public.krug_notify_outbox
@@ -103,12 +103,12 @@ DECLARE v_res jsonb; v_cnt int;
 BEGIN
   DELETE FROM public.krug_notify_outbox;
   INSERT INTO public.custom_payment_sources (id, user_id, name, balance, currency) VALUES
-    ('aaaaaaaa-0000-0000-0000-000000000001',:petar,'Petar Revolut',0,'EUR'),
-    ('bbbbbbbb-0000-0000-0000-000000000001',:milan,'Milan Tekući',0,'EUR')
+    ('aaaaaaaa-0000-0000-0000-000000000001','00000000-0000-0000-0000-0000000000a1','Petar Revolut',0,'EUR'),
+    ('bbbbbbbb-0000-0000-0000-000000000001','00000000-0000-0000-0000-0000000000b2','Milan Tekući',0,'EUR')
   ON CONFLICT DO NOTHING;
-  PERFORM pg_temp.as_user(:petar);
+  PERFORM pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
   v_res := public.krug_mark_settled_with_source(
-    '11111111-1111-1111-1111-111111111111', :petar, :milan, 20, 'EUR',
+    '11111111-1111-1111-1111-111111111111', '00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b2', 20, 'EUR',
     'aaaaaaaa-0000-0000-0000-000000000001', 'f0000000-0000-0000-0000-0000000000d1', NULL, NULL);
   PERFORM pg_temp.ok('O4.1 podmirenje je prošlo', (v_res->>'ok')::boolean, v_res::text);
   SELECT count(*) INTO v_cnt FROM public.krug_notify_outbox
@@ -148,7 +148,7 @@ DECLARE v_cnt int;
 BEGIN
   DELETE FROM public.app_diagnostics_logs WHERE event = 'krug_emit_error';
   PERFORM public.krug_emit_notification('krug_expense_confirmed',
-    '11111111-1111-1111-1111-111111111111', :milan, NULL, NULL, 't:diag', NULL, NULL);
+    '11111111-1111-1111-1111-111111111111', '00000000-0000-0000-0000-0000000000b2', NULL, NULL, 't:diag', NULL, NULL);
   SELECT count(*) INTO v_cnt FROM public.app_diagnostics_logs
    WHERE event = 'krug_emit_error' AND details->>'dedup_ref' = 't:diag';
   PERFORM pg_temp.ok('O6.1 krug_emit_error zapisan', v_cnt = 1, v_cnt::text);
