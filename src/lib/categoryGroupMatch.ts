@@ -14,10 +14,13 @@ import {
   resolveTreeCategory,
   UNSORTED_LABEL_KEY,
 } from '@/lib/categoryTree';
-import { EXEMPT_CATEGORY_ID } from '@/lib/categoryAssign';
 import { isRealSpend } from '@/lib/spendClassification';
 
 export const GROUP_LIMIT_PREFIX = 'group:';
+
+/** Tumačenje starog budžetnog limita „food" (samo budžeti). */
+export const LEGACY_FOOD_BUDGET_GROUPS: readonly CategoryGroupKey[] = ['food', 'cafes'];
+
 
 export interface GroupedCustomCategory {
   id: string;
@@ -43,7 +46,6 @@ export interface ExpenseCategoryPlace {
   group: CategoryGroupKey | null;
   leaf: string | null;
   customId: string | null;
-  exempt: boolean;
 }
 
 export const placeExpenseCategory = (
@@ -51,21 +53,21 @@ export const placeExpenseCategory = (
   customs: GroupedCustomCategory[] = [],
 ): ExpenseCategoryPlace => {
   const raw = (category ?? '').trim();
-  if (raw === EXEMPT_CATEGORY_ID) return { group: null, leaf: null, customId: raw, exempt: true };
   const custom = customs.find((c) => c.id === raw);
   if (custom) {
     return {
       group: isCategoryGroupKey(custom.group_key) ? custom.group_key : null,
-      leaf: null, customId: custom.id, exempt: false,
+      leaf: null, customId: custom.id,
     };
   }
   const r = resolveTreeCategory(raw);
-  return { group: r.groupKey, leaf: r.leafKey, customId: null, exempt: false };
+  return { group: r.groupKey, leaf: r.leafKey, customId: null };
 };
 
 /** Što pokriva limit budžeta. */
 export type BudgetLimitScope =
   | { kind: 'group'; group: CategoryGroupKey }
+  | { kind: 'groups'; groups: CategoryGroupKey[] }
   | { kind: 'leaf'; group: CategoryGroupKey; leaf: string }
   | { kind: 'custom'; id: string }
   | { kind: 'exact'; key: string };
@@ -77,6 +79,9 @@ export const parseBudgetLimitScope = (
   const g = parseGroupLimitKey(value);
   if (g) return { kind: 'group', group: g };
   if (customs.some((c) => c.id === value)) return { kind: 'custom', id: value };
+  // Stari budžetni limit „food": stara aplikacija je kafiće/restorane svrstavala u „food",
+  // pa pokriva „Hrana" + „Kafići i restorani". Samo za budžet; LEGACY_ALIASES se ne mijenja.
+  if (value === 'food') return { kind: 'groups', groups: [...LEGACY_FOOD_BUDGET_GROUPS] };
   const r = resolveTreeCategory(value);
   // Stari široki ključ („food") → cijela skupina; stari/novi list → list.
   if (r.groupKey && r.unsorted) return { kind: 'group', group: r.groupKey };
@@ -90,12 +95,12 @@ const coverRank = (
   category: string,
   place: ExpenseCategoryPlace,
 ): number => {
-  if (place.exempt) return 0;
   switch (scope.kind) {
     case 'custom': return place.customId === scope.id ? 2 : 0;
     case 'exact': return category === scope.key ? 2 : 0;
     case 'leaf': return !place.customId && place.leaf === scope.leaf ? 2 : 0;
     case 'group': return place.group === scope.group ? 1 : 0;
+    case 'groups': return place.group && scope.groups.includes(place.group) ? 1 : 0;
   }
 };
 
@@ -128,9 +133,9 @@ export interface BudgetSpendTx {
   deleted_at?: string | Date | null;
 }
 
-/** Zapis koji smije ući u osobni budžet: stvarna potrošnja, nije izuzeta kategorija. */
+/** Zapis koji smije ući u osobni budžet: stvarna potrošnja (sve kategorije se broje). */
 export const countsForPersonalBudget = (e: BudgetSpendTx): boolean =>
-  isRealSpend(e as Parameters<typeof isRealSpend>[0]) && (e.category ?? '') !== EXEMPT_CATEGORY_ID;
+  isRealSpend(e as Parameters<typeof isRealSpend>[0]);
 
 /** Raspodjela: svaki zapis u točno jedan limit ili u `unassigned`. */
 export const allocateToLimits = <T extends BudgetSpendTx>(
@@ -159,13 +164,13 @@ export const matchesCategoryFilter = (
   const g = parseGroupLimitKey(filterValue);
   if (!g) return category === filterValue;
   const cat = (category ?? '').trim();
-  if (!cat || cat === EXEMPT_CATEGORY_ID) return false;
+  if (!cat) return false;
   if (customsInGroup.includes(cat)) return true;
   return resolveTreeCategory(cat).groupKey === g;
 };
 
 export const customIdsInGroup = (group: CategoryGroupKey, customs: GroupedCustomCategory[]): string[] =>
-  customs.filter((c) => c.group_key === group && c.id !== EXEMPT_CATEGORY_ID).map((c) => c.id);
+  customs.filter((c) => c.group_key === group).map((c) => c.id);
 
 /** i18n oznake za skupinu i list zapisa (izvoz). Korisnička kategorija nosi `customName`. */
 export interface CategoryPlaceLabels {
@@ -206,7 +211,6 @@ export const buildGroupedCategoryTotals = (
 ): GroupTotalRow[] => {
   const groups = new Map<string, GroupTotalRow>();
   for (const [cat, amount] of Object.entries(byCategory)) {
-    if (cat === EXEMPT_CATEGORY_ID) continue;
     const place = placeExpenseCategory(cat, customs);
     const gKey = place.group ?? '__none__';
     let row = groups.get(gKey);

@@ -51,6 +51,16 @@ export const normalizeText = (s: string | null | undefined): string =>
     .replace(/\s+/g, ' ')
     .trim();
 
+/**
+ * Opći bankovni izrazi nisu trgovac: odbacuju se s početka ključa.
+ * Ako ništa ne ostane (ili < 3 slova), ključ je prazan → nema učenja.
+ * Duži izrazi prije kraćih.
+ */
+const GENERIC_BANK_PHRASES = [
+  'karticno placanje', 'placanje karticom', 'internet placanje', 'trajni nalog',
+  'mastercard', 'odobrenje', 'terecenje', 'prijenos', 'naknada', 'isplata', 'uplata', 'visa', 'pos',
+];
+
 /** Ključ trgovca: bez broja kartice, brojeva i repa iza „ - " / zareza; prve 3 riječi. */
 export const merchantKey = (row: { merchant_name?: string | null; description?: string | null }): string => {
   const base = normalizeText(row.merchant_name || row.description);
@@ -61,7 +71,18 @@ export const merchantKey = (row: { merchant_name?: string | null; description?: 
     .replace(/[^a-z&.\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
-  return cleaned.split(' ').slice(0, 3).join(' ');
+  let rest = cleaned;
+  for (let changed = true; changed && rest;) {
+    changed = false;
+    for (const p of GENERIC_BANK_PHRASES) {
+      if (rest === p || rest.startsWith(`${p} `)) {
+        rest = rest.slice(p.length).trim();
+        changed = true;
+      }
+    }
+  }
+  const key = rest.split(' ').slice(0, 3).join(' ');
+  return key.replace(/[\s.&]/g, '').length < 3 ? '' : key;
 };
 
 const leafGroup = (key: string): CategoryGroupKey | null =>
