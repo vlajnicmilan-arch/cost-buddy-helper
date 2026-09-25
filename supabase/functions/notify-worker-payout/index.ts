@@ -5,9 +5,12 @@
 // public.project_worker_payouts (see migration V2-B), which cannot be lost
 // when the client aborts. This function's sole job is best-effort push.
 //
-// Fire-and-forget: invoked from the client after create/void RPCs. Failures
-// (network abort, unmounted component) do NOT drop the in-app notification.
+// Primary path: invoked from the database with { outbox_dedup_ref } (first attempt
+// in enqueue_worker_payout_notifications, retries via krug-notify-outbox-retry cron).
+// Marks the outbox row delivered on success and on intentional skip.
+// Legacy path: client JWT call from older app builds — skipped when the event is queued.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { isInternalBearer, markOutboxDelivered, payoutEventKey } from './outbox.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
