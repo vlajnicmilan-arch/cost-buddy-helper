@@ -47,13 +47,14 @@ interface ReviewData {
 async function fetchAllPersonalRows(userId: string): Promise<ReviewRow[]> {
   const out: ReviewRow[] = [];
   for (let from = 0; ; from += PAGE) {
-    const { data, error } = await applyCountedFilter(supabase
+    const base = supabase
       .from('expenses')
       .select('id,type,amount,date,category,description,merchant_name,movement_kind,tags,expense_nature,deleted_at')
-      .eq('user_id', userId))
+      .eq('user_id', userId)
       .is('deleted_at', null)
       .is('project_id', null)
-      .is('business_profile_id', null)
+      .is('business_profile_id', null);
+    const { data, error } = await applyCountedFilter(base)
       .order('date', { ascending: false })
       .range(from, from + PAGE - 1);
     if (error) throw error;
