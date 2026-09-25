@@ -1138,7 +1138,10 @@
       "crossScope": "Ausgaben bleiben mit der Geldbörse verknüpft, aus der sie bezahlt wurden. Kein Kontostand ändert sich."
     },
     "workerLinkedWithBackfillHours": "Verbunden — {{count}} Tage übertragen, insgesamt {{hours}} Std.",
-    "linkNotAuthenticated": "Sitzung abgelaufen — bitte erneut anmelden"
+    "linkNotAuthenticated": "Sitzung abgelaufen — bitte erneut anmelden",
+    "unratedWorkerWarning": "Kein Stundensatz — Stunden werden nicht abgerechnet",
+    "unratedWorkerPending": "{{days}} Tage, {{hours}} Std. warten auf Abrechnung",
+    "unratedWorkerSetRate": "Stundensatz festlegen"
   },
   "estimates": {
     "title": "Angebote & Kostenvoranschläge",

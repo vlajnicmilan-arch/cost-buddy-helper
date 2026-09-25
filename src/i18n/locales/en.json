@@ -1138,7 +1138,10 @@
       "crossScope": "Expenses stay linked to the wallet they were paid from. No wallet balance changes."
     },
     "workerLinkedWithBackfillHours": "Linked — {{count}} days transferred, {{hours}} h in total",
-    "linkNotAuthenticated": "Your session expired — please sign in again"
+    "linkNotAuthenticated": "Your session expired — please sign in again",
+    "unratedWorkerWarning": "No hourly rate — hours are not being counted",
+    "unratedWorkerPending": "{{days}} days, {{hours}} h waiting to be counted",
+    "unratedWorkerSetRate": "Set hourly rate"
   },
   "estimates": {
     "title": "Quotes & Estimates",

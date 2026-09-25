@@ -1142,7 +1142,10 @@
       "crossScope": "Troškovi ostaju vezani na novčanik iz kojeg su plaćeni. Stanje nijednog novčanika se ne mijenja."
     },
     "workerLinkedWithBackfillHours": "Povezano — preneseno {{count}} dana, ukupno {{hours}} h",
-    "linkNotAuthenticated": "Prijava je istekla — prijavi se ponovno"
+    "linkNotAuthenticated": "Prijava je istekla — prijavi se ponovno",
+    "unratedWorkerWarning": "Nema satnice — sati se ne obračunavaju",
+    "unratedWorkerPending": "{{days}} dana, {{hours}} h čeka obračun",
+    "unratedWorkerSetRate": "Postavi satnicu"
   },
   "estimates": {
     "title": "Ponude i predračuni",
