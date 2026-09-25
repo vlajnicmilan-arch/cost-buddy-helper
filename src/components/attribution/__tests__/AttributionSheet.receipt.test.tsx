@@ -20,7 +20,10 @@ vi.mock('@/hooks/useExpenses', () => ({ useExpenses: () => ({ addExpense: m.addE
 vi.mock('@/lib/diagnosticLogger', () => ({ logDiagnostic: m.logDiagnostic }));
 vi.mock('@/lib/buildStamp', () => ({ getBuildStamp: () => 'assets/index-TEST.js' }));
 vi.mock('@/hooks/useStatusFeedback', () => ({ showError: m.showError, showSuccess: m.showSuccess }));
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: m.t }) }));
+vi.mock('react-i18next', async () => {
+  const { createReactI18nextMock } = await import('@/test/mocks/reactI18next');
+  return { ...createReactI18nextMock(), useTranslation: () => ({ t: m.t }) };
+});
 vi.mock('@/hooks/useBackButton', () => ({ useBackButton: () => {} }));
 vi.mock('react-router-dom', () => ({ useNavigate: () => m.noopNavigate }));
 vi.mock('@/hooks/useAuth', () => ({ useAuth: () => m.auth }));
