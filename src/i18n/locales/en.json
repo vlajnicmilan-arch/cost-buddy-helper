@@ -7645,5 +7645,27 @@
       "invalid_value": "Value not allowed.",
       "unknown": "The change was not saved. Please try again."
     }
+  },
+  "expenseMarkers": {
+    "kindToggle": "This is not an expense or income…",
+    "kindHint": "Choose this if the entry is a loan or a payment into your company. It is not counted as spending or income; type and amount stay the same.",
+    "kindNone": "Regular entry",
+    "kindCurrent": "Current: {{kind}}",
+    "card": {
+      "unnecessary": "Unnecessary this month",
+      "luxury": "Luxury this month",
+      "count_one": "{{count}} entry",
+      "count_other": "{{count}} entries"
+    },
+    "loans": {
+      "title": "Loans by person",
+      "noName": "No name",
+      "lent": "Lent {{given}} · repaid {{repaid}} · remaining {{left}}",
+      "borrowed": "Borrowed {{received}} · I repaid {{repaid}} · remaining {{left}}"
+    },
+    "errors": {
+      "invalidMarker": "The tag or entry kind is not valid.",
+      "filterTag": "Tag"
+    }
   }
 }

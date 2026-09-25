@@ -7645,5 +7645,27 @@
       "invalid_value": "Wert nicht erlaubt.",
       "unknown": "Die Änderung wurde nicht gespeichert. Bitte erneut versuchen."
     }
+  },
+  "expenseMarkers": {
+    "kindToggle": "Das ist weder Ausgabe noch Einnahme…",
+    "kindHint": "Wähle dies, wenn der Eintrag ein Darlehen oder eine Zahlung an deine Firma ist. Er zählt nicht als Ausgabe oder Einnahme; Art und Betrag bleiben gleich.",
+    "kindNone": "Normaler Eintrag",
+    "kindCurrent": "Aktuell: {{kind}}",
+    "card": {
+      "unnecessary": "Unnötig diesen Monat",
+      "luxury": "Luxus diesen Monat",
+      "count_one": "{{count}} Eintrag",
+      "count_other": "{{count}} Einträge"
+    },
+    "loans": {
+      "title": "Darlehen pro Person",
+      "noName": "Ohne Namen",
+      "lent": "Verliehen {{given}} · zurück {{repaid}} · offen {{left}}",
+      "borrowed": "Geliehen {{received}} · ich zurückgezahlt {{repaid}} · offen {{left}}"
+    },
+    "errors": {
+      "invalidMarker": "Markierung oder Eintragsart ist ungültig.",
+      "filterTag": "Markierung"
+    }
   }
 }
