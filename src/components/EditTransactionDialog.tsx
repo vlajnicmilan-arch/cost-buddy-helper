@@ -35,6 +35,8 @@ import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
 import { KrugSelector } from '@/components/krug/KrugSelector';
 import { KrugExpenseSplitPanelGate } from '@/components/krug/KrugExpenseSplitPanelGate';
+import { ExpenseMarkerFields } from '@/components/expense-markers/ExpenseMarkerFields';
+import { buildMarkerFieldsForEdit, sanitizeTags, isMovementKind, type ExpenseTag, type MovementKind } from '@/lib/expenseMarkers';
 
 interface EditTransactionDialogProps {
   expense: Expense | null;
@@ -61,6 +63,8 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
   const [transferDestination, setTransferDestination] = useState<string | null>(null);
   
   const [note, setNote] = useState<string>('');
+  const [tags, setTags] = useState<ExpenseTag[]>([]);
+  const [movementKind, setMovementKind] = useState<MovementKind | null>(null);
   const [saving, setSaving] = useState(false);
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
   // Krug WS1 — Semantics Lock v1. `private` je legacy: UI ga prikazuje kao `personal`,
@@ -117,6 +121,8 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
         setSelectedBudgetId(expense.budget_id || null);
         setExpenseNature((expense.expense_nature as 'regular' | 'extraordinary') || 'regular');
         setNote(expense.note || '');
+        setTags(sanitizeTags(expense.tags ?? []));
+        setMovementKind(isMovementKind(expense.movement_kind) ? expense.movement_kind : null);
         setTransferDestination(expense.income_source_id || null);
         // Krug WS1: legacy `private` → UI prikaz kao `personal`; izvorna vrijednost pamti se za save-time preservation.
         const rawPrivacy = (expense as any).krug_privacy as 'personal' | 'private' | 'shared' | null | undefined;
@@ -172,6 +178,13 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
         note: note.trim() || null,
         krug_id: nextKrugId,
         krug_privacy: nextKrugPrivacy,
+        ...buildMarkerFieldsForEdit({
+          enabled: markersEnabled,
+          type,
+          tags,
+          movementKind,
+          originalMovementKind: expense.movement_kind,
+        }),
         updated_at: new Date().toISOString()
       });
       onOpenChange(false);
@@ -192,6 +205,9 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
   };
 
   if (!expense) return null;
+
+  // Oznake i vrsta zapisa: samo osobni zapis (ne poslovni, ne projektni).
+  const markersEnabled = !expense.business_profile_id && !selectedProjectId;
 
   return (
     <>
@@ -442,6 +458,16 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
               </SelectContent>
             </Select>
           </div>
+
+          {markersEnabled && (
+            <ExpenseMarkerFields
+              type={type}
+              tags={tags}
+              onTagsChange={setTags}
+              movementKind={movementKind}
+              onMovementKindChange={setMovementKind}
+            />
+          )}
 
           {/* Payment Source */}
           <div className="space-y-2">
