@@ -27,6 +27,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Checkbox } from '@/components/ui/checkbox';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { resolveCategory } from '@/hooks/useResolvedCategory';
+import { placeExpenseCategory } from '@/lib/categoryGroupMatch';
+import { categoryGroupLabelKey } from '@/lib/categoryTree';
 import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
 import { resolvePaymentSourceKey } from '@/lib/paymentSource/resolve';
 
@@ -421,8 +423,12 @@ export const ReportsDialog = ({ expenses, triggerClassName, triggerLabel }: Repo
   const filteredCategoryData = useMemo(() => {
     if (!categoryFilter.trim()) return allCategoryData;
     const q = categoryFilter.toLowerCase();
-    return allCategoryData.filter(c => c.name.toLowerCase().includes(q));
-  }, [allCategoryData, categoryFilter]);
+    return allCategoryData.filter(c => {
+      if (c.name.toLowerCase().includes(q)) return true;
+      const group = placeExpenseCategory(c.id, customCategories).group;
+      return !!group && t(categoryGroupLabelKey(group)).toLowerCase().includes(q);
+    });
+  }, [allCategoryData, categoryFilter, customCategories, t]);
 
   // Transactions for the selected category
   const selectedCategoryTransactions = useMemo(() => {
@@ -550,6 +556,7 @@ export const ReportsDialog = ({ expenses, triggerClassName, triggerLabel }: Repo
       byCategory: stats.byCategory,
       byPaymentSource: stats.byPaymentSource,
       currency: { code: currency.code, symbol: currency.symbol, locale: currency.locale },
+      customCategories,
     };
   };
 

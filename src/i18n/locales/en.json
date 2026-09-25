@@ -2331,7 +2331,11 @@
     "summaryMerchantsInsertOne": " — primarily {{m1}}",
     "transfersSplit": "Transfers:",
     "transfersIn": "in +{{amount}}",
-    "transfersOut": "out −{{amount}}"
+    "transfersOut": "out −{{amount}}",
+    "byGroupTitle": "By group",
+    "groupColumn": "Group",
+    "categoryColumn": "Category",
+    "amountColumn": "Amount"
   },
   "update": {
     "available": "New version available!",
@@ -2502,7 +2506,9 @@
     "payoutExpenseLockedWorker": "This expense came from a worker payout — void the payout on the worker card.",
     "payoutExpenseLockedCollaborator": "This expense came from a collaborator payment — void the payment on the collaborator card.",
     "moduleWriteDenied": "The {{module}} module is not active",
-    "moduleWriteDeniedAction": "Unlock"
+    "moduleWriteDeniedAction": "Unlock",
+    "createBudget": "Error creating budget",
+    "updateBudget": "Error updating budget"
   },
   "onboarding": {
     "welcomeTitle": "Welcome!",
@@ -2751,7 +2757,12 @@
       "tooEarly": "Too early to estimate pace"
     },
     "readOnlyTitle": "Smjer is in read-only mode",
-    "readOnlyBody": "You can see existing plans, but new plans and changes require activating Smjer."
+    "readOnlyBody": "You can see existing plans, but new plans and changes require activating Smjer.",
+    "wholeGroupSection": "Whole group",
+    "wholeGroup": "{{group}} (whole group)",
+    "errors": {
+      "duplicateLimit": "This category or group already has a limit in this budget."
+    }
   },
   "projectStatus": {
     "draft": "Draft",

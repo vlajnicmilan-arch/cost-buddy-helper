@@ -26,6 +26,43 @@ import {
   type CategoryRow,
 } from '@/lib/reportTotals';
 import { isExpenseType, isIncomeType, isRealSpend } from '@/lib/spendClassification';
+import {
+  buildGroupedCategoryTotals,
+  categoryPlaceLabels,
+  placeExpenseCategory,
+  UNSORTED_LEAF,
+  type GroupedCustomCategory,
+  type GroupTotalRow,
+} from '@/lib/categoryGroupMatch';
+import { categoryGroupLabelKey, categoryLeafLabelKey, UNSORTED_LABEL_KEY } from '@/lib/categoryTree';
+
+const OTHER_LABEL = () => i18n.t('common.other', 'Ostalo') as string;
+
+/** Naziv skupine retka zbroja (bez skupine → „Ostalo"). */
+export const groupRowLabel = (row: Pick<GroupTotalRow, 'group'>): string =>
+  row.group ? (i18n.t(categoryGroupLabelKey(row.group)) as string) : OTHER_LABEL();
+
+/** Naziv lista ispod skupine. */
+export const groupLeafLabel = (
+  leaf: GroupTotalRow['leaves'][number],
+  customs: GroupedCustomCategory[] = [],
+): string => {
+  if (leaf.customId) return customs.find((c) => c.id === leaf.customId)?.name ?? OTHER_LABEL();
+  if (leaf.leaf) return i18n.t(categoryLeafLabelKey(leaf.leaf)) as string;
+  if (leaf.key === UNSORTED_LEAF) return i18n.t(UNSORTED_LABEL_KEY) as string;
+  return getCategoryInfo(leaf.key as any).name;
+};
+
+/** Stupci „Skupina" i „Kategorija" za jedan zapis. */
+export const exportCategoryColumns = (
+  category: string | null | undefined,
+  customs: GroupedCustomCategory[] = [],
+): { group: string; category: string } => {
+  const l = categoryPlaceLabels(category, customs);
+  const group = l.groupLabelKey ? (i18n.t(l.groupLabelKey) as string) : '';
+  const cat = l.customName ?? (l.leafLabelKey ? (i18n.t(l.leafLabelKey) as string) : getCategoryInfo((category ?? 'other') as any).name);
+  return { group, category: cat };
+};
 
 let pdfLibsPromise: Promise<{ jsPDF: typeof JsPDFType; autoTable: typeof import('jspdf-autotable').default }> | null = null;
 const loadPdfLibs = () => {
@@ -61,6 +98,8 @@ export interface ReportData {
   currency?: CurrencyConfig;
   /** Account the report is scoped to — used for the inbound/outbound split. */
   accountId?: string | null;
+  /** Vlastite kategorije (za skupinu po group_key i naziv). */
+  customCategories?: GroupedCustomCategory[];
 }
 
 const formatDate = (date: Date): string => {
@@ -293,6 +332,23 @@ const drawCategoryBars = (
 
 
 
+/** „Skupina › Kategorija" (bez skupine samo kategorija). */
+export const categoryWithGroup = (category: string | null | undefined, customs: GroupedCustomCategory[] = []): string => {
+  const c = exportCategoryColumns(category, customs);
+  return c.group && c.group !== c.category ? `${c.group} › ${c.category}` : c.category;
+};
+
+/** Retci tablice „po skupini": redak skupine sa zbrojem, listovi uvučeni ispod. */
+export const buildGroupedTableRows = (
+  rows: GroupTotalRow[],
+  customs: GroupedCustomCategory[],
+  money: (n: number) => string,
+): string[][] =>
+  rows.flatMap((r) => [
+    [groupRowLabel(r), '', money(r.amount)],
+    ...r.leaves.map((l) => ['', `  ${groupLeafLabel(l, customs)}`, money(l.amount)]),
+  ]);
+
 export const generatePDFReport = async (
   data: ReportData,
   reportTitle: string = 'Financijsko izvješće',
@@ -360,9 +416,12 @@ export const generatePDFReport = async (
 
 
   // --- Executive summary (deterministic) ---
+  const customs = data.customCategories ?? [];
+  const groupedTotals = buildGroupedCategoryTotals(data.byCategory, customs);
+  // Jedan redak po skupini: stari i novi ključ iste skupine nikad nisu dva retka.
   const allCategoryRows = aggregateCategoryTotalsByName(
-    data.byCategory,
-    (categoryId) => getCategoryInfo(categoryId as any).name,
+    Object.fromEntries(groupedTotals.map((r) => [r.group ?? '__none__', r.amount])),
+    (groupId) => groupRowLabel({ group: groupId === '__none__' ? null : (groupId as GroupTotalRow['group']) }),
   );
   const largest = findLargestExpense(
     data.expenses.map((e) => ({
@@ -384,7 +443,7 @@ export const generatePDFReport = async (
             (e) =>
               isRealSpend(e) &&
               !isCorrectionTx(e as any) &&
-              getCategoryInfo(e.category as any).name === topCategoryName,
+              groupRowLabel({ group: placeExpenseCategory(e.category, customs).group }) === topCategoryName,
           )
           .map((e) => ({
             title: cleanFeedTitle(e.description, owner),
@@ -461,6 +520,23 @@ export const generatePDFReport = async (
     );
   }
 
+  // --- Zbroj po skupini, listovi ispod ---
+  if (groupedTotals.length > 0) {
+    y += 3;
+    doc.setFont('Inter', 'bold');
+    doc.setFontSize(10.5);
+    doc.setTextColor(15, 23, 42);
+    doc.text(toAscii(i18n.t('reports.byGroupTitle') as string), REPORT_MARGIN_X, y);
+    const { autoTable } = await loadPdfLibs();
+    brandAutoTable(doc, autoTable, {
+      startY: y + 3,
+      head: [[i18n.t('reports.groupColumn') as string, i18n.t('reports.categoryColumn') as string, i18n.t('reports.amountColumn') as string]],
+      body: buildGroupedTableRows(groupedTotals, customs, (n) => formatCurrency(n, data.currency)),
+      margin: { left: REPORT_MARGIN_X, right: REPORT_MARGIN_X },
+    });
+    y = (doc as any).lastAutoTable.finalY + 4;
+  }
+
   // --- Transactions continue right below, no forced page break ---
   y += 5;
   doc.setFontSize(11);
@@ -493,7 +569,7 @@ export const generatePDFReport = async (
       ];
       const metaSource: (string | null | undefined)[] = isCorrection
         ? [i18n.t('reports.correctionLabel', 'Korekcija') as string]
-        : [categoryInfo.name, paymentInfo.name, !isExpenseType(expense) ? typeInfo.name : ''];
+        : [categoryWithGroup(expense.category, customs), paymentInfo.name, !isExpenseType(expense) ? typeInfo.name : ''];
       return {
         date: expense.date,
         title: expense.description || categoryInfo.name,
@@ -526,7 +602,7 @@ export const generatePDFReport = async (
 
 
 export const generateCSVReport = async (data: ReportData, mode: ExportMode = 'save'): Promise<void> => {
-  const headers = ['Datum', 'Tip', 'Opis', 'Kategorija', 'Način plaćanja', 'Iznos'];
+  const headers = ['Datum', 'Tip', 'Opis', 'Skupina', 'Kategorija', 'Način plaćanja', 'Iznos'];
 
   // CSV injection zaštita: tekstualna polja prolaze kroz sanitizeCsvField
   // (prefixira razmakom ako počinju s =, +, -, @). Vidi src/lib/csvSecurity.ts.
@@ -534,7 +610,7 @@ export const generateCSVReport = async (data: ReportData, mode: ExportMode = 'sa
     .sort((a, b) => b.date.getTime() - a.date.getTime())
     .map(expense => {
       const typeInfo = getTransactionTypeInfo(expense.type);
-      const categoryInfo = getCategoryInfo(expense.category);
+      const cols = exportCategoryColumns(expense.category, data.customCategories ?? []);
       const paymentInfo = getPaymentSourceInfo(expense.payment_source || 'cash');
       const safeDesc = sanitizeCsvField(expense.description).replace(/"/g, '""');
       
@@ -542,7 +618,8 @@ export const generateCSVReport = async (data: ReportData, mode: ExportMode = 'sa
         formatDate(expense.date),
         sanitizeCsvField(typeInfo.name),
         `"${safeDesc}"`,
-        sanitizeCsvField(categoryInfo.name),
+        sanitizeCsvField(cols.group),
+        sanitizeCsvField(cols.category),
         sanitizeCsvField(paymentInfo.name),
         isExpenseType(expense) ? -expense.amount : expense.amount,
       ].join(',');

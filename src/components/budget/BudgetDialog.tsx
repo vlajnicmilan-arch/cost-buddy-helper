@@ -17,7 +17,9 @@ import {
   DEFAULT_BUDGET_COLORS, 
   DEFAULT_BUDGET_ICONS 
 } from '@/types/budget';
-import { CATEGORIES } from '@/types/expense';
+import { getCategoryInfo, type Category } from '@/types/expense';
+import { BudgetLimitCategorySelect } from '@/components/budget/BudgetLimitCategorySelect';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { Plus, Trash2, Loader2, Repeat, CalendarRange } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
@@ -59,6 +61,7 @@ export const BudgetDialog = ({
   const [endDate, setEndDate] = useState('');
   const [categoryLimits, setCategoryLimits] = useState<CategoryLimit[]>([]);
   const [isRecurring, setIsRecurring] = useState(true);
+  const { customCategories } = useCustomCategories();
 
   useEffect(() => {
     if (budget) {
@@ -105,8 +108,7 @@ export const BudgetDialog = ({
   const handleCategoryChange = (index: number, field: keyof CategoryLimit, value: string | number) => {
     const updated = [...categoryLimits];
     if (field === 'category') {
-      const cat = CATEGORIES.find(c => c.id === value);
-      updated[index] = { ...updated[index], category: value as string, icon: cat?.icon };
+      updated[index] = { ...updated[index], category: value as string, icon: getCategoryInfo(value as Category).icon };
     } else {
       updated[index] = { ...updated[index], [field]: value };
     }
@@ -147,7 +149,6 @@ export const BudgetDialog = ({
   };
 
   const usedCategories = categoryLimits.map(c => c.category);
-  const availableCategories = CATEGORIES.filter(c => !usedCategories.includes(c.id));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -357,7 +358,7 @@ export const BudgetDialog = ({
                 variant="ghost" 
                 size="sm" 
                 onClick={handleAddCategory}
-                disabled={availableCategories.length === 0}
+                disabled={usedCategories.includes('')}
               >
                 <Plus className="w-4 h-4 mr-1" />
                 {t('common.add', 'Dodaj')}
@@ -372,21 +373,12 @@ export const BudgetDialog = ({
               <div className="space-y-2">
                 {categoryLimits.map((cl, index) => (
                   <div key={index} className="flex items-center gap-2 p-2 border rounded-lg">
-                    <Select 
-                      value={cl.category} 
-                      onValueChange={(v) => handleCategoryChange(index, 'category', v)}
-                    >
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder={t('common.selectCategory', 'Odaberi kategoriju')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {[...CATEGORIES.filter(c => c.id === cl.category), ...availableCategories].map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            {cat.icon} {cat.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <BudgetLimitCategorySelect
+                      value={cl.category}
+                      used={usedCategories}
+                      customCategories={customCategories}
+                      onChange={(v) => handleCategoryChange(index, 'category', v)}
+                    />
                     <MoneyInput
                       value={cl.limit_amount != null && cl.limit_amount !== 0 ? String(cl.limit_amount) : ''}
                       onChange={(e) => handleCategoryChange(index, 'limit_amount', parseLocaleAmount(e.target.value).value || 0)}

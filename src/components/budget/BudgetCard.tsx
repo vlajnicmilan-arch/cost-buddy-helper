@@ -29,7 +29,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { BudgetWithStats } from '@/types/budget';
-import { CATEGORIES } from '@/types/expense';
+import { resolveCategory } from '@/hooks/useResolvedCategory';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
 
 
 interface BudgetCardProps {
@@ -50,6 +51,7 @@ export const BudgetCard = ({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
+  const { customCategories } = useCustomCategories();
 
   const budgetColor = budget.color || '#3b82f6';
 
@@ -68,8 +70,8 @@ export const BudgetCard = ({
   const getBorderColor = () => budgetColor;
 
   const getCategoryDisplay = (categoryId: string) => {
-    const catInfo = CATEGORIES.find(c => c.id === categoryId);
-    return catInfo ? { name: catInfo.name, icon: catInfo.icon } : { name: categoryId, icon: '📂' };
+    const info = resolveCategory(categoryId, customCategories);
+    return { name: info.name, icon: info.icon || '📂' };
   };
 
   const allOriginalCategories = budget.categories

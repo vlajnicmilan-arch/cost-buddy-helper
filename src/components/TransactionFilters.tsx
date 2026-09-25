@@ -7,6 +7,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TreeCategoryOptions } from '@/components/categories/TreeCategoryOptions';
+import { CategoryGroupFilterOptions } from '@/components/categories/CategoryGroupFilterOptions';
+import { customIdsInGroup, matchesCategoryFilter, parseGroupLimitKey } from '@/lib/categoryGroupMatch';
 import { Search, X, CalendarIcon, Filter, Users, CreditCard, FolderKanban, User, Tag, Landmark, Wallet, AlertCircle } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
@@ -43,6 +45,8 @@ export interface FilterState {
   needsExplanationOnly: boolean;
   /** Samo zapisi s ovom oznakom (Nepotrebno/Luksuz). */
   tag?: ExpenseTag;
+  /** Uz `categoryId = group:<g>`: vlastite kategorije s tim group_key. */
+  categoryGroupCustomIds?: string[];
 }
 
 interface TransactionFiltersProps {
@@ -409,7 +413,15 @@ export const TransactionFilters = ({
           {/* Category Filter */}
           <Select
             value={filters.categoryId || 'all'}
-            onValueChange={(value) => updateFilter('categoryId', value === 'all' ? undefined : value)}
+            onValueChange={(value) => {
+              const next = value === 'all' ? undefined : value;
+              const group = parseGroupLimitKey(next);
+              onFiltersChange({
+                ...filters,
+                categoryId: next,
+                categoryGroupCustomIds: group ? customIdsInGroup(group, customCategories) : undefined,
+              });
+            }}
           >
             <SelectTrigger className="w-[180px] h-8 text-xs">
               <Tag className="w-3.5 h-3.5 mr-1.5" />
@@ -417,6 +429,7 @@ export const TransactionFilters = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t('filters.allCategories', 'Sve kategorije')}</SelectItem>
+              <CategoryGroupFilterOptions />
               <TreeCategoryOptions mode="expense" customCategories={customCategories} includeLegacy />
               <TreeCategoryOptions mode="income" includeLegacy />
             </SelectContent>
@@ -523,7 +536,7 @@ export const applyFilters = <T extends { description: string; date: Date; amount
     }
 
     if (filters.categoryId !== undefined) {
-      if (item.category !== filters.categoryId) return false;
+      if (!matchesCategoryFilter(item.category, filters.categoryId, filters.categoryGroupCustomIds)) return false;
     }
 
     if (filters.bankMatchStatus !== undefined) {

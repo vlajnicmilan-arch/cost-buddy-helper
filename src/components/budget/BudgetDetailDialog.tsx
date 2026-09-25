@@ -4,10 +4,12 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
+import { resolveCategory } from '@/hooks/useResolvedCategory';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { BudgetWithStats, BUDGET_PERIOD_LABELS } from '@/types/budget';
 import { useBudgetMembers } from '@/hooks/useBudgetMembers';
 import { BudgetMembersTab } from './BudgetMembersTab';
-import { getCategoryInfo, CATEGORIES } from '@/types/expense';
+import { getCategoryInfo } from '@/types/expense';
 import { computeFrameAllocation } from '@/lib/budgetPaceSignal';
 import { getDeviationVisual } from '@/lib/deviationVisual';
 import { cn } from '@/lib/utils';
@@ -36,6 +38,7 @@ export const BudgetDetailDialog = ({
 }: BudgetDetailDialogProps) => {
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
+  const { customCategories } = useCustomCategories();
   const { members, invitations, loading: membersLoading, isOwner, refetch: refetchMembers } = useBudgetMembers(budget?.id || null);
 
   if (!budget) return null;
@@ -187,8 +190,8 @@ export const BudgetDetailDialog = ({
                   {budget.categories.map((cat) => {
                     // Get category info for displaying original categories
                     const getCategoryDisplay = (categoryId: string) => {
-                      const catInfo = CATEGORIES.find(c => c.id === categoryId);
-                      return catInfo ? { name: catInfo.name, icon: catInfo.icon } : { name: categoryId, icon: '📂' };
+                      const info = resolveCategory(categoryId, customCategories);
+                      return { name: info.name, icon: info.icon || '📂' };
                     };
                     
                     return (
@@ -197,7 +200,7 @@ export const BudgetDetailDialog = ({
                         <div className="flex items-center gap-2">
                           <span className="text-lg">{cat.icon || '📂'}</span>
                           <div className="flex flex-col">
-                            <span className="text-sm font-medium">{cat.category === '__budget_manual_assigned__' ? t('budget.manualAssigned') : cat.category}</span>
+                            <span className="text-sm font-medium">{cat.category === '__budget_manual_assigned__' ? t('budget.manualAssigned') : resolveCategory(cat.category, customCategories).name}</span>
                             {/* Show original categories for manually assigned expenses */}
                             {cat.originalCategories && cat.originalCategories.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-1">

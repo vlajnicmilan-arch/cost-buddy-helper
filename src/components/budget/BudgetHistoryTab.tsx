@@ -4,7 +4,10 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { BudgetWithStats } from '@/types/budget';
 import { Expense } from '@/types/expense';
-import { CATEGORIES } from '@/types/expense';
+import { countsForBudgetTotal, MANUAL_ASSIGNED_CATEGORY } from '@/lib/budgetCategoryStats';
+import { parseBudgetLimitScope, pickNarrowestLimit } from '@/lib/categoryGroupMatch';
+import { resolveCategory } from '@/hooks/useResolvedCategory';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -48,6 +51,7 @@ interface PeriodData {
 export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
+  const { customCategories } = useCustomCategories();
   const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPeriodIndex, setSelectedPeriodIndex] = useState(0); // 0 = current
@@ -119,6 +123,7 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
 
       // Filter expenses for this period
       const periodExpenses = allExpenses.filter(e => {
+        if (!countsForBudgetTotal(budget, e)) return false;
         return e.date >= start && e.date <= end;
       });
 
@@ -128,10 +133,12 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
       const categoryMap = new Map<string, { icon: string; name: string; spent: number; limit: number }>();
 
       const resolveCat = (catId: string, fallbackIcon?: string) => {
-        const sys = CATEGORIES.find(c => c.id === catId);
-        if (sys) return { name: sys.name, icon: sys.icon };
-        return { name: catId, icon: fallbackIcon || '📂' };
+        const info = resolveCategory(catId, customCategories);
+        return { name: info.name, icon: info.icon || fallbackIcon || '📂' };
       };
+      const limitScopes = budget.categories
+        .filter(c => c.category !== MANUAL_ASSIGNED_CATEGORY)
+        .map(c => ({ key: c.category, scope: parseBudgetLimitScope(c.category, customCategories) }));
 
       // Initialize from budget categories
       budget.categories.forEach(cat => {
@@ -146,12 +153,12 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
 
       // Sum expenses per category
       periodExpenses.forEach(e => {
-        const matchedCat = budget.categories.find(cat => {
-          if (e.category === cat.category) return true;
-          return false;
-        });
+        // Osobni budžet: najuži limit (list prije skupine); projektni: točan ključ kao prije.
+        const matchedKey = budget.project_id
+          ? budget.categories.find(cat => e.category === cat.category)?.category
+          : limitScopes[pickNarrowestLimit(e.category, limitScopes.map(l => l.scope), customCategories)]?.key;
 
-        const catKey = matchedCat?.category || 'other';
+        const catKey = matchedKey || 'other';
         const existing = categoryMap.get(catKey);
         if (existing) {
           existing.spent += e.amount;
@@ -183,7 +190,7 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
     }
 
     return result;
-  }, [allExpenses, budget]);
+  }, [allExpenses, budget, customCategories]);
 
   // Current and comparison periods
   const currentPeriod = periods[selectedPeriodIndex];

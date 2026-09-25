@@ -25,7 +25,7 @@
 - [x] Nalog 5: zaslon „Pregled kategorija" (prijedlozi, potvrda, poništavanje; nije objavljeno)
 - [x] Nalog 4: oznake (Nepotrebno, Luksuz) + vrste zapisa + pregled pozajmica (nije objavljeno)
 - [x] Nalog 6: AI s novim ključevima + učenje iz `category_corrections` (prekidač za bank-sync isključen; nije objavljeno)
-- [ ] Nalog 7: budžeti po skupini, PDF, izvoz
+- [x] Nalog 7: budžeti po skupini, filtri, PDF i izvoz (nije objavljeno)
 
 Pravila za sve naloge:
 - Široka stara kategorija nikad se tiho ne prikazuje kao list: dobiva skupinu + `unsorted`, pa ide na pregled.
