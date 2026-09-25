@@ -332,6 +332,17 @@ const drawCategoryBars = (
 
 
 
+/** Retci tablice „po skupini": redak skupine sa zbrojem, listovi uvučeni ispod. */
+export const buildGroupedTableRows = (
+  rows: GroupTotalRow[],
+  customs: GroupedCustomCategory[],
+  money: (n: number) => string,
+): string[][] =>
+  rows.flatMap((r) => [
+    [groupRowLabel(r), '', money(r.amount)],
+    ...r.leaves.map((l) => ['', `  ${groupLeafLabel(l, customs)}`, money(l.amount)]),
+  ]);
+
 export const generatePDFReport = async (
   data: ReportData,
   reportTitle: string = 'Financijsko izvješće',
@@ -593,7 +604,7 @@ export const generateCSVReport = async (data: ReportData, mode: ExportMode = 'sa
     .sort((a, b) => b.date.getTime() - a.date.getTime())
     .map(expense => {
       const typeInfo = getTransactionTypeInfo(expense.type);
-      const categoryInfo = getCategoryInfo(expense.category);
+      const cols = exportCategoryColumns(expense.category, data.customCategories ?? []);
       const paymentInfo = getPaymentSourceInfo(expense.payment_source || 'cash');
       const safeDesc = sanitizeCsvField(expense.description).replace(/"/g, '""');
       
@@ -601,7 +612,8 @@ export const generateCSVReport = async (data: ReportData, mode: ExportMode = 'sa
         formatDate(expense.date),
         sanitizeCsvField(typeInfo.name),
         `"${safeDesc}"`,
-        sanitizeCsvField(categoryInfo.name),
+        sanitizeCsvField(cols.group),
+        sanitizeCsvField(cols.category),
         sanitizeCsvField(paymentInfo.name),
         isExpenseType(expense) ? -expense.amount : expense.amount,
       ].join(',');
