@@ -39,3 +39,5 @@ Pravila za sve naloge:
 ## Radnici — povezivanje i obavijest o satima
 - [x] Obavijest o upisanim satima ne ruši upis (0016) + greške „Poveži" u dijagnostiku, poruka s danima i satima
 - [ ] Kašteli: vlasnik sam povezuje Petra kroz aplikaciju nakon objave (čeka korisnika)
+
+- [ ] Krug: pouzdana isporuka obavijesti (outbox + retry + uklanjanje detectAuthorOutcome) — u izradi
