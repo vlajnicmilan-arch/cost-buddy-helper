@@ -1,34 +1,50 @@
-# Dijagnoza: crven "Manual↔Bank Merge SQL Suite"
+# Dijagnoza: Petar bez satnice u projektu „Kašteli"
 
-## 1. Što test postavlja
-Greška `manual_bank_merge.sql:367` je kraj DO bloka sekcije 4 (psql javlja zadnji redak naredbe). Unutar bloka pada slučaj **4.13a**: ručni redak `currency = NULL`, bankovni `'EUR'`, isti vlasnik/novčanik/iznos 21,50, razmak 1 dan. Test poziva `merge_manual_with_bank` izravno (ne kroz `assert_raises`) i očekuje `bank_match_status = 'confirmed'`. 4.13b (NULL+NULL → spaja) i 4.13c (USD+EUR → `different_currency`) su dodani istim commitom.
+Ovo je samo dijagnoza. Kod i baza nisu mijenjani. Ispod je prijedlog popravka koji čeka nalog „gradi".
 
-## 2. Što je promijenjeno
-`drizzle/migrations/0013_merge_currency_null_eur.sql`, jedina razlika u funkciji:
-- prije (0012 i supabase/migrations/20260824190123): `UPPER(COALESCE(v_manual.currency,'')) IS DISTINCT FROM UPPER(COALESCE(v_bank.currency,''))`
-- poslije (0013): `UPPER(COALESCE(v_manual.currency,'EUR')) IS DISTINCT FROM UPPER(COALESCE(v_bank.currency,'EUR'))`
+## 1. Kako vlasnik danas dodaje radnika sa satnicom
+- Ekran: Projekt → **Tim projekta** → podkartica **Radnici** (`ProjectTeamTab` → `ProjectWorkersTab`) → gumb za dodavanje radnika. Otvara se `ProjectWorkerDialog` s imenom, pozicijom i satnicom. Spremanje upisuje redak u `project_workers`.
+- Povezivanje s postojećim članom: u istom prozoru, kad zapis radnika već postoji (uređivanje), pojavi se okvir **„Već je član projekta?"** s izborom člana i gumbom **„Poveži"**. Gumb zove RPC `link_worker_to_member`, koji postavlja `project_workers.user_id` i **naknadno prenosi postojeće dnevnike** u `project_work_entries` (vraća `backfilled`).
+- Osoba iz „Ljudi": `useWorkerIdentityAttach` postavlja `project_workers.worker_id`. Postoji i drugi put: „+ Osoba" u „Ljudi" s odabranim projektom stvara angažman. Okidač `_person_link_inherit_down` tada sam upisuje `user_id`, ako osoba ima `linked_user_id`. Petrova osoba `99e0c1c4…` ima `linked_user_id`.
+- Iz pozivnice se zapis radnika ne stvara. Pozivnica s ulogom `worker` daje samo članstvo (`project_members`). Funkcija za prihvat pozivnice ne dira `project_workers`.
 
-Hash commita (8949f4e) nisam mogao provjeriti lokalno — git povijest ovdje ima samo generičke "Changes" poruke.
+## 2. Zašto u Kaštelima nema tog koraka
+- To nije regresija i nema commita koji je promijenio tok. Taj korak nikad nije bio automatski:
+  - Sve Petrove pozivnice (5.–7. mj. i 13.9.) imaju `worker_id` prazan.
+  - U ranijim projektima vlasnik je ručno napravio zapis radnika 30 s do 15 min nakon prihvata pozivnice (npr. 25.5. u 14:59:11 članstvo, u 14:59:42 zapis radnika).
+  - U Kaštelima taj ručni drugi korak jednostavno nije napravljen.
+- U datotekama tima, radnika i „Ljudi" od 1.9. postoji jedan commit (`ff47ad7c0`, 9.9.). Commit `6969e9c05` (9.9.) dira prava modula, ne radnike.
+- Stvarni kvar je u dizajnu:
+  - Aplikacija dopušta ulogu „Radnik" bez zapisa radnika i ništa ne upozorava.
+  - Okvir „Poveži" vidi se tek unutar postojećeg zapisa radnika, a ne na članu.
+  - Zato vlasnik s člana nema put do satnice.
+- Nisam provjerio u pregledniku vidi li Milan podkarticu „Radnici" (`hasAccess('workforce')`, razina `pro`). Ima aktivne dodjele `projekti` i `pro_legacy`, pa je vjerojatno vidi. To je nepotvrđeno.
 
-## 3. Presuda: ni test zastario ni kvar u funkciji — kvar je u harnessu
-Test je nov i ispravan; funkcija 0013 je ispravna. `supabase/tests/merge/run.sh` primjenjuje samo migraciju 20260824190123 i blok iz **0012** (`sed ... 0012_*.sql`), a **0013 nikad ne primjenjuje**. Harness zato testira staru funkciju (`COALESCE(...,'')`): za 4.13a to je `'' ≠ 'EUR'` → `different_currency`. Test ispravno hvata da testirana funkcija nije ona koja je u produkciji.
+## 3. Što vlasnik vidi od Petrovih 37 h
+- U **Dnevniku rada** vidi svih 5 zapisa s tekstom i satima (`useProjectWorkLogs` čita `project_work_logs`).
+- Ne vidi sažetak „sati po radniku" ni trošak rada. Oba se računaju iz `project_work_entries` × satnica iz `project_workers`.
+- Okidač `sync_work_log_to_entry` traži `project_workers` po (`project_id`, `user_id`). Kad ga ne nađe, preskače bez greške („Korisnik još nije mapiran"). Zato u Kaštelima ima 0 zapisa sati.
 
-Run #51 (7d257cf) nije uveo novi kvar; ostaje crven jer naslijeđuje isti harness.
+## 4. Prelaze li postojeći logovi automatski
+- **Samo stvaranje** zapisa radnika s `user_id` ne prenosi stare logove. Okidač radi samo na novi ili izmijenjeni dnevnik.
+- **Gumb „Poveži"** (`link_worker_to_member`) prenosi sve postojeće logove sa satima.
+- Put „+ Osoba" iz „Ljudi" (okidač `_person_link_inherit_down`) po kodu ne radi prijenos.
+- Dupli upis sprječava jedinstveni ključ `project_work_entries (worker_id, work_date)`. I okidač i prijenos rade upsert `ON CONFLICT (worker_id, work_date) DO UPDATE`. Ako Petar isti dan upiše ponovno, postojeći redak se prepisuje, ne nastaje drugi.
+- Siguran prijenos već postoji: vlasnik u Kaštelima doda radnika Petra sa satnicom, zatim ga otvori i klikne „Poveži" → Petar. Očekivano: `backfilled = 5`, 37 h.
+- Rizik: prijenos radi upsert, pa bi prepisao ručno upisane sate za isti dan. Za Kaštele takvih nema (0 redaka).
 
-## 4. Živa baza vs repozitorij
-`pg_get_functiondef('public.merge_manual_with_bank')` se poklapa s tijelom funkcije u 0013 (redak 42: `COALESCE(...,'EUR')`, uz nasljeđivanje `event_at`/`time_confidence` i `user_edited_event_at=false`). Razlika je samo u REVOKE/GRANT naredbama iza tijela, a njih pg_get_functiondef ionako ne vraća. Supabase migracija 20260824190123 i blok iz 0012 u harnessu su zastarjeli u odnosu na živu bazu.
-
-## 5. Živi podaci, korisnik d4d31ee6 (samo čitanje)
-- Nepovezani ručni retci (bez bankovnog id-a): 1.188, **svi imaju `currency = NULL`**.
-- Mogući parovi (isti novčanik, vrsta i iznos, bankovni redak od 1 dan prije do 3 dana poslije, ručni `manual`/`pending_bank`, bankovni nespojen): 24.
-- Staro pravilo (`''`) odbilo bi **10** od njih kao "različite valute"; novo pravilo (`'EUR'`) odbija **0**.
-- Živa funkcija je već na novom pravilu, pa se ti parovi u produkciji danas ne odbijaju krivo. Ne znam koliko ih je odbijeno prije primjene 0013 — iz baze to ne mogu pročitati.
+## 5. Drugi projekti u istom stanju
+Upit samo za čitanje: članovi s ulogom `worker`, bez `project_workers`, u neobrisanim projektima.
+- Rezultat: **1 projekt, 1 korisnik**. To su Kašteli (`533abe5a…`), Petar, 5 logova / 37 h.
+- Nijedan drugi projekt ni korisnik nije u tom stanju.
 
 ## 6. Prijedlog popravka (opis)
-1. `run.sh`: nakon bloka iz 0012 primijeniti i tijelo funkcije iz `0013_merge_currency_null_eur.sql` (cijela datoteka ili samo blok s funkcijom, ako 0013 ima i druge dijelove). Bolje trajno rješenje: harness uzima **zadnju** migraciju koja redefinira `merge_manual_with_bank` (ili izričit popis u `MERGE_MIGRATIONS.txt`), da se ovo ne ponovi uz 0014+.
-2. Podići brojčanu branu u `.github/workflows/merge-sql-suite.yml` s 32 na stvaran broj PASS tvrdnji nakon 4.13a/b/c (očekivano 35), da tihi gubitak scenarija ne prođe.
-3. Po želji: brana u harnessu koja nakon primjene provjeri da tijelo funkcije sadrži `COALESCE(v_manual.currency,'EUR')`, tj. da je testirana ista funkcija kao živa.
+1. **Upozorenje na članu:** na članu s ulogom „Radnik" bez zapisa radnika prikazati obavijest „Nema satnice — sati se ne obračunavaju" s gumbom „Postavi satnicu". Gumb otvara postojeći `ProjectWorkerDialog` s već odabranim članom.
+2. **Spremanje povezuje odmah:** u tom prozoru spremanje s odabranim članom stvara zapis radnika i odmah zove postojeći `link_worker_to_member`, pa se prošli dnevnici prenesu. Nema novog mehanizma ni SQL-a.
+3. **Poveznica s „Ljudi":** ako osoba iz „Ljudi" ima `linked_user_id` = taj član, ponuditi je kao osobu (postojeći `useWorkerIdentityAttach`).
+4. **Pri prihvatu pozivnice:** baza se ne mijenja. Vlasnik dobiva isti poziv na akciju u timu.
 
-Bez promjene funkcije, podataka i testnih slučajeva.
-
-**Dokaz:** lokalno `bash supabase/tests/merge/run.sh` na postgres:16 — 4.13a i 4.13b PASS, 4.13c PASS (`different_currency`), svi raniji scenariji ostaju PASS, broj PASS ≥ nova brana. Protudokaz: bez koraka 1 4.13a pada točno kao u CI-ju.
+Dokaz:
+- Vitest: član „Radnik" bez zapisa radnika pokazuje upozorenje. Spremanje s članom zove link RPC. Član sa zapisom ne pokazuje upozorenje.
+- SQL čuvar: dnevnik prije povezivanja, zatim povezivanje daje `backfilled = N`. Ponovni upis istog dana ne stvara duplikat. Drugo povezivanje ne udvostručuje sate.
+- Na živim podacima: vlasnik sam poveže Petra u Kaštelima. Zatim upit pokazuje 5 zapisa sati i 37 h u `project_work_entries`, a upit iz točke 5 vraća 0 redaka.
