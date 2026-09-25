@@ -19,7 +19,7 @@ import { loadWithRetry, fetchFailureMessage } from '@/lib/loadWithRetry';
 import { isRealSpend } from '@/lib/spendClassification';
 import { computeBudgetCategoryStats, countsForBudgetTotal } from '@/lib/budgetCategoryStats';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
-import { logBudgetSaveError } from '@/lib/budgetSaveError';
+import { logBudgetSaveError, budgetSaveErrorKey } from '@/lib/budgetSaveError';
 
 interface UseBudgetsOptions {
   externalExpenses?: Expense[];
@@ -267,7 +267,7 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
     } catch (error) {
       console.error('Error creating budget:', error);
       void logBudgetSaveError('create', error);
-      showError(t('errors.createBudget', 'Greška pri kreiranju budžeta'));
+      showError(t(budgetSaveErrorKey('create', error)));
     }
   }, [user, isLocalMode, t, fetchBudgets]);
 
@@ -312,7 +312,7 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
     } catch (error) {
       console.error('Error updating budget:', error);
       void logBudgetSaveError('update', error);
-      showError(t('errors.updateBudget', 'Greška pri ažuriranju budžeta'));
+      showError(t(budgetSaveErrorKey('update', error)));
     }
   }, [user, isLocalMode, t, fetchBudgets]);
 
