@@ -32,7 +32,8 @@ import {
 import { Button } from '@/components/ui/button';
 
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
-import { useExpenses } from '@/hooks/useExpenses';
+import { supabase } from '@/integrations/supabase/client';
+import { logWorkerPayoutReceiptError, workerPayoutReceiptErrorKey } from '@/lib/attribution/receiptError';
 import { useAuth } from '@/hooks/useAuth';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
@@ -75,11 +76,11 @@ export function AttributionSheet({ open, payload, onClose }: Props) {
   const navigate = useNavigate();
   const { formatAmount } = useCurrency();
   const { customPaymentSources, loading: sourcesLoading } = useCustomPaymentSources();
-  const { addExpense } = useExpenses();
 
   const [bankLinkedIds, setBankLinkedIds] = useState<ReadonlySet<string>>(new Set());
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [clientRequestId, setClientRequestId] = useState<string | null>(null);
 
   const payoutIds = useMemo(() => payload?.payoutIds ?? [], [payload]);
   const batchId = payload?.batchId ?? null;
@@ -91,11 +92,12 @@ export function AttributionSheet({ open, payload, onClose }: Props) {
     open,
   );
 
-  // Reset lokalnog stanja kad se otvara/zatvara sheet
+  // Reset lokalnog stanja kad se otvara/zatvara sheet; jedan client_request_id po otvaranju.
   useEffect(() => {
     if (open) {
       setSelectedId(null);
       setSaving(false);
+      setClientRequestId(crypto.randomUUID());
     }
   }, [open, payoutIds.join(',')]);
 
@@ -155,32 +157,20 @@ export function AttributionSheet({ open, payload, onClose }: Props) {
   })();
 
   const handleAttribute = async () => {
-    if (!user || !selected || saving) return;
+    if (!user || !selected || saving || !clientRequestId) return;
     if (!totalAmount || totalAmount <= 0) return;
     setSaving(true);
+    const target = batchId
+      ? { p_batch_id: batchId }
+      : { p_payout_id: payoutIds[0] };
     try {
-      const dateIso = paidAt ? new Date(paidAt) : new Date();
-      await addExpense({
-        expense: {
-          amount: totalAmount,
-          description: projectNames.length === 1
-            ? t('attribution.descSingle', 'Isplata: {{name}}', { name: projectNames[0] })
-            : t('attribution.descBatch', 'Zbirna isplata: {{names}}', {
-                names: projectNames.join(', '),
-              }),
-          category: 'salary',
-          type: 'income',
-          date: dateIso,
-          payment_source: `custom:${selected.source.id}`,
-          receipt_url: null,
-          merchant_name: null,
-          ai_extracted: false,
-          // linkovi na payout(e)
-          ...(batchId
-            ? { worker_payout_batch_id: batchId }
-            : { worker_payout_id: payoutIds[0] }),
-        } as any,
+      // Server writes the income (amount, date, description, links); see worker_confirm_payout_receipt.
+      const { error: rpcError } = await supabase.rpc('worker_confirm_payout_receipt', {
+        ...target,
+        p_source_id: selected.source.id,
+        p_client_request_id: clientRequestId,
       });
+      if (rpcError) throw rpcError;
 
       logFunnelEvent('worker_payout_attributed', {
         batch: !!batchId,
@@ -191,15 +181,15 @@ export function AttributionSheet({ open, payload, onClose }: Props) {
 
       showSuccess(t('attribution.success', 'Isplata pripisana izvoru'));
       onClose();
-    } catch (e: any) {
-      // Race guard: unique_violation → već pripisano.
-      if (e?.code === '23505') {
-        await refetch();
-        showError(t('attribution.errors.alreadyAttributed', 'Već pripisano ovoj isplati'));
-      } else {
-        console.error('[AttributionSheet] attribute failed', e);
-        showError(t('attribution.errors.generic', 'Pripis nije uspio, pokušaj ponovno'));
-      }
+    } catch (e: unknown) {
+      logWorkerPayoutReceiptError(e, {
+        payoutId: batchId ? null : payoutIds[0] ?? null,
+        batchId,
+        clientRequestId,
+      });
+      const key = workerPayoutReceiptErrorKey(e);
+      if (key === 'attribution.errors.alreadyAttributed') await refetch();
+      showError(t(key));
     } finally {
       setSaving(false);
     }
