@@ -7585,5 +7585,92 @@
     "currentSection": "Trenutno",
     "moveTo": "Skupina",
     "moveHint": "Premjesti kategoriju u skupinu ili je ostavi u „Mojim kategorijama\"."
+  },
+  "categoryReview": {
+    "title": "Pregled kategorija",
+    "subtitle": "Prijedlozi razvrstavanja — ništa se ne mijenja bez tvoje potvrde",
+    "now": "Sada",
+    "pickCategory": "Odaberi kategoriju",
+    "change": "Promijeni",
+    "skip": "Preskoči",
+    "examples": "Primjeri",
+    "confirmAll_one": "Potvrdi {{count}} zapis",
+    "confirmAll_few": "Potvrdi {{count}} zapisa",
+    "confirmAll_other": "Potvrdi {{count}} zapisa",
+    "countTotal_one": "{{count}} zapis, {{total}}",
+    "countTotal_few": "{{count}} zapisa, {{total}}",
+    "countTotal_other": "{{count}} zapisa, {{total}}",
+    "moreRows": "još {{count}}…",
+    "moreGroups": "još {{count}} grupa — potvrdi ove pa se prikažu",
+    "empty": "Nema ničega za pregled.",
+    "loadError": "Pregled se nije mogao učitati.",
+    "manualHint": "Ovdje nema prijedloga — odaberi kategoriju sam.",
+    "decisionHint": "Promjena ovih zapisa mijenjala bi vrstu zapisa i saldo, pa se ovdje ne radi. Treba tvoju odluku.",
+    "historyEmpty": "Još nema potvrđenih promjena.",
+    "revertedLabel": "Poništeno",
+    "undo": "Poništi",
+    "applied_one": "Promijenjen {{count}} zapis",
+    "applied_few": "Promijenjena {{count}} zapisa",
+    "applied_other": "Promijenjeno {{count}} zapisa",
+    "reverted_one": "Vraćen {{count}} zapis",
+    "reverted_few": "Vraćena {{count}} zapisa",
+    "reverted_other": "Vraćeno {{count}} zapisa",
+    "revertSkipped": "Nije vraćeno ({{count}}): zapis je u međuvremenu promijenjen ili obrisan.",
+    "cardTitle_one": "{{count}} zapis čeka razvrstavanje",
+    "cardTitle_few": "{{count}} zapisa čeka razvrstavanje",
+    "cardTitle_other": "{{count}} zapisa čeka razvrstavanje",
+    "cardBody": "Pogledaj prijedloge i potvrdi što želiš.",
+    "tabs": {
+      "suggestions": "Prijedlozi ({{count}})",
+      "manual": "Bez prijedloga",
+      "decision": "Tvoja odluka",
+      "history": "Povijest"
+    },
+    "confidence": {
+      "high": "Sigurno",
+      "medium": "Vjerojatno",
+      "low": "Možda"
+    },
+    "reasons": {
+      "history": "Ovog trgovca si već ranije ovako razvrstao.",
+      "history_siblings": "Ostale zapise istog trgovca već imaš u ovoj kategoriji.",
+      "rule": "Prepoznato po nazivu trgovca ili opisu.",
+      "alias": "Stara kategorija ima samo jednu odgovarajuću podkategoriju.",
+      "own_transfer": "Izgleda kao prebacivanje na vlastiti račun ili novčanik.",
+      "atm": "Podizanje gotovine na bankomatu.",
+      "loan": "U opisu piše pozajmica.",
+      "loan_person": "Istoj osobi već imaš zapis s pozajmicom.",
+      "worker": "Isplata radniku ili izvođaču.",
+      "own_company": "Uplata u tvoju firmu.",
+      "tag_category": "Kategorija „Nepotrebno\"/„Luksuz\" postaje oznaka; kategorija ostaje dok ne odlučiš.",
+      "type_change": "Upisano kao prijenos, a kategorija je trošak.",
+      "broken_value": "Neispravna vrijednost kategorije.",
+      "no_match": "Nema prijedloga."
+    },
+    "movement": {
+      "own_transfer": "Prijenos na vlastiti račun",
+      "atm": "Bankomat",
+      "loan_given": "Pozajmica dana",
+      "loan_repaid_to_me": "Vraćena pozajmica (meni)",
+      "loan_received": "Pozajmica primljena",
+      "loan_repaid_by_me": "Vraćena pozajmica (ja)",
+      "own_company_payment": "Uplata u vlastitu firmu"
+    },
+    "tags": {
+      "unnecessary": "Nepotrebno",
+      "luxury": "Luksuz"
+    },
+    "errors": {
+      "not_authenticated": "Prijava je istekla. Prijavi se ponovno.",
+      "not_allowed": "Nemaš pravo mijenjati jedan od ovih zapisa.",
+      "expense_not_found": "Jedan od zapisa više ne postoji. Osvježi pregled.",
+      "exempt_category": "Ova kategorija je izuzeta iz pregleda.",
+      "invalid_category": "Odabrana kategorija nije valjana.",
+      "invalid_tags": "Oznaka nije valjana.",
+      "too_many_items": "Previše zapisa odjednom.",
+      "no_items": "Nije odabran nijedan zapis.",
+      "invalid_value": "Vrijednost nije dopuštena.",
+      "unknown": "Promjena nije spremljena. Pokušaj ponovno."
+    }
   }
 }

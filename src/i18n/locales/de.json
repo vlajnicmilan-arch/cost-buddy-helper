@@ -7563,5 +7563,87 @@
     "currentSection": "Aktuell",
     "moveTo": "Gruppe",
     "moveHint": "Kategorie in eine Gruppe verschieben oder unter „Meine Kategorien\" lassen."
+  },
+  "categoryReview": {
+    "title": "Kategorien prüfen",
+    "subtitle": "Vorschläge zur Einordnung — nichts ändert sich ohne deine Bestätigung",
+    "now": "Jetzt",
+    "pickCategory": "Kategorie wählen",
+    "change": "Ändern",
+    "skip": "Überspringen",
+    "examples": "Beispiele",
+    "confirmAll_one": "{{count}} Eintrag bestätigen",
+    "confirmAll_other": "{{count}} Einträge bestätigen",
+    "countTotal_one": "{{count}} Eintrag, {{total}}",
+    "countTotal_other": "{{count}} Einträge, {{total}}",
+    "moreRows": "noch {{count}}…",
+    "moreGroups": "noch {{count}} Gruppen — bestätige diese, um sie zu sehen",
+    "empty": "Nichts zu prüfen.",
+    "loadError": "Die Prüfung konnte nicht geladen werden.",
+    "manualHint": "Kein Vorschlag — wähle die Kategorie selbst.",
+    "decisionHint": "Eine Änderung würde Art und Saldo des Eintrags ändern, daher nicht hier. Deine Entscheidung ist nötig.",
+    "historyEmpty": "Noch keine bestätigten Änderungen.",
+    "revertedLabel": "Rückgängig gemacht",
+    "undo": "Rückgängig",
+    "applied_one": "{{count}} Eintrag geändert",
+    "applied_other": "{{count}} Einträge geändert",
+    "reverted_one": "{{count}} Eintrag wiederhergestellt",
+    "reverted_other": "{{count}} Einträge wiederhergestellt",
+    "revertSkipped": "Nicht wiederhergestellt ({{count}}): Eintrag wurde inzwischen geändert oder gelöscht.",
+    "cardTitle_one": "{{count}} Eintrag wartet auf Einordnung",
+    "cardTitle_other": "{{count}} Einträge warten auf Einordnung",
+    "cardBody": "Sieh dir die Vorschläge an und bestätige, was du willst.",
+    "tabs": {
+      "suggestions": "Vorschläge ({{count}})",
+      "manual": "Ohne Vorschlag",
+      "decision": "Deine Entscheidung",
+      "history": "Verlauf"
+    },
+    "confidence": {
+      "high": "Sicher",
+      "medium": "Wahrscheinlich",
+      "low": "Vielleicht"
+    },
+    "reasons": {
+      "history": "Diesen Händler hast du früher so eingeordnet.",
+      "history_siblings": "Andere Einträge dieses Händlers sind bereits in dieser Kategorie.",
+      "rule": "Anhand von Händlername oder Beschreibung erkannt.",
+      "alias": "Die alte Kategorie hat nur eine passende Unterkategorie.",
+      "own_transfer": "Sieht nach Übertrag auf ein eigenes Konto oder eine eigene Geldbörse aus.",
+      "atm": "Bargeldabhebung am Automaten.",
+      "loan": "In der Beschreibung steht Darlehen.",
+      "loan_person": "Für diese Person gibt es bereits einen Darlehenseintrag.",
+      "worker": "Zahlung an Arbeiter oder Auftragnehmer.",
+      "own_company": "Zahlung in deine Firma.",
+      "tag_category": "„Unnötig\"/„Luxus\" wird zum Tag; die Kategorie bleibt, bis du entscheidest.",
+      "type_change": "Als Übertrag erfasst, aber die Kategorie ist eine Ausgabe.",
+      "broken_value": "Ungültiger Kategoriewert.",
+      "no_match": "Kein Vorschlag."
+    },
+    "movement": {
+      "own_transfer": "Übertrag auf eigenes Konto",
+      "atm": "Geldautomat",
+      "loan_given": "Darlehen gegeben",
+      "loan_repaid_to_me": "Darlehen an mich zurückgezahlt",
+      "loan_received": "Darlehen erhalten",
+      "loan_repaid_by_me": "Darlehen von mir zurückgezahlt",
+      "own_company_payment": "Zahlung in eigene Firma"
+    },
+    "tags": {
+      "unnecessary": "Unnötig",
+      "luxury": "Luxus"
+    },
+    "errors": {
+      "not_authenticated": "Sitzung abgelaufen. Bitte erneut anmelden.",
+      "not_allowed": "Du darfst einen dieser Einträge nicht ändern.",
+      "expense_not_found": "Ein Eintrag existiert nicht mehr. Aktualisiere die Prüfung.",
+      "exempt_category": "Diese Kategorie ist von der Prüfung ausgenommen.",
+      "invalid_category": "Die gewählte Kategorie ist ungültig.",
+      "invalid_tags": "Ungültiger Tag.",
+      "too_many_items": "Zu viele Einträge auf einmal.",
+      "no_items": "Kein Eintrag ausgewählt.",
+      "invalid_value": "Wert nicht erlaubt.",
+      "unknown": "Die Änderung wurde nicht gespeichert. Bitte erneut versuchen."
+    }
   }
 }

@@ -1149,36 +1149,54 @@ export type Database = {
       }
       category_corrections: {
         Row: {
+          client_request_id: string | null
           corrected_category: string
+          corrected_movement_kind: string | null
+          corrected_tags: string[] | null
           created_at: string
           description: string | null
           expense_id: string | null
           id: string
           merchant_name: string | null
           original_category: string
+          original_movement_kind: string | null
           original_origin: string | null
+          original_tags: string[] | null
+          reverted_at: string | null
           user_id: string
         }
         Insert: {
+          client_request_id?: string | null
           corrected_category: string
+          corrected_movement_kind?: string | null
+          corrected_tags?: string[] | null
           created_at?: string
           description?: string | null
           expense_id?: string | null
           id?: string
           merchant_name?: string | null
           original_category: string
+          original_movement_kind?: string | null
           original_origin?: string | null
+          original_tags?: string[] | null
+          reverted_at?: string | null
           user_id: string
         }
         Update: {
+          client_request_id?: string | null
           corrected_category?: string
+          corrected_movement_kind?: string | null
+          corrected_tags?: string[] | null
           created_at?: string
           description?: string | null
           expense_id?: string | null
           id?: string
           merchant_name?: string | null
           original_category?: string
+          original_movement_kind?: string | null
           original_origin?: string | null
+          original_tags?: string[] | null
+          reverted_at?: string | null
           user_id?: string
         }
         Relationships: [
@@ -7552,6 +7570,14 @@ export type Database = {
       can_write_project_progress: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
+      }
+      category_review_apply: {
+        Args: { _client_request_id: string; _items: Json }
+        Returns: Json
+      }
+      category_review_revert: {
+        Args: { _correction_ids: string[] }
+        Returns: Json
       }
       cleanup_duplicate_push_tokens: { Args: never; Returns: undefined }
       cleanup_old_ai_usage: { Args: never; Returns: undefined }

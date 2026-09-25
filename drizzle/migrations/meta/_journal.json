@@ -127,6 +127,13 @@
       "when": 1790360171289,
       "tag": "0017_category_tree_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790362121683,
+      "tag": "0018_category_review",
+      "breakpoints": true
     }
   ]
 }
