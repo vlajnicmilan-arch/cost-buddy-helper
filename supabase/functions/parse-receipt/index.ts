@@ -236,6 +236,9 @@ serve(async (req) => {
       ? `KATEGORIJE (odaberi NAJSPECIFIČNIJI ključ; koristi ISKLJUČIVO ove ključeve; dopuna/bankomat → "transfer"; ako nisi siguran → "other"):\n`
         + treePromptLines(treeCustoms, 'expense').lines
       : '';
+    const categoryRulesBlock = useTree
+      ? `VAŽNO ZA KATEGORIZACIJU:\n- Trajekt → "ferry"; gorivo → "fuel"; supermarket → "groceries"; kafić → "coffee"; restoran → "restaurants"\n- Benzinske postaje s dopunom (Aircash) → "transfer"\n- Primjeri JSON-a gore su samo oblik; ključ kategorije uzmi ISKLJUČIVO s popisa KATEGORIJE.\n`
+      : `VAŽNO ZA KATEGORIZACIJU:\n- "Trajekt", "ferry", "karta za brod" → UVIJEK "transport", NIKAD "food"!\n- Supermarketi (Konzum, Lidl, Spar...) → "groceries", NE "food"\n- Benzinske postaje (INA, Petrol) s gorivom → "car"\n- Benzinske postaje s dopunom (Aircash) → "transfer"\n- DM, Müller → "beauty" ako je kozmetika, "groceries" ako su namirnice\n`;
     const categoriesBlock = useTree ? treeBlock : restrictedCategories
       ? `KATEGORIJE (odaberi NAJSPECIFIČNIJU koja odgovara; koristi ISKLJUČIVO ove ključeve):\n`
         + allowedCategories.map((c: any) => `- ${c.id} → ${c.name ?? c.id}`).join('\n')
@@ -527,12 +530,7 @@ PRIMJER ZA RATE:
 
 ${categoriesBlock}
 
-VAŽNO ZA KATEGORIZACIJU:
-- "Trajekt", "ferry", "karta za brod" → UVIJEK "transport", NIKAD "food"!
-- Supermarketi (Konzum, Lidl, Spar...) → "groceries", NE "food"
-- Benzinske postaje (INA, Petrol) s gorivom → "car"
-- Benzinske postaje s dopunom (Aircash) → "transfer"
-- DM, Müller → "beauty" ako je kozmetika, "groceries" ako su namirnice
+${categoryRulesBlock}
 
 AKO NE MOŽEŠ PROČITATI:
 {"error": "Nije moguće pročitati račun"}`;
