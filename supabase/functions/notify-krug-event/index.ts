@@ -390,17 +390,7 @@ Deno.serve(async (req) => {
   // Outbox: obrada je završena i kad je namjerno preskočeno (dedup pogodak ili
   // isključene postavke) — takvi redovi se ne ponavljaju. Kvar oznake ne smije
   // srušiti odgovor.
-  if (dedup_ref) {
-    try {
-      await admin.rpc("krug_notify_outbox_mark_delivered", {
-        p_dedup_ref: dedup_ref,
-      });
-    } catch (e) {
-      console.error(
-        `[notify-krug-event] outbox_mark_error dedup=${dedup_ref}: ${(e as Error).message}`,
-      );
-    }
-  }
+  await markOutboxDelivered(admin, dedup_ref);
 
   return json({
     ok: true,
