@@ -1140,7 +1140,9 @@
     "moveSummary": {
       "expenses": "{{count}} troškova, ukupno {{total}} €",
       "crossScope": "Troškovi ostaju vezani na novčanik iz kojeg su plaćeni. Stanje nijednog novčanika se ne mijenja."
-    }
+    },
+    "workerLinkedWithBackfillHours": "Povezano — preneseno {{count}} dana, ukupno {{hours}} h",
+    "linkNotAuthenticated": "Prijava je istekla — prijavi se ponovno"
   },
   "estimates": {
     "title": "Ponude i predračuni",

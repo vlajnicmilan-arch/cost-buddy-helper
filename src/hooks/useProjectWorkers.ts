@@ -4,6 +4,8 @@ import { ProjectWorker, ProjectWorkerInput } from '@/types/projectWorker';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { getBuildStamp } from '@/lib/buildStamp';
+import { resolveWorkerLinkErrorCode, workerLinkErrorKey, sumEntryHours } from '@/lib/workerLinkError';
 import { parseWorkerDeleteError, type WorkerDeleteReason } from '@/lib/workerDeleteReason';
 import {
   computeWorkerCostTotals,
@@ -342,27 +344,42 @@ export const useProjectWorkers = (projectId: string | null) => {
       if (error) throw error;
       const result = (data as any) || {};
       await fetchWorkers();
+      const n = Number(result.backfilled || 0);
       if (userId === null) {
         showSuccess(t('projects.workerUnlinked', 'Veza uklonjena'));
-      } else {
-        const n = Number(result.backfilled || 0);
+      } else if (n > 0) {
+        const { data: rows } = await supabase
+          .from('project_work_entries')
+          .select('actual_hours')
+          .eq('worker_id', workerId);
         showSuccess(
-          n > 0
-            ? t('projects.workerLinkedWithBackfill', 'Povezano — obračunato {{count}} unosa', { count: n })
-            : t('projects.workerLinkedNoBackfill', 'Povezano'),
+          t('projects.workerLinkedWithBackfillHours', {
+            count: n,
+            hours: Number(sumEntryHours(rows ?? []).toFixed(2)),
+          }),
         );
+      } else {
+        showSuccess(t('projects.workerLinkedNoBackfill', 'Povezano'));
       }
-      return { success: true, backfilled: Number(result.backfilled || 0) };
+      return { success: true, backfilled: n };
     } catch (err: any) {
-      const msg = err?.message || '';
-      const errMap: Record<string, string> = {
-        not_authorized: t('projects.linkNotAuthorized', 'Nemate ovlast za povezivanje'),
-        user_already_linked_to_other_worker: t('projects.userAlreadyLinked', 'Ovaj član je već povezan s drugim radnikom'),
-        worker_not_found: t('projects.workerNotFound', 'Radnik nije pronađen'),
-      };
-      const known = Object.keys(errMap).find((k) => msg.includes(k));
-      showError(known ? errMap[known] : t('common.error'));
-      return { success: false, error: known || 'unknown' };
+      const code = resolveWorkerLinkErrorCode(err?.message);
+      logDiagnostic({
+        event: 'worker_link_error',
+        severity: 'error',
+        details: {
+          rpc: 'link_worker_to_member',
+          worker_id: workerId,
+          project_id: projectId,
+          user_id: userId,
+          db_code: err?.code ?? null,
+          db_message: String(err?.message ?? err),
+          resolved_code: code,
+          build: getBuildStamp(),
+        },
+      });
+      showError(t(workerLinkErrorKey(err?.message)));
+      return { success: false, error: code };
     }
   };
 
