@@ -1,30 +1,58 @@
 /**
- * Registry of wallet refreshers. Every mounted `useCustomPaymentSources`
- * instance registers its own server fetch; the live listener only says
- * "wallets are dirty" and never carries row data into state.
+ * Live refresh registry, per topic. Mounted data hooks register their own
+ * server fetch; the live listener only says "topic dirty" and never carries
+ * row data into state.
  *
- * `force: true` (a real database change) bypasses the short share cache;
- * `force: false` (catch-up after a channel reconnect) may reuse a result that
- * the resume path fetched moments ago, so resume + reconnect never double-fetch.
+ * Topics:
+ * - `wallets`: `useCustomPaymentSources` instances.
+ *   `force: true` (a real database change) bypasses the short share cache;
+ *   `force: false` (catch-up after reconnect) may reuse a fresh resume result.
+ * - `transactions`: screens with their own expenses fetch (budget pending list).
+ *   Marked by the existing expenses channel in `useExpenseFetch`.
  */
+export type LiveTopic = 'wallets' | 'transactions';
+
 export interface WalletsRefreshOptions {
   force: boolean;
 }
 
 type Refresher = (options: WalletsRefreshOptions) => Promise<unknown> | unknown;
 
-const refreshers = new Set<Refresher>();
+const refreshers: Record<LiveTopic, Set<Refresher>> = {
+  wallets: new Set(),
+  transactions: new Set(),
+};
+const dirtyMarkers: Partial<Record<LiveTopic, () => void>> = {};
 
-export function registerWalletsRefresher(refresher: Refresher): () => void {
-  refreshers.add(refresher);
+export function registerLiveRefresher(topic: LiveTopic, refresher: Refresher): () => void {
+  refreshers[topic].add(refresher);
   return () => {
-    refreshers.delete(refresher);
+    refreshers[topic].delete(refresher);
   };
 }
 
-export async function refreshAllWallets(options: WalletsRefreshOptions): Promise<void> {
-  await Promise.allSettled(Array.from(refreshers, (r) => r(options)));
+export async function refreshLiveTopic(topic: LiveTopic, options: WalletsRefreshOptions): Promise<void> {
+  await Promise.allSettled(Array.from(refreshers[topic], (r) => r(options)));
 }
 
-export const __walletsRefresherCountForTests = () => refreshers.size;
-export const __resetWalletsRefreshersForTests = () => refreshers.clear();
+/** The provider installs the batcher for a topic; `null` removes it. */
+export function setLiveDirtyMarker(topic: LiveTopic, marker: (() => void) | null): void {
+  if (marker) dirtyMarkers[topic] = marker;
+  else delete dirtyMarkers[topic];
+}
+
+/** No-op when no provider is active (signed out, local mode). */
+export function markLiveDirty(topic: LiveTopic): void {
+  dirtyMarkers[topic]?.();
+}
+
+export const registerWalletsRefresher = (refresher: Refresher) => registerLiveRefresher('wallets', refresher);
+export const refreshAllWallets = (options: WalletsRefreshOptions) => refreshLiveTopic('wallets', options);
+
+export const __walletsRefresherCountForTests = () => refreshers.wallets.size;
+export const __resetWalletsRefreshersForTests = () => {
+  refreshers.wallets.clear();
+  refreshers.transactions.clear();
+  delete dirtyMarkers.wallets;
+  delete dirtyMarkers.transactions;
+};
