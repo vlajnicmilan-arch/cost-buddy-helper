@@ -336,13 +336,24 @@ async function runClassification(
     invoice_number: deterministic.invoice_number,
   };
 
-  // ---- 3b. Heuristika — poznat OIB ili pošiljatelj, bez AI -----------------
+  // ---- 3b. Heuristika — poznat OIB ili pošiljatelj ------------------------
+  // Poznat OIB je DOKAZ IZDAVATELJA, ne presuda o vrsti (kvar rujan 2026:
+  // vlastiti OIB u potpisu/banka u podnožju pretvarali su dopis u `racun`).
+  // Heuristika smije sama reći „račun" samo uz doslovan račun-signal; inače
+  // odlučuje AI (korak 4). AI presuda `ponuda`/`nije_za_nas` se nikad ne gazi.
+  const own = new Set((input.ownOibs ?? []).map((o) => o.replace(/[^0-9]/g, '')));
   const haystack = [input.searchText, input.bodyText, input.pdfText, input.subject]
     .filter((part) => (part ?? '').length > 0)
     .join('\n');
-  const knownOib = findKnownOib(haystack, input.knownOibs ?? []);
+  const knownOib = findKnownOib(
+    haystack,
+    (input.knownOibs ?? []).filter((o) => !own.has(o.replace(/[^0-9]/g, ''))),
+  );
   const knownFrom = senderKnown(input.fromHeader, input.knownSenders ?? []);
-  if (knownOib || knownFrom) {
+  const heuristicSaysInvoice =
+    (knownOib || knownFrom) && (userSaysInvoice || carriesInvoiceSignal(statementText, input.subject));
+  let aiFromEnrichment: Awaited<ReturnType<NonNullable<ClassifyDeps['analyzeWithAi']>>> | null = null;
+  if (heuristicSaysInvoice) {
     let extraction = mergeDeterministic(
       knownOib ? { supplier_oib: knownOib } : null,
       deterministicFields,
@@ -353,29 +364,39 @@ async function runClassification(
     // PAMETNA DOPUNA: jeftina grana je odlucila STO je dokument, ali kljucna
     // polja (iznos/broj/dobavljac) znaju ostati prazna. Tek tada — i samo kad
     // postoji tekst — AI dopunjuje RUPE. Determinizam i dalje pobjeduje.
+    let enrichmentOverruled = false;
     if (deps.analyzeWithAi && needsAiEnrichment(extraction, hasExtractableText(input))) {
       const ai = await deps.analyzeWithAi(input);
       enrichCalls = 1;
-      extraction = mergeDeterministic(
-        { ...(ai?.extraction ?? {}), ...stripNulls(extraction) },
-        deterministicFields,
-        { receivedAt: input.receivedAt },
-      );
-      warnings.push('ai_dopuna');
+      if (ai.classification !== 'racun' && !userSaysInvoice) {
+        // AI kaže da ovo NIJE račun — presuda ide kroz korak 4, ne gazi se.
+        aiFromEnrichment = ai;
+        aiCalls += 1;
+        enrichmentOverruled = true;
+      } else {
+        extraction = mergeDeterministic(
+          { ...(ai?.extraction ?? {}), ...stripNulls(extraction) },
+          deterministicFields,
+          { receivedAt: input.receivedAt },
+        );
+        warnings.push('ai_dopuna');
+      }
     }
 
-    return {
-      classification: 'racun',
-      docType: '380',
-      extraction,
-      confidence: deterministic.ambiguous ? 'niska' : 'srednja',
-      route: 'heuristika',
-      aiCalls: enrichCalls,
-      consumesQuota: true,
-      priority: false,
-      warnings,
-      verification: null,
-    };
+    if (!enrichmentOverruled) {
+      return {
+        classification: 'racun',
+        docType: '380',
+        extraction,
+        confidence: deterministic.ambiguous ? 'niska' : 'srednja',
+        route: 'heuristika',
+        aiCalls: enrichCalls,
+        consumesQuota: true,
+        priority: false,
+        warnings,
+        verification: null,
+      };
+    }
   }
 
   // ---- 4. Tek sada AI ------------------------------------------------------
@@ -394,8 +415,12 @@ async function runClassification(
     };
   }
 
-  const ai = await deps.analyzeWithAi(input);
-  aiCalls += 1;
+  const ai = aiFromEnrichment ?? (await deps.analyzeWithAi(input));
+  if (!aiFromEnrichment) aiCalls += 1;
+  // Poznat izdavatelj (ne vlastiti) popunjava samo prazan OIB dobavljača.
+  if (knownOib && ai.extraction && !ai.extraction.supplier_oib) {
+    ai.extraction = { ...ai.extraction, supplier_oib: knownOib };
+  }
 
   if (ai.classification !== 'racun' && ai.classification !== 'ponuda') {
     // Korisnikova odluka „ovo je račun" je jača od AI presude: dokument ostaje
