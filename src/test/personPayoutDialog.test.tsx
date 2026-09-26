@@ -25,6 +25,7 @@ vi.mock('@/hooks/useCustomPaymentSources', () => ({
 vi.mock('@/hooks/usePersonPayout', () => ({
   usePersonPayout: () => ({ payPerson, submitting: false }),
 }));
+vi.mock('@/hooks/useBackButton', () => ({ useBackButton: () => {} }));
 vi.mock('@/hooks/useStatusFeedback', () => ({ showError: vi.fn(), showSuccess: vi.fn() }));
 vi.mock('@/lib/personPayoutPreview', () => ({
   previewPersonPeriod: (...a: unknown[]) => previewPersonPeriod(...a),
