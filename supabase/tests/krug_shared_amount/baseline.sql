@@ -48,8 +48,8 @@ LANGUAGE sql STABLE AS $$
       OR EXISTS (SELECT 1 FROM public.krug_membership WHERE krug_id=_krug AND user_id=_user AND role='punopravni');
 $$;
 CREATE OR REPLACE FUNCTION public.krug_emit_notification(p_event_type text, p_krug_id uuid, p_actor_id uuid,
-  p_expense_id uuid DEFAULT NULL, p_settlement_id uuid DEFAULT NULL, p_dedup_ref text DEFAULT NULL,
-  p_recipient_override uuid[] DEFAULT NULL, p_payload jsonb DEFAULT NULL) RETURNS void
+  p_expense_id uuid DEFAULT NULL, p_deletion_request_id uuid DEFAULT NULL, p_dedup_ref text DEFAULT NULL,
+  p_recipient_override uuid[] DEFAULT NULL, p_vars jsonb DEFAULT NULL) RETURNS void
 LANGUAGE sql AS $$ INSERT INTO public.notify_log VALUES (p_event_type, p_recipient_override) $$;
 
 -- Stanje prava kao na živoj bazi.
