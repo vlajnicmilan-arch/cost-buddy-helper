@@ -7,9 +7,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Info } from 'lucide-react';
+import { Info, X } from 'lucide-react';
+import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
 import type { SettlementPreview } from '@/hooks/useKrugSettlement';
-import { useKrugSettlementLedger } from '@/hooks/useKrugSettlementMutations';
+import { useKrugSettlementLedger, useKrugVoidSettlement } from '@/hooks/useKrugSettlementMutations';
 import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { getMemberDisplayName } from '@/lib/krugDisplay';
 import { canActOnReceipt, isAwaitingReceipt } from '@/lib/krugSettleWithSource';
@@ -40,6 +41,10 @@ export function KrugOwnPartySettlement({
   }>(null);
   const [confirmTarget, setConfirmTarget] = useState<ConfirmReceiptTarget | null>(null);
   const autoConfirmDone = useRef<string | null>(null);
+  // "Nisam primio" and "Poništi" share the void flow, same as for full members.
+  const [voidTarget, setVoidTarget] = useState<string | null>(null);
+  const [voidPrefill, setVoidPrefill] = useState<string | undefined>(undefined);
+  const voidMut = useKrugVoidSettlement(krugId);
 
   // Ledger is RLS-scoped to the caller's own rows; used only for receipt status.
   const { data: ledger = [] } = useKrugSettlementLedger(krugId, settled.length > 0);
@@ -135,6 +140,9 @@ export function KrugOwnPartySettlement({
             {settled.map((s) => {
               const row = ledgerById.get(s.ledger_id);
               const canConfirm = !!row && canActOnReceipt(row, userId, readOnly);
+              // Same rule as the full history row: a party may void while no receipt action is pending.
+              const canVoid = !!row && !readOnly && !row.voided_at && !canConfirm
+                && (row.from_user === userId || row.to_user === userId);
               return (
                 <div key={s.ledger_id} data-highlight-id={`settlement:${s.ledger_id}`} data-testid="own-party-settled-row" className="px-4 py-2.5 text-sm">
                   <div className="flex items-center justify-between gap-2">
@@ -152,8 +160,27 @@ export function KrugOwnPartySettlement({
                     <span className="font-semibold tabular-nums shrink-0">{fmt(s.amount, s.currency)}</span>
                   </div>
                   {canConfirm && (
-                    <Button size="sm" className="min-h-[44px] w-full mt-2" data-testid="own-party-confirm" onClick={() => openConfirm(s.ledger_id)}>
-                      {t('krug.settle.history.confirmReceipt')}
+                    <div className="flex gap-2 pt-2">
+                      <Button size="sm" className="min-h-[44px] flex-1" data-testid="own-party-confirm" onClick={() => openConfirm(s.ledger_id)}>
+                        {t('krug.settle.history.confirmReceipt')}
+                      </Button>
+                      <Button
+                        size="sm" variant="outline" className="min-h-[44px] flex-1" data-testid="own-party-not-received"
+                        disabled={voidMut.isPending}
+                        onClick={() => { setVoidPrefill(t('krug.settle.history.notReceivedReason')); setVoidTarget(s.ledger_id); }}
+                      >
+                        {t('krug.settle.history.notReceived')}
+                      </Button>
+                    </div>
+                  )}
+                  {canVoid && (
+                    <Button
+                      size="sm" variant="ghost" className="min-h-[44px] w-full mt-2" data-testid="own-party-void"
+                      disabled={voidMut.isPending}
+                      onClick={() => { setVoidPrefill(undefined); setVoidTarget(s.ledger_id); }}
+                    >
+                      <X className="w-4 h-4 mr-1" />
+                      {t('krug.settle.history.void', 'Poništi')}
                     </Button>
                   )}
                 </div>
@@ -162,6 +189,29 @@ export function KrugOwnPartySettlement({
           </Card>
         </div>
       )}
+
+      <ConfirmActionDialog
+        open={!!voidTarget}
+        onOpenChange={(v) => { if (!v) setVoidTarget(null); }}
+        title={t('krug.settle.history.voidDialog.title', 'Poništi podmirenje')}
+        description={t('krug.settle.history.voidDialog.description', 'Poništavaš zabilježeno podmirenje. Druga strana dobiva obavijest s razlogom.')}
+        reason={{
+          label: t('krug.settle.history.voidDialog.reasonLabel', 'Razlog poništenja (obavezno)'),
+          placeholder: t('krug.settle.history.voidDialog.reasonPlaceholder', 'npr. novac nije stigao'),
+          required: true,
+          defaultValue: voidPrefill,
+        }}
+        confirmLabel={t('krug.settle.history.voidDialog.confirm', 'Poništi podmirenje')}
+        destructive
+        pending={voidMut.isPending}
+        onConfirm={async (reason?: string) => {
+          if (!voidTarget || !reason?.trim()) return;
+          try {
+            await voidMut.mutateAsync({ ledgerId: voidTarget, reason: reason.trim() });
+            setVoidTarget(null);
+          } catch { /* reported in the mutation */ }
+        }}
+      />
 
       <KrugSettleTransferDialog
         krugId={krugId}
