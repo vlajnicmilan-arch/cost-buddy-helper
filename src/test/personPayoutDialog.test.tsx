@@ -25,6 +25,25 @@ vi.mock('@/hooks/useCustomPaymentSources', () => ({
 vi.mock('@/hooks/usePersonPayout', () => ({
   usePersonPayout: () => ({ payPerson, submitting: false }),
 }));
+vi.mock('@/components/ui/select', () => ({
+  Select: ({ value, onValueChange }: { value: string; onValueChange: (v: string) => void }) => (
+    <select aria-label="wallet" value={value} onChange={(e) => onValueChange(e.target.value)}>
+      <option value="" />
+      <option value="custom:s1">Blagajna</option>
+    </select>
+  ),
+  SelectContent: () => null,
+  SelectItem: () => null,
+  SelectTrigger: () => null,
+  SelectValue: () => null,
+}));
+vi.mock('@/components/ui/calendar', () => ({
+  Calendar: ({ onSelect }: { onSelect: (r: { from: Date; to: Date }) => void }) => (
+    <button type="button" onClick={() => onSelect({ from: new Date(2026, 8, 1), to: new Date(2026, 8, 30) })}>
+      pick-range
+    </button>
+  ),
+}));
 vi.mock('@/hooks/useBackButton', () => ({ useBackButton: () => {} }));
 vi.mock('@/hooks/useStatusFeedback', () => ({ showError: vi.fn(), showSuccess: vi.fn() }));
 vi.mock('@/lib/personPayoutPreview', () => ({
@@ -114,10 +133,7 @@ describe('PersonPayoutDialog scope', () => {
 describe('PersonPayoutDialog lockEntries', () => {
   const pay = async () => {
     fireEvent.change(amountInput(), { target: { value: '10' } });
-    // wallet select: pick through Radix is not possible in jsdom; set via keyboard fallback
-    const trigger = screen.getByRole('combobox');
-    fireEvent.keyDown(trigger, { key: 'Enter' });
-    fireEvent.click(await screen.findByRole('option', { name: 'Blagajna' }));
+    fireEvent.change(screen.getByLabelText('wallet'), { target: { value: 'custom:s1' } });
     payPerson.mockResolvedValue({ ok: true, result: {} });
     fireEvent.click(screen.getByRole('button', { name: 'Isplati' }));
     await waitFor(() => expect(payPerson).toHaveBeenCalled());
@@ -143,13 +159,8 @@ describe('PersonPayoutDialog rate breakdown', () => {
       items: [{ engagementId: 'eA', projectId: 'pA', hours: 8, gross: 80 }],
     });
     setup('pA');
-    // Range picking goes through the calendar; trigger calc via the section by
-    // selecting two days.
     fireEvent.click(screen.getByText('Odaberi razdoblje'));
-    const days = await screen.findAllByRole('gridcell');
-    const buttons = days.map((d) => d.querySelector('button')).filter((b): b is HTMLButtonElement => !!b && !b.disabled);
-    fireEvent.click(buttons[0]);
-    fireEvent.click(buttons[1]);
+    fireEvent.click(await screen.findByText('pick-range'));
     await waitFor(() => expect(previewPersonPeriod).toHaveBeenCalled());
     // only the project engagement is previewed
     expect(previewPersonPeriod.mock.calls[0][0].map((o: { engagementId: string }) => o.engagementId)).toEqual(['eA']);
