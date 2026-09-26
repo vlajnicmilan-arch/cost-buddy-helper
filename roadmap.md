@@ -50,3 +50,4 @@ Pravila za sve naloge:
 - [x] Mjesečni pogled: premještanje ulaza — CTA s Početne uklonjen, ulaz na vrhu izvješća (/obrada?m=YYYY-MM), 26.9.
 - [x] Krug „Dijeli samo X €" (varijanta A): migracija 0029, polje + prikaz „X od Y" + obavijest, krug_shared_amount 9/9; nije objavljeno. B (stavke) kasnije.
 - [x] Isplate radnika korak 1 (PersonPayoutDialog) — gotovo, ulaz iz projekta dolazi u koraku 2
+- [ ] Temelj 4a: red „Na pregled" (bank_sync_review_queue, grana u bank-sync-transactions, ekran, odluke, testovi)

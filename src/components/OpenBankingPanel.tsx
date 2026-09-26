@@ -18,6 +18,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
+import { BankReviewBadge } from '@/components/bank-review/BankReviewBadge';
+import { BANK_SYNC_REVIEW_KEY, useBankSyncReviewCounts } from '@/hooks/useBankSyncReviewQueue';
 
 interface Aspsp {
   name: string;
@@ -92,6 +94,7 @@ export const OpenBankingPanel = () => {
   const { profiles } = useBusinessProfiles();
   const { customPaymentSources } = useCustomPaymentSources();
   const queryClient = useQueryClient();
+  const { data: reviewCounts } = useBankSyncReviewCounts();
   const activeProfileName = activeBusinessProfileId
     ? profiles.find(p => p.id === activeBusinessProfileId)?.name ?? null
     : null;
@@ -294,6 +297,7 @@ export const OpenBankingPanel = () => {
         showSuccess(t('openBanking.syncSuccess', { count: imported }));
       }
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: [BANK_SYNC_REVIEW_KEY] });
       refetch();
     } catch (e: any) {
       showError(e.message ?? t('openBanking.syncError'));
@@ -490,6 +494,7 @@ export const OpenBankingPanel = () => {
                                     : t('openBanking.sync')}
                             </Button>
                           )}
+                          <BankReviewBadge count={reviewCounts?.[acc.id] ?? 0} accountId={acc.id} />
                           {isExcluded && !linkedSource && (
                             <Badge variant="outline" className="text-muted-foreground text-[11px]">
                               {t('openBanking.excludedFromSyncShort')}

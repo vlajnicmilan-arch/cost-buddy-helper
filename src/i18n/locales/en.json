@@ -7772,5 +7772,38 @@
       "loadFailed": "We couldn't prepare this month's data. Please try again."
     },
     "reportsEntry": "Monthly review"
+  },
+  "bankReview": {
+    "badge": "To review ({{count}})",
+    "title": "To review ({{count}})",
+    "intro": "Bank sync could not safely resolve these rows. Nothing was recorded and your balance won't change until you decide.",
+    "empty": "Nothing to review.",
+    "noDescription": "No description",
+    "unknownWallet": "Unknown wallet",
+    "mergeWith": "Merge with {{label}}",
+    "newRow": "New entry",
+    "transfer": "Transfer",
+    "dismiss": "Skip",
+    "transferTarget": "To which wallet?",
+    "transferPick": "Choose a wallet",
+    "transferConfirm": "Confirm transfer",
+    "decided": "Decision saved",
+    "alreadyDecided": "This row was already decided",
+    "reason": {
+      "ambiguous": "Several manual entries match this row",
+      "uncertain": "Not sure this is the same expense as a manual entry",
+      "rule_match_and_transfer_candidate": "Could be the same expense or a transfer",
+      "candidate_already_used_in_run": "The manual entry is already merged with another row"
+    },
+    "errors": {
+      "target_not_candidate": "The chosen entry is not a candidate for this row.",
+      "target_unavailable": "The chosen entry is no longer available (deleted or already merged).",
+      "invalid_counterpart": "Choose a different wallet of your own.",
+      "invalid_decision": "Unknown decision.",
+      "not_found": "This row no longer exists.",
+      "already_booked": "This bank row is already recorded.",
+      "load": "Could not load the list.",
+      "unknown": "Decision not saved. Please try again."
+    }
   }
 }

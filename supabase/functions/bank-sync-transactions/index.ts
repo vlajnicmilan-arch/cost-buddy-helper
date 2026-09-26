@@ -42,6 +42,13 @@ import {
   planSyncSameExpense,
   type SyncSameExpenseEntry,
 } from "../_shared/bankSyncSameExpense.ts";
+import {
+  buildReviewPayload,
+  enqueueReviewRow,
+  loadQueuedStableIds,
+  reviewPlanFor,
+  type ReviewPlan,
+} from "../_shared/bankSyncReview.ts";
 
 interface Body {
   bank_account_id: string;
@@ -523,6 +530,22 @@ Deno.serve(async (req) => {
     /** Ručni redak spojen u ovom pokretanju ne smije se spojiti drugi put. */
     const mergedManualIds = new Set<string>();
 
+    // RED „NA PREGLED": retci koji su već ušli u red (čekaju, odlučeni ili
+    // preskočeni) se više ne obrađuju — odluka je vlasnikova.
+    let reviewQueued = 0;
+    let reviewWaiting = 0;
+    const queued = await loadQueuedStableIds(admin, account.id);
+    const queuedStableIds = queued.ids;
+    if (queued.error) {
+      diagnostics.push({
+        event: "bank_sync_review_load_error",
+        session_id: `bank-sync-${account.id}`,
+        user_id: userId,
+        severity: "error",
+        details: { bank_account_id: account.id, code: queued.error.code, message: queued.error.message },
+      });
+    }
+
     let rowIndex = -1;
     for (const tx of allTx) {
       rowIndex += 1;
@@ -560,6 +583,13 @@ Deno.serve(async (req) => {
           existsByFingerprint: false,
           deletedByFingerprint: false,
         });
+        continue;
+      }
+
+      if (decision.stableId && queuedStableIds.has(decision.stableId)) {
+        skipped += 1;
+        reviewWaiting += 1;
+        observeShadow("needs_review", { kind: "question" });
         continue;
       }
 
@@ -803,6 +833,7 @@ Deno.serve(async (req) => {
       };
 
       let mergeTarget: MergeCandidateRow | null = null;
+      let review: ReviewPlan | null = null;
       if (decision.transfer) {
         // PRIJENOS: doslovno stari put.
         mergeTarget = pickMergeTarget(oldCandidates, oldTarget);
@@ -830,6 +861,12 @@ Deno.serve(async (req) => {
         if (choice.kind !== "none") {
           mergeTarget = oldCandidates.find((c) => c.id === choice.id) ?? null;
         }
+        review = reviewPlanFor(
+          rule,
+          choice,
+          transferTarget?.id ?? null,
+          oldCandidates.filter((c) => c.type !== "transfer").map((c) => c.id),
+        );
       }
 
       if (mergeTarget) {
@@ -861,6 +898,48 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      // NEJASAN REDAK → red „Na pregled", bez retka u knjigama. Greška upisa
+      // u red → staro ponašanje (novi redak), da se ništa ne izgubi.
+      if (review && !decision.transfer) {
+        const enq = await enqueueReviewRow(admin, {
+          user_id: userId,
+          bank_account_id: account.id,
+          stable_id: stableId,
+          reason: review.reason,
+          candidate_ids: review.candidateIds,
+          payload: buildReviewPayload({
+            amount: absAmount,
+            dateIso: new Date(txDate).toISOString(),
+            type: type as "expense" | "income",
+            description: description ?? null,
+            currency: tx.transaction_amount?.currency || account.currency || "EUR",
+            paymentSource: paymentSourceRef,
+            walletId: account.linked_payment_source_id as string,
+            paymentSourceCardId: decision.paymentSourceCardId ?? null,
+            businessProfileId: rowBusinessProfileId ?? null,
+            bankRawLine: rawLine,
+          }),
+        });
+        if (enq.kind === "queued") {
+          reviewQueued += 1;
+          queuedStableIds.add(stableId);
+          observeShadow("needs_review", { kind: "question" });
+          continue;
+        }
+        diagnostics.push({
+          event: "bank_sync_review_enqueue_error",
+          session_id: `bank-sync-${account.id}`,
+          user_id: userId,
+          severity: "error",
+          details: {
+            bank_account_id: account.id,
+            bank_transaction_id: stableId,
+            reason: review.reason,
+            code: enq.code,
+            message: enq.message,
+          },
+        });
+      }
 
       // Prijenos između dva korisnikova novčanika — JEDAN redak s obje strane.
       // Par (payment_source, income_source_id) dolazi isključivo iz
@@ -1105,6 +1184,8 @@ Deno.serve(async (req) => {
       ambiguous_transfers: ambiguousTransfers,
       transfers_paired: transfersPaired,
       pairs_converted: pairsConverted,
+      review_queued: reviewQueued,
+      review_waiting: reviewWaiting,
       total: allTx.length,
 
     }), {

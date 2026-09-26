@@ -642,6 +642,59 @@ export type Database = {
         }
         Relationships: []
       }
+      bank_sync_review_queue: {
+        Row: {
+          bank_account_id: string
+          candidate_ids: Json
+          created_at: string
+          decided_at: string | null
+          decided_expense_id: string | null
+          decision: string | null
+          id: string
+          payload: Json
+          reason: string
+          stable_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          bank_account_id: string
+          candidate_ids?: Json
+          created_at?: string
+          decided_at?: string | null
+          decided_expense_id?: string | null
+          decision?: string | null
+          id?: string
+          payload: Json
+          reason: string
+          stable_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          bank_account_id?: string
+          candidate_ids?: Json
+          created_at?: string
+          decided_at?: string | null
+          decided_expense_id?: string | null
+          decision?: string | null
+          id?: string
+          payload?: Json
+          reason?: string
+          stable_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_sync_review_queue_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       budget_categories: {
         Row: {
           budget_id: string
@@ -7645,6 +7698,15 @@ export type Database = {
           submitted_by: string
           user_id: string
         }[]
+      }
+      bank_sync_review_decide: {
+        Args: {
+          p_counterpart_source_id?: string
+          p_decision: string
+          p_id: string
+          p_target_id?: string
+        }
+        Returns: Json
       }
       brief_gate_snapshot: { Args: never; Returns: Json }
       brief_gate_snapshot_v2: { Args: never; Returns: Json }
