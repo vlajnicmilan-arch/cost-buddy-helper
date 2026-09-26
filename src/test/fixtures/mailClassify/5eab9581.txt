@@ -1,0 +1,199 @@
+SUBJECT: Paddle Notification: Transaction completed
+FROM: "Paddle.com" <help@paddle.com>
+---
+Paddle Notification: Transaction completed  
+ 
+Paddle Notification: Transaction completed 
+ Manage your notification preferences in your Paddle account. (https://sandbox-vendors.paddle.com/) 
+  
+ Event id evt_01m2r65tfcwqbkry4c38963w6e 
+ Event type transaction.completed 
+ Occurred at 2026-09-17T17:21:07.564010Z 
+ Notification id ntf_01m2r65ty5nd7ydfrr45ckncke 
+ Id txn_01m2r65phk0eqvqmjbk9qp2jeg 
+ Items [
+    {
+        "price": {
+            "id": "pri_01kxrdh4459fk9et0hshjfsz3p",
+            "name": "Komplet",
+            "type": "standard",
+            "status": "active",
+            "quantity": {
+                "maximum": 999999,
+                "minimum": 1
+            },
+            "tax_mode": "location",
+            "created_at": "2026-07-17T16:11:08.805554Z",
+            "product_id": "pro_01kxq7bqz8eq1x4npraj40hxx9",
+            "unit_price": {
+                "amount": "2599",
+                "currency_code": "EUR"
+            },
+            "updated_at": "2026-07-17T16:11:08.805554Z",
+            "custom_data": null,
+            "description": "Mjesec",
+            "trial_period": null,
+            "billing_cycle": {
+                "interval": "month",
+                "frequency": 1
+            },
+            "unit_price_overrides": []
+        },
+        "quantity": 1,
+        "proration": null
+    }
+] 
+ Origin subscription_recurring 
+ Status completed 
+ Details {
+    "totals": {
+        "fee": "174",
+        "tax": "520",
+        "total": "2599",
+        "credit": "0",
+        "balance": "0",
+        "discount": "0",
+        "earnings": "1905",
+        "subtotal": "2079",
+        "grand_total": "2599",
+        "currency_code": "EUR",
+        "grand_total_tax": "520",
+        "credit_to_balance": "0"
+    },
+    "line_items": [
+        {
+            "id": "txnitm_01m2r65pjczgypqz130q30jz5j",
+            "totals": {
+                "tax": "520",
+                "total": "2599",
+                "discount": "0",
+                "subtotal": "2079"
+            },
+            "product": {
+                "id": "pro_01kxq7bqz8eq1x4npraj40hxx9",
+                "name": "Centar",
+                "type": "standard",
+                "status": "active",
+                "image_url": "https:\/\/fzalxjretvtvokiotvkf.supabase.co\/functions\/v1\/paddle-webhook",
+                "created_at": "2026-07-17T05:04:06.632Z",
+                "updated_at": "2026-07-17T05:04:06.632Z",
+                "custom_data": null,
+                "description": null,
+                "tax_category": "standard"
+            },
+            "price_id": "pri_01kxrdh4459fk9et0hshjfsz3p",
+            "quantity": 1,
+            "tax_rate": "0.25",
+            "unit_totals": {
+                "tax": "520",
+                "total": "2599",
+                "discount": "0",
+                "subtotal": "2079"
+            }
+        }
+    ],
+    "payout_totals": {
+        "fee": "196",
+        "tax": "584",
+        "total": "2923",
+        "credit": "0",
+        "balance": "0",
+        "discount": "0",
+        "earnings": "2143",
+        "fee_rate": "0.05",
+        "subtotal": "2339",
+        "grand_total": "2923",
+        "currency_code": "USD",
+        "exchange_rate": "1.12473816",
+        "grand_total_tax": "584",
+        "credit_to_balance": "0"
+    },
+    "tax_rates_used": [
+        {
+            "totals": {
+                "tax": "520",
+                "total": "2599",
+                "discount": "0",
+                "subtotal": "2079"
+            },
+            "tax_rate": "0.25"
+        }
+    ],
+    "adjusted_totals": {
+        "fee": "174",
+        "tax": "520",
+        "total": "2599",
+        "earnings": "1905",
+        "subtotal": "2079",
+        "grand_total": "2599",
+        "retained_fee": "0",
+        "currency_code": "EUR",
+        "grand_total_tax": "520"
+    },
+    "adjusted_payout_totals": {
+        "fee": "196",
+        "tax": "584",
+        "total": "2923",
+        "earnings": "2143",
+        "subtotal": "2339",
+        "retained_fee": "0",
+        "currency_code": "USD",
+        "exchange_rate": "1.12473816",
+        "chargeback_fee": {
+            "amount": "0",
+            "original": null
+        }
+    }
+} 
+ Checkout {
+    "url": "https:\/\/vmbalance.com\/app?_ptxn=txn_01m2r65phk0eqvqmjbk9qp2jeg"
+} 
+ Payments [
+    {
+        "amount": "2599",
+        "status": "captured",
+        "created_at": "2026-09-17T17:21:03.696539Z",
+        "error_code": null,
+        "captured_at": "2026-09-17T17:21:05.585838Z",
+        "method_details": {
+            "card": {
+                "type": "visa",
+                "last4": "4242",
+                "expiry_year": 2028,
+                "expiry_month": 1,
+                "cardholder_name": "Tactura"
+            },
+            "type": "card",
+            "paypal": null,
+            "south_korea_local_card": null
+        },
+        "payment_method_id": "paymtd_01kxrhfvnkry9vv54q2mwp19xg",
+        "payment_attempt_id": "48a6d368-9b34-4030-a26f-8e33d8fbddf5",
+        "stored_payment_method_id": "06094699-1801-4577-b5c0-f3d0b47bb7c5"
+    }
+] 
+ Billed at 2026-09-17T17:21:03.539343Z 
+ Address id add_01kxrhf77ntd7a9h5avj3jqa1k 
+ Created at 2026-09-17T17:21:03.589873Z 
+ Invoice id inv_01m2r65sd6kxsm8hvxm55vxv5w 
+ Revised at - 
+ Updated at 2026-09-17T17:21:07.558083709Z 
+ Business id - 
+ Custom data {
+    "user_id": "51a36263-ea82-4455-b657-12572659cabe"
+} 
+ Customer id ctm_01kxrgye5sd743cb5h0nfgk6yz 
+ Discount id - 
+ Receipt data - 
+ Currency code EUR 
+ Billing period {
+    "ends_at": "2026-10-17T17:20:24.162676Z",
+    "starts_at": "2026-09-17T17:20:24.162676Z"
+} 
+ Invoice number 114238-10008 
+ Billing details - 
+ Collection mode automatic 
+ Subscription id sub_01kxrhfyjamfztbqfcghvq50sh 
+ 
+  Paddle.com Market Ltd, 30 Old Bailey, London, EC4M 7AU. 
+© 2026 Paddle. All rights reserved.

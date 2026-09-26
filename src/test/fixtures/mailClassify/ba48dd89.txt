@@ -1,0 +1,148 @@
+SUBJECT: Paddle Notification: Transaction billed
+FROM: "Paddle.com" <help@paddle.com>
+---
+Paddle Notification: Transaction billed  
+ 
+Paddle Notification: Transaction billed 
+ Manage your notification preferences in your Paddle account. (https://sandbox-vendors.paddle.com/) 
+  
+ Event id evt_01m08baykbqbeta2atgwd6vh1k 
+ Event type transaction.billed 
+ Occurred at 2026-08-17T17:12:03.947396Z 
+ Notification id ntf_01m08bayxkh0tdde942brht2hp 
+ Id txn_01m08bayg7pw5n9n9ek620z3q6 
+ Items [
+    {
+        "price": {
+            "id": "pri_01kxrdh4459fk9et0hshjfsz3p",
+            "name": "Komplet",
+            "type": "standard",
+            "status": "active",
+            "quantity": {
+                "maximum": 999999,
+                "minimum": 1
+            },
+            "tax_mode": "location",
+            "created_at": "2026-07-17T16:11:08.805554Z",
+            "product_id": "pro_01kxq7bqz8eq1x4npraj40hxx9",
+            "unit_price": {
+                "amount": "2599",
+                "currency_code": "EUR"
+            },
+            "updated_at": "2026-07-17T16:11:08.805554Z",
+            "custom_data": null,
+            "description": "Mjesec",
+            "trial_period": null,
+            "billing_cycle": {
+                "interval": "month",
+                "frequency": 1
+            },
+            "unit_price_overrides": []
+        },
+        "quantity": 1,
+        "proration": null
+    }
+] 
+ Origin subscription_recurring 
+ Status billed 
+ Details {
+    "totals": {
+        "fee": null,
+        "tax": "520",
+        "total": "2599",
+        "credit": "0",
+        "balance": "2599",
+        "discount": "0",
+        "earnings": null,
+        "subtotal": "2079",
+        "grand_total": "2599",
+        "currency_code": "EUR",
+        "grand_total_tax": "520",
+        "credit_to_balance": "0"
+    },
+    "line_items": [
+        {
+            "id": "txnitm_01m08bayhanq3jqhedypb652fz",
+            "totals": {
+                "tax": "520",
+                "total": "2599",
+                "discount": "0",
+                "subtotal": "2079"
+            },
+            "product": {
+                "id": "pro_01kxq7bqz8eq1x4npraj40hxx9",
+                "name": "Centar",
+                "type": "standard",
+                "status": "active",
+                "image_url": "https:\/\/fzalxjretvtvokiotvkf.supabase.co\/functions\/v1\/paddle-webhook",
+                "created_at": "2026-07-17T05:04:06.632Z",
+                "updated_at": "2026-07-17T05:04:06.632Z",
+                "custom_data": null,
+                "description": null,
+                "tax_category": "standard"
+            },
+            "price_id": "pri_01kxrdh4459fk9et0hshjfsz3p",
+            "quantity": 1,
+            "tax_rate": "0.25",
+            "unit_totals": {
+                "tax": "520",
+                "total": "2599",
+                "discount": "0",
+                "subtotal": "2079"
+            }
+        }
+    ],
+    "payout_totals": null,
+    "tax_rates_used": [
+        {
+            "totals": {
+                "tax": "520",
+                "total": "2599",
+                "discount": "0",
+                "subtotal": "2079"
+            },
+            "tax_rate": "0.25"
+        }
+    ],
+    "adjusted_totals": {
+        "fee": null,
+        "tax": "520",
+        "total": "2599",
+        "earnings": null,
+        "subtotal": "2079",
+        "grand_total": "2599",
+        "retained_fee": "0",
+        "currency_code": "EUR",
+        "grand_total_tax": "520"
+    },
+    "adjusted_payout_totals": null
+} 
+ Checkout {
+    "url": "https:\/\/vmbalance.com\/app?_ptxn=txn_01m08bayg7pw5n9n9ek620z3q6"
+} 
+ Payments [] 
+ Billed at 2026-08-17T17:12:03.847234853Z 
+ Address id add_01kxrgynjnm99er5tvjveat6pq 
+ Created at 2026-08-17T17:12:03.932061511Z 
+ Invoice id - 
+ Revised at - 
+ Updated at 2026-08-17T17:12:03.932061511Z 
+ Business id - 
+ Custom data {
+    "user_id": "51a36263-ea82-4455-b657-12572659cabe"
+} 
+ Customer id ctm_01kxrgye5sd743cb5h0nfgk6yz 
+ Discount id - 
+ Receipt data - 
+ Currency code EUR 
+ Billing period {
+    "ends_at": "2026-09-17T17:11:26.783604Z",
+    "starts_at": "2026-08-17T17:11:26.783604Z"
+} 
+ Invoice number - 
+ Billing details - 
+ Collection mode automatic 
+ Subscription id sub_01kxrgzj09yp12x9pc4hz3w86b 
+ 
+  Paddle.com Market Ltd, 30 Old Bailey, London, EC4M 7AU. 
+© 2026 Paddle. All rights reserved.

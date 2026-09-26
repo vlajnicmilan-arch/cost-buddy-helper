@@ -1,0 +1,76 @@
+SUBJECT: NetBanking: MILAN VLAJNIĆ
+FROM: "NetBanking Support" <netbanking.support@erstebank.hr>
+---
+Notice   
+   
+   
+ Erste&Steiermärkische Bank d.d. - Nalog za nacionalno plaćanje u eurima 
+   
+    
+    
+    
+ Platitelj   
+    
+ Platitelj   
+ AKROBAT j.d.o.o.   
+    
+ OIB   
+ HR39916265994   
+    
+ IBAN   
+ HR7324020061101086163   
+    
+ Model-Poziv na br.platitelja   
+ HR99-   
+    
+    
+ Primatelj   
+    
+ Primatelj   
+ VODOVOD-OSIJEK D.O.O. - RAČUN ZA VODNU USLUGU   
+    
+ IBAN primatelja   
+ HR8523600001503050797   
+    
+ Model-Poziv na br.primatelja   
+ HR00-17092026   
+    
+    
+ Detalji transakcije   
+    
+ Iznos   
+ 195,22 EUR   
+    
+ Opis plaćanja   
+ Upl.po rn po specifikaciji   
+    
+ Datum valute   
+ 17.09.2026.   
+    
+ Datum izvršenja   
+ 17.09.2026 19:10:45   
+    
+ Trans.br.   
+ W16000569328294   
+    
+ Vrsta naloga   
+ SEPA Instant plaćanje   
+    
+ Status naloga   
+ IZVRŠEN   
+    
+ Unos   
+ MILAN VLAJNIĆ na dan 17.09.2026. u 19:06:10   
+    
+ Potpis   
+ MILAN VLAJNIĆ na dan 17.09.2026. u 19:10:43 
+   
+    
+ Navedeni transakcijski broj možete dati primatelju uplate koji je zatim može provjeriti na info telefon 072 555 555 ili na internetskoj stranici https://netbanking.erstebank.hr/provjera. (https://netbanking.erstebank.hr/provjera)   
+ IP adresa:, Vrijeme: 17.09.2026 19:10:45, Korisnik: MILAN VLAJNIĆ, Poslano na: vlajnic.milan@gmail.com   
+ Erste&Steiermärkische Bank d.d., Jadranski trg 3a, 51000 Rijeka, OIB: 23057039320 
+Napomena: 
+Ova poruka i svi privitci povjerljivi su i namijenjeni isključivo naznačenom primatelju(ima). Ukoliko niste naznačeni primatelj, molimo Vas da o tome bez odlaganja obavijestite pošiljatelja, da ne preslikavate i ne otkrivate sadržaj te da izbrišete poruku i sve privitke. Svaka neovlaštena upotreba, distribucija, reprodukcija ili priopćavanje ove poruke ili njezinih dijelova zabranjeno je. S obzirom da komunikacija Internetom nije zaštićena, ne preuzimamo odgovornost za eventualne štete proizašle iz korištenja ove poruke i privitaka što uključuje, ali nije ograničeno, na greške u prijenosu podataka, greške u sadržaju te prisustvo malicioznog koda. 
+
+Disclaimer: 
+This e-mail and all attached files are confidential and intended for sole use by the person(s) mentioned as the recipient(s). If you are not the intended recipient, please notify the sender immediately, do not copy or disclose its content and delete this message and all attachment(s) from your system. Any unauthorized use, distribution, disclosure, printing or copying of this e-mail other than by the intended recipient(s) is prohibited. Considering that Internet communication is not secure, we accept no liability for any potential damage caused due to errors in data transmission or by this message and files attached to it. No warranty is given that this email is free of viruses or other malicious programs.

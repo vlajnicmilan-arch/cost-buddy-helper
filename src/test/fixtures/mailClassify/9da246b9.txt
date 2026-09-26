@@ -1,0 +1,73 @@
+SUBJECT: Transakcija: George App
+FROM: "George" <george.support@erstebank.hr>
+---
+Notice   
+   
+ Pozdrav, 
+ MILAN VLAJNIĆ. 
+ Izvršio sam transakciju koju ste napravili u George Appu. 
+   
+ Erste&Steiermärkische Bank d.d. - Nalog za nacionalno plaćanje u eurima 
+   
+    
+    
+    
+ Platitelj   
+    
+ Platitelj   
+ MILAN VLAJNIĆ   
+    
+ Stvarni dužnik   
+ Milan Vlajnić   
+    
+ IBAN   
+ HR6624020063581325267   
+    
+    
+ Primatelj   
+    
+ Primatelj   
+ ATERNUS DESIGN, OBRT ZA USLUGE DIGITALNO   
+    
+ IBAN primatelja   
+ HR2124070001100258841   
+    
+ Model-Poziv na br.primatelja   
+ HR00-00202627   
+    
+    
+ Detalji transakcije   
+    
+ Iznos   
+ 325,00 EUR   
+    
+ Status naloga   
+ IZVRŠEN   
+    
+ Datum izvršenja   
+ 21.09.2026.   
+    
+ Opis plaćanja   
+ Račun:27/1/2   
+    
+ Naknada   
+ 0,40 EUR   
+    
+ Trans.br.   
+ W16000569674803   
+    
+ Vrsta naloga   
+ SEPA kreditno plaćanje   
+    
+    
+ Vaš George 
+   
+    
+ Navedeni transakcijski broj možete dati primatelju uplate koji je zatim može provjeriti na info telefon 072 555 555 ili na internetskoj stranici https://netbanking.erstebank.hr/provjera. (https://netbanking.erstebank.hr/provjera)   
+ IP adresa:86.33.88.26, Vrijeme: 21.09.2026 04:11:12, Korisnik: MILAN VLAJNIĆ, Poslano na: VLAJNIC.MILAN@GMAIL.COM   
+ Erste&Steiermärkische Bank d.d., Jadranski trg 3a, 51000 Rijeka, OIB: 23057039320 
+Napomena: 
+Ova poruka i svi privitci povjerljivi su i namijenjeni isključivo naznačenom primatelju(ima). Ukoliko niste naznačeni primatelj, molimo Vas da o tome bez odlaganja obavijestite pošiljatelja, da ne preslikavate i ne otkrivate sadržaj te da izbrišete poruku i sve privitke. Svaka neovlaštena upotreba, distribucija, reprodukcija ili priopćavanje ove poruke ili njezinih dijelova zabranjeno je. S obzirom da komunikacija Internetom nije zaštićena, ne preuzimamo odgovornost za eventualne štete proizašle iz korištenja ove poruke i privitaka što uključuje, ali nije ograničeno, na greške u prijenosu podataka, greške u sadržaju te prisustvo malicioznog koda. 
+
+Disclaimer: 
+This e-mail and all attached files are confidential and intended for sole use by the person(s) mentioned as the recipient(s). If you are not the intended recipient, please notify the sender immediately, do not copy or disclose its content and delete this message and all attachment(s) from your system. Any unauthorized use, distribution, disclosure, printing or copying of this e-mail other than by the intended recipient(s) is prohibited. Considering that Internet communication is not secure, we accept no liability for any potential damage caused due to errors in data transmission or by this message and files attached to it. No warranty is given that this email is free of viruses or other malicious programs.
