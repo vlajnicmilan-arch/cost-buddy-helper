@@ -26,7 +26,7 @@ export interface ObradaRow {
   counterparty_name_snapshot?: string | null;
   expense_nature?: string | null;
   movement_kind?: string | null;
-  deleted_at?: string | Date | null;
+  deleted_at?: string | null;
   project_id?: string | null;
   business_profile_id?: string | null;
   tags?: string[] | null;
