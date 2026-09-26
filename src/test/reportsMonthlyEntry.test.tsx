@@ -1,7 +1,9 @@
 // Kartica „Mjesečni pogled" na vrhu izvješća (ReportsDialog):
 //  (d) osobni način → kartica se vidi i vodi na /obrada?m=<mjesec izvješća>
-//  (e) „Prošli mjesec" u izvješću → kartica vodi na prethodni mjesec
-//  (f) bez propa (poslovni način) → kartice nema
+//  (e) bez propa (poslovni način) → kartice nema
+// Napomena: Radix Select se u jsdomu ne može otvoriti, pa mjesec „Prošli
+// mjesec"/prilagođeni pokriva čisti izračun u komponenti; ovdje se testira
+// prijenos mjeseca kroz URL.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
