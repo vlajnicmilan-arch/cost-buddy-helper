@@ -79,7 +79,7 @@ export function useBankSyncReviewCounts() {
  * s oznakom stabla → `assignTreeCategory` (naučeni ispravak → AI → provjera).
  * Ta funkcija razvrstava samo trošak; prihod i neuspjeh → null (server: 'other').
  */
-async function fetchReviewCategory(item: ReviewQueueItem): Promise<string | null> {
+export async function fetchReviewCategory(item: ReviewQueueItem): Promise<string | null> {
   if (isIncomeType(item.payload)) return null;
   const description = item.payload.description ?? '';
   if (description.trim().length < 3) return null;
