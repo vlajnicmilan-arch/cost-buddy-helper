@@ -534,7 +534,14 @@ Deno.serve(async (req) => {
     // preskočeni) se više ne obrađuju — odluka je vlasnikova.
     let reviewQueued = 0;
     let reviewWaiting = 0;
-    const queued = await loadQueuedStableIds(admin, account.id);
+    const queued = await loadQueuedStableIds(
+      admin as unknown as Parameters<typeof loadQueuedStableIds>[0],
+      account.id,
+    );
+    // Red se nije mogao učitati: nejasni retci se u ovom pokretanju ne upisuju
+    // nikamo (ni u red ni u knjige) — ostaju za idući put.
+    const queueLoadFailed = queued.error !== null;
+    let reviewDeferred = 0;
     const queuedStableIds = queued.ids;
     if (queued.error) {
       diagnostics.push({
@@ -900,8 +907,14 @@ Deno.serve(async (req) => {
 
       // NEJASAN REDAK → red „Na pregled", bez retka u knjigama. Greška upisa
       // u red → staro ponašanje (novi redak), da se ništa ne izgubi.
+      if (review && !decision.transfer && queueLoadFailed) {
+        skipped += 1;
+        reviewDeferred += 1;
+        observeShadow("needs_review", { kind: "question" });
+        continue;
+      }
       if (review && !decision.transfer) {
-        const enq = await enqueueReviewRow(admin, {
+        const enq = await enqueueReviewRow(admin as unknown as Parameters<typeof enqueueReviewRow>[0], {
           user_id: userId,
           bank_account_id: account.id,
           stable_id: stableId,
@@ -1186,6 +1199,7 @@ Deno.serve(async (req) => {
       pairs_converted: pairsConverted,
       review_queued: reviewQueued,
       review_waiting: reviewWaiting,
+      review_deferred: reviewDeferred,
       total: allTx.length,
 
     }), {
