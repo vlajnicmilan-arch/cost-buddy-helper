@@ -7389,7 +7389,12 @@
       "earlierPeriod": "ranijeg razdoblja",
       "period": "Razdoblje",
       "pickPeriod": "Odaberi razdoblje",
-      "calcFromHours": "Izračunaj iz sati"
+      "calcFromHours": "Izračunaj iz sati",
+      "summary": "Isplaćuješ {{paying}} · Zarađeno {{earned}} · Ostaje {{remaining}}",
+      "lockEntries": "Zaključaj radne unose u razdoblju",
+      "rateBreakdown": "Raščlamba po satnici",
+      "distributeAll": "Raspodijeli na sve",
+      "allocationFor": "Iznos za {{project}}"
     },
     "payoutVoided": "stornirano",
     "payoutVoidReason": "Razlog",
