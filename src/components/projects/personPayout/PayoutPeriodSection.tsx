@@ -10,7 +10,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import { makeCalendarDisabled, type DateRangeLimits } from '@/lib/dateValidation';
+import { makeCalendarDisabled, type DateRange as DateRangeLimits } from '@/lib/dateValidation';
 import type { EngagementPeriodPreview } from '@/lib/personPayoutPreview';
 import type { EngagementObligation } from '@/lib/personPayout';
 
