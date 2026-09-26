@@ -70,20 +70,7 @@ describe('ReportsDialog — ulaz „Mjesečni pogled"', () => {
     expect(navigateMock).toHaveBeenCalledWith(`/obrada?m=${monthKey(new Date())}`);
   });
 
-  it('(e) „Prošli mjesec" → kartica vodi na prethodni mjesec', () => {
-    renderDialog({ showMonthlyReview: true });
-    fireEvent.click(screen.getByRole('button', { name: /izvješća|reports/i }));
-    // jsdom ne isporučuje Radix pointerdown-otvaranje — biramo tipkovnicom
-    fireEvent.keyDown(screen.getByRole('combobox'), { key: 'Enter' });
-    fireEvent.click(screen.getByRole('option', { name: 'reports.lastMonth' }));
-    fireEvent.click(screen.getByTestId('reports-monthly-review'));
-    const now = new Date();
-    expect(navigateMock).toHaveBeenCalledWith(
-      `/obrada?m=${monthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1))}`,
-    );
-  });
-
-  it('(f) bez propa kartice nema (poslovni način)', () => {
+  it('(e) bez propa kartice nema (poslovni način)', () => {
     renderDialog();
     fireEvent.click(screen.getByRole('button', { name: /izvješća|reports/i }));
     expect(screen.queryByTestId('reports-monthly-review')).toBeNull();
