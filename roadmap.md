@@ -49,3 +49,4 @@ Pravila za sve naloge:
 - [x] TEMELJ korak 4, nalog 1: Mjesečni pogled /obrada (gradnja, 26.9.)
 - [x] Mjesečni pogled: premještanje ulaza — CTA s Početne uklonjen, ulaz na vrhu izvješća (/obrada?m=YYYY-MM), 26.9.
 - [x] Krug „Dijeli samo X €" (varijanta A): migracija 0029, polje + prikaz „X od Y" + obavijest, krug_shared_amount 9/9; nije objavljeno. B (stavke) kasnije.
+- roadmap.md: Isplate radnika korak 1 (PersonPayoutDialog)
