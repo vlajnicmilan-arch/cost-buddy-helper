@@ -7,6 +7,7 @@ const payPerson = vi.fn();
 const previewPersonPeriod = vi.fn();
 
 vi.mock('react-i18next', () => ({
+  initReactI18next: { type: '3rdParty', init: () => {} },
   useTranslation: () => ({
     t: (key: string, def?: unknown, opts?: Record<string, unknown>) => {
       const o = (typeof def === 'object' ? def : opts) as Record<string, unknown> | undefined;
