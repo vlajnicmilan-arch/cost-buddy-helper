@@ -178,3 +178,16 @@ DO $$ BEGIN
     RAISE EXCEPTION 'FAIL R11 štednja %', public.bsr_bal('c2000000-0000-0000-0000-0000000000c2'); END IF;
   RAISE NOTICE 'PASS R11 saldo: novi −25, prijenos −100/+100, spajanje i preskoči 0';
 END $$;
+
+-- R12 prava: authenticated samo čita, anon ništa, service_role piše
+DO $$ BEGIN
+  IF NOT has_table_privilege('authenticated', 'public.bank_sync_review_queue', 'SELECT')
+     OR has_table_privilege('authenticated', 'public.bank_sync_review_queue', 'INSERT')
+     OR has_table_privilege('authenticated', 'public.bank_sync_review_queue', 'UPDATE')
+     OR has_table_privilege('authenticated', 'public.bank_sync_review_queue', 'DELETE')
+     OR has_table_privilege('anon', 'public.bank_sync_review_queue', 'SELECT')
+     OR NOT has_table_privilege('service_role', 'public.bank_sync_review_queue', 'INSERT') THEN
+    RAISE EXCEPTION 'FAIL R12 prava na tablici';
+  END IF;
+  RAISE NOTICE 'PASS R12 authenticated samo SELECT, anon ništa, service_role piše';
+END $$;
