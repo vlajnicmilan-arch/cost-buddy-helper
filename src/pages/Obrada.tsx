@@ -91,7 +91,7 @@ const Obrada = () => {
     const filtered = expenses.filter(
       (e) =>
         e.type === 'expense' &&
-        !e.deleted_at &&
+        !isDeleted(e) &&
         matchesCategoryFilter(e.category, `group:${groupKey}`) &&
         `${e.date.getFullYear()}-${String(e.date.getMonth() + 1).padStart(2, '0')}` === key,
     );
@@ -105,7 +105,7 @@ const Obrada = () => {
   const openMerchantList = (merchantKey: string, name: string) => {
     const key = monthKeyOf(month);
     const filtered = expenses.filter((e) => {
-      if (e.type !== 'expense' || e.deleted_at) return false;
+      if (e.type !== 'expense' || isDeleted(e)) return false;
       const mk = `${e.date.getFullYear()}-${String(e.date.getMonth() + 1).padStart(2, '0')}`;
       if (mk !== key) return false;
       const raw =
