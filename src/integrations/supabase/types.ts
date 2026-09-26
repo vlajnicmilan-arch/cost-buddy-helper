@@ -3268,6 +3268,7 @@ export type Database = {
           krug_id: string
           proposed_by: string
           reject_reason: string | null
+          shared_amount: number | null
           status: Database["public"]["Enums"]["krug_override_status"]
           superseded_by: string | null
           updated_at: string
@@ -3280,6 +3281,7 @@ export type Database = {
           krug_id: string
           proposed_by: string
           reject_reason?: string | null
+          shared_amount?: number | null
           status?: Database["public"]["Enums"]["krug_override_status"]
           superseded_by?: string | null
           updated_at?: string
@@ -3292,6 +3294,7 @@ export type Database = {
           krug_id?: string
           proposed_by?: string
           reject_reason?: string | null
+          shared_amount?: number | null
           status?: Database["public"]["Enums"]["krug_override_status"]
           superseded_by?: string | null
           updated_at?: string
@@ -8195,7 +8198,7 @@ export type Database = {
       krug_notify_outbox_retry: { Args: never; Returns: number }
       krug_override_confirm: { Args: { p_override_id: string }; Returns: Json }
       krug_override_propose: {
-        Args: { p_expense_id: string; p_shares: Json }
+        Args: { p_expense_id: string; p_shared_amount?: number; p_shares: Json }
         Returns: Json
       }
       krug_override_reject: {
