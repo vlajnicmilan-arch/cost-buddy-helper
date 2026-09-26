@@ -46,4 +46,4 @@ Pravila za sve naloge:
 - [x] Radnici nalog 3/3: „Nisam primio“, isplate na čekanju, prijevodi grešaka (0028, čuvari N 41/41)
 
 ## Otvoreno
-- [ ] TEMELJ korak 4, nalog 1: Mjesečni pogled /obrada (gradnja, 26.9.)
+- [x] TEMELJ korak 4, nalog 1: Mjesečni pogled /obrada (gradnja, 26.9.)
