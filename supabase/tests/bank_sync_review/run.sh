@@ -14,5 +14,9 @@ psql -v ON_ERROR_STOP=1 -q -f "$HERE/setup.sql"
 MIG="${BSR_MIG:-$(grep -l 'bank_sync_review_decide' "$ROOT"/drizzle/migrations/*.sql | sort | tail -1)}"
 echo "-- applying $(basename "$MIG")"
 psql -v ON_ERROR_STOP=1 -q -f "$MIG"
+for f in $(grep -l 'bank_sync_review_queue' "$ROOT"/drizzle/migrations/*.sql | sort); do
+  [ "$f" = "$MIG" ] && continue
+  [ "$f" \> "$MIG" ] && psql -v ON_ERROR_STOP=1 -q -f "$f"
+done
 psql -v ON_ERROR_STOP=1 -f "$HERE/guards.sql"
 echo "bank sync review SQL harness: done"

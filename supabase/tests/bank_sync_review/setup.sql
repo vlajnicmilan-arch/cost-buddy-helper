@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS public.bank_accounts (
 );
 
 GRANT USAGE ON SCHEMA public, auth TO anon, authenticated, service_role;
+-- Kao Supabase: zadane ovlasti na novim tablicama za sve API uloge.
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;
 
 INSERT INTO auth.users(id, email) VALUES
   ('a0000000-0000-0000-0000-00000000000a', 'bsr-a@test.local'),
