@@ -44,7 +44,7 @@ export function KrugSharedAmountField({ value, onChange, expenseAmount, currency
       <p className={check.ok ? 'text-[11px] text-muted-foreground' : 'text-[11px] text-destructive'}>
         {check.ok
           ? t('krug.override.sharedAmount.hint', 'Prazno = dijeli se cijeli iznos ({{total}}). Ostatak ostaje tvoj trošak.', { total })
-          : check.error === 'exceeds'
+          : check.ok === false && check.error === 'exceeds'
             ? t('krug.override.error.shared_amount_exceeds_amount', 'Dijeljena svota ne smije biti veća od iznosa troška.')
             : t('krug.override.error.shared_amount_invalid', 'Dijeljena svota mora biti veća od 0.')}
       </p>
