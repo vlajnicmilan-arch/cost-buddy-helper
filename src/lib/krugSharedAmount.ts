@@ -53,3 +53,12 @@ export function logKrugOverrideProposeError(
     },
   });
 }
+
+export function formatSharedMoney(n: number, currency: string, language: string | undefined): string {
+  const locale = language === 'en' ? 'en-GB' : language === 'de' ? 'de-DE' : 'hr-HR';
+  try {
+    return new Intl.NumberFormat(locale, { style: 'currency', currency, minimumFractionDigits: 2 }).format(n);
+  } catch {
+    return `${n.toFixed(2)} ${currency}`;
+  }
+}

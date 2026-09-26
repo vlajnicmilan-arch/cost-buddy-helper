@@ -25,6 +25,8 @@ import {
 import { showError } from '@/hooks/useStatusFeedback';
 import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
 import { rebalanceShares, formatShare } from '@/lib/krugSplitRebalance';
+import { validateSharedAmount } from '@/lib/krugSharedAmount';
+import { KrugSharedAmountField, KrugSharedOfLine } from './KrugSharedAmount';
 
 
 interface Props {
@@ -33,9 +35,12 @@ interface Props {
   isFullMember: boolean;
   /** Read-only kontekst (pregled transakcije) ne nudi kreiranje prijedloga. */
   allowPropose?: boolean;
+  /** Iznos i valuta troška — za "Dijeli samo X" i prikaz "X od Y". */
+  expenseAmount: number;
+  currency: string;
 }
 
-export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember, allowPropose = true }: Props) {
+export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember, allowPropose = true, expenseAmount, currency }: Props) {
   const { t } = useTranslation();
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const { user } = useAuth();
@@ -57,6 +62,7 @@ export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember, allowPr
     getMemberDisplayName(profiles.get(uid), uid, t('krug.member.unknown', 'Nepoznat član'));
 
   const [draft, setDraft] = useState<Record<string, string>>({});
+  const [sharedRaw, setSharedRaw] = useState('');
   const [touched, setTouched] = useState<string[]>([]);
   const [rebalanceError, setRebalanceError] = useState<'touched_over_100' | null>(null);
   const initDraft = () => {
@@ -70,6 +76,7 @@ export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember, allowPr
     setDraft(d);
     setTouched([]);
     setRebalanceError(null);
+    setSharedRaw('');
     setEditing(true);
   };
 
@@ -132,8 +139,15 @@ export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember, allowPr
       showError(map[v.error]);
       return;
     }
+    const shared = validateSharedAmount(sharedRaw, expenseAmount);
+    if (shared.ok !== true) {
+      showError(shared.error === 'exceeds'
+        ? t('krug.override.error.shared_amount_exceeds_amount', 'Dijeljena svota ne smije biti veća od iznosa troška.')
+        : t('krug.override.error.shared_amount_invalid', 'Dijeljena svota mora biti veća od 0.'));
+      return;
+    }
     try {
-      await proposeMut.mutateAsync({ expenseId, shares });
+      await proposeMut.mutateAsync({ expenseId, shares, sharedAmount: shared.value });
       setEditing(false);
     } catch { /* handled */ }
   };
@@ -160,6 +174,7 @@ export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember, allowPr
       {/* Aktivna podjela */}
       {active && !editing && (
         <div className="text-xs space-y-1">
+          <KrugSharedOfLine sharedAmount={active.shared_amount} expenseAmount={expenseAmount} currency={currency} />
           {active.shares.map((s) => (
             <div key={s.user_id} className="flex justify-between">
               <span className="truncate">{nameFor(s.user_id)}</span>
@@ -175,6 +190,7 @@ export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember, allowPr
           <div className="text-[11px] text-muted-foreground">
             {t('krug.override.pendingProposedBy', 'Predlagatelj')}: {nameFor(pending.proposed_by)}
           </div>
+          <KrugSharedOfLine sharedAmount={pending.shared_amount} expenseAmount={expenseAmount} currency={currency} />
           <div className="text-xs space-y-1">
             {pending.shares.map((s) => (
               <div key={s.user_id} className="flex justify-between">
@@ -234,6 +250,7 @@ export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember, allowPr
       {/* Editor */}
       {editing && (
         <div className="space-y-2 border-t pt-2">
+          <KrugSharedAmountField value={sharedRaw} onChange={setSharedRaw} expenseAmount={expenseAmount} currency={currency} />
           {fullMemberIds.map((id) => (
             <div key={id} className="flex items-center gap-2 text-xs">
               <span className="flex-1 truncate">{nameFor(id)}</span>

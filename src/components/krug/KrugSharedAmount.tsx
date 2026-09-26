@@ -3,11 +3,14 @@
  */
 import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/input';
-import { formatMoney } from '@/lib/krugSettlementPdf';
-import { effectiveSharedAmount, isPartialShare, validateSharedAmount } from '@/lib/krugSharedAmount';
+import {
+  effectiveSharedAmount,
+  formatSharedMoney as formatMoney,
+  isPartialShare,
+  validateSharedAmount,
+} from '@/lib/krugSharedAmount';
 
-type Lang = 'hr' | 'en' | 'de';
-const langOf = (l: string | undefined): Lang => (l === 'en' || l === 'de' ? l : 'hr');
+const langOf = (l: string | undefined): string | undefined => l;
 
 interface FieldProps {
   value: string;
