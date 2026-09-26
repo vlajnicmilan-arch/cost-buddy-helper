@@ -153,3 +153,46 @@ describe('overBudgetItems', () => {
     expect(items[0].overBy).toBe(30);
   });
 });
+
+describe('growthByGroup — vlastite kategorije', () => {
+  const UUID_G = '6e5f84cb-0000-4000-8000-000000000001';
+  const UUID_N = 'a5129537-0000-4000-8000-000000000002';
+  const customs = [
+    { id: UUID_G, name: 'Ljekarna', group_key: 'personal' },
+    { id: UUID_N, name: 'Konji', group_key: null },
+  ];
+  const spend = (month: number, amount: number, category: string): ObradaRow =>
+    row({ amount, category, date: new Date(2026, month, 5) });
+
+  it('s group_key ide u skupinu i prikazuje ime, bez group_key je zaseban redak', () => {
+    const rows = [5, 6, 7].flatMap((m) => [spend(m, 20, UUID_G), spend(m, 30, UUID_N)]);
+    rows.push(spend(8, 100, UUID_G), spend(8, 120, UUID_N));
+    const g = growthByGroup(rows, REF, customs);
+    const personal = g.find((x) => x.key === 'personal');
+    expect(personal?.filter).toBe('group:personal');
+    expect(personal?.labelKey).toBe('categoryTree.groups.personal');
+    expect(personal?.categories[0]).toMatchObject({ key: UUID_G, customName: 'Ljekarna', labelKey: null });
+    const own = g.find((x) => x.key === UUID_N);
+    expect(own).toMatchObject({ filter: UUID_N, customName: 'Konji', labelKey: null, categories: [] });
+    for (const item of [...g, ...g.flatMap((x) => x.categories)]) {
+      expect(item.customName ?? item.labelKey).not.toMatch(/^[0-9a-f]{8}-/);
+    }
+  });
+
+  it('prosjek dijeli s 3 puna mjeseca i kad povijest pokriva samo zadnji mjesec', () => {
+    // Samo kolovoz u povijesti (kraći dohvat): prosjek = 90 / 3 = 30, ne 90.
+    const rows = [spend(7, 90, 'groceries'), spend(8, 100, 'groceries')];
+    const g = growthByGroup(rows, REF);
+    expect(g[0]).toMatchObject({ key: 'food', average: 30, current: 100 });
+  });
+});
+
+describe('overBudgetItems — vlastita kategorija', () => {
+  it('prikazuje ime, nikad UUID', () => {
+    const items = overBudgetItems(
+      [{ id: 'b', name: 'B', categories: [{ category: 'u-1', limit_amount: 10, spent: 20, isOverBudget: true }] }],
+      [{ id: 'u-1', name: 'Konji' }],
+    );
+    expect(items[0]).toMatchObject({ customName: 'Konji', labelKey: null });
+  });
+});
