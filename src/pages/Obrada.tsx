@@ -6,7 +6,7 @@ import { useExpenses } from '@/hooks/useExpenses';
 import { useBudgets } from '@/hooks/useBudgets';
 import { useRecurringTransactions } from '@/hooks/useRecurringTransactions';
 import { useWalletViewMode } from '@/contexts/WalletViewModeContext';
-import { useCurrency } from '@/hooks/useCurrency';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { Button } from '@/components/ui/button';
 import { ObradaSection } from '@/components/obrada/ObradaSection';
 import { TransactionListDialog } from '@/components/TransactionListDialog';
@@ -23,6 +23,10 @@ import { buildLoanSummary, monthRange, sumTaggedSpend } from '@/lib/expenseMarke
 import { matchesCategoryFilter } from '@/lib/categoryGroupMatch';
 import { normalizeMerchant } from '@/lib/duplicateDetection';
 import type { Expense } from '@/types/expense';
+
+/** Expense tip ne nosi deleted_at; redci iz dohvata ga imaju. */
+const isDeleted = (e: Expense): boolean =>
+  (e as { deleted_at?: string | null }).deleted_at != null;
 
 interface ListState {
   title: string;
