@@ -246,7 +246,7 @@ export function recurringMerchants(
 
   const knownSubscriptionKeys = new Set(
     rules
-      .filter((r) => r.is_active && isExpenseType(r.type) && !r.business_profile_id)
+      .filter((r) => r.is_active && isExpenseType(r) && !r.business_profile_id)
       .map((r) => normalizeMerchant((r.merchant_name ?? '').trim() || (r.description ?? '').trim()))
       .filter(Boolean),
   );
