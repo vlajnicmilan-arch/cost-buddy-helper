@@ -44,3 +44,6 @@ Pravila za sve naloge:
 - [x] Radnici nalog 1/3: obavijest o isplati na serveru + push kroz outbox (0025), čuvari WP 19/19
 - [x] Radnici nalog 2/3: upis prihoda na serveru (0026 worker_confirm_payout_receipt, čuvari R 26/26)
 - [x] Radnici nalog 3/3: „Nisam primio“, isplate na čekanju, prijevodi grešaka (0028, čuvari N 41/41)
+
+## Otvoreno
+- [ ] TEMELJ korak 4, nalog 1: Mjesečni pogled /obrada (gradnja, 26.9.)
