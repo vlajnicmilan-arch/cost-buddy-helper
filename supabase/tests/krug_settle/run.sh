@@ -41,13 +41,25 @@ psql -v ON_ERROR_STOP=1 -q -f /tmp/krug_settle_merge_fn.sql
 psql -v ON_ERROR_STOP=1 -q -f "$HERE/baseline.sql"
 
 if [ "$TODAY" != "1" ]; then
-  SETTLE_SRC="$(grep -l 'CREATE OR REPLACE FUNCTION public.krug_mark_settled_with_source' "$ROOT"/drizzle/migrations/*.sql | sort | tail -1)"
+  SETTLE_SRC="$(grep -l 'CREATE OR REPLACE FUNCTION public.krug_mark_settled_with_source' "$ROOT"/drizzle/migrations/*.sql | xargs grep -L 'krug_override_party' | sort | tail -1)"
   if [ -z "$SETTLE_SRC" ]; then
     echo "ERROR: no drizzle migration defines krug_mark_settled_with_source" >&2
     exit 1
   fi
   echo "-- applying $(basename "$SETTLE_SRC")"
   psql -v ON_ERROR_STOP=1 -q -f "$SETTLE_SRC"
+  # Newest settle/confirm/void definitions (member participation) over the same schema.
+  LATEST="$(grep -l 'krug_override_party' "$ROOT"/drizzle/migrations/*.sql | sort | tail -1)"
+  if [ -n "$LATEST" ]; then
+    : > /tmp/krug_settle_latest_fns.sql
+    for fn in krug_mark_settled_with_source krug_confirm_settlement_receipt krug_void_settlement; do
+      awk -v fn="$fn" '$0 ~ "CREATE OR REPLACE FUNCTION public\\."fn"\\("{on=1}
+           on{print}
+           on && $0 ~ "GRANT EXECUTE ON FUNCTION public\\."fn"\\("{exit}' "$LATEST" >> /tmp/krug_settle_latest_fns.sql
+    done
+    echo "-- applying $(basename "$LATEST") (settle/confirm/void blocks)"
+    psql -v ON_ERROR_STOP=1 -q -f /tmp/krug_settle_latest_fns.sql
+  fi
   psql -v ON_ERROR_STOP=1 -f "$HERE/settlement_with_source.sql"
 else
   # Svaki čuvar je zaseban DO blok; bez migracije svaki mora pasti.

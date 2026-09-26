@@ -59,6 +59,15 @@ AS $function$
     );
 $function$;
 
+CREATE OR REPLACE FUNCTION public.krug_is_member(_krug uuid, _user uuid)
+ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public'
+AS $function$
+  SELECT
+    EXISTS (SELECT 1 FROM public.krug_ownership WHERE krug_id = _krug AND user_id = _user)
+    OR EXISTS (SELECT 1 FROM public.krug_membership m JOIN public.krug k ON k.id = m.krug_id
+               WHERE m.krug_id = _krug AND m.user_id = _user AND k.deleted_at IS NULL);
+$function$;
+
 -- Obavijesti nisu predmet ovog paketa: stub koji ništa ne radi.
 CREATE OR REPLACE FUNCTION public.krug_emit_notification(
   p_event_type text, p_krug_id uuid, p_actor_id uuid,

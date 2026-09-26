@@ -8260,6 +8260,10 @@ export type Database = {
       }
       krug_notify_outbox_retry: { Args: never; Returns: number }
       krug_override_confirm: { Args: { p_override_id: string }; Returns: Json }
+      krug_override_party: {
+        Args: { p_override_id: string; p_user: string }
+        Returns: boolean
+      }
       krug_override_propose: {
         Args: { p_expense_id: string; p_shared_amount?: number; p_shares: Json }
         Returns: Json
