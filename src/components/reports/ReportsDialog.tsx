@@ -41,6 +41,7 @@ import {
   FileSpreadsheet,
   FileJson,
   Calendar,
+  CalendarDays,
   TrendingUp,
   TrendingDown,
   Wallet,
@@ -692,6 +693,18 @@ export const ReportsDialog = ({ expenses, triggerClassName, triggerLabel, showMo
             {t('reports.financialReport', 'Financijsko izvješće')}
           </DialogTitle>
         </DialogHeader>
+
+        {showMonthlyReview && (
+          <button
+            type="button"
+            onClick={openMonthlyReview}
+            className="flex min-h-[44px] w-full items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-medium text-primary hover:bg-muted/50"
+            data-testid="reports-monthly-review"
+          >
+            <CalendarDays className="h-4 w-4" />
+            {t('obrada.reportsEntry', 'Mjesečni pogled')}
+          </button>
+        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-5 mb-4">
