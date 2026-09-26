@@ -7717,5 +7717,47 @@
   },
   "categoryCorrection": {
     "saveError": "Category changed, but the correction was not remembered for next time."
+  },
+  "obrada": {
+    "personalOnly": "Monthly review is only available in personal mode.",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "summary": {
+      "in": "In",
+      "out": "Out",
+      "left": "Left"
+    },
+    "leaks": {
+      "title": "Where it leaks",
+      "subtitle": "Groups rising vs the 3-month average",
+      "avg": "avg"
+    },
+    "recurring": {
+      "title": "Recurring costs",
+      "subtitle": "Same merchant in at least 3 of the last 4 months",
+      "subscription": "subscription",
+      "perYear": "yr"
+    },
+    "markers": {
+      "title": "Unnecessary & luxury",
+      "unnecessary": "Unnecessary",
+      "luxury": "Luxury"
+    },
+    "overBudget": {
+      "title": "Over budget",
+      "none": "No budget is exceeded."
+    },
+    "loans": {
+      "title": "Loans",
+      "none": "No open loans.",
+      "owedToMe": "owes me",
+      "iOwe": "I owe",
+      "settled": "settled"
+    },
+    "empty": "No data for this month.",
+    "errors": {
+      "loadFailed": "We couldn't prepare this month's data. Please try again."
+    },
+    "homeCta": "Review the month"
   }
 }

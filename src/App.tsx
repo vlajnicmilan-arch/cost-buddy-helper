@@ -79,6 +79,7 @@ const Install = lazy(() => import("./pages/Install"));
 const JoinProject = lazy(() => import("./pages/JoinProject"));
 const JoinBudget = lazy(() => import("./pages/JoinBudget"));
 const Krug = lazy(() => import("./pages/Krug"));
+const Obrada = lazy(() => import("./pages/Obrada"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const Impressum = lazy(() => import("./pages/Impressum"));
@@ -399,6 +400,7 @@ const AppRoutes = () => {
       <Route path="/budgets" element={<Suspense fallback={<GenericPageSkeleton />}>{requireOnboarding(<Budgets />)}</Suspense>} />
       <Route path="/wallet" element={<Suspense fallback={<WalletSkeleton />}>{requireOnboarding(<Wallet />)}</Suspense>} />
       <Route path="/krug" element={<Suspense fallback={<GenericPageSkeleton />}>{requireOnboarding(<Krug />)}</Suspense>} />
+      <Route path="/obrada" element={<Suspense fallback={<GenericPageSkeleton />}>{requireOnboarding(<Obrada />)}</Suspense>} />
       <Route path="/auth" element={<Suspense fallback={<PageLoader />}>{user ? <AuthReturnRedirect to={authReturnPath || "/home"} /> : <Auth />}</Suspense>} />
       <Route path="/native-oauth/callback" element={<Suspense fallback={<PageLoader />}><NativeOAuthCallback /></Suspense>} />
       <Route path="/reset-password" element={<Suspense fallback={<PageLoader />}><ResetPassword /></Suspense>} />
