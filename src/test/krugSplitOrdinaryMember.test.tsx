@@ -17,6 +17,7 @@ vi.mock('react-i18next', () => ({
   initReactI18next: { type: '3rdParty', init: () => {} },
 }));
 vi.mock('@/i18n', () => ({ default: { t: (k: string) => k } }));
+vi.mock('@/hooks/useBackButton', () => ({ useBackButton: () => {} }));
 vi.mock('@/lib/diagnosticLogger', () => ({ logDiagnostic: (...a: any[]) => logDiagnostic(...a) }));
 vi.mock('@/lib/buildStamp', () => ({ getBuildStamp: () => 'test|assets/index-x.js' }));
 vi.mock('@/hooks/useStatusFeedback', () => ({ showError: (...a: any[]) => showError(...a), showSuccess: vi.fn() }));
