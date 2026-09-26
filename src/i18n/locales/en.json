@@ -2906,7 +2906,8 @@
       },
       "override_proposed": {
         "title": "Split proposal",
-        "message": "A Krug member proposed a manual split of a shared expense. Open the expense to confirm or reject."
+        "message": "A Krug member proposed a manual split of a shared expense. Open the expense to confirm or reject.",
+        "message_partial": "A Krug member proposed a split: {{shared_amount}} {{currency}} of {{amount}} {{currency}} is shared. Open the expense to confirm or reject."
       },
       "override_confirmed": {
         "title": "Split confirmed",
@@ -6176,7 +6177,9 @@
         "not_found": "Proposal not found.",
         "generic": "Failed to process the proposal.",
         "negative": "Percentage cannot be negative.",
-        "touched_over_100": "The percentages you entered already exceed 100%."
+        "touched_over_100": "The percentages you entered already exceed 100%.",
+        "shared_amount_exceeds_amount": "The shared amount cannot exceed the expense amount.",
+        "shared_amount_invalid": "The shared amount must be greater than 0."
       },
       "success": {
         "activated": "Manual split activated.",
@@ -6191,6 +6194,11 @@
         "reasonLabel": "Reason (optional)",
         "reasonPlaceholder": "e.g. the amount is wrong",
         "confirm": "Reject"
+      },
+      "sharedAmount": {
+        "label": "Share only (optional)",
+        "hint": "Empty = the full amount is shared ({{total}}). The rest stays your expense.",
+        "sharedOf": "Sharing {{shared}} of {{total}}"
       }
     },
     "invite": {

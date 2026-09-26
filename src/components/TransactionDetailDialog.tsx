@@ -527,6 +527,8 @@ export const TransactionDetailDialog = ({
                 krugId={expense.krug_id}
                 expenseId={expense.id}
                 allowPropose={false}
+                expenseAmount={Number(expense.amount)}
+                currency={expense.currency || 'EUR'}
               />
             )}
 

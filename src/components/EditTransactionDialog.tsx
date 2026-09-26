@@ -661,7 +661,12 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
 
           {/* Krug Faza B — ručna podjela (override). Samo za shared troškove Kruga. */}
           {type === 'expense' && krugId && krugPrivacy === 'shared' && expense?.id && (
-            <KrugExpenseSplitPanelGate krugId={krugId} expenseId={expense.id} />
+            <KrugExpenseSplitPanelGate
+              krugId={krugId}
+              expenseId={expense.id}
+              expenseAmount={Number(expense.amount)}
+              currency={expense.currency || 'EUR'}
+            />
           )}
 
 

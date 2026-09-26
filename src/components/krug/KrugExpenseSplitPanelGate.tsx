@@ -14,9 +14,11 @@ interface Props {
   krugId: string;
   expenseId: string;
   allowPropose?: boolean;
+  expenseAmount: number;
+  currency: string;
 }
 
-export function KrugExpenseSplitPanelGate({ krugId, expenseId, allowPropose = true }: Props) {
+export function KrugExpenseSplitPanelGate({ krugId, expenseId, allowPropose = true, expenseAmount, currency }: Props) {
   const { user } = useAuth();
   const { data: members = [] } = useKrugMembers(krugId);
   const isFullMember = !!user && members.some(
@@ -29,6 +31,8 @@ export function KrugExpenseSplitPanelGate({ krugId, expenseId, allowPropose = tr
       expenseId={expenseId}
       isFullMember
       allowPropose={allowPropose}
+      expenseAmount={expenseAmount}
+      currency={currency}
     />
   );
 }

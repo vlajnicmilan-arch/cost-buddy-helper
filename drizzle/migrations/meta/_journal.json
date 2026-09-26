@@ -204,6 +204,13 @@
       "when": 1790379070076,
       "tag": "0028_worker_payout_not_received_real",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1790396013926,
+      "tag": "0029_krug_split_shared_amount",
+      "breakpoints": true
     }
   ]
 }
