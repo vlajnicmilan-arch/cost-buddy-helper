@@ -1,62 +1,58 @@
-# Isplate radnika: jedan ekran po osobi (samo plan)
+# Krug: podjela računa po stavkama ili iznosu (samo plan)
 
-## 1. Funkcije ekrana (1) i ekvivalent u (2)
+## Stanje (provjereno u bazi i kodu)
 
-| Funkcija u `WorkerPayoutsDialog` (1) | Ekvivalent u `PersonPayoutDialog` / `PersonDetailDialog` (2) |
-|---|---|
-| Razdoblje Od–Do | Kalendar „Razdoblje" (od 13.9.) |
-| Izračun iz sati + „Primijeni izračun" | „Izračunaj iz sati" |
-| Raščlamba po satnici (sati × satnica, bruto) | Djelomično: prikaz po angažmanu, bez raščlambe po satnici |
-| Iznos, novčanik, bilješka | Ima |
-| Zbirna isplata kroz više projekata (odabir redaka) | Ima, kroz FIFO raspodjelu (`create_person_payout`, zajednički batch_id) |
-| „Zaključaj radne unose" (prekidač, zadano uključen) | Zaključava uvijek (RPC zadano `p_lock_entries = true`), bez prekidača |
-| Povijest isplata (po radniku, jedan projekt) | Ima u `PersonDetailDialog`, po osobi kroz sve projekte, grupirano po mjesecu, stornirane skrivene |
-| Storno pojedinačne i cijele zbirne isplate | Ima (`usePersonPayoutVoid`) |
-| CSV izvoz povijesti | Nema |
-| Ulaz: gumb na radniku u tabu Tim projekta | Ulaz: Ljudi → osoba |
+- Podjela u Krugu danas = postotak CIJELOG troška: `krug_expense_split_share.share_percent`, vezano uz `krug_expense_split_override` (statusi pending/potvrdjena/povucena/odbijena; prijedlog kroz `krug_override_propose`, odluka A1/A2 kroz `krug_apply_act`).
+- „Tko kome" računa server: `krug_settlement_preview` — `owed = iznos_troška × share_percent / 100`, uz FX konverziju i zbirni prijenos dužnik→povjeritelj. U bazi: 2 retka podjele, 1 override.
+- Stavke računa postoje u `receipt_items` (naziv, količina, jed. cijena, ukupno) samo kad je račun skeniran; Krug ekrani ih danas ne čitaju.
+- Podmirenje: `krug_settlement_ledger` + `krug_mark_settled_with_source` / `krug_confirm_settlement_receipt` (`expense_nature='krug_settlement'`, obje strane izuzete iz potrošnje).
+- Osobna statistika: autorov zajednički trošak danas se cijeli broji kao njegova potrošnja; dijeljeni troškovi članova se autoru ne broje.
 
-## 2. Stvarna upotreba — vlasnik d4d31ee6 (upit na bazi, 25.9.2026)
+## 1. Varijanta A — „dijeljeni iznos"
 
-- Isplate ukupno: 8 (sve za istog radnika). Pojedinačne 6, zbirne 2 retka (jedna zbirna isplata 7.7., dva projekta).
-- Stornirane: 4 (tri „Test" 7.–9.7., jedna 25.8.).
-- Zapisi zaključavanja (`project_work_entry_locks`) na njegovim projektima: 135 (zaključavanja i otključavanja zajedno; u cijeloj bazi 102 `locked`, 34 `unlocked`). Zaključavanje se, dakle, stvarno koristi.
-- Zadnjih 60 dana: 3 isplate (19.8. djelomična, 25.8. stornirana, 13.9. djelomična), sve pojedinačne.
-- Kojim ekranom je koja isplata nastala: **ne znam**. Oba puta upisuju isti opis („Isplata: <ime>"), isti batch_id NULL za jednu stavku, a u bazi nema oznake ekrana ni statistike poziva RPC-a. Pouzdano se može reći samo da zbirna isplata 7.7. dolazi iz batch puta.
-- CSV: nema traga u bazi (izvoz je lokalna datoteka) — upotreba nepoznata.
+- Na trošku u Krugu, uz postotke, izbor „Dijeli samo X €" (X ≤ iznos troška, zadano = cijeli iznos).
+- Model: `krug_expense_split_override` dobiva stupac `shared_amount numeric NULL` (NULL = cijeli iznos; današnje ponašanje). `share_percent` se i dalje odnosi na 100% — ali 100% dijeljenog iznosa, ne troška.
+- `krug_settlement_preview`: `v_amount_display` za dijeljeni dio = `LEAST(shared_amount, iznos)`; ostatak (`iznos − shared_amount`) ostaje isključivo autorov i ne ulazi u „Tko kome".
+- Ručni unos, skenirani račun, bankovni redak — sve radi jednako; bez stavki.
 
-Zaključak: zaključavanje, povijest i storno se koriste; CSV i raščlamba po satnici — nepoznato, prenose se da ništa ne nestane.
+## 2. Varijanta B — „po stavkama"
 
-## 3. Što dodati u (2) (FIFO i iznosi se ne mijenjaju)
+- Kad trošak ima `receipt_items`, autor označi zajedničke stavke; zbroj označenih = dijeljeni iznos.
+- Model: nova tablica `krug_expense_split_item` (override_id, receipt_item_id) — izvor istine je izbor stavki, a `shared_amount` je izvedena vrijednost (zbroj stavki), upisana u isti stupac kao u A. Time „Tko kome", podmirenje i obavijesti rade identično kao u A; B je samo drugi način odabira iznosa.
+- Validacija: stavke moraju pripadati tom trošku; zbroj ≤ iznos troška; ako se stavke računa kasnije promijene (ponovno skeniranje), dijeljeni iznos se preračunava iz označenih stavki.
+- Ručni unos bez stavki → automatski varijanta A.
 
-- **Zaključavanje:** prekidač „Zaključaj radne unose u razdoblju" uz kalendar, zadano uključen (isto ponašanje kao danas); prosljeđuje `lockEntries` koji `usePersonPayout` već prima.
-- **Raščlamba po satnici:** ispod „Izračunaj iz sati" sklopivi prikaz sati × satnica po angažmanu, iz postojećeg preview-a (isti izračun, samo prikaz).
-- **CSV:** gumb u povijesti osobe u `PersonDetailDialog`, isti stupci kao danas + stupac projekt; ide kroz `exportTextFile`.
-- **Povijest i storno:** već po osobi kroz sve projekte — dodaje se samo filter „projekt" kad se dođe iz projekta.
+## 3. Ponašanje (obje varijante)
 
-## 4. Povlačenje (1) bez gubitka
+- **„Tko kome" i podmirenje:** jedina izmjena je iznos koji ulazi u raspodjelu (`shared_amount` umjesto punog iznosa). Prijenosi, FX snapshot, ledger i potvrda primitka ne diraju se.
+- **Statistika i izvješći autora:** autorov osobni dio (`iznos − shared_amount`) ostaje njegova potrošnja; dijeljeni dio se i dalje broji autoru kao plaćeno (on je platio račun), a članovima se ne upisuje ništa — kao i danas. Nema dvostrukog brojanja jer „Tko kome" nije trošak, nego dug.
+- **Prijedlog i potvrda (A1/A2):** `krug_override_propose` dobiva `p_shared_amount` (i u B popis stavki); prijedlog, obavijest autoru, potvrda/odbijanje i dedup ostaju isti tok. Tekst obavijesti dobiva „dijeli se X € od Y €".
+- **Izmjena nakon potvrde:** kao i danas — novi prijedlog (override) koji zamjenjuje stari; dijeljeni iznos je dio prijedloga, pa se mijenja istim putem.
+- **Spajanje s bankovnim retkom (merge):** merge čuva postojeći redak troška (i njegov `expense_id`), pa override i stavke preživljavaju. Čuvar: ako merge promijeni iznos troška ispod `shared_amount`, dijeljeni iznos se steže na iznos (LEAST u preview-u) — bez greške.
+- **Brisanje:** soft delete troška već isključuje trošak iz preview-a; override/stavke ostaju kao trag, bez dodatne logike.
 
-1. Gumb isplate u tabu Tim više ne otvara (1), nego Ljudi → osoba s već odabranim projektom (filter povijesti + kalendar usmjeren na taj angažman). Nepovezan radnik bez osobe: ostaje stari ekran dok se ne utvrdi da takvih nema (provjera upitom prije koraka).
-2. `WorkerPayoutsDialog` ostaje u kodu, bez ulaza, jedno razdoblje (npr. 30 dana) bez korištenja; prati se kroz postojeću dijagnostiku.
-3. Tek onda brisanje komponente, njenih testova i neiskorištenih prijevoda — zaseban nalog.
-4. Baza se ne mijenja ni u jednom koraku.
+## 4. Migracije, RLS, testovi, nalozi
 
-## 5. Sigurnosni rez u spojenom ekranu
+- **Migracije (additivne):**
+  - A: `ALTER TABLE krug_expense_split_override ADD COLUMN shared_amount numeric NULL` + `COMMENT`; `krug_override_propose` i `krug_settlement_preview` napisane od žive definicije (`pg_get_functiondef`); REVOKE/GRANT nepromijenjeni (isti potpisi, iste uloge).
+  - B: `CREATE TABLE krug_expense_split_item` + GRANT authenticated (SELECT/INSERT/DELETE preko RPC), RLS (članovi Kruga čitaju; upis samo kroz RPC), indeks po override_id.
+- **Testovi:**
+  - SQL čuvari (novi paket `krug_shared_amount`): dijeljeni iznos ulazi u „Tko kome", ostatak ne; postotci se zbrajaju na 100 dijeljenog iznosa; shared_amount > iznos se odbija; FX konverzija na dijeljeni iznos; A1 potvrda/A2 odbijanje s iznosom; merge ne gubi podjelu; brisanje; prava.
+  - B dodatno: zbroj označenih stavki = dijeljeni iznos; stavke tuđeg troška se odbijaju; promjena stavki preračunava iznos.
+  - vitest: forma „Dijeli samo X €", odabir stavki, tekstovi obavijesti, prikaz „dijeli se X od Y".
+  - Zeleni moraju ostati: `krug_settle`, `krug_notify_outbox`, `worker_payout_*`, balance deploy gate.
+- **Nalozi:** A = 1 nalog (migracija + preview + forma + testovi). B = 1 dodatni nalog (tablica + odabir stavki + testovi). B bez A nema smisla jer B koristi `shared_amount`.
 
-- Otvaranje iz projekta: predloženi iznos i raspodjela samo za taj projekt; ostali angažmani vidljivi, ali s 0 i neoznačeni — uključuju se samo ručno.
-- FIFO prijedlog kroz sve projekte samo kad se ekran otvori iz Ljudi bez odabranog projekta, ili nakon izričite radnje „Raspodijeli na sve".
-- Stalno vidljiv sažetak iznad gumba: „Isplaćuješ X · Zarađeno Y · Ostaje Z" (za odabrane angažmane).
-- Pravilo FIFO i provjera `payout_exceeds_remaining` na serveru ostaju iste.
+## 5. Preporuka: A odmah, B kasnije
 
-## 6. Procjena
+- A rješava vlasnikovu priču (40 € račun, dijeli se 12 €) jednim poljem, radi za ručni unos i banku, dira samo jedan stupac i jednu formulu u preview-u.
+- B je udobniji odabir istog iznosa, ali ovisi o skeniranom računu i dodaje tablicu, RLS i rubne slučajeve (promjena stavki). Vrijedi ga graditi tek kad A pokaže stvarnu potrebu za stavkama.
+- B se kasnije nadovezuje bez promjene modela: isti `shared_amount`, samo drugi način odabira.
 
-- **Nalozi:** 3.
-  1. Prekidač zaključavanja, raščlamba, sažetak i sigurnosni rez u (2).
-  2. CSV + filter projekta u povijesti; ulaz iz projekta preusmjeren na osobu.
-  3. Nakon razdoblja bez korištenja: brisanje (1).
-- **Migracije:** nijedna.
-- **Testovi (vitest):** prekidač šalje `lockEntries`; otvaranje iz projekta ne puni druge projekte; sažetak X/Y/Z; CSV stupci; gumb u tabu Tim otvara osobu s projektom. SQL paketi (balance, worker_payout_*, krug_*) pokreću se kao regresija, ne mijenjaju se.
-- **Rizik za saldo:** nizak — isti RPC (`create_person_payout` → `create_worker_payout`), isti trošak i storno. Glavni rizik je UX: slučajna isplata na drugi projekt — pokriva ga točka 5. Drugi rizik: radnik bez povezane osobe gubi ulaz — pokriva korak 4.1.
+## 6. Postojeći zapisi
+
+- 2 postojeće podjele i 1 override se ne diraju; `shared_amount NULL` = cijeli iznos, pa je njihovo ponašanje bitno identično.
 
 ## Otvoreno pitanje za vlasnika
 
-- Treba li prekidač zaključavanja uopće (danas oba puta zaključavaju zadano), ili je dovoljno uvijek zaključavati kao sada u (2)?
+- Treba li članu u obavijesti/prijedlogu prikazati i popis stavki (B), ili je dovoljan iznos (A)?
