@@ -7717,5 +7717,47 @@
   },
   "categoryCorrection": {
     "saveError": "Kategorie geändert, aber die Korrektur wurde nicht für später gespeichert."
+  },
+  "obrada": {
+    "personalOnly": "Die Monatsansicht ist nur im privaten Modus verfügbar.",
+    "prevMonth": "Vorheriger Monat",
+    "nextMonth": "Nächster Monat",
+    "summary": {
+      "in": "Einnahmen",
+      "out": "Ausgaben",
+      "left": "Übrig"
+    },
+    "leaks": {
+      "title": "Wo es sickert",
+      "subtitle": "Gruppen mit Wachstum gegenüber dem 3-Monats-Schnitt",
+      "avg": "Schnitt"
+    },
+    "recurring": {
+      "title": "Wiederkehrende Kosten",
+      "subtitle": "Gleicher Händler in mind. 3 der letzten 4 Monate",
+      "subscription": "Abo",
+      "perYear": "Jahr"
+    },
+    "markers": {
+      "title": "Unnötig & Luxus",
+      "unnecessary": "Unnötig",
+      "luxury": "Luxus"
+    },
+    "overBudget": {
+      "title": "Über Budget",
+      "none": "Kein Budget überschritten."
+    },
+    "loans": {
+      "title": "Darlehen",
+      "none": "Keine offenen Darlehen.",
+      "owedToMe": "schuldet mir",
+      "iOwe": "ich schulde",
+      "settled": "ausgeglichen"
+    },
+    "empty": "Keine Daten für diesen Monat.",
+    "errors": {
+      "loadFailed": "Die Daten für diesen Monat konnten nicht vorbereitet werden. Bitte erneut versuchen."
+    },
+    "homeCta": "Monat ansehen"
   }
 }

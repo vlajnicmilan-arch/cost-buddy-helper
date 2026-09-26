@@ -7745,5 +7745,47 @@
   },
   "categoryCorrection": {
     "saveError": "Kategorija je promijenjena, ali ispravak nije zapamćen za ubuduće."
+  },
+  "obrada": {
+    "personalOnly": "Mjesečni pogled dostupan je samo u osobnom načinu.",
+    "prevMonth": "Prethodni mjesec",
+    "nextMonth": "Sljedeći mjesec",
+    "summary": {
+      "in": "Ušlo",
+      "out": "Izašlo",
+      "left": "Ostalo"
+    },
+    "leaks": {
+      "title": "Gdje curi",
+      "subtitle": "Skupine koje rastu prema prosjeku zadnja 3 mjeseca",
+      "avg": "prosjek"
+    },
+    "recurring": {
+      "title": "Ponavljajući troškovi",
+      "subtitle": "Isti trgovac u barem 3 od zadnja 4 mjeseca",
+      "subscription": "pretplata",
+      "perYear": "god."
+    },
+    "markers": {
+      "title": "Nepotrebno i luksuz",
+      "unnecessary": "Nepotrebno",
+      "luxury": "Luksuz"
+    },
+    "overBudget": {
+      "title": "Izvan budžeta",
+      "none": "Nijedan budžet nije probijen."
+    },
+    "loans": {
+      "title": "Pozajmice",
+      "none": "Nema otvorenih pozajmica.",
+      "owedToMe": "duguje mi",
+      "iOwe": "dugujem",
+      "settled": "poravnato"
+    },
+    "empty": "Nema podataka za ovaj mjesec.",
+    "errors": {
+      "loadFailed": "Podatke za ovaj mjesec nismo uspjeli pripremiti. Pokušaj ponovno."
+    },
+    "homeCta": "Pogledaj mjesec"
   }
 }
