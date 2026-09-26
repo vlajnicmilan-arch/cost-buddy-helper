@@ -60,9 +60,7 @@ vi.mock('@/hooks/useKrugSettlementMutations', async (orig) => {
 });
 
 import { KrugSettlementSection } from '@/components/krug/KrugSettlementSection';
-import i18nShow from '@/hooks/useStatusFeedback';
 import * as feedback from '@/hooks/useStatusFeedback';
-void i18nShow;
 
 const renderSection = (props: any) => {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
