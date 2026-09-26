@@ -48,6 +48,11 @@ vi.mock('@/components/krug/KrugSettleSourceFields', () => ({
 vi.mock('@/components/krug/KrugConfirmReceiptDialog', () => ({
   KrugConfirmReceiptDialog: (p: any) => <div data-testid="confirm-open">{p.target.ledgerId}</div>,
 }));
+vi.mock('@/components/common/ConfirmActionDialog', () => ({
+  ConfirmActionDialog: (p: any) => (p.open
+    ? <button data-testid="void-confirm" data-prefill={p.reason?.defaultValue ?? ''} onClick={() => p.onConfirm(p.reason?.defaultValue ?? 'razlog')} />
+    : null),
+}));
 vi.mock('@/hooks/useKrugSettlementMutations', async (orig) => {
   const real = await orig<any>();
   return {
@@ -205,5 +210,62 @@ describe('KrugSettlementSection — full member / owner unchanged', () => {
     preview = fullView;
     const { container } = renderSection({ isFullMember: false, isMember: false });
     expect(container.innerHTML).toBe('');
+  });
+});
+
+describe('KrugSettlementSection — regular member history actions (nalog 3)', () => {
+  beforeEach(() => {
+    rpc.mockReset(); logDiagnostic.mockReset();
+    ledgerRows = [{ id: 'L1', krug_id: 'k1', from_user: 'maja', to_user: 'ana', amount: 5, currency: 'EUR',
+      marked_at: '2026-09-20T10:00:00Z', voided_at: null, payer_expense_id: 'e1', recipient_confirmed_at: null,
+      client_request_id: 'c1' }];
+  });
+
+  it('recipient gets "Nisam primio" which voids with the prefilled reason', async () => {
+    currentUser = 'ana';
+    preview = ownParty();
+    rpc.mockResolvedValue({ data: { ok: true }, error: null });
+    renderSection({ isFullMember: false, isMember: true });
+    expect(screen.queryByTestId('own-party-void')).toBeNull();
+    fireEvent.click(screen.getByTestId('own-party-not-received'));
+    const btn = screen.getByTestId('void-confirm');
+    expect(btn.getAttribute('data-prefill')).toBe('krug.settle.history.notReceivedReason');
+    fireEvent.click(btn);
+    await waitFor(() => expect(rpc).toHaveBeenCalled());
+    expect(rpc.mock.calls[0]).toEqual(['krug_void_settlement', { p_ledger_id: 'L1', p_reason: 'krug.settle.history.notReceivedReason' }]);
+  });
+
+  it('debtor gets "Poništi" on own row, no receipt actions', () => {
+    currentUser = 'maja';
+    preview = ownParty({
+      members: [{ user_id: 'maja', paid: 0, owed: 0, net: 0 }],
+      transfers: [],
+    });
+    renderSection({ isFullMember: false, isMember: true });
+    expect(screen.getByTestId('own-party-void')).toBeTruthy();
+    expect(screen.queryByTestId('own-party-not-received')).toBeNull();
+    expect(screen.queryByTestId('own-party-confirm')).toBeNull();
+  });
+
+  it('no actions on a voided row', () => {
+    currentUser = 'maja';
+    ledgerRows = [{ ...ledgerRows[0], voided_at: '2026-09-21T10:00:00Z' }];
+    preview = ownParty({ members: [{ user_id: 'maja', paid: 0, owed: 0, net: 0 }], transfers: [] });
+    renderSection({ isFullMember: false, isMember: true });
+    expect(screen.queryByTestId('own-party-void')).toBeNull();
+  });
+
+  it('void rejection → translated message + diagnostics row', async () => {
+    currentUser = 'maja';
+    preview = ownParty({ members: [{ user_id: 'maja', paid: 0, owed: 0, net: 0 }], transfers: [] });
+    rpc.mockResolvedValue({ data: null, error: { code: '42501', message: 'not_member' } });
+    renderSection({ isFullMember: false, isMember: true });
+    fireEvent.click(screen.getByTestId('own-party-void'));
+    fireEvent.click(screen.getByTestId('void-confirm'));
+    await waitFor(() => expect(logDiagnostic).toHaveBeenCalled());
+    expect(feedback.showError).toHaveBeenCalledWith('krug.settle.error.not_member');
+    expect(logDiagnostic.mock.calls[0][0].details).toMatchObject({
+      rpc: 'krug_void_settlement', db_code: '42501', db_message: 'not_member', build: 'test|assets/index-x.js', ledger_id: 'L1',
+    });
   });
 });
