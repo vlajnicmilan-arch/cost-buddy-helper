@@ -4,6 +4,7 @@
  * `bank_sync_review_decide` upisuje. Bez Reacta, bez mreže.
  */
 import { planLedgerRow, type LedgerCandidate, type LedgerReason } from '@/lib/moneyLedgerPlan';
+import { isIncomeType } from '@/lib/spendClassification';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { getBuildStamp } from '@/lib/buildStamp';
 
@@ -76,7 +77,7 @@ export function planReviewDecision(
     userId,
     amount: Number(item.payload.amount),
     dateIso: item.payload.date,
-    direction: item.payload.type === 'income' ? 'in' : 'out',
+    direction: isIncomeType(item.payload) ? 'in' : 'out',
     walletId: item.payload.wallet_id,
     fingerprint: item.stable_id,
     classification: { kind: 'question' },

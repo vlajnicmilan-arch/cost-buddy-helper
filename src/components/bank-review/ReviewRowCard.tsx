@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
+import { isIncomeType } from '@/lib/spendClassification';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { ReviewCandidate, ReviewChoice, ReviewQueueItem } from '@/lib/bankSyncReview/decision';
@@ -46,7 +47,7 @@ export function ReviewRowCard({ item, candidates, wallets, busy, onDecide }: Pro
         <div className="flex items-start justify-between gap-2">
           <span className="text-sm font-medium break-words">{p.description || t('bankReview.noDescription')}</span>
           <span className="shrink-0 font-mono text-sm">
-            {p.type === 'income' ? '+' : '−'}
+            {isIncomeType(p) ? '+' : '−'}
             {money(p.amount, p.currency)}
           </span>
         </div>
