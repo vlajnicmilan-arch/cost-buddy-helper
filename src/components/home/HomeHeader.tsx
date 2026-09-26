@@ -146,7 +146,11 @@ export const HomeHeader = ({
         className="grid grid-cols-3 gap-2"
         data-tutorial="add-buttons"
       >
-        <ReportsDialog expenses={reportsExpenses} triggerClassName="w-full h-11 justify-center" />
+        <ReportsDialog
+          expenses={reportsExpenses}
+          triggerClassName="w-full h-11 justify-center"
+          showMonthlyReview={!activeBusinessProfileId}
+        />
         <ScanTriggerButton
           businessProfileId={activeBusinessProfileId}
           triggerLabel={t('common.scan', 'Skeniraj')}
@@ -157,17 +161,6 @@ export const HomeHeader = ({
           triggerClassName="w-full h-11 justify-center"
         />
       </div>
-
-      {!activeBusinessProfileId && (
-        <button
-          type="button"
-          onClick={() => navigate('/obrada')}
-          className="flex min-h-[44px] w-full items-center justify-center rounded-xl border border-border bg-card text-sm font-medium text-primary"
-          data-testid="obrada-cta"
-        >
-          {t('obrada.homeCta')}
-        </button>
-      )}
     </header>
   );
 };

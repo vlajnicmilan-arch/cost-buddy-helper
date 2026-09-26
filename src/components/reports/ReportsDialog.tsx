@@ -1,6 +1,8 @@
 import { useState, useMemo, useCallback } from 'react';
 import { resolvePeriodRange, type PeriodPreset as SharedPeriodPreset } from '@/lib/periodPresets';
 
+import { useNavigate } from 'react-router-dom';
+
 import {
   Dialog,
   DialogContent,
@@ -85,6 +87,8 @@ interface ReportsDialogProps {
   triggerClassName?: string;
   /** Optional label override for the trigger button (defaults to shared `bulk.reports`). */
   triggerLabel?: string;
+  /** Kartica „Mjesečni pogled" na vrhu izvješća — samo u osobnom načinu. */
+  showMonthlyReview?: boolean;
 }
 
 type PeriodPreset = SharedPeriodPreset;
@@ -178,9 +182,10 @@ const calculateStats = (expenseList: Expense[]) => {
   };
 };
 
-export const ReportsDialog = ({ expenses, triggerClassName, triggerLabel }: ReportsDialogProps) => {
+export const ReportsDialog = ({ expenses, triggerClassName, triggerLabel, showMonthlyReview }: ReportsDialogProps) => {
   const { t } = useTranslation();
   const { hasAccess } = useFeatureAccess();
+  const navigate = useNavigate();
   // Paywall skok smije se dogoditi TEK kad je pretplata stvarno provjerena.
   // Prije toga `hasAccess('reports')` je lažno `false` (prazni entitlementi).
   const { subscriptionReady } = useSubscription();
