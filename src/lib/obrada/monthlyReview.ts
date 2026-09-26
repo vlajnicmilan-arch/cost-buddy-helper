@@ -5,7 +5,7 @@
  * (bez project_id i business_profile_id), deleted_at null.
  */
 import { isRealIncome, isRealSpend } from '@/lib/spendClassification';
-import { resolveTreeCategory, type CategoryGroupKey } from '@/lib/categoryTree';
+import { categoryGroupLabelKey, resolveTreeCategory, type CategoryGroupKey } from '@/lib/categoryTree';
 import { normalizeMerchant } from '@/lib/duplicateDetection';
 
 /** Pragovi rasta „gdje curi" — vlasnik ih mijenja ovdje, na jednom mjestu. */
@@ -162,7 +162,7 @@ export function growthByGroup(rows: readonly ObradaRow[], ref: Date): GroupGrowt
     if (!cat) return null;
     const tree = resolveTreeCategory(cat);
     if (!tree.groupKey) return null;
-    return { key: tree.groupKey, labelKey: tree.groupLabelKey ?? tree.groupKey };
+    return { key: tree.groupKey, labelKey: categoryGroupLabelKey(tree.groupKey) };
   });
 
   const catsByGroup = new Map<CategoryGroupKey, Map<string, Bucket>>();
@@ -179,7 +179,7 @@ export function growthByGroup(rows: readonly ObradaRow[], ref: Date): GroupGrowt
     }
     let b = m.get(cat);
     if (!b) {
-      b = { labelKey: tree.label ?? cat, perMonth: new Map() };
+      b = { labelKey: tree.label ?? tree.customName ?? cat, perMonth: new Map() };
       m.set(cat, b);
     }
     const mk = monthKey(toDate(r.date));
@@ -336,7 +336,7 @@ export function overBudgetItems(budgets: readonly BudgetLike[]): OverBudgetItem[
         budgetId: b.id,
         budgetName: b.name,
         categoryKey: c.category,
-        labelKey: tree.label ?? tree.groupLabelKey ?? c.category,
+        labelKey: tree.label ?? tree.customName ?? c.category,
         limit: round2(c.limit_amount),
         spent: round2(c.spent),
         overBy: round2(c.spent - c.limit_amount),
