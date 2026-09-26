@@ -8310,6 +8310,21 @@ export type Database = {
         }
         Returns: Json
       }
+      krug_settlement_preview_own_party: {
+        Args: {
+          p_display_currency: string
+          p_frozen_at: string
+          p_fx_frozen: boolean
+          p_fx_source: string
+          p_krug_id: string
+          p_period_end: string
+          p_period_start: string
+          p_rates: Json
+          p_split_mode: Database["public"]["Enums"]["krug_split_mode"]
+          p_user: string
+        }
+        Returns: Json
+      }
       krug_shares_krug_with: {
         Args: { _target: string; _viewer: string }
         Returns: boolean

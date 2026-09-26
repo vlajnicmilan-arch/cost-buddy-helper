@@ -232,6 +232,13 @@
       "when": 1790399920415,
       "tag": "0032_bank_sync_review_decide_category",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1790401345125,
+      "tag": "0033_krug_member_view_own_party",
+      "breakpoints": true
     }
   ]
 }
