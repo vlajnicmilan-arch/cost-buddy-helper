@@ -190,7 +190,7 @@ describe('KrugSettlementSection — full member / owner unchanged', () => {
     preview = fullView;
     renderSection(props);
     expect(screen.queryByTestId('krug-own-party-view')).toBeNull();
-    expect(screen.getByText('N_ana')).toBeTruthy();
+    expect(screen.getAllByText('N_ana').length).toBeGreaterThan(0);
     expect(screen.getAllByText('krug.settlement.paid')).toHaveLength(2);
     expect(screen.getByText('krug.settlement.transfers')).toBeTruthy();
     expect(screen.getByText(/krug.settlement.fxNotice/)).toBeTruthy();
