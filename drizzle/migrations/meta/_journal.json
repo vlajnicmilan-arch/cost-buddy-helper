@@ -239,6 +239,13 @@
       "when": 1790401345125,
       "tag": "0033_krug_member_view_own_party",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1790404155835,
+      "tag": "0034_krug_member_participation",
+      "breakpoints": true
     }
   ]
 }
