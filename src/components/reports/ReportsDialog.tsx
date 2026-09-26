@@ -236,6 +236,25 @@ export const ReportsDialog = ({ expenses, triggerClassName, triggerLabel, showMo
     [periodPreset, customStart, customEnd, expenses],
   );
 
+  // Mjesec za karticu „Mjesečni pogled": mjesec odabran u izvješću; kad
+  // razdoblje ne određuje jedan mjesec (godina, sve, prazno prilagođeno) → tekući.
+  const monthlyReviewMonth = useMemo(() => {
+    const now = new Date();
+    if (periodPreset === 'last-month') return new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    if (periodPreset === 'custom' && customStart) {
+      const [y, m] = customStart.split('-').map(Number);
+      if (y && m) return new Date(y, m - 1, 1);
+    }
+    return now;
+  }, [periodPreset, customStart]);
+
+  const openMonthlyReview = () => {
+    const key = `${monthlyReviewMonth.getFullYear()}-${String(monthlyReviewMonth.getMonth() + 1).padStart(2, '0')}`;
+    setOpen(false);
+    navigate(`/obrada?m=${key}`);
+  };
+
+
 
   // Comparison date ranges
   const compareDateRanges = useMemo(() => {
