@@ -1,113 +1,61 @@
-# Krug — „Tko kome" za običnog člana, samo svoje (PLAN, bez izmjena)
+# Mail lijevak — previše stvari postaje „račun" (plan, bez izmjena)
 
-## Ključni nalaz (odluka prije gradnje)
+Provjereno u živoj bazi (vlasnik d4d31ee6…, 45 dana) i u kodu `mail-process/index.ts` + `_shared/mailImport/classify.ts`.
 
-Obični član danas **uopće ne sudjeluje u podjeli**, pa nema ni dugova ni potraživanja:
-- `krug_settlement_preview` gradi popis sudionika samo od vlasnika i `punopravni` članova. Trošak koji plati obični član ne ulazi u „plaćeno" (`IF r.payer = ANY(v_members)`), a na obične članove se ništa ne dijeli.
-- `krug_override_propose` traži da udjeli pokriju točno sve punopravne članove (`shares_must_cover_all_full_members`), pa obični član ne može dobiti udio. U bazi nema nijednog udjela za običnog člana (0).
-- `krug_mark_settled_with_source` traži da su obje strane punopravni članovi (`party_not_full_member`).
+## Zajednički korijen (B, E, dio A) — potvrđeno
 
-Samo otvaranje pogleda bi zato običnom članu uvijek pokazalo prazno. Potrebna je vlasnikova odluka:
+`knownCounterparties()` (mail-process/index.ts, 195–210) puni `knownOibs` iz `incoming_invoices.supplier_oib`. U tim retcima stoji i **vlastiti OIB Akrobata 39916265994 (24 retka)**, Erste 23057039320 (6), FINA 85821130368 (18). Zatim `classify.ts → runClassification`, korak **3b „Heuristika"** (340–379): ako se u tekstu nađe BILO KOJI poznati OIB → **uvijek `classification: 'racun'`, docType 380**, a `supplier_oib = knownOib` (ne prolazi filter vlastitih OIB-a iz `pickSupplierOib`). AI se zove samo kao „dopuna" (`ai_dopuna`) i iz njegovog odgovora uzima se samo `extraction` — `ai.classification` se **odbacuje**. Zato: extraction kaže `nije_za_nas`/`ponuda`, stavka je `racun`.
 
-- **Opcija 1: samo vidljivost.** Radi se samo pravo gledanja, a obični član i dalje ne sudjeluje u podjeli. Ekran mu tada uvijek piše „Nemaš otvorenih odnosa". Posla je malo, ali korisnik od toga nema stvarne koristi.
-- **Opcija 2: obični član sudjeluje u podjeli.** Troškovi, udjeli i postotci počinju uključivati i njega. To mijenja „Tko kome" svim postojećim Krugovima s običnim članovima, pa zahtijeva zasebni plan za podjelu (težine, override, prihodovni omjer).
-- **Opcija 3 (preporuka): sudjeluje samo kad ga se izričito uključi.** Obični član ulazi u podjelu samo preko prijedloga „Dijeli samo X" / override-a u kojem ima udio. Zadana podjela ostaje među punopravnima. Tada ima stvarne dugove, a postojeći Krugovi se ne mijenjaju.
+Dodatno: isti upit čita `eracun_counterparty_iban.oib`, a stupac se zove `counterparty_oib` → taj dio uvijek vraća grešku i tiho je prazan.
 
-Plan ispod vrijedi za sve tri opcije, jer je vidljivost ista. Kod opcije 3 dolazi još jedan nalog.
+## B) AI kaže nije_za_nas → racun
+- Mjesto: `classify.ts` 3b (356–378) + `knownCounterparties`.
+- Pravilo:
+  1. `knownOibs` = poznati OIB-i **minus vlastiti** (`ownOibs`), i nikad banka iz `KNOWN_BANK_NAMES` kad tekst nosi bankovnu obavijest.
+  2. Poznat OIB je samo **dokaz izdavatelja**, ne presuda o vrsti. Heuristika smije sama reći `racun` samo ako uz to postoji račun-dokaz (vidi A). Inače ide AI kao puna klasifikacija (korak 4), i njegova presuda `nije_za_nas`/`ponuda` vrijedi.
+  3. Kad dopuna ipak ide, a AI vrati drugačiju klasifikaciju → ne gaziti: ići kroz korak 4 grane (tišina / nije_za_nas / ponuda).
+  4. Ispravak stupca `counterparty_oib`.
+- Uzorci: cc7d46c6, 6d7b3dc4, d2bc254d, 9da246b9, 014d14fa, 16c477b2, cff72aa1.
 
-## 1. Tko je „obični član"
+## E) AI kaže ponuda, stavka racun, dobavljač = vlastiti OIB (340f858b, OTP Leasing)
+- Isti korijen: 39916265994 je poznat → 3b → `racun` + `supplier_oib = 39916265994`.
+- Pravilo: iz točke B.1 (vlastiti OIB nikad kandidat) + B.2 (klasifikacija ponuda od AI-ja ostaje). Dodatni čuvar: `supplier_oib ∈ ownOibs` nikad se ne upisuje (i nakon `memoryFill`).
 
-- `krug_membership.role = 'obicni'`, a vlasnik je u `krug_ownership`. Tablica nema stupac statusa: bivši član je izbrisan redak.
-  - Pravilo „još je član" = postoji redak u `krug_membership` i Krug nije obrisan (`deleted_at IS NULL`), isto kao `krug_is_member`.
-- Stanje u bazi: 2 obična člana u 2 Kruga, od kojih je samo 1 Krug aktivan. Za usporedbu: 30 punopravnih u 18 Krugova, a aktivna su 2 Kruga.
-- Ledger ima 6 redaka i nijedan ne uključuje običnog člana.
+## A) Obavijest bez privitka → racun
+- Paddle (≈30 stavki, extraction `racun`) nastaje u koraku 4 (AI put, 450–461): AI sam kaže `racun`, nema determinističke provjere. George/NetBanking nastaju kroz 3b (Erste OIB poznat). „Obavijest o primitku dokumenta" i Anthropic „paused" — AI kaže `racun`; Anthropic je sad već hvata Pravilo 3 (`bez_iznosa_i_broja`), ostali ne.
+- Predloženo pravilo „račun iz tijela maila" (samo `attachmentId === null`, bez UBL-a): da bi ostao `racun`, tijelo mora imati **iznos + barem jedan dokument-dokaz**: broj računa/narudžbe/rezervacije (`invoice_number`/„Receipt #", „Booking"), ILI naziv izdavatelja + datum + stavke/porez. Plus **veto fraze** obavijesti: „Transaction billed/created/completed", „Transakcija:", „NetBanking", „Obavijest o primitku dokumenta", „subscription … paused", „autorizacija", „rezervacija sredstava".
+- Kamo: obavijest o bankovnoj transakciji (George, NetBanking) → `nije_za_nas` s razlogom `obavijest_o_transakciji` (bankovni redak dolazi kroz sinkronizaciju/izvod; bez nove veze). Paddle „Transaction …" → `nije_za_nas` razlog `obavijest_platforme`. FINA „Obavijest o primitku" → `nije_za_nas` (e-Račun dolazi kao UBL zasebno).
+- Mjesto: novi čisti helper `_shared/mailImport/notificationSignals.ts`, poziv u `classify.ts` nakon 2c (izjava „nije račun"), prije 3b. Korisnikova klasifikacija jača.
+- Moraju ostati `racun`: Meta 40ba3a3e/88ffc86c, Bolt c5cfb45a, Airbnb bc4630e1.
 
-## 2. Ledger (RLS i živi podaci)
+## C) Izlazni račun kao ulazni (3179ac2e)
+- Stanje: `supplier_name = TACTURA j.d.o.o.`, `recipient_oib = 33941873288` (= vlastiti profil Tactura). `extractCustomer` pogrešno prepoznaje vlastiti OIB kao kupca, `resolveDestination` ga rutira u Tactura biznis; nigdje nema provjere „izdavatelj = mi". Stvarni OIB kupca (CINDORI) nisam potvrdio iz teksta — prvi korak gradnje je pročitati `extracted_text`.
+- Pravilo: ako naziv ili OIB izdavatelja (zaglavlje, „Izdavatelj/Prodavatelj", prvi OIB u zoni izdavatelja — kao `issuerZone` kod izvoda) odgovara vlastitom profilu → `classification: 'izlazni_racun'`, status `nije_za_nas` s razlogom `izlazni_racun`, nikad trošak. Mjesto: `classify.ts` prije 3b + `customerExtract.ts`.
 
-- Postojeća politika `ledger_select_full_member` ostaje.
-- Nova SELECT politika `ledger_select_own_party` s uvjetom: `krug_is_member(krug_id, auth.uid()) AND auth.uid() IN (from_user, to_user)`.
-  - Bivši član nema redak u `krug_membership`, pa ne vidi ništa.
-  - Nakon brisanja Kruga, `krug_is_member` za nevlasnika vraća false, pa ni tada ne vidi ništa.
-- Živi podaci: `LiveDataProvider` sluša `krug_settlement_ledger`. Realtime poštuje RLS, pa obični član dobiva događaje samo za retke koje smije vidjeti.
-  - Događaj ionako služi samo kao oznaka „prljavo", a podaci dolaze novim dohvatom. Izmjena klijenta ne treba.
-  - To se potvrđuje čuvarom (vidi točku 6).
+## D) Jedan mail → više stavki
+- Lovable (2e861444 + fadd844e, ista poruka): `receiptPairing` radi (`potvrda_uz_racun`, docType `potvrda_placanja`), ali potvrda ostaje zasebna stavka `racun / na_pregledu`; skriva je samo UI (`splitPairedReceipts`). Pravilo: uparena potvrda dobiva `classification: 'potvrda_placanja'`, status `povezan_uz_racun` (ili ostaje s `related_item_id`, ali se ne broji u red ni u značku).
+- Alfa lider (13 stavki, message 6ae4c01f, sve `ponuda`): petlja `for (const unit of units)` (index.ts 478–502) pravi stavku po privitku. Pravilo: nakon klasifikacije, ponude iste poruke s istim dobavljačem (OIB/naziv) i istim/praznim brojem ponude → jedna glavna stavka, ostali privici `related_item_id` (`prilog_uz_ponudu`). Računi s različitim brojevima ostaju zasebni (postojeći test „dva različita računa").
 
-## 3. `krug_settlement_preview` — samo moji parovi
+## Usput — confidence „niska"
+- Polje se upisuje (index.ts 822, 900), ali `lowerConfidence(result.confidence, forcedConfidence)` ga obara na `niska` kad `trustLevel` vrati T4 (`forcedConfidence: 'niska'`, upozorenje `posiljatelj_neprovjeren`) — što imaju sve provjerene stavke. Uz to 3b vraća `srednja`/`niska` neovisno o AI-ju. Nije kvar upisa; to je namjerno obaranje za neprovjerenog pošiljatelja. Prijedlog: ostaviti, ali UI i pravila ne smiju tumačiti `confidence` kao sigurnost klasifikacije — dodati zasebno `extraction.confidence` (AI) u prikaz. Odluka vlasnika.
 
-Problem: današnji odgovor otkriva sve.
-- `members[]` nosi plaćeno, dugovano i neto za svakog člana.
-- `transfers[]` je pohlepno zbirno netiranje: tko plaća kome ovisi o saldima svih, pa bi i „moji" prijenosi otkrivali tuđe neto iznose.
+## Ne smije se pokvariti
+Izvodi Erste/OTP/Revolut (veto izvoda ostaje prije svega), e-Računi s FINA-e (UBL put 1. korak, netaknut), HAC, Lovable račun (samo potvrda mijenja status), Meta receipt, Bolt, Airbnb, pravilo „dva različita računa = dvije stavke", Pravilo 2/3 i pamćenje odbijanja.
 
-Prijedlog:
-- Za punopravne i vlasnika funkcija ostaje doslovno ista, a zapisuje se od žive definicije.
-- Za običnog člana (član, ali ne punopravni) odgovor se reže na poslužitelju:
-  - `members[]` samo s njegovim retkom i bez zbrojeva Kruga;
-  - `transfers[]` iz **izravnih parova**: za svaki par (ja, X) neto = (što je X platio za mene) − (što sam ja platio za X). Svota se računa po trošku iz udjela, bez netiranja kroz treće;
-  - `settled_transfers[]` samo retci gdje je on `from_user` ili `to_user`;
-  - uklanjaju se zastavice koje otkrivaju tuđe stanje (`missing_income_data`) i zbirna polja. Tečaj iz `fx.rates_used` ostaje.
-- Zašto izravni parovi: iznos para ovisi samo o troškovima u kojima sam ja sudionik, pa se iz njega ne mogu izvesti tuđi saldi ni zbroj Kruga.
-  - Posljedica: zbroj mojih izravnih parova jednak je mom neto saldu, ali pojedini prijenos može se razlikovati od onoga što punopravni vidi u zbirnom netiranju. To se mora prihvatiti.
-  - Alternativa bi bila vratiti samo moj neto, bez druge strane, ali tada se ne zna kome platiti.
-- Kod opcije 1 izravni parovi su uvijek prazni.
+## Testovi (vitest, doslovni tekst iz stavki)
+Gradnja počinje izvlačenjem `extracted_text`/tijela za navedene id-eve u fixture datoteke (samo čitanje).
+- `mailNotificationVeto.test.ts`: Paddle ×3 vrste, George, NetBanking, Anthropic paused, FINA obavijest → nije_za_nas; Meta ×2, Bolt, Airbnb → racun.
+- `mailKnownOibNoOverride.test.ts`: tekst s vlastitim OIB-om ne pokreće 3b; AI `nije_za_nas`/`ponuda` preživi; supplier_oib nikad vlastiti (340f858b, cc7d46c6, 6d7b3dc4); pravi račun poznatog dobavljača (HAC, FINA račun) i dalje racun.
+- `mailOutgoingInvoice.test.ts`: 3179ac2e → izlazni; ulazni račun s našim OIB-om kao kupcem → ulazni.
+- `mailOneDocumentOneItem.test.ts`: Lovable par, Alfa lider 13 privitaka → 1 glavna; dva različita računa → 2.
+- Postojeći: `mailPaymentReceiptPairing`, `mailInvoiceSignalPriority`, `mailStatementIssuerZone`, `mailBulkSignals`, `mailEnrichmentTokens` moraju ostati zeleni.
 
-## 4. Podmirenje
+## Pravila gradnje (zasebni nalog)
+- Postojeće stavke se ne diraju i ne brišu.
+- Svaki pad klasifikacije → `app_diagnostics_logs` (code, message, build žig).
+- Samo `_shared/mailImport/*` + `mail-process/index.ts` + testovi; bez migracija (osim ako `izlazni_racun`/`povezan_uz_racun` traže novu vrijednost statusa — provjeriti CHECK prije). Deploy samo `mail-process` na izričit nalog.
+- Izvještaj: dirnute datoteke i što nije dirano.
 
-Što RPC-ovi danas provjeravaju:
-- `krug_mark_settled_with_source`: da je pozivatelj punopravni član, da je pozivatelj dužnik (`only_debtor_can_settle`) i da su obje strane punopravni članovi. Obični član danas ne smije podmiriti.
-- `krug_confirm_settlement_receipt`: samo da je pozivatelj primatelj (`only_recipient_can_confirm`), bez provjere članstva. Sada to nije rupa, jer redak nastaje samo između punopravnih članova.
-
-Prijedlog (vrijedi uz opciju 3):
-- `mark_settled`: umjesto „punopravni član" traži se „član Kruga", a dužnik i dalje mora biti sam pozivatelj. Druga strana mora biti član Kruga.
-- `confirm_receipt`: dodaje se provjera `krug_is_member` za primatelja, jer bivši član ne smije potvrditi.
-- Ostala pravila ostaju ista: idempotentnost, izvor, valuta, obavijest kroz outbox.
-
-## 5. Ekran
-
-- `KrugSettlementSection` danas vraća `null` za običnog člana (`if (!isFullMember) return null`).
-- Obični član će vidjeti:
-  - „Duguješ" i „Duguju tebi", po osobi;
-  - gumb „Podmiri" samo na svom dugu;
-  - povijest samo s podmirenjima u kojima je on strana, s potvrdom primitka kad je on primatelj;
-  - tekst „Prikazuju se samo tvoji odnosi u Krugu".
-- Skriva se:
-  - popis svih članova sa saldima;
-  - tuđi prijenosi;
-  - zbrojevi Kruga;
-  - zamrzavanje tečaja (snapshot);
-  - izvoz podmirenja (`excelWorkbook`/`exportRegistry` ostaju samo za punopravne).
-- Prijevodi na hr/en/de.
-
-## 6. Nalozi, migracije i testovi
-
-| Nalog | Sadržaj | Migracija |
-|---|---|---|
-| 1 | RLS politika na ledgeru + rezani preview za običnog člana + SQL čuvari | da (1) |
-| 2 | Ekran „samo svoje" + povijest + vitest | ne |
-| 3 (samo opcija 3) | Obični član u override udjelima + `mark_settled`/`confirm` za članove | da (1) |
-
-SQL paket `krug_member_view` (čuvari):
-- obični član vidi u ledgeru samo retke gdje je strana, a tuđe ne vidi (A↔B, gdje on nije ni A ni B);
-- bivši član (izbrisan redak) i član obrisanog Kruga vide 0 redaka;
-- preview za običnog člana ne sadrži tuđe `user_id` u `members[]`, tuđe parove u `transfers[]`/`settled_transfers[]` ni zbirna polja;
-- iz dvaju različitih stanja Kruga s istim troškovima običnog člana dobiva se identičan odgovor (dokaz da se tuđe ne može izvesti);
-- preview za punopravnog člana nakon migracije je bit-identičan kao prije (regresija);
-- realtime: obični član ima SELECT samo na svoje retke. Provjera ide kroz `SET ROLE authenticated` + `request.jwt.claims`, jer realtime koristi RLS;
-- (nalog 3) obični član podmiruje svoj dug; ne smije podmiriti tuđi; bivši član ne smije potvrditi primitak.
-
-Zeleni moraju ostati: krug_settle, krug_shared_amount, krug_notify_outbox, worker_payout_* i balance.
-
-vitest:
-- ekran običnog člana ne prikazuje tuđe osobe ni zbrojeve;
-- „Podmiri" postoji samo na vlastitom dugu;
-- povijest je filtrirana;
-- punopravni član vidi isto kao danas.
-
-## Tehnički detalji
-
-- `krug_settlement_preview` i RPC-ovi za podmirenje pišu se od `pg_get_functiondef`. Isti potpis, prava i REVOKE ostaju.
-- Nova politika je dodatna (OR s postojećom). `krug_is_member` je SECURITY DEFINER, pa nema rekurzije.
-- Saldo i motor salda se ne diraju. Podmirenje i dalje knjiži samo dužnik (`expense_nature='krug_settlement'`).
-
-## Otvoreno pitanje za vlasnika
-
-Opcija 1, 2 ili 3? Bez te odluke nalog 1 daje ekran koji je za obične članove uvijek prazan.
+## Otvoreno
+1. Paddle obavijesti: `nije_za_nas` ili zadržati kao dokaz uplate uz bankovni redak? (Prijedlog: nije_za_nas.)
+2. Confidence: ostaviti obaranje za T4 ili prikazivati AI sigurnost?
