@@ -6078,7 +6078,15 @@
           "missingIncome": "Nedostaju omjeri prihoda — korišteni jednaki udjeli."
         }
       },
-      "transactionDescription": "Podmirenje duga — {{name}}"
+      "transactionDescription": "Podmirenje duga — {{name}}",
+      "ownParty": {
+        "notice": "Prikazuju se samo tvoji odnosi u Krugu.",
+        "empty": "Nemaš otvorenih odnosa u ovom Krugu.",
+        "iOwe": "Duguješ",
+        "owedToMe": "Duguju tebi",
+        "paidTo": "Platio si: {{name}}",
+        "receivedFrom": "Primio si od: {{name}}"
+      }
     },
     "settle": {
       "error": {

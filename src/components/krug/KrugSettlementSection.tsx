@@ -70,7 +70,7 @@ export function KrugSettlementSection({
   });
   const ownParty = isOwnPartyView(data);
   const showFullView = isFullMember && !ownParty;
-  const { data: krugDetail } = useKrug(krugId, { enabled: showFullView });
+  const { data: krugDetail } = useKrug(krugId);
 
 
   const memberIds = useMemo(

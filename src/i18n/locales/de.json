@@ -6066,7 +6066,15 @@
           "missingIncome": "Einkommensverhältnisse fehlen — gleiche Anteile verwendet."
         }
       },
-      "transactionDescription": "Schuldenausgleich — {{name}}"
+      "transactionDescription": "Schuldenausgleich — {{name}}",
+      "ownParty": {
+        "notice": "Es werden nur deine eigenen Beziehungen im Krug angezeigt.",
+        "empty": "Du hast keine offenen Beziehungen in diesem Krug.",
+        "iOwe": "Du schuldest",
+        "owedToMe": "Dir geschuldet",
+        "paidTo": "Du hast bezahlt: {{name}}",
+        "receivedFrom": "Du hast erhalten von: {{name}}"
+      }
     },
     "settle": {
       "error": {

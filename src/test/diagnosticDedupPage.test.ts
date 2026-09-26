@@ -4,6 +4,9 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+// Global setup mocks the logger so tests never write to production; this file tests the real one.
+vi.unmock('@/lib/diagnosticLogger');
+
 const inserted: any[][] = [];
 
 vi.mock('@/integrations/supabase/client', () => ({
