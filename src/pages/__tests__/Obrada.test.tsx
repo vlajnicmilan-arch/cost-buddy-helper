@@ -51,9 +51,9 @@ vi.mock('@/components/TransactionListDialog', () => ({
 
 import Obrada from '../Obrada';
 
-const renderPage = () =>
+const renderPage = (initialEntry = '/obrada') =>
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <Obrada />
     </MemoryRouter>,
   );
