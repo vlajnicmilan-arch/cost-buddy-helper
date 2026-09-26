@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useBudgets } from '@/hooks/useBudgets';
 import { useRecurringTransactions } from '@/hooks/useRecurringTransactions';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { useWalletViewMode } from '@/contexts/WalletViewModeContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { Button } from '@/components/ui/button';
@@ -16,11 +17,12 @@ import {
   monthSummary,
   overBudgetItems,
   recurringMerchants,
+  type GrowthLabel,
   type ObradaRow,
 } from '@/lib/obrada/monthlyReview';
 import { logObradaError } from '@/lib/obrada/obradaError';
 import { buildLoanSummary, monthRange, sumTaggedSpend } from '@/lib/expenseMarkers';
-import { matchesCategoryFilter } from '@/lib/categoryGroupMatch';
+import { customIdsInGroup, matchesCategoryFilter, parseGroupLimitKey } from '@/lib/categoryGroupMatch';
 import { isRealSpend } from '@/lib/spendClassification';
 import { normalizeMerchant } from '@/lib/duplicateDetection';
 import type { Expense } from '@/types/expense';
@@ -43,6 +45,7 @@ const Obrada = () => {
   const { budgets } = useBudgets({ externalExpenses: expenses });
   const { recurringTransactions } = useRecurringTransactions();
   const { formatAmount } = useCurrency();
+  const { customCategories } = useCustomCategories();
 
   const [month, setMonth] = useState(() => new Date());
   const [list, setList] = useState<ListState | null>(null);
@@ -54,11 +57,11 @@ const Obrada = () => {
       const range = monthRange(month);
       return {
         summary: monthSummary(rows, month),
-        growth: growthByGroup(rows, month),
+        growth: growthByGroup(rows, month, customCategories),
         recurring: recurringMerchants(rows, month, recurringTransactions),
         unnecessary: sumTaggedSpend(rows, 'unnecessary', range),
         luxury: sumTaggedSpend(rows, 'luxury', range),
-        overBudget: overBudgetItems(budgets),
+        overBudget: overBudgetItems(budgets, customCategories),
         loans: buildLoanSummary(rows),
       };
     } catch (err) {
@@ -66,7 +69,7 @@ const Obrada = () => {
       return null;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expenses, budgets, recurringTransactions, month]);
+  }, [expenses, budgets, recurringTransactions, customCategories, month]);
 
   if (isBusinessView) {
     return (
@@ -87,13 +90,15 @@ const Obrada = () => {
     year: 'numeric',
   }).format(month);
 
-  const openGroupList = (groupKey: string, label: string) => {
+  const openGroupList = (filter: string, label: string) => {
     const key = monthKeyOf(month);
+    const group = parseGroupLimitKey(filter);
+    const customsInGroup = group ? customIdsInGroup(group, customCategories) : [];
     const filtered = expenses.filter(
       (e) =>
         isRealSpend(e) &&
         !isDeleted(e) &&
-        matchesCategoryFilter(e.category, `group:${groupKey}`) &&
+        matchesCategoryFilter(e.category, filter, customsInGroup) &&
         `${e.date.getFullYear()}-${String(e.date.getMonth() + 1).padStart(2, '0')}` === key,
     );
     setList({
@@ -122,7 +127,7 @@ const Obrada = () => {
     });
   };
 
-  const label = (key: string) => (key.includes('.') ? t(key) : key);
+  const label = (l: GrowthLabel): string => l.customName ?? (l.labelKey ? t(l.labelKey) : '');
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col gap-3 px-4 pt-4">
@@ -165,9 +170,9 @@ const Obrada = () => {
                     <button
                       type="button"
                       className="flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg px-2 text-left"
-                      onClick={() => openGroupList(g.key, label(g.labelKey))}
+                      onClick={() => openGroupList(g.filter, label(g))}
                     >
-                      <span className="truncate text-sm">{label(g.labelKey)}</span>
+                      <span className="truncate text-sm">{label(g)}</span>
                       <span className="shrink-0 text-sm font-medium">
                         {formatAmount(g.current)}{' '}
                         <span className="text-xs text-muted-foreground">
@@ -179,7 +184,7 @@ const Obrada = () => {
                       <ul className="ml-4 flex flex-col">
                         {g.categories.map((c) => (
                           <li key={c.key} className="flex items-center justify-between gap-2 px-2 py-1 text-xs text-muted-foreground">
-                            <span className="truncate">{label(c.labelKey)}</span>
+                            <span className="truncate">{label(c)}</span>
                             <span className="shrink-0">{formatAmount(c.current)}</span>
                           </li>
                         ))}
@@ -243,7 +248,7 @@ const Obrada = () => {
                 {data.overBudget.map((o) => (
                   <li key={`${o.budgetId}-${o.categoryKey}`} className="flex items-center justify-between gap-2 px-2 py-2">
                     <span className="min-w-0 truncate text-sm">
-                      {label(o.labelKey)} <span className="text-xs text-muted-foreground">({o.budgetName})</span>
+                      {label(o)} <span className="text-xs text-muted-foreground">({o.budgetName})</span>
                     </span>
                     <span className="shrink-0 text-sm font-medium text-destructive">
                       +{formatAmount(o.overBy)}
