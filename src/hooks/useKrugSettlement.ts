@@ -23,6 +23,15 @@ export interface SettlementTransfer {
   currency: string;
 }
 
+export interface SettledTransfer {
+  ledger_id: string;
+  from_user: string;
+  to_user: string;
+  amount: number;
+  currency: string;
+  marked_at: string;
+}
+
 export interface SettlementPreview {
   krug_id: string;
   period_start: string;
@@ -31,6 +40,7 @@ export interface SettlementPreview {
   split_mode: 'equal' | 'proportional_income' | 'manual';
   members: SettlementMember[];
   transfers: SettlementTransfer[];
+  settled_transfers?: SettledTransfer[];
   fx: {
     rates_used: Record<string, number | null>;
     snapshot_date: string;
@@ -41,6 +51,8 @@ export interface SettlementPreview {
     manual_mode_fallback_equal: boolean;
     mixed_currencies: boolean;
     no_members?: boolean;
+    /** Set by the server for a regular member: only the caller's own pairs. */
+    own_party_view?: boolean;
   };
 }
 

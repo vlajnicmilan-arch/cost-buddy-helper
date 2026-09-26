@@ -4,6 +4,7 @@
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/../../.." && pwd)"
+psql -v ON_ERROR_STOP=1 -q -f "$ROOT/supabase/tests/_roles.sql"
 B="$ROOT/supabase/tests/balance"
 psql -v ON_ERROR_STOP=1 -q -f "$B/bootstrap.sql" >/dev/null
 psql -v ON_ERROR_STOP=1 -q -f "$B/baseline.sql" >/dev/null

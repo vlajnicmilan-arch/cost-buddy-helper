@@ -6066,7 +6066,15 @@
           "missingIncome": "Missing income ratios — equal shares used."
         }
       },
-      "transactionDescription": "Debt settlement — {{name}}"
+      "transactionDescription": "Debt settlement — {{name}}",
+      "ownParty": {
+        "notice": "Only your own relations in this Krug are shown.",
+        "empty": "You have no open relations in this Krug.",
+        "iOwe": "You owe",
+        "owedToMe": "Owed to you",
+        "paidTo": "You paid: {{name}}",
+        "receivedFrom": "You received from: {{name}}"
+      }
     },
     "settle": {
       "error": {

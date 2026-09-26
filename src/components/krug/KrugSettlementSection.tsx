@@ -19,12 +19,16 @@ import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { KrugSettlementSettings } from './KrugSettlementSettings';
 import { KrugSettleTransferDialog } from './KrugSettleTransferDialog';
 import { KrugSettlementHistory } from './KrugSettlementHistory';
+import { KrugOwnPartySettlement } from './KrugOwnPartySettlement';
+import { isOwnPartyView } from '@/lib/krugOwnParty';
 
 
 
 interface Props {
   krugId: string;
   isFullMember: boolean;
+  /** Any current member (incl. regular). The server decides what the preview contains. */
+  isMember?: boolean;
   isOwner?: boolean;
   /** Arhivirani Krug: povijest se čita, akcije pisanja se ne prikazuju. */
   readOnly?: boolean;
@@ -40,6 +44,7 @@ const fmt = (n: number, currency: string) =>
 export function KrugSettlementSection({
   krugId,
   isFullMember,
+  isMember = false,
   isOwner = false,
   readOnly = false,
   focusSettlementId = null,
@@ -61,8 +66,10 @@ export function KrugSettlementSection({
     krugId,
     periodStart: range.start,
     periodEnd: range.end,
-    enabled: isFullMember,
+    enabled: isFullMember || isMember,
   });
+  const ownParty = isOwnPartyView(data);
+  const showFullView = isFullMember && !ownParty;
   const { data: krugDetail } = useKrug(krugId);
 
 
@@ -191,7 +198,9 @@ export function KrugSettlementSection({
     }
   }, [data, exporting, qc, krugId, range.start, range.end, krugDetail, i18n.language, nameFor, t]);
 
-  if (!isFullMember) return null;
+  if (!isFullMember && !isMember) return null;
+  // Former/non-member: the server rejects the preview, nothing is shown.
+  if (!isFullMember && isError) return null;
 
   const periodLabel = new Intl.DateTimeFormat(i18n.language, { month: 'long', year: 'numeric' }).format(
     new Date(range.start + 'T00:00:00Z'),
@@ -207,6 +216,7 @@ export function KrugSettlementSection({
           {t('krug.settlement.title', 'Razračun')}
         </h3>
         <div className="flex items-center gap-1">
+          {showFullView && (
           <Button
             size="icon"
             variant="ghost"
@@ -218,7 +228,8 @@ export function KrugSettlementSection({
           >
             {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
           </Button>
-          {isOwner && (
+          )}
+          {isOwner && showFullView && (
             <Button
               size="icon"
               variant="ghost"
@@ -268,7 +279,18 @@ export function KrugSettlementSection({
         </Card>
       )}
 
-      {data && !isLoading && (
+      {data && !isLoading && ownParty && user && (
+        <KrugOwnPartySettlement
+          krugId={krugId}
+          data={data}
+          userId={user.id}
+          readOnly={readOnly}
+          focusSettlementId={focusSettlementId}
+          focusConfirmReceipt={focusConfirmReceipt}
+        />
+      )}
+
+      {data && !isLoading && showFullView && (
         <>
           {/* Info banner */}
           <div className="flex flex-wrap gap-1.5 text-[11px]">
@@ -404,16 +426,18 @@ export function KrugSettlementSection({
         </>
       )}
 
-      {isOwner && (
+      {isOwner && showFullView && (
         <KrugSettlementSettings krugId={krugId} open={settingsOpen} onOpenChange={setSettingsOpen} />
       )}
 
+      {showFullView && (
       <KrugSettleTransferDialog
         krugId={krugId}
         open={!!settleTransfer}
         onOpenChange={(v) => { if (!v) setSettleTransfer(null); }}
         transfer={settleTransfer}
       />
+      )}
     </section>
   );
 

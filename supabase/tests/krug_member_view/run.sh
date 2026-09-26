@@ -5,6 +5,7 @@
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/../../.." && pwd)"
+psql -v ON_ERROR_STOP=1 -q -f "$ROOT/supabase/tests/_roles.sql"
 KSA="$ROOT/supabase/tests/krug_shared_amount"
 for f in baseline live_before grants; do psql -v ON_ERROR_STOP=1 -q -f "$KSA/$f.sql"; done
 psql -v ON_ERROR_STOP=1 -q -f "$ROOT/drizzle/migrations/0029_krug_split_shared_amount.sql" >/dev/null

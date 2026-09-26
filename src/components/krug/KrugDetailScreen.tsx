@@ -420,6 +420,7 @@ export function KrugDetailScreen({
       <KrugSettlementSection
         krugId={krugId}
         isFullMember={!!isFullMember}
+        isMember={!!isFullMember || !!detail?.myMembership}
         isOwner={isOwner && !isArchived}
         readOnly={isArchived}
         focusSettlementId={focusSettlementId}

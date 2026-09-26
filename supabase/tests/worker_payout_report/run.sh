@@ -5,6 +5,7 @@
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/../../.." && pwd)"
+psql -v ON_ERROR_STOP=1 -q -f "$ROOT/supabase/tests/_roles.sql"
 M="$ROOT/drizzle/migrations"
 psql -v ON_ERROR_STOP=1 -q -f "$ROOT/supabase/tests/worker_payout_notify/baseline.sql"
 for f in 0020_krug_notify_outbox_table 0021_krug_notify_outbox_mark_delivered 0023_krug_outbox_privileges 0025_worker_payout_notify_outbox_real; do
