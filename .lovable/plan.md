@@ -1,67 +1,50 @@
-# Program Temelj, korak 3, nalog 4: red „Na pregled" za neodlučive retke sinkronizacije (samo plan)
+# Program Temelj, korak 4: Obrada — „Mjesečni pogled: gdje curi" (samo plan)
 
-## 1. Odluke koje sync danas donosi „na slijepo"
+## 1. Što već postoji
 
-Provjereno u `_shared/bankSyncDecision.ts`, `_shared/bankSyncSameExpense.ts` i `bank-sync-transactions/index.ts`:
+| Dio priče | Postoji | Napomena |
+|---|---|---|
+| Stvarni prihod/potrošnja (isRealSpend/isRealIncome) | Da — `spendClassification.ts` (zrcalo _shared ↔ src) | Izravno se koristi |
+| „Nepotrebno" / „Luksuz" za razdoblje | Da — `MarkersOverview` (`sumTaggedSpend`) | Preuzeti komponentu/račun |
+| Budžeti po skupini + izvan budžeta | Da — `useBudgets`, `categoryGroupMatch.ts`, budžet upozorenja | Izvan budžeta već postoji kao signal; treba sažetak po skupini |
+| Pregled kategorija / izvješća | Da — ReportsDialog, ItemsAnalysisTab | Izvor podataka, ne i gotov „rast" |
+| Ponavljajući troškovi | Djelomično — `recurring_transactions`, `useRecurringMatcher`, merchantKey u uvozu | Nema gotovog „mali ponavljajući zbrojeni"; graditi novo, bez AI-ja |
+| Pozajmice | Djelomično — `useLoanDetection`, `business_debts` (poslovni) | Osobne pozajmice: provjeriti obuhvat prije gradnje; prva verzija čita što već postoji |
+| „Gdje curi" (rast vs prosjek, jedan ekran) | Ne | Novo |
 
-| Grana | Što se danas dešava |
-|---|---|
-| Dva ili više ručna kandidata za „isti trošak" (pravilo vrati `ambiguous`) | Redak se upisuje kao NOVI redak (duplikat ručnog) — stara logika; jezgra u sjeni to bilježi kao `same_expense_undecided` |
-| Pravilo kaže `uncertain` (nesigurno podudaranje) | Isto: novi redak |
-| Pravilo `match`, ali postoji i kandidat-prijenos (`rule_match_and_transfer_candidate`) | Ne spaja ništa; upisuje novi redak |
-| Kandidat već spojen u ovom pokretanju (`candidate_already_used_in_run`) | Novi redak |
-| Samo kandidat-prijenos, bez pravila (`pickMergeTarget` put) | Automatski spaja kao prijenos — bez potvrde korisnika |
-| Kartica ne pripada izvoru (`card_source_mismatch`), rezervacija, nedostaje iznos/datum | Preskakanje (to je ispravno, ne dirati) |
+## 2. Pravila računanja (sve kroz isRealSpend/isRealIncome)
 
-Ključni nalaz: kad je neodlučno, sync danas **upisuje novi redak** (duplikat), a ne pogađa spajanje. Rizik je dvostruki trošak u knjigama, ne krivo spajanje — osim grane prijenosa, koja spaja automatski.
+- **Ulaz/izlaz/ostalo:** zbroj isRealIncome, zbroj isRealSpend, razlika — za odabrani mjesec, samo aktivni (deleted_at null) retci.
+- **Rast u odnosu na prosjek:** za skupinu (i kategoriju) S = potrošnja ovog mjeseca, P = prosjek zadnja 3 puna mjeseca. Prikazati samo ako: P > 0, S > P × 1.25 (rast ≥ 25%) I (S − P) ≥ 20 € (prag da se ne javlja šum sitnih kategorija). Oba praga kao konstante u jednom pomocu, testirane.
+- **Ponavljajući mali troškovi (bez AI-ja):** grupiraj po normaliziranom trgovcu — `counterparty_name` (snapshot na expenses) odnosno merchantKey pravilo iz uvoza (`normalizeMerchant`), fallback na normalizirani opis. „Ponavljajući" = isti ključ u ≥ 3 od zadnja 4 mjeseca, s ≥ 2 zapisa po mjesecu ili stabilnim iznosom (odstupanje ≤ 20%). Prikaz: zbroj ovog mjeseca i godišnja projekcija (mjesečni prosjek × 12). Pretplate iz `recurring_transactions` prikazati u istoj sekciji, označene kao poznate pretplate (ne duplicirati: ako je trgovac već pretplata, jedan redak).
+- **Nepotrebno/Luksuz:** postojeći `sumTaggedSpend` za mjesec.
+- **Izvan budžeta:** postojeći budžet limiti po skupini (`group:<key>`), stupanj iskorištenja > 100%.
+- **Pozajmice:** prva verzija prikazuje ono što već postoji (otvorene pozajmice iz postojeće logike); ako osobne pozajmice nemaju pouzdan izvor, sekcija se ne prikazuje — bez nagađanja.
 
-**Učestalost u zadnjih 60 dana (upit na `app_diagnostics_logs`):** 6 zapisa `bank_sync_core_shadow`, od toga 0 s neodlučnim retcima (`same_expense_undecided_total = 0` svugdje). Uzorka je premalo za pouzdanu procjenu — sinkronizacija se u tom razdoblju malo pokretala ili bez neodlučnih redaka. Plan zato ne ovisi o brojkama; sjena ostaje izvor dokaza za nalog 3.
+## 3. Gdje živi
 
-## 2. Postojeći ekran za pregled
+**Nova stranica `/obrada` (radni naziv „Mjesečni pogled"), mobilni prikaz prvi (384px), lazy-loaded ruta.** Ne kartica na Početnoj: Početna već nosi saldo i uvide; Obrada je namjerni „kraj mjeseca" pogled s vlastitim ulazom (Početna dobiva samo karticu-poziv „Pogledaj mjesec" koja vodi na stranicu). Ne dio ReportsDialoga: dijalog je alat za tablice/izvoz, Obrada je priča u jednom ekranu.
 
-Postoji `ImportReview` (uvoz PDF/izvoda): reducer u `src/lib/importReview/` s klasifikacijama `auto_merge` / `question` / `new` / `transfer`, blokirajuća pitanja, „Razdvoji", „Bez objašnjenja", izvršenje kroz `executor.ts`. To je upravo obrazac koji treba — ali radi nad redcima uvoza (payload u memoriji + `imported_statements`), ne nad sinkronizacijom.
+Struktura ekrana (sekcije, svaka sklopiva): Sažetak (ušlo/izašlo/ostalo) → Gdje curi (rastuće skupine) → Ponavljajući → Nepotrebno/Luksuz → Izvan budžeta → Pozajmice.
 
-**Prijedlog: iskoristiti obrazac i komponente ImportReview-a, ne pisati novi ekran.** Red „Na pregled" za sync je nova izvorna vrsta u istom pregledu (ili isti ekran s drugim izvorom redaka), ne zaseban ekran.
+## 4. Performanse
 
-## 3. Kako redak čeka pregled
+- Milan: 2.412 zapisa ukupno, 2.096 aktivnih, ~2.400 u 12 mjeseci — mali obujam.
+- **Zbrojevi na klijentu**, nad već učitanim troškovima (isti dohvat koji hrani izvješća; po potrebi proširiti na 4 mjeseca unatrag — jedan upit, indeks po (user_id, date) već postoji). Bez nove SQL funkcije: sva pravila su čisti helperi u `src/lib/obrada/` (testabilni, bez Reacta), analogno `importReview/state.ts`.
+- Rizik rasta obujma: ako netko prijeđe ~20 tisuća redaka, prelazak na SQL funkciju je kasniji nalog — helperi su već odvojeni pa se izvor podataka lako zamjenjuje.
 
-**Preporuka: zasebna tablica `bank_sync_review_queue`, NE redak u `expenses`.**
+## 5. Poslovni i projektni način
 
-- Redak u `expenses` sa statusom „na pregledu" zahtijevao bi da SVI upiti salda, sidara, izvješća i budžeta znaju za novi status — prevelik rizik za saldo (balance deploy gate). U zasebnoj tablici redak fizički ne postoji u knjigama dok se ne odluči: saldo i sidra se ne miču, RLS je trivijalan (`user_id = auth.uid()`, kao `imported_statements`).
-- Stupci: id, user_id, bank_account_id, stable_id, raw payload (bez osjetljivog viška), razlog (`ambiguous` / `uncertain` / `rule_and_transfer` / `transfer_only`), kandidati (jsonb, id-evi), status (pending/decided/dismissed), odluka, created_at, decided_at.
-- Migracija additivna: CREATE TABLE + GRANT authenticated + RLS (samo vlasnik) + service_role. Bez diranja `expenses`, sidara, trigera.
+**Samo osobni u prvoj verziji.** Poslovni način ima vlastita izvješća i P&L; miješanje bi zamutilo pravila (projekti, faze, PDV). Stranica se u poslovnom načinu ne nudi. Kasniji nalog po potrebi.
 
-## 4. Odluke na ekranu
+## 6. Testovi, nalozi, rizici
 
-Po retku: **Spoji s A / Spoji s B** (kandidati iz reda) · **Novi redak** · **Prijenos** (s ciljem) · **Preskoči** (ne uvozi).
-
-- Svaka odluka ide kroz postojeće RPC-ove: spajanje kroz isti merge put kao ImportReview/`manualBankMergePair`, novi redak kroz standardni upis, prijenos kroz postojeći transfer put, preskoči = oznaka u redu (dismissed).
-- Jezgra `moneyLedgerPlan`: odluke se prevode u planove jezgre (merge/insert/transfer) — ista pravila kao uvoz. Trag: `app_diagnostics_logs` event `bank_sync_review_decision` (razlog, vrsta odluke, stable_id; bez iznosa i opisa).
-- Idempotentnost: stable_id je jedinstven po (user, bank_account) u redu; odluka dva puta = drugi put vraća već odlučeno.
-
-## 5. Veza s nalogom 3 (prespajanje synca na jezgru)
-
-**Može prije, i to je preporuka.** Red na pregled je neovisan o tome tko odlučuje:
-
-- Faza 4a (ovaj nalog): stara logika (`chooseSyncMerge`) tamo gdje danas „na slijepo" upisuje novi redak zbog neodlučnosti → umjesto toga upis u red na pregled. Sync ostaje na staroj logici; jedina promjena ponašanja: neodlučni redak više ne stvara duplikat, nego čeka.
-- Faza 4b (nalog 3): kad sjena dokaže podudarnost, sync se prespaja na jezgru; jezgra tada sama puni isti red. Red i ekran se ne mijenjaju.
-
-Time red na pregled čak pomaže nalogu 3: razlika stare logike i jezgre vidljiva je upravo na redovima u redu.
-
-## 6. Migracije, testovi, nalozi, rizici
-
-- **Migracije:** 1 (nova tablica + RLS + GRANT). Bez promjena na `expenses`, sidrima, trigermima.
-- **Testovi:**
-  - SQL čuvari (novi paket `bank_sync_review`): RLS (tuđi red nevidljiv), jedinstvenost stable_id, odluka dvaput, dismissed se ne uvozi.
-  - vitest: granje neodlučnosti → red (bez novog retka u expenses), ekran (4 odluke), prijevodi hr/en/de.
-  - **Balance deploy gate obavezan** (tablica ne dira saldo, ali gate se vozi kao regresija): cilj 144 PASS / 0 FAIL.
-- **Nalozi:** 2 — (4a) red + grana u syncu + ekran; (4b, uz nalog 3) jezgra puni red.
-- **Rizici:**
-  - Saldo: minimalan — redak na pregledu ne postoji u `expenses`.
-  - Regresija ponašanja: korisnik koji danas dobije duplikat sutra dobije redak na pregledu — namjerna promjena, naglasiti u priopćenju.
-  - Prijenosna grana (`transfer_only`) danas spaja automatski; ako i nju premjestimo u red, mijenja se postojeće ponašanje — **otvoreno pitanje**: prijenos ostaviti automatskim (kao danas) ili i njega slati na pregled? Preporuka: ostaviti automatskim u 4a, pregled samo za neodlučive.
+- **Testovi (vitest, pravi oblik podataka):** helperi s redcima kakve vraća baza (type, expense_nature, deleted_at, counterparty_name, currency): isRealSpend filtriranje; pragovi rasta (25% + 20 €, rubni slučajevi: P=0, točno na pragu); ponavljajući (3/4 mjeseca, odstupanje iznosa, dedup s pretplatama); zbrojevi mjeseca; prazno stanje. Postojeći `spendClassification.test.ts` ostaje zelen.
+- **Migracije:** nijedna.
+- **Nalozi:** 2 — (1) helperi + stranica + ulaz s Početne + prijevodi hr/en/de; (2) sekcija pozajmica ako izvor bude pouzdan, inače izostaje.
+- **Rizici:** lažni „rast" kod neredovitih kategorija (ublaženo dvostrukim pragom); trgovac bez counterparty_name na starim ručnim unosima (fallback na opis, prihvatiti nepotpunost); brojke se moraju poklapati s izvješćima — isti isRealSpend izvor to jamči.
 
 ## Otvorena pitanja za vlasnika
 
-1. Prijenos bez pravila: automatski (kao danas) ili na pregled?
-2. Red na pregled vidljiv i u ImportReview ekranu ili samo obavijest + zaseban ulaz?
+1. Pragovi rasta (25% i 20 €) — prihvatljivi za prvu verziju?
+2. Sekcija pozajmica: prikazati samo ako postoji pouzdan izvor, ili izostaviti do posebnog naloga?
