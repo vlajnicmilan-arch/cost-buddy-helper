@@ -194,7 +194,12 @@ export function useKrugVoidSettlement(krugId: string) {
       qc.invalidateQueries({ queryKey: ['krug', 'settlement', krugId] });
       qc.invalidateQueries({ queryKey: ['krug', 'ledger', krugId] });
     },
-    onError: (err) => reportError(err, 'krug.settle.error.generic', 'Nije moguće poništiti.'),
+    onError: (err: any, vars) => {
+      logSettleError(err, 'krug_void_settlement', {
+        krug_id: krugId, ledger_id: vars?.ledgerId ?? null, source_id: null, client_request_id: null,
+      });
+      reportError(err, 'krug.settle.error.generic', 'Nije moguće poništiti.');
+    },
   });
 }
 

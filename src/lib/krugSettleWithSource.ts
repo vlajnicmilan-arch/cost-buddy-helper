@@ -75,6 +75,8 @@ export const KRUG_SETTLE_ERROR_CODES = [
   'not_full_member',
   'from_equals_to',
   'party_not_full_member',
+  'party_not_member',
+  'not_member',
   'invalid_amount',
   'invalid_currency',
   'already_voided',
