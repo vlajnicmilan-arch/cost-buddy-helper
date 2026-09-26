@@ -1,6 +1,8 @@
 import { useState, useMemo, useCallback } from 'react';
 import { resolvePeriodRange, type PeriodPreset as SharedPeriodPreset } from '@/lib/periodPresets';
 
+import { useNavigate } from 'react-router-dom';
+
 import {
   Dialog,
   DialogContent,
@@ -39,6 +41,7 @@ import {
   FileSpreadsheet,
   FileJson,
   Calendar,
+  CalendarDays,
   TrendingUp,
   TrendingDown,
   Wallet,
@@ -85,6 +88,8 @@ interface ReportsDialogProps {
   triggerClassName?: string;
   /** Optional label override for the trigger button (defaults to shared `bulk.reports`). */
   triggerLabel?: string;
+  /** Kartica „Mjesečni pogled" na vrhu izvješća — samo u osobnom načinu. */
+  showMonthlyReview?: boolean;
 }
 
 type PeriodPreset = SharedPeriodPreset;
@@ -178,9 +183,10 @@ const calculateStats = (expenseList: Expense[]) => {
   };
 };
 
-export const ReportsDialog = ({ expenses, triggerClassName, triggerLabel }: ReportsDialogProps) => {
+export const ReportsDialog = ({ expenses, triggerClassName, triggerLabel, showMonthlyReview }: ReportsDialogProps) => {
   const { t } = useTranslation();
   const { hasAccess } = useFeatureAccess();
+  const navigate = useNavigate();
   // Paywall skok smije se dogoditi TEK kad je pretplata stvarno provjerena.
   // Prije toga `hasAccess('reports')` je lažno `false` (prazni entitlementi).
   const { subscriptionReady } = useSubscription();
@@ -230,6 +236,25 @@ export const ReportsDialog = ({ expenses, triggerClassName, triggerLabel }: Repo
       }),
     [periodPreset, customStart, customEnd, expenses],
   );
+
+  // Mjesec za karticu „Mjesečni pogled": mjesec odabran u izvješću; kad
+  // razdoblje ne određuje jedan mjesec (godina, sve, prazno prilagođeno) → tekući.
+  const monthlyReviewMonth = useMemo(() => {
+    const now = new Date();
+    if (periodPreset === 'last-month') return new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    if (periodPreset === 'custom' && customStart) {
+      const [y, m] = customStart.split('-').map(Number);
+      if (y && m) return new Date(y, m - 1, 1);
+    }
+    return now;
+  }, [periodPreset, customStart]);
+
+  const openMonthlyReview = () => {
+    const key = `${monthlyReviewMonth.getFullYear()}-${String(monthlyReviewMonth.getMonth() + 1).padStart(2, '0')}`;
+    setOpen(false);
+    navigate(`/obrada?m=${key}`);
+  };
+
 
 
   // Comparison date ranges
@@ -668,6 +693,18 @@ export const ReportsDialog = ({ expenses, triggerClassName, triggerLabel }: Repo
             {t('reports.financialReport', 'Financijsko izvješće')}
           </DialogTitle>
         </DialogHeader>
+
+        {showMonthlyReview && (
+          <button
+            type="button"
+            onClick={openMonthlyReview}
+            className="flex min-h-[44px] w-full items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-medium text-primary hover:bg-muted/50"
+            data-testid="reports-monthly-review"
+          >
+            <CalendarDays className="h-4 w-4" />
+            {t('obrada.reportsEntry', 'Mjesečni pogled')}
+          </button>
+        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-5 mb-4">

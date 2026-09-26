@@ -47,3 +47,4 @@ Pravila za sve naloge:
 
 ## Otvoreno
 - [x] TEMELJ korak 4, nalog 1: Mjesečni pogled /obrada (gradnja, 26.9.)
+- [x] Mjesečni pogled: premještanje ulaza — CTA s Početne uklonjen, ulaz na vrhu izvješća (/obrada?m=YYYY-MM), 26.9.

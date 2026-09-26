@@ -7758,6 +7758,6 @@
     "errors": {
       "loadFailed": "Die Daten für diesen Monat konnten nicht vorbereitet werden. Bitte erneut versuchen."
     },
-    "homeCta": "Monat ansehen"
+    "reportsEntry": "Monatsübersicht"
   }
 }

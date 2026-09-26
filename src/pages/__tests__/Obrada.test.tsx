@@ -51,9 +51,9 @@ vi.mock('@/components/TransactionListDialog', () => ({
 
 import Obrada from '../Obrada';
 
-const renderPage = () =>
+const renderPage = (initialEntry = '/obrada') =>
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <Obrada />
     </MemoryRouter>,
   );
@@ -86,6 +86,18 @@ describe('Obrada — Mjesečni pogled', () => {
     renderPage();
     expect(screen.queryByTestId('obrada-summary')).toBeNull();
     expect(screen.getByText('obrada.personalOnly')).toBeTruthy();
+  });
+
+  it('početni mjesec dolazi iz parametra ?m=YYYY-MM (ulaz iz izvješća)', () => {
+    renderPage('/obrada?m=2020-05');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('2020');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('svibanj');
+  });
+
+  it('parametar ?m= van formata YYYY-MM pada na tekući mjesec', () => {
+    renderPage('/obrada?m=krivo');
+    const year = String(new Date().getFullYear());
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toContain(year);
   });
 
   it('brojke sažetka poklapaju se s isRealSpend/isRealIncome na istim redcima', () => {
