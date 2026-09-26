@@ -38,7 +38,7 @@ export default function BankSyncReview() {
   const items = data?.items ?? [];
 
   return (
-    <div className="mx-auto flex w-full max-w-lg flex-col gap-3 px-4 pt-4 pb-24">
+    <div className="mx-auto flex w-full max-w-lg flex-col gap-3 px-4 pt-4">
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => navigate(-1)} aria-label={t('common.back')}>
           <ChevronLeft className="h-5 w-5" />

@@ -10,7 +10,7 @@ const item = {
 const cand = (id: string) => ({ id, user_id: 'u', amount: 12, date: '2026-09-01', description: `ručno ${id}`, payment_source: 'custom:w1' });
 let queue: unknown = { items: [item], candidates: { a: cand('a'), b: cand('b') } };
 
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string, o?: Record<string, unknown>) => (o?.label ? `${k}:${o.label}` : k) }) }));
+vi.mock('react-i18next', () => ({ initReactI18next: { type: '3rdParty', init: () => {} }, useTranslation: () => ({ t: (k: string, o?: Record<string, unknown>) => (o?.label ? `${k}:${o.label}` : k) }) }));
 vi.mock('@/hooks/useBankSyncReviewQueue', () => ({
   useBankSyncReviewQueue: () => ({ data: queue, isLoading: false, error: null }),
   useBankSyncReviewDecide: () => ({ mutate, isPending: false }),
