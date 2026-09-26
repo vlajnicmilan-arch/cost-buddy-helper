@@ -7772,5 +7772,38 @@
       "loadFailed": "Die Daten für diesen Monat konnten nicht vorbereitet werden. Bitte erneut versuchen."
     },
     "reportsEntry": "Monatsübersicht"
+  },
+  "bankReview": {
+    "badge": "Zu prüfen ({{count}})",
+    "title": "Zu prüfen ({{count}})",
+    "intro": "Die Banksynchronisierung konnte diese Zeilen nicht sicher zuordnen. Nichts wurde gebucht, der Saldo ändert sich erst nach deiner Entscheidung.",
+    "empty": "Nichts zu prüfen.",
+    "noDescription": "Ohne Beschreibung",
+    "unknownWallet": "Unbekannte Geldbörse",
+    "mergeWith": "Mit {{label}} zusammenführen",
+    "newRow": "Neuer Eintrag",
+    "transfer": "Umbuchung",
+    "dismiss": "Überspringen",
+    "transferTarget": "Auf welche Geldbörse?",
+    "transferPick": "Geldbörse wählen",
+    "transferConfirm": "Umbuchung bestätigen",
+    "decided": "Entscheidung gespeichert",
+    "alreadyDecided": "Diese Zeile wurde bereits entschieden",
+    "reason": {
+      "ambiguous": "Mehrere manuelle Einträge passen zu dieser Zeile",
+      "uncertain": "Unklar, ob dies dieselbe Ausgabe wie ein manueller Eintrag ist",
+      "rule_match_and_transfer_candidate": "Kann dieselbe Ausgabe oder eine Umbuchung sein",
+      "candidate_already_used_in_run": "Der manuelle Eintrag ist bereits mit einer anderen Zeile zusammengeführt"
+    },
+    "errors": {
+      "target_not_candidate": "Der gewählte Eintrag ist kein Kandidat für diese Zeile.",
+      "target_unavailable": "Der gewählte Eintrag ist nicht mehr verfügbar (gelöscht oder bereits zusammengeführt).",
+      "invalid_counterpart": "Wähle eine andere eigene Geldbörse.",
+      "invalid_decision": "Unbekannte Entscheidung.",
+      "not_found": "Diese Zeile existiert nicht mehr.",
+      "already_booked": "Diese Bankzeile ist bereits gebucht.",
+      "load": "Liste konnte nicht geladen werden.",
+      "unknown": "Entscheidung nicht gespeichert. Bitte erneut versuchen."
+    }
   }
 }

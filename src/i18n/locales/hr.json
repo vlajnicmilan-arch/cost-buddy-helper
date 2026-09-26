@@ -7800,5 +7800,38 @@
       "loadFailed": "Podatke za ovaj mjesec nismo uspjeli pripremiti. Pokušaj ponovno."
     },
     "reportsEntry": "Mjesečni pogled"
+  },
+  "bankReview": {
+    "badge": "Na pregled ({{count}})",
+    "title": "Na pregled ({{count}})",
+    "intro": "Sinkronizacija banke nije sigurno znala riješiti ove retke. Ništa nije upisano i saldo se ne mijenja dok ne odlučiš.",
+    "empty": "Nema redaka za pregled.",
+    "noDescription": "Bez opisa",
+    "unknownWallet": "Nepoznat novčanik",
+    "mergeWith": "Spoji s {{label}}",
+    "newRow": "Novi redak",
+    "transfer": "Prijenos",
+    "dismiss": "Preskoči",
+    "transferTarget": "Na koji novčanik?",
+    "transferPick": "Odaberi novčanik",
+    "transferConfirm": "Potvrdi prijenos",
+    "decided": "Odluka spremljena",
+    "alreadyDecided": "Ovaj redak je već odlučen",
+    "reason": {
+      "ambiguous": "Više ručnih unosa odgovara ovom retku",
+      "uncertain": "Nije sigurno je li ovo isti trošak kao ručni unos",
+      "rule_match_and_transfer_candidate": "Može biti isti trošak ili prijenos",
+      "candidate_already_used_in_run": "Ručni unos je već spojen s drugim retkom"
+    },
+    "errors": {
+      "target_not_candidate": "Odabrani unos nije kandidat za ovaj redak.",
+      "target_unavailable": "Odabrani unos više nije dostupan (obrisan ili već spojen).",
+      "invalid_counterpart": "Odaberi drugi vlastiti novčanik.",
+      "invalid_decision": "Nepoznata odluka.",
+      "not_found": "Redak više ne postoji.",
+      "already_booked": "Ovaj bankovni redak je već upisan.",
+      "load": "Popis se nije mogao učitati.",
+      "unknown": "Odluka nije spremljena. Pokušaj ponovno."
+    }
   }
 }
