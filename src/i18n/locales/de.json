@@ -7371,7 +7371,12 @@
       "earlierPeriod": "einem früheren Zeitraum",
       "period": "Zeitraum",
       "pickPeriod": "Zeitraum wählen",
-      "calcFromHours": "Aus Stunden berechnen"
+      "calcFromHours": "Aus Stunden berechnen",
+      "summary": "Du zahlst {{paying}} · Verdient {{earned}} · Offen {{remaining}}",
+      "lockEntries": "Arbeitseinträge im Zeitraum sperren",
+      "rateBreakdown": "Aufschlüsselung nach Stundensatz",
+      "distributeAll": "Auf alle verteilen",
+      "allocationFor": "Betrag für {{project}}"
     },
     "payoutVoided": "storniert",
     "payoutVoidReason": "Grund",
