@@ -32,3 +32,4 @@ INSERT INTO public.custom_payment_sources(id, user_id, name, balance) VALUES
 INSERT INTO public.bank_accounts(id, user_id, linked_payment_source_id) VALUES
   ('ba000000-0000-0000-0000-0000000000a1', 'a0000000-0000-0000-0000-00000000000a', 'c1000000-0000-0000-0000-0000000000c1'),
   ('ba000000-0000-0000-0000-0000000000b1', 'b0000000-0000-0000-0000-00000000000b', 'c3000000-0000-0000-0000-0000000000c3');
+GRANT SELECT ON public.expenses TO authenticated;
