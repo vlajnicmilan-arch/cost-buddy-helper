@@ -256,6 +256,7 @@ export default {
   "notifications.krug.settlement_receipt_pending_anon.message": "Član Kruga ti je platio {{amount}} {{currency}} — gdje je stiglo?",
   "notifications.krug.override_proposed.title": "Prijedlog podjele troška",
   "notifications.krug.override_proposed.message": "Član Kruga je predložio ručnu podjelu zajedničkog troška. Otvori trošak i potvrdi ili odbij prijedlog.",
+  "notifications.krug.override_proposed.message_partial": "Član Kruga predlaže podjelu troška: dijeli se {{shared_amount}} {{currency}} od {{amount}} {{currency}}. Otvori trošak i potvrdi ili odbij prijedlog.",
   "notifications.krug.override_confirmed.title": "Podjela potvrđena",
   "notifications.krug.override_confirmed.message": "Tvoj prijedlog ručne podjele troška je potvrđen i sada je aktivan.",
   "notifications.krug.override_rejected.title": "Prijedlog podjele odbijen",

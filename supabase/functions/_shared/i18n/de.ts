@@ -256,6 +256,7 @@ export default {
   "notifications.krug.settlement_receipt_pending_anon.message": "Ein Krug-Mitglied hat dir {{amount}} {{currency}} bezahlt — wo ist es angekommen?",
   "notifications.krug.override_proposed.title": "Aufteilungsvorschlag",
   "notifications.krug.override_proposed.message": "Ein Krug-Mitglied hat eine manuelle Aufteilung einer gemeinsamen Ausgabe vorgeschlagen. Öffne die Ausgabe zum Bestätigen oder Ablehnen.",
+  "notifications.krug.override_proposed.message_partial": "Ein Krug-Mitglied schlägt eine Aufteilung vor: {{shared_amount}} {{currency}} von {{amount}} {{currency}} werden geteilt. Öffne die Ausgabe zum Bestätigen oder Ablehnen.",
   "notifications.krug.override_confirmed.title": "Aufteilung bestätigt",
   "notifications.krug.override_confirmed.message": "Dein Vorschlag für die manuelle Aufteilung wurde bestätigt und ist jetzt aktiv.",
   "notifications.krug.override_rejected.title": "Aufteilungsvorschlag abgelehnt",

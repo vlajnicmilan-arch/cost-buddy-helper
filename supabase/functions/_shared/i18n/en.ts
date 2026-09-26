@@ -256,6 +256,7 @@ export default {
   "notifications.krug.settlement_receipt_pending_anon.message": "A Krug member paid you {{amount}} {{currency}} — where did it arrive?",
   "notifications.krug.override_proposed.title": "Split proposal",
   "notifications.krug.override_proposed.message": "A Krug member proposed a manual split of a shared expense. Open the expense to confirm or reject.",
+  "notifications.krug.override_proposed.message_partial": "A Krug member proposed a split: {{shared_amount}} {{currency}} of {{amount}} {{currency}} is shared. Open the expense to confirm or reject.",
   "notifications.krug.override_confirmed.title": "Split confirmed",
   "notifications.krug.override_confirmed.message": "Your manual split proposal was confirmed and is now active.",
   "notifications.krug.override_rejected.title": "Split proposal rejected",

@@ -2914,7 +2914,8 @@
       },
       "override_proposed": {
         "title": "Prijedlog podjele troška",
-        "message": "Član Kruga je predložio ručnu podjelu zajedničkog troška. Otvori trošak i potvrdi ili odbij prijedlog."
+        "message": "Član Kruga je predložio ručnu podjelu zajedničkog troška. Otvori trošak i potvrdi ili odbij prijedlog.",
+        "message_partial": "Član Kruga predlaže podjelu troška: dijeli se {{shared_amount}} {{currency}} od {{amount}} {{currency}}. Otvori trošak i potvrdi ili odbij prijedlog."
       },
       "override_confirmed": {
         "title": "Podjela potvrđena",
@@ -6188,7 +6189,9 @@
         "not_found": "Prijedlog ne postoji.",
         "generic": "Greška pri obradi prijedloga.",
         "negative": "Postotak ne smije biti negativan.",
-        "touched_over_100": "Ručno uneseni postoci već premašuju 100%."
+        "touched_over_100": "Ručno uneseni postoci već premašuju 100%.",
+        "shared_amount_exceeds_amount": "Dijeljena svota ne smije biti veća od iznosa troška.",
+        "shared_amount_invalid": "Dijeljena svota mora biti veća od 0."
       },
       "success": {
         "activated": "Ručna podjela aktivirana.",
@@ -6203,6 +6206,11 @@
         "reasonLabel": "Razlog (opcionalno)",
         "reasonPlaceholder": "npr. iznos nije točan",
         "confirm": "Odbij"
+      },
+      "sharedAmount": {
+        "label": "Dijeli samo (neobavezno)",
+        "hint": "Prazno = dijeli se cijeli iznos ({{total}}). Ostatak ostaje tvoj trošak.",
+        "sharedOf": "Dijeli se {{shared}} od {{total}}"
       }
     },
     "invite": {

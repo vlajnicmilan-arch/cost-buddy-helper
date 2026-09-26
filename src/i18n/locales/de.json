@@ -2906,7 +2906,8 @@
       },
       "override_proposed": {
         "title": "Aufteilungsvorschlag",
-        "message": "Ein Krug-Mitglied hat eine manuelle Aufteilung einer gemeinsamen Ausgabe vorgeschlagen. Öffne die Ausgabe zum Bestätigen oder Ablehnen."
+        "message": "Ein Krug-Mitglied hat eine manuelle Aufteilung einer gemeinsamen Ausgabe vorgeschlagen. Öffne die Ausgabe zum Bestätigen oder Ablehnen.",
+        "message_partial": "Ein Krug-Mitglied schlägt eine Aufteilung vor: {{shared_amount}} {{currency}} von {{amount}} {{currency}} werden geteilt. Öffne die Ausgabe zum Bestätigen oder Ablehnen."
       },
       "override_confirmed": {
         "title": "Aufteilung bestätigt",
@@ -6176,7 +6177,9 @@
         "not_found": "Vorschlag nicht gefunden.",
         "generic": "Fehler bei der Verarbeitung des Vorschlags.",
         "negative": "Prozentsatz darf nicht negativ sein.",
-        "touched_over_100": "Die eingegebenen Prozentwerte überschreiten bereits 100%."
+        "touched_over_100": "Die eingegebenen Prozentwerte überschreiten bereits 100%.",
+        "shared_amount_exceeds_amount": "Der geteilte Betrag darf den Ausgabenbetrag nicht übersteigen.",
+        "shared_amount_invalid": "Der geteilte Betrag muss größer als 0 sein."
       },
       "success": {
         "activated": "Manuelle Aufteilung aktiviert.",
@@ -6191,6 +6194,11 @@
         "reasonLabel": "Grund (optional)",
         "reasonPlaceholder": "z. B. Betrag stimmt nicht",
         "confirm": "Ablehnen"
+      },
+      "sharedAmount": {
+        "label": "Nur teilen (optional)",
+        "hint": "Leer = der ganze Betrag wird geteilt ({{total}}). Der Rest bleibt deine Ausgabe.",
+        "sharedOf": "Geteilt werden {{shared}} von {{total}}"
       }
     },
     "invite": {
