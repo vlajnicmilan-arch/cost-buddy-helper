@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import i18n from '@/i18n';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+import { logKrugOverrideProposeError } from '@/lib/krugSharedAmount';
 
 export type OverrideStatus = 'pending' | 'potvrdjena' | 'povucena' | 'odbijena';
 
@@ -19,6 +20,8 @@ export interface OverrideRow {
   status: OverrideStatus;
   activated_at: string | null;
   reject_reason: string | null;
+  /** Dijeljena svota u valuti troška; null = cijeli iznos. */
+  shared_amount: number | null;
   created_at: string;
   shares: OverrideShare[];
   confirmations: { user_id: string; confirmed_at: string }[];
@@ -33,13 +36,15 @@ function reportError(err: any) {
     shares_invalid: i18n.t('krug.override.error.shares_invalid', 'Neispravan format podjele.'),
     shares_must_cover_all_full_members: i18n.t('krug.override.error.shares_all_members', 'Podjela mora obuhvatiti sve punopravne članove.'),
     shares_users_mismatch: i18n.t('krug.override.error.shares_users_mismatch', 'Skup članova u podjeli ne odgovara članovima Kruga.'),
+    shared_amount_exceeds_amount: i18n.t('krug.override.error.shared_amount_exceeds_amount', 'Dijeljena svota ne smije biti veća od iznosa troška.'),
+    shared_amount_invalid: i18n.t('krug.override.error.shared_amount_invalid', 'Dijeljena svota mora biti veća od 0.'),
     shares_sum_not_100: i18n.t('krug.override.error.shares_sum', 'Zbroj postotaka mora biti 100%.'),
     not_pending: i18n.t('krug.override.error.not_pending', 'Prijedlog više nije aktivan za odlučivanje.'),
     proposer_cannot_reject: i18n.t('krug.override.error.proposer_cannot_reject', 'Predlagatelj ne može odbiti vlastiti prijedlog. Umjesto toga možeš ga povući.'),
     only_proposer_can_withdraw: i18n.t('krug.override.error.only_proposer_withdraw', 'Samo predlagatelj može povući prijedlog.'),
     not_found: i18n.t('krug.override.error.not_found', 'Prijedlog ne postoji.'),
   };
-  for (const k of Object.keys(map)) {
+  for (const k of Object.keys(map).sort((a, b) => b.length - a.length)) {
     if (msg.includes(k)) { showError(map[k]); return; }
   }
   // eslint-disable-next-line no-console
@@ -76,6 +81,7 @@ export function useKrugExpenseOverride(expenseId: string | null, enabled = true)
 
       const build = (r: any): OverrideRow => ({
         ...r,
+        shared_amount: r.shared_amount == null ? null : Number(r.shared_amount),
         shares: shares.filter((s) => s.override_id === r.id)
           .map((s) => ({ user_id: s.user_id, share_percent: Number(s.share_percent) })),
         confirmations: confirms.filter((c) => c.override_id === r.id)
@@ -93,12 +99,17 @@ export function useKrugExpenseOverride(expenseId: string | null, enabled = true)
 export function useKrugProposeOverride() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (vars: { expenseId: string; shares: OverrideShare[] }) => {
+    mutationFn: async (vars: { expenseId: string; shares: OverrideShare[]; sharedAmount?: number | null }) => {
+      const sharedAmount = vars.sharedAmount ?? null;
       const { data, error } = await (supabase as any).rpc('krug_override_propose', {
         p_expense_id: vars.expenseId,
         p_shares: vars.shares,
+        p_shared_amount: sharedAmount,
       });
-      if (error) throw error;
+      if (error) {
+        logKrugOverrideProposeError(error, { expenseId: vars.expenseId, sharedAmount });
+        throw error;
+      }
       return data;
     },
     onSuccess: (data, vars) => {
