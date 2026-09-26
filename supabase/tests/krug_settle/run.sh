@@ -13,6 +13,7 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/../../.." && pwd)"
+psql -v ON_ERROR_STOP=1 -q -f "$ROOT/supabase/tests/_roles.sql"
 BAL="$ROOT/supabase/tests/balance"
 MERGE="$ROOT/supabase/tests/merge"
 TODAY="${TODAY:-0}"

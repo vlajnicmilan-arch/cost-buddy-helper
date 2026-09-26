@@ -5,6 +5,7 @@
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/../../.." && pwd)"
+psql -v ON_ERROR_STOP=1 -q -f "$ROOT/supabase/tests/_roles.sql"
 psql -v ON_ERROR_STOP=1 -q -f "$HERE/baseline.sql"
 psql -v ON_ERROR_STOP=1 -q -f "$HERE/live_before.sql"
 psql -v ON_ERROR_STOP=1 -q -f "$HERE/grants.sql"

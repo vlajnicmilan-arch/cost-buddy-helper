@@ -8,6 +8,7 @@
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/../../.." && pwd)"
+psql -v ON_ERROR_STOP=1 -q -f "$ROOT/supabase/tests/_roles.sql"
 TODAY="${TODAY:-0}"
 
 psql -v ON_ERROR_STOP=1 -q -f "$HERE/baseline.sql" || exit 1
