@@ -163,3 +163,18 @@ export function logReviewDecisionError(err: unknown, item: ReviewQueueItem, deci
     },
   });
 }
+
+/** Kategorija nije dobivena — odluka ide dalje s 'other'. */
+export function logReviewCategoryError(err: unknown, item: ReviewQueueItem): void {
+  const e = err as { code?: string; message?: string } | null;
+  logDiagnostic({
+    event: 'bank_sync_review_category_error',
+    severity: 'warning',
+    details: {
+      db_code: e?.code ?? null,
+      db_message: String(e?.message ?? err),
+      build: getBuildStamp(),
+      stable_id: item.stable_id,
+    },
+  });
+}

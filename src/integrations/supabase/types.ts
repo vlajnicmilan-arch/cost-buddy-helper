@@ -7701,6 +7701,7 @@ export type Database = {
       }
       bank_sync_review_decide: {
         Args: {
+          p_category?: string
           p_counterpart_source_id?: string
           p_decision: string
           p_id: string

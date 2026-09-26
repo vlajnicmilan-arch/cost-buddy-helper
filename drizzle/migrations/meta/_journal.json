@@ -225,6 +225,13 @@
       "when": 1790398232596,
       "tag": "0031_bank_sync_review_queue_tighten_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1790399920415,
+      "tag": "0032_bank_sync_review_decide_category",
+      "breakpoints": true
     }
   ]
 }

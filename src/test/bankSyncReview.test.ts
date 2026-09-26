@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { reviewPlanFor, enqueueReviewRow, buildReviewPayload } from '../../supabase/functions/_shared/bankSyncReview.ts';
+import { reviewPlanFor, enqueueReviewRow, buildReviewPayload, reviewDisposition } from '../../supabase/functions/_shared/bankSyncReview.ts';
 import { planReviewDecision, reviewErrorCode, type ReviewQueueItem } from '../lib/bankSyncReview/decision';
 
 vi.mock('@/lib/diagnosticLogger', () => ({ logDiagnostic: vi.fn() }));
@@ -74,5 +74,19 @@ describe('planReviewDecision — kroz jezgru', () => {
     expect(reviewErrorCode({ message: 'target_unavailable' })).toBe('target_unavailable');
     expect(reviewErrorCode({ code: '23505' })).toBe('already_booked');
     expect(reviewErrorCode({ message: 'x' })).toBe('unknown');
+  });
+});
+
+describe('reviewDisposition — red se nije učitao', () => {
+  const plan = { reason: 'ambiguous' as const, candidateIds: ['a'] };
+  it('nejasan redak se odgađa, ne upisuje', () => {
+    expect(reviewDisposition(plan, false, true)).toBe('defer');
+  });
+  it('red učitan → u red', () => {
+    expect(reviewDisposition(plan, false, false)).toBe('enqueue');
+  });
+  it('samo-prijenos i ne-nejasan idu starim putem i kad red pada', () => {
+    expect(reviewDisposition(plan, true, true)).toBe('none');
+    expect(reviewDisposition(null, false, true)).toBe('none');
   });
 });
