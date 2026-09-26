@@ -35,6 +35,8 @@ DO $$ DECLARE j jsonb; BEGIN
     RAISE EXCEPTION 'FAIL P2 C ima dug bez prijedloga: %', j; END IF;
   IF public.kp_member(public.kp_prev('a0000000-0000-0000-0000-00000000000a'), 'c0000000-0000-0000-0000-00000000000c') IS NOT NULL THEN
     RAISE EXCEPTION 'FAIL P2 C u punopravnom pogledu bez prijedloga'; END IF;
+  -- Obični platitelj bez prijedloga ostaje izvan izračuna kao danas; dalje ga ne trebamo.
+  UPDATE public.expenses SET deleted_at = now() WHERE id = 'e1000000-0000-0000-0000-000000000003';
   RAISE NOTICE 'PASS P2 bez prijedloga obični član nema duga i nije u punopravnom pogledu';
 END $$;
 
