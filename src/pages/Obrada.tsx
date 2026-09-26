@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useBudgets } from '@/hooks/useBudgets';
@@ -40,6 +40,7 @@ interface ListState {
 const Obrada = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { isBusinessView } = useWalletViewMode();
   const { expenses, updateExpense, deleteExpense } = useExpenses();
   const { budgets } = useBudgets({ externalExpenses: expenses });
@@ -47,7 +48,13 @@ const Obrada = () => {
   const { formatAmount } = useCurrency();
   const { customCategories } = useCustomCategories();
 
-  const [month, setMonth] = useState(() => new Date());
+  // Početni mjesec može doći iz izvješća (`/obrada?m=YYYY-MM`); bez parametra tekući.
+  const [month, setMonth] = useState(() => {
+    const match = /^(\d{4})-(\d{2})$/.exec(searchParams.get('m') ?? '');
+    if (!match) return new Date();
+    const d = new Date(Number(match[1]), Number(match[2]) - 1, 1);
+    return Number.isNaN(d.getTime()) ? new Date() : d;
+  });
   const [list, setList] = useState<ListState | null>(null);
 
   const rows = expenses as unknown as ObradaRow[];
