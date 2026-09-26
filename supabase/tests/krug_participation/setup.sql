@@ -80,8 +80,8 @@ CREATE OR REPLACE FUNCTION public.kp_state2(on_ boolean) RETURNS void LANGUAGE p
     INSERT INTO public.krug_expense_split_share(override_id,user_id,share_percent) VALUES
      ('0b200000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-00000000000a',80),
      ('0b200000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-00000000000b',20);
-    INSERT INTO public.krug_settlement_ledger(id,krug_id,from_user,to_user,amount,currency) VALUES
-     ('1e200000-0000-0000-0000-000000000001','c1000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-00000000000a','b0000000-0000-0000-0000-00000000000b',5,'EUR');
+    INSERT INTO public.krug_settlement_ledger(id,krug_id,from_user,to_user,amount,currency,marked_at) VALUES
+     ('1e200000-0000-0000-0000-000000000001','c1000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-00000000000a','b0000000-0000-0000-0000-00000000000b',5,'EUR',date_trunc('month',current_date) + interval '12 hours');
   ELSE
     DELETE FROM public.krug_expense_split_share WHERE override_id='0b200000-0000-0000-0000-000000000001';
     DELETE FROM public.krug_expense_split_override WHERE id='0b200000-0000-0000-0000-000000000001';
