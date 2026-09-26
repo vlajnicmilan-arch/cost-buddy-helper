@@ -7758,6 +7758,6 @@
     "errors": {
       "loadFailed": "We couldn't prepare this month's data. Please try again."
     },
-    "homeCta": "Review the month"
+    "reportsEntry": "Monthly review"
   }
 }
