@@ -7,7 +7,6 @@ import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Loader2, Users, Check, X, Undo2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useKrugMembers } from '@/hooks/useKrug';
@@ -19,20 +18,19 @@ import {
   useKrugConfirmOverride,
   useKrugRejectOverride,
   useKrugWithdrawOverride,
-  validateOverrideShares,
   type OverrideShare,
 } from '@/hooks/useKrugExpenseOverride';
-import { showError } from '@/hooks/useStatusFeedback';
 import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
-import { rebalanceShares, formatShare } from '@/lib/krugSplitRebalance';
-import { validateSharedAmount } from '@/lib/krugSharedAmount';
-import { KrugSharedAmountField, KrugSharedOfLine } from './KrugSharedAmount';
+import { KrugSharedOfLine } from './KrugSharedAmount';
+import { KrugSplitShareEditor } from './KrugSplitShareEditor';
 
 
 interface Props {
   krugId: string;
   expenseId: string;
   isFullMember: boolean;
+  /** Obični član: vidi samo prijedloge u kojima ima udio, potvrđuje/odbija, ne predlaže. */
+  isRegularMember?: boolean;
   /** Read-only kontekst (pregled transakcije) ne nudi kreiranje prijedloga. */
   allowPropose?: boolean;
   /** Iznos i valuta troška — za "Dijeli samo X" i prikaz "X od Y". */
@@ -40,12 +38,14 @@ interface Props {
   currency: string;
 }
 
-export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember, allowPropose = true, expenseAmount, currency }: Props) {
+export function KrugExpenseSplitPanel({
+  krugId, expenseId, isFullMember, isRegularMember = false, allowPropose = true, expenseAmount, currency,
+}: Props) {
   const { t } = useTranslation();
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const { user } = useAuth();
   const { data: members = [] } = useKrugMembers(krugId);
-  const { data, isLoading } = useKrugExpenseOverride(expenseId, isFullMember);
+  const { data, isLoading } = useKrugExpenseOverride(expenseId, isFullMember || isRegularMember);
   const proposeMut = useKrugProposeOverride();
   const confirmMut = useKrugConfirmOverride();
   const rejectMut = useKrugRejectOverride();
@@ -57,51 +57,12 @@ export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember, allowPr
     [members],
   );
   const fullMemberIds = fullMembers.map((m) => m.user_id);
-  const profiles = useUserProfiles(fullMemberIds);
+  const ordinaryMemberIds = members.filter((m) => m.kind === 'obicni').map((m) => m.user_id);
+  const profiles = useUserProfiles([...fullMemberIds, ...ordinaryMemberIds]);
   const nameFor = (uid: string) =>
     getMemberDisplayName(profiles.get(uid), uid, t('krug.member.unknown', 'Nepoznat član'));
 
-  const [draft, setDraft] = useState<Record<string, string>>({});
-  const [sharedRaw, setSharedRaw] = useState('');
-  const [touched, setTouched] = useState<string[]>([]);
-  const [rebalanceError, setRebalanceError] = useState<'touched_over_100' | null>(null);
-  const initDraft = () => {
-    const values = rebalanceShares(
-      Object.fromEntries(fullMemberIds.map((id) => [id, 0])),
-      fullMemberIds,
-      [],
-    ).values;
-    const d: Record<string, string> = {};
-    for (const id of fullMemberIds) d[id] = formatShare(values[id]);
-    setDraft(d);
-    setTouched([]);
-    setRebalanceError(null);
-    setSharedRaw('');
-    setEditing(true);
-  };
-
-  /** Live raspodjela: dirnuto polje ostaje, ostatak ide po nedirnutima. */
-  const handleShareChange = (id: string, raw: string) => {
-    const nextTouched = touched.includes(id) ? touched : [...touched, id];
-    setTouched(nextTouched);
-    const numeric: Record<string, number> = {};
-    for (const mid of fullMemberIds) {
-      numeric[mid] = mid === id ? Number(raw) || 0 : Number(draft[mid] ?? 0) || 0;
-    }
-    const { values, error } = rebalanceShares(numeric, fullMemberIds, nextTouched);
-    setRebalanceError(error);
-    setDraft((d) => {
-      const next = { ...d, [id]: raw };
-      for (const mid of fullMemberIds) {
-        if (mid === id || nextTouched.includes(mid)) continue;
-        next[mid] = formatShare(values[mid]);
-      }
-      return next;
-    });
-  };
-
-
-  if (!isFullMember) return null;
+  if (!isFullMember && !isRegularMember) return null;
   if (isLoading) {
     return (
       <Card className="p-3 text-xs text-muted-foreground flex items-center gap-2">
@@ -114,40 +75,24 @@ export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember, allowPr
   const active = data?.active ?? null;
   const pending = data?.pending ?? null;
   const confirmedIds = new Set((pending?.confirmations ?? []).map((c) => c.user_id));
-  const awaiting = fullMemberIds.filter((id) => !confirmedIds.has(id));
+  // Potvrđuju svi punopravni i svaki obični član koji ima udio.
+  const requiredIds = Array.from(new Set([...fullMemberIds, ...(pending?.shares ?? []).map((s) => s.user_id)]));
+  const awaiting = requiredIds.filter((id) => !confirmedIds.has(id));
   const isProposer = pending?.proposed_by === user?.id;
   const myConfirmed = !!user && confirmedIds.has(user.id);
 
   // Read-only kontekst bez ičega za prikazati ne uvodi prazan blok u pregled.
   if (!allowPropose && !active && !pending) return null;
+  // Obični član vidi samo prijedloge koji ga uključuju (RLS to već reže).
+  const includesMe = (row: { shares: OverrideShare[] } | null) => !!row && row.shares.some((s) => s.user_id === user?.id);
+  if (!isFullMember && !includesMe(active) && !includesMe(pending)) return null;
+  const canPropose = allowPropose && isFullMember;
 
 
 
-  const submit = async () => {
-    const shares: OverrideShare[] = fullMemberIds.map((id) => ({
-      user_id: id,
-      share_percent: Number(draft[id] ?? 0),
-    }));
-    const v = validateOverrideShares(shares, fullMemberIds);
-    if (v.ok !== true) {
-      const map = {
-        missing_members: t('krug.override.error.shares_all_members', 'Podjela mora obuhvatiti sve punopravne članove.'),
-        extra_members: t('krug.override.error.shares_users_mismatch', 'Skup članova ne odgovara.'),
-        sum_not_100: t('krug.override.error.shares_sum', 'Zbroj postotaka mora biti 100%.'),
-        negative: t('krug.override.error.negative', 'Postotak ne smije biti negativan.'),
-      };
-      showError(map[v.error]);
-      return;
-    }
-    const shared = validateSharedAmount(sharedRaw, expenseAmount);
-    if (shared.ok !== true) {
-      showError(shared.error === 'exceeds'
-        ? t('krug.override.error.shared_amount_exceeds_amount', 'Dijeljena svota ne smije biti veća od iznosa troška.')
-        : t('krug.override.error.shared_amount_invalid', 'Dijeljena svota mora biti veća od 0.'));
-      return;
-    }
+  const submit = async (shares: OverrideShare[], sharedAmount: number | null) => {
     try {
-      await proposeMut.mutateAsync({ expenseId, shares, sharedAmount: shared.value });
+      await proposeMut.mutateAsync({ expenseId, shares, sharedAmount });
       setEditing(false);
     } catch { /* handled */ }
   };
@@ -239,8 +184,8 @@ export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember, allowPr
       )}
 
       {/* Nema aktivnog ni pending → CTA (samo u edit sloju) */}
-      {allowPropose && !editing && !pending && (
-        <Button size="sm" variant="outline" className="h-8 w-full" onClick={initDraft}>
+      {canPropose && !editing && !pending && (
+        <Button size="sm" variant="outline" className="h-8 w-full" onClick={() => setEditing(true)}>
           {active
             ? t('krug.override.actions.propose_new', 'Predloži novu podjelu')
             : t('krug.override.actions.propose', 'Predloži ručnu podjelu')}
@@ -249,39 +194,16 @@ export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember, allowPr
 
       {/* Editor */}
       {editing && (
-        <div className="space-y-2 border-t pt-2">
-          <KrugSharedAmountField value={sharedRaw} onChange={setSharedRaw} expenseAmount={expenseAmount} currency={currency} />
-          {fullMemberIds.map((id) => (
-            <div key={id} className="flex items-center gap-2 text-xs">
-              <span className="flex-1 truncate">{nameFor(id)}</span>
-              <Input
-                type="number" step="0.01" min="0" max="100"
-                value={draft[id] ?? ''}
-                onChange={(e) => handleShareChange(id, e.target.value)}
-                className="h-8 w-24 text-right tabular-nums"
-              />
-              <span className="text-muted-foreground">%</span>
-            </div>
-          ))}
-          {rebalanceError === 'touched_over_100' && (
-            <div className="text-[11px] text-destructive text-right">
-              {t('krug.override.error.touched_over_100', 'Ručno uneseni postoci već premašuju 100%.')}
-            </div>
-          )}
-          <div className="text-[11px] text-muted-foreground text-right">
-            {t('krug.override.sumLabel', 'Zbroj')}: {fullMemberIds.reduce((a, id) => a + Number(draft[id] ?? 0), 0).toFixed(2)}%
-          </div>
-
-          <div className="flex gap-2">
-            <Button size="sm" variant="ghost" className="h-8" onClick={() => setEditing(false)}>
-              {t('common.cancel', 'Odustani')}
-            </Button>
-            <Button size="sm" className="h-8 flex-1" onClick={submit} disabled={proposeMut.isPending}>
-              {proposeMut.isPending && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
-              {t('krug.override.actions.submit', 'Pošalji prijedlog')}
-            </Button>
-          </div>
-        </div>
+        <KrugSplitShareEditor
+          fullMemberIds={fullMemberIds}
+          ordinaryMemberIds={ordinaryMemberIds}
+          nameFor={nameFor}
+          expenseAmount={expenseAmount}
+          currency={currency}
+          submitting={proposeMut.isPending}
+          onSubmit={submit}
+          onCancel={() => setEditing(false)}
+        />
       )}
       <ConfirmActionDialog
         open={!!rejectTarget}
