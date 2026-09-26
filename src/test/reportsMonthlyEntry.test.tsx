@@ -73,7 +73,9 @@ describe('ReportsDialog — ulaz „Mjesečni pogled"', () => {
   it('(e) „Prošli mjesec" → kartica vodi na prethodni mjesec', () => {
     renderDialog({ showMonthlyReview: true });
     fireEvent.click(screen.getByRole('button', { name: /izvješća|reports/i }));
-    fireEvent.click(screen.getByText('reports.lastMonth'));
+    // Radix Select: otvara se na pointerdown okidača
+    fireEvent.pointerDown(screen.getByRole('combobox'), { button: 0, ctrlKey: false });
+    fireEvent.click(screen.getByRole('option', { name: 'reports.lastMonth' }));
     fireEvent.click(screen.getByTestId('reports-monthly-review'));
     const now = new Date();
     expect(navigateMock).toHaveBeenCalledWith(
