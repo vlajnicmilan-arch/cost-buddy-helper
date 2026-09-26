@@ -42,7 +42,7 @@ psql -v ON_ERROR_STOP=1 -q -f "$HERE/../krug_settle/baseline.sql"
 # krug_is_member + krug_act_dedup + krug_apply_act (žive definicije)
 psql -v ON_ERROR_STOP=1 -q -f "$HERE/baseline_act.sql"
 
-SETTLE_SRC="$(grep -l 'CREATE OR REPLACE FUNCTION public.krug_mark_settled_with_source' "$ROOT"/drizzle/migrations/*.sql | sort | tail -1)"
+SETTLE_SRC="$(grep -l 'CREATE OR REPLACE FUNCTION public.krug_mark_settled_with_source' "$ROOT"/drizzle/migrations/*.sql | xargs grep -L 'krug_override_party' | sort | tail -1)"
 echo "-- applying $(basename "$SETTLE_SRC")"
 psql -v ON_ERROR_STOP=1 -q -f "$SETTLE_SRC"
 

@@ -6100,7 +6100,9 @@
         "already_confirmed": "Der Empfang wurde bereits bestätigt.",
         "legacy_settlement": "Dies ist ein älterer Ausgleich ohne Quelle — eine Empfangsbestätigung ist nicht möglich.",
         "recipient_amount_required": "Die Quelle hat eine andere Währung — gib den tatsächlich erhaltenen Betrag ein.",
-        "recipient_amount_mismatch": "Bei gleicher Währung muss der erhaltene Betrag dem Ausgleichsbetrag entsprechen."
+        "recipient_amount_mismatch": "Bei gleicher Währung muss der erhaltene Betrag dem Ausgleichsbetrag entsprechen.",
+        "not_member": "Du bist (nicht mehr) Mitglied dieses Krugs.",
+        "party_not_member": "Die ausgewählte Person ist kein Mitglied dieses Krugs."
       },
       "success": {
         "marked": "Ausgleich erfasst.",
@@ -6187,7 +6189,8 @@
         "negative": "Prozentsatz darf nicht negativ sein.",
         "touched_over_100": "Die eingegebenen Prozentwerte überschreiten bereits 100%.",
         "shared_amount_exceeds_amount": "Der geteilte Betrag darf den Ausgabenbetrag nicht übersteigen.",
-        "shared_amount_invalid": "Der geteilte Betrag muss größer als 0 sein."
+        "shared_amount_invalid": "Der geteilte Betrag muss größer als 0 sein.",
+        "shares_user_not_member": "Nur aktuelle Mitglieder des Krugs können an der Aufteilung teilnehmen."
       },
       "success": {
         "activated": "Manuelle Aufteilung aktiviert.",
@@ -6207,6 +6210,12 @@
         "label": "Nur teilen (optional)",
         "hint": "Leer = der ganze Betrag wird geteilt ({{total}}). Der Rest bleibt deine Ausgabe.",
         "sharedOf": "Geteilt werden {{shared}} von {{total}}"
+      },
+      "ordinary": {
+        "badge": "Einfaches Mitglied",
+        "include": "Einbeziehen",
+        "hint": "Einfache Mitglieder nehmen nur teil, wenn du sie einbeziehst. Jeder Einbezogene muss den Vorschlag bestätigen.",
+        "notIncluded": "Nicht einbezogen"
       }
     },
     "invite": {

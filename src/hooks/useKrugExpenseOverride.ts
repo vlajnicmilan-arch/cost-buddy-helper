@@ -8,6 +8,24 @@ import { supabase } from '@/integrations/supabase/client';
 import i18n from '@/i18n';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { logKrugOverrideProposeError } from '@/lib/krugSharedAmount';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { getBuildStamp } from '@/lib/buildStamp';
+
+/** Literal server code/message of a confirm/reject/withdraw failure + build stamp. */
+export function logKrugOverrideActionError(err: unknown, rpc: string, overrideId: string | null): void {
+  const e = err as { code?: string; message?: string } | null;
+  logDiagnostic({
+    event: 'krug_override_action_error',
+    severity: 'error',
+    details: {
+      rpc,
+      db_code: e?.code ?? null,
+      db_message: String(e?.message ?? err),
+      build: getBuildStamp(),
+      override_id: overrideId,
+    },
+  });
+}
 
 export type OverrideStatus = 'pending' | 'potvrdjena' | 'povucena' | 'odbijena';
 
@@ -35,6 +53,7 @@ function reportError(err: any) {
     not_full_member: i18n.t('krug.override.error.not_full_member', 'Nemaš pravo predložiti podjelu.'),
     shares_invalid: i18n.t('krug.override.error.shares_invalid', 'Neispravan format podjele.'),
     shares_must_cover_all_full_members: i18n.t('krug.override.error.shares_all_members', 'Podjela mora obuhvatiti sve punopravne članove.'),
+    shares_user_not_member: i18n.t('krug.override.error.shares_user_not_member', 'U podjeli može biti samo trenutni član Kruga.'),
     shares_users_mismatch: i18n.t('krug.override.error.shares_users_mismatch', 'Skup članova u podjeli ne odgovara članovima Kruga.'),
     shared_amount_exceeds_amount: i18n.t('krug.override.error.shared_amount_exceeds_amount', 'Dijeljena svota ne smije biti veća od iznosa troška.'),
     shared_amount_invalid: i18n.t('krug.override.error.shared_amount_invalid', 'Dijeljena svota mora biti veća od 0.'),
@@ -131,7 +150,7 @@ export function useKrugConfirmOverride() {
       const { data, error } = await (supabase as any).rpc('krug_override_confirm', {
         p_override_id: vars.overrideId,
       });
-      if (error) throw error;
+      if (error) { logKrugOverrideActionError(error, 'krug_override_confirm', vars.overrideId); throw error; }
       return data;
     },
     onSuccess: (data, vars) => {
@@ -154,7 +173,7 @@ export function useKrugRejectOverride() {
         p_override_id: vars.overrideId,
         p_reason: vars.reason ?? null,
       });
-      if (error) throw error;
+      if (error) { logKrugOverrideActionError(error, 'krug_override_reject', vars.overrideId); throw error; }
       return data;
     },
     onSuccess: (_d, vars) => {
@@ -172,7 +191,7 @@ export function useKrugWithdrawOverride() {
       const { data, error } = await (supabase as any).rpc('krug_override_withdraw', {
         p_override_id: vars.overrideId,
       });
-      if (error) throw error;
+      if (error) { logKrugOverrideActionError(error, 'krug_override_withdraw', vars.overrideId); throw error; }
       return data;
     },
     onSuccess: (_d, vars) => {
@@ -189,11 +208,14 @@ export function useKrugWithdrawOverride() {
 export function validateOverrideShares(
   shares: OverrideShare[],
   fullMemberIds: string[],
+  /** Current regular members the proposer may additionally include. */
+  allowedExtraIds: string[] = [],
 ): { ok: true } | { ok: false; error: 'missing_members' | 'extra_members' | 'sum_not_100' | 'negative' } {
   const provided = new Set(shares.map((s) => s.user_id));
   const expected = new Set(fullMemberIds);
   for (const id of expected) if (!provided.has(id)) return { ok: false, error: 'missing_members' };
-  for (const id of provided) if (!expected.has(id)) return { ok: false, error: 'extra_members' };
+  const allowed = new Set(allowedExtraIds);
+  for (const id of provided) if (!expected.has(id) && !allowed.has(id)) return { ok: false, error: 'extra_members' };
   for (const s of shares) if (s.share_percent < 0) return { ok: false, error: 'negative' };
   const sum = shares.reduce((a, s) => a + s.share_percent, 0);
   if (Math.abs(sum - 100) > 0.01) return { ok: false, error: 'sum_not_100' };

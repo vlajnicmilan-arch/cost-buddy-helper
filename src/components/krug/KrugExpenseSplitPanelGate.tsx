@@ -1,5 +1,5 @@
 /**
- * Gate koji izračuna isFullMember (owner ili punopravni) i renderira panel.
+ * Gate koji izračuna ulogu (owner/punopravni ili obični) i renderira panel.
  * Odvojeno da EditTransactionDialog ostane čist.
  *
  * `allowPropose=false` koristi PREGLED transakcije (read-only kontekst):
@@ -21,16 +21,18 @@ interface Props {
 export function KrugExpenseSplitPanelGate({ krugId, expenseId, allowPropose = true, expenseAmount, currency }: Props) {
   const { user } = useAuth();
   const { data: members = [] } = useKrugMembers(krugId);
-  const isFullMember = !!user && members.some(
-    (m) => m.user_id === user.id && (m.kind === 'owner' || m.kind === 'punopravni'),
-  );
-  if (!isFullMember) return null;
+  const me = user ? members.find((m) => m.user_id === user.id) : undefined;
+  const isFullMember = !!me && (me.kind === 'owner' || me.kind === 'punopravni');
+  // Obični član: samo prijedlozi u kojima ima udio (potvrdi/odbij), nikad novi prijedlog.
+  const isRegularMember = !!me && me.kind === 'obicni';
+  if (!isFullMember && !isRegularMember) return null;
   return (
     <KrugExpenseSplitPanel
       krugId={krugId}
       expenseId={expenseId}
-      isFullMember
-      allowPropose={allowPropose}
+      isFullMember={isFullMember}
+      isRegularMember={isRegularMember}
+      allowPropose={isFullMember && allowPropose}
       expenseAmount={expenseAmount}
       currency={currency}
     />

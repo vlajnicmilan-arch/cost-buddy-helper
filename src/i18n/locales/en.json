@@ -6100,7 +6100,9 @@
         "already_confirmed": "Receipt has already been confirmed.",
         "legacy_settlement": "This is an older settlement without a source — receipt cannot be confirmed.",
         "recipient_amount_required": "The source uses another currency — enter the amount actually received.",
-        "recipient_amount_mismatch": "The received amount must equal the settlement amount when the currency is the same."
+        "recipient_amount_mismatch": "The received amount must equal the settlement amount when the currency is the same.",
+        "not_member": "You are not (or no longer) a member of this Krug.",
+        "party_not_member": "The selected person is not a member of this Krug."
       },
       "success": {
         "marked": "Settlement recorded.",
@@ -6187,7 +6189,8 @@
         "negative": "Percentage cannot be negative.",
         "touched_over_100": "The percentages you entered already exceed 100%.",
         "shared_amount_exceeds_amount": "The shared amount cannot exceed the expense amount.",
-        "shared_amount_invalid": "The shared amount must be greater than 0."
+        "shared_amount_invalid": "The shared amount must be greater than 0.",
+        "shares_user_not_member": "Only current Krug members can be part of the split."
       },
       "success": {
         "activated": "Manual split activated.",
@@ -6207,6 +6210,12 @@
         "label": "Share only (optional)",
         "hint": "Empty = the full amount is shared ({{total}}). The rest stays your expense.",
         "sharedOf": "Sharing {{shared}} of {{total}}"
+      },
+      "ordinary": {
+        "badge": "Regular member",
+        "include": "Include",
+        "hint": "Regular members join the split only if you include them. Everyone included must confirm the proposal.",
+        "notIncluded": "Not included"
       }
     },
     "invite": {
