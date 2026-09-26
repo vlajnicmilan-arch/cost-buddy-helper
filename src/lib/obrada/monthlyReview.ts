@@ -5,7 +5,8 @@
  * (bez project_id i business_profile_id), deleted_at null.
  */
 import { isExpenseType, isRealIncome, isRealSpend } from '@/lib/spendClassification';
-import { categoryGroupLabelKey, resolveTreeCategory, type CategoryGroupKey } from '@/lib/categoryTree';
+import { categoryGroupLabelKey, resolveTreeCategory, UNSORTED_LABEL_KEY, type CategoryGroupKey } from '@/lib/categoryTree';
+import { parseGroupLimitKey, placeExpenseCategory, toGroupLimitKey, type GroupedCustomCategory } from '@/lib/categoryGroupMatch';
 import { normalizeMerchant } from '@/lib/duplicateDetection';
 
 /** Pragovi rasta „gdje curi" — vlasnik ih mijenja ovdje, na jednom mjestu. */
@@ -83,11 +84,15 @@ export function monthSummary(rows: readonly ObradaRow[], ref: Date): MonthSummar
 // 2. „Gdje curi" — rast po skupini i kategoriji prema prosjeku zadnja 3 mjeseca
 // ---------------------------------------------------------------------------
 
-export interface GrowthItem {
-  /** Ključ skupine ili originalni naziv kategorije. */
+/** Oznaka retka: i18n ključ (skupina/list) ili ime vlastite kategorije. Nikad sirovi ključ. */
+export interface GrowthLabel {
+  labelKey: string | null;
+  customName: string | null;
+}
+
+export interface GrowthItem extends GrowthLabel {
+  /** Ključ skupine, ključ lista ili id vlastite kategorije. */
   key: string;
-  /** i18n ključ oznake (skupina) ili naziv kategorije. */
-  labelKey: string;
   current: number;
   average: number;
   delta: number;
@@ -95,32 +100,23 @@ export interface GrowthItem {
 }
 
 export interface GroupGrowth extends GrowthItem {
+  /** Vrijednost za `matchesCategoryFilter`: `group:<g>` ili točan ključ vlastite kategorije. */
+  filter: string;
   categories: GrowthItem[];
 }
 
-interface Bucket {
-  labelKey: string;
+interface Bucket extends GrowthLabel {
   perMonth: Map<string, number>;
 }
 
-const collectSpend = (
-  rows: readonly ObradaRow[],
-  keyOf: (r: ObradaRow) => { key: string; labelKey: string } | null,
-): Map<string, Bucket> => {
-  const map = new Map<string, Bucket>();
-  for (const r of rows) {
-    if (!isPersonal(r) || !isLive(r) || !isRealSpend(r)) continue;
-    const k = keyOf(r);
-    if (!k) continue;
-    let b = map.get(k.key);
-    if (!b) {
-      b = { labelKey: k.labelKey, perMonth: new Map() };
-      map.set(k.key, b);
-    }
-    const mk = monthKey(toDate(r.date));
-    b.perMonth.set(mk, (b.perMonth.get(mk) ?? 0) + (Number(r.amount) || 0));
+const addToBucket = (map: Map<string, Bucket>, key: string, label: GrowthLabel, r: ObradaRow) => {
+  let b = map.get(key);
+  if (!b) {
+    b = { ...label, perMonth: new Map() };
+    map.set(key, b);
   }
-  return map;
+  const mk = monthKey(toDate(r.date));
+  b.perMonth.set(mk, (b.perMonth.get(mk) ?? 0) + (Number(r.amount) || 0));
 };
 
 const toGrowthItems = (
@@ -131,6 +127,7 @@ const toGrowthItems = (
   const items: GrowthItem[] = [];
   for (const [key, b] of map) {
     const current = b.perMonth.get(currentKey) ?? 0;
+    // Uvijek dijeli s 3 puna mjeseca — mjesec bez zapisa je 0, ne izostavlja se.
     const avg = prevKeys.reduce((s, k) => s + (b.perMonth.get(k) ?? 0), 0) / prevKeys.length;
     const delta = current - avg;
     if (avg <= 0) continue; // P = 0: nema osnove za usporedbu
@@ -139,6 +136,7 @@ const toGrowthItems = (
     items.push({
       key,
       labelKey: b.labelKey,
+      customName: b.customName,
       current: round2(current),
       average: round2(avg),
       delta: round2(delta),
@@ -148,52 +146,67 @@ const toGrowthItems = (
   return items.sort((a, b) => b.delta - a.delta);
 };
 
+/** Oznaka jedne vrijednosti `category` (list ili vlastita kategorija). */
+export function categoryLabel(
+  category: string,
+  customs: readonly GroupedCustomCategory[] = [],
+): GrowthLabel {
+  const custom = customs.find((c) => c.id === category);
+  if (custom) return { labelKey: null, customName: custom.name ?? null };
+  const tree = resolveTreeCategory(category);
+  return { labelKey: tree.label ?? UNSORTED_LABEL_KEY, customName: null };
+}
+
+const TOP_GROUP = 'g:';
+const TOP_CUSTOM = 'c:';
+
 /**
- * Rast po skupini, a unutar skupine po kategoriji. Skupina ulazi samo ako
- * zadovoljava prag; kategorije se prikazuju unutar uključene skupine po istom
- * pravilu.
+ * Rast po skupini, a unutar skupine po kategoriji. Vlastita kategorija s
+ * `group_key` ide u tu skupinu; bez njega je zaseban redak pod svojim imenom.
  */
-export function growthByGroup(rows: readonly ObradaRow[], ref: Date): GroupGrowth[] {
+export function growthByGroup(
+  rows: readonly ObradaRow[],
+  ref: Date,
+  customs: readonly GroupedCustomCategory[] = [],
+): GroupGrowth[] {
   const currentKey = monthKeyOf(ref);
   const prevKeys = lastMonthKeys(ref, 4).slice(0, 3); // 3 puna mjeseca prije
+  const customList = [...customs];
 
-  const groups = collectSpend(rows, (r) => {
-    const cat = (r.category ?? '').trim();
-    if (!cat) return null;
-    const tree = resolveTreeCategory(cat);
-    if (!tree.groupKey) return null;
-    return { key: tree.groupKey, labelKey: categoryGroupLabelKey(tree.groupKey) };
-  });
-
+  const top = new Map<string, Bucket>();
   const catsByGroup = new Map<CategoryGroupKey, Map<string, Bucket>>();
+
   for (const r of rows) {
     if (!isPersonal(r) || !isLive(r) || !isRealSpend(r)) continue;
     const cat = (r.category ?? '').trim();
     if (!cat) continue;
-    const tree = resolveTreeCategory(cat);
-    if (!tree.groupKey) continue;
-    let m = catsByGroup.get(tree.groupKey);
-    if (!m) {
-      m = new Map();
-      catsByGroup.set(tree.groupKey, m);
+    const place = placeExpenseCategory(cat, customList);
+    if (place.group) {
+      addToBucket(top, TOP_GROUP + place.group, { labelKey: categoryGroupLabelKey(place.group), customName: null }, r);
+      let m = catsByGroup.get(place.group);
+      if (!m) {
+        m = new Map();
+        catsByGroup.set(place.group, m);
+      }
+      addToBucket(m, cat, categoryLabel(cat, customList), r);
+    } else if (place.customId) {
+      addToBucket(top, TOP_CUSTOM + place.customId, categoryLabel(cat, customList), r);
     }
-    let b = m.get(cat);
-    if (!b) {
-      b = { labelKey: tree.label ?? tree.customName ?? cat, perMonth: new Map() };
-      m.set(cat, b);
-    }
-    const mk = monthKey(toDate(r.date));
-    b.perMonth.set(mk, (b.perMonth.get(mk) ?? 0) + (Number(r.amount) || 0));
   }
 
-  return toGrowthItems(groups, currentKey, prevKeys).map((g) => ({
-    ...g,
-    categories: toGrowthItems(
-      catsByGroup.get(g.key as CategoryGroupKey) ?? new Map(),
-      currentKey,
-      prevKeys,
-    ),
-  }));
+  return toGrowthItems(top, currentKey, prevKeys).map((g) => {
+    if (g.key.startsWith(TOP_CUSTOM)) {
+      const id = g.key.slice(TOP_CUSTOM.length);
+      return { ...g, key: id, filter: id, categories: [] };
+    }
+    const group = g.key.slice(TOP_GROUP.length) as CategoryGroupKey;
+    return {
+      ...g,
+      key: group,
+      filter: toGroupLimitKey(group),
+      categories: toGrowthItems(catsByGroup.get(group) ?? new Map(), currentKey, prevKeys),
+    };
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -305,7 +318,8 @@ export interface OverBudgetItem {
   budgetId: string;
   budgetName: string;
   categoryKey: string;
-  labelKey: string;
+  labelKey: string | null;
+  customName: string | null;
   limit: number;
   spent: number;
   overBy: number;
@@ -325,18 +339,23 @@ interface BudgetLike {
   categories?: readonly BudgetCategoryStatsLike[];
 }
 
-export function overBudgetItems(budgets: readonly BudgetLike[]): OverBudgetItem[] {
+export function overBudgetItems(
+  budgets: readonly BudgetLike[],
+  customs: readonly GroupedCustomCategory[] = [],
+): OverBudgetItem[] {
   const out: OverBudgetItem[] = [];
   for (const b of budgets) {
     if (b.project_id) continue; // samo osobni budžeti
     for (const c of b.categories ?? []) {
       if (!c.isOverBudget) continue;
-      const tree = resolveTreeCategory(c.category);
+      const label = parseGroupLimitKey(c.category)
+        ? { labelKey: categoryGroupLabelKey(parseGroupLimitKey(c.category) as CategoryGroupKey), customName: null }
+        : categoryLabel(c.category, customs);
       out.push({
         budgetId: b.id,
         budgetName: b.name,
         categoryKey: c.category,
-        labelKey: tree.label ?? tree.customName ?? c.category,
+        ...label,
         limit: round2(c.limit_amount),
         spent: round2(c.spent),
         overBy: round2(c.spent - c.limit_amount),
