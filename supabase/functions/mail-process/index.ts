@@ -49,6 +49,12 @@ import { extractPdfText } from "../_shared/mailImport/pdfText.ts";
 import { buildAiRequest } from "../_shared/mailImport/aiRequest.ts";
 import { emptyToNull } from "../_shared/mailImport/extractionNormalize.ts";
 import { pairReceiptsWithInvoices } from "../_shared/mailImport/receiptPairing.ts";
+import { groupOfferAttachments, OFFER_ATTACHMENT_WARNING } from "../_shared/mailImport/offerGrouping.ts";
+import {
+  OUTGOING_INVOICE,
+  OWN_OIB_NOT_SUPPLIER_WARNING,
+  stripOwnSupplierOib,
+} from "../_shared/mailImport/outgoingInvoice.ts";
 
 /** Vrsta dokumenta i upozorenje za potvrdu plaćanja vezanu uz račun. */
 const PAYMENT_RECEIPT_DOC_TYPE = "potvrda_placanja";
