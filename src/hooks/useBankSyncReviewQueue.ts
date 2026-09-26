@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { applyCountedFilter } from '@/lib/countedExpense';
 import { useAuthContext } from '@/contexts/AuthContext';
 import {
   logReviewDecision,
@@ -36,9 +37,9 @@ export function useBankSyncReviewQueue(bankAccountId?: string | null) {
       const ids = [...new Set(items.flatMap((i) => i.candidate_ids ?? []))];
       const candidates: Record<string, ReviewCandidate> = {};
       if (ids.length > 0) {
-        const { data: rows, error: cErr } = await supabase
-          .from('expenses')
-          .select('id, user_id, amount, date, description, payment_source')
+        const { data: rows, error: cErr } = await applyCountedFilter(
+          supabase.from('expenses').select('id, user_id, amount, date, description, payment_source'),
+        )
           .in('id', ids)
           .is('deleted_at', null)
           .is('bank_transaction_id', null);
