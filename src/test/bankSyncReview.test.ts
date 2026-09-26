@@ -68,7 +68,7 @@ describe('planReviewDecision — kroz jezgru', () => {
   });
   it('tuđi kandidat se ne spaja', () => {
     const foreign = [{ ...cands[0], user_id: 'other' }];
-    expect(planReviewDecision(item, 'u', foreign, { kind: 'merge', targetId: 'a' }).decision).toBe('dismiss');
+    expect(() => planReviewDecision(item, 'u', foreign, { kind: 'merge', targetId: 'a' })).toThrow('target_not_candidate');
   });
   it('kodovi grešaka', () => {
     expect(reviewErrorCode({ message: 'target_unavailable' })).toBe('target_unavailable');

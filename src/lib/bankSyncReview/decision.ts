@@ -105,7 +105,11 @@ export function planReviewDecision(
       ledgerReason: decision.reason,
     };
   }
-  return { decision: 'dismiss', targetId: null, counterpartSourceId: null, ledgerReason: decision.reason };
+  if (choice.kind === 'dismiss') {
+    return { decision: 'dismiss', targetId: null, counterpartSourceId: null, ledgerReason: decision.reason };
+  }
+  // Jezgra nije potvrdila izbor (npr. kandidat nije vlasnikov) — ništa se ne piše.
+  throw new Error('target_not_candidate');
 }
 
 /** Kodovi koje RPC vraća i koje ekran prevodi. */
