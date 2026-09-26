@@ -219,7 +219,13 @@ Deno.serve(async (req) => {
 
   // -------- Message + payload shape --------
   const titleKey = `notifications.krug.${event_type_shortKey(event_type)}.title`;
-  const bodyKey = `notifications.krug.${event_type_shortKey(event_type)}.message`;
+  // "Dijeli samo X": prijedlog sa svotom nosi vars.shared_amount → "dijeli se X od Y".
+  const isPartialOverride =
+    event_type === "krug_override_proposed" &&
+    !!vars && typeof vars === "object" && (vars as Record<string, unknown>).shared_amount != null;
+  const bodyKey = isPartialOverride
+    ? "notifications.krug.override_proposed.message_partial"
+    : `notifications.krug.${event_type_shortKey(event_type)}.message`;
   const highlightRoute = `/krug`; // MVP: land on krug list; deleted route ok
   // deletion_requested vodi u konkretni Krug (`/krug?id=<uuid>`) da recipient
   // vidi točan Krug čije je brisanje inicirano, umjesto generičke liste.
