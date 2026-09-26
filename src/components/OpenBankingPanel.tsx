@@ -18,6 +18,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
+import { BankReviewBadge } from '@/components/bank-review/BankReviewBadge';
+import { useBankSyncReviewCounts } from '@/hooks/useBankSyncReviewQueue';
 
 interface Aspsp {
   name: string;
@@ -490,6 +492,7 @@ export const OpenBankingPanel = () => {
                                     : t('openBanking.sync')}
                             </Button>
                           )}
+                          <BankReviewBadge count={reviewCounts?.[acc.id] ?? 0} accountId={acc.id} />
                           {isExcluded && !linkedSource && (
                             <Badge variant="outline" className="text-muted-foreground text-[11px]">
                               {t('openBanking.excludedFromSyncShort')}
