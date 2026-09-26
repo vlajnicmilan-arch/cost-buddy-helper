@@ -46,6 +46,7 @@ import {
   buildReviewPayload,
   enqueueReviewRow,
   loadQueuedStableIds,
+  reviewDisposition,
   reviewPlanFor,
   type ReviewPlan,
 } from "../_shared/bankSyncReview.ts";
@@ -907,13 +908,14 @@ Deno.serve(async (req) => {
 
       // NEJASAN REDAK → red „Na pregled", bez retka u knjigama. Greška upisa
       // u red → staro ponašanje (novi redak), da se ništa ne izgubi.
-      if (review && !decision.transfer && queueLoadFailed) {
+      const reviewAction = reviewDisposition(review, !!decision.transfer, queueLoadFailed);
+      if (reviewAction === "defer") {
         skipped += 1;
         reviewDeferred += 1;
         observeShadow("needs_review", { kind: "question" });
         continue;
       }
-      if (review && !decision.transfer) {
+      if (review && reviewAction === "enqueue") {
         const enq = await enqueueReviewRow(admin as unknown as Parameters<typeof enqueueReviewRow>[0], {
           user_id: userId,
           bank_account_id: account.id,

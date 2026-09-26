@@ -148,3 +148,19 @@ export async function loadQueuedStableIds(
     return { ids: new Set(), error: { code: e?.code ?? null, message: String(e?.message ?? err) } };
   }
 }
+
+/**
+ * Što sync radi s retkom kojem je `reviewPlanFor` dao plan.
+ * - `defer`: red se nije mogao učitati → ništa se ne upisuje (ni red ni
+ *   knjige), redak ostaje za idući put. Nikad duplikat.
+ * - `enqueue`: u red.
+ * - `none`: nije nejasan (ili je samo-prijenos) → stari put.
+ */
+export function reviewDisposition(
+  plan: ReviewPlan | null,
+  isSelfTransfer: boolean,
+  queueLoadFailed: boolean,
+): 'none' | 'defer' | 'enqueue' {
+  if (!plan || isSelfTransfer) return 'none';
+  return queueLoadFailed ? 'defer' : 'enqueue';
+}
