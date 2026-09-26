@@ -192,18 +192,22 @@ async function issuerMemoryFor(supabase: Supa, userId: string): Promise<IssuerMe
 
 
 
-async function knownCounterparties(supabase: Supa, userId: string) {
-  const [{ data: ibanRows }, { data: invRows }] = await Promise.all([
-    supabase.from("eracun_counterparty_iban").select("oib, iban").eq("user_id", userId),
+async function knownCounterparties(supabase: Supa, userId: string, ownOibs: readonly string[]) {
+  // Vlastiti OIB-ovi NIKAD nisu poznata druga strana — u incoming_invoices ih
+  // ima (kvar rujan 2026), ali se ovdje isključuju; zapisi se ne diraju.
+  const own = new Set(ownOibs.map((o) => String(o ?? "").replace(/[^0-9]/g, "")));
+  const [{ data: ibanRows, error: ibanErr }, { data: invRows }] = await Promise.all([
+    supabase.from("eracun_counterparty_iban").select("counterparty_oib, iban").eq("user_id", userId),
     supabase.from("incoming_invoices").select("supplier_oib, iban").eq("user_id", userId).limit(500),
   ]);
   const byOib = new Map<string, string[]>();
+  if (ibanErr) console.warn("[mail-process] eracun_counterparty_iban nedostupan", ibanErr.message);
   for (const r of (ibanRows ?? []) as Array<Record<string, string>>) {
-    if (!r.oib) continue;
-    byOib.set(r.oib, [...(byOib.get(r.oib) ?? []), r.iban]);
+    if (!r.counterparty_oib || own.has(r.counterparty_oib)) continue;
+    byOib.set(r.counterparty_oib, [...(byOib.get(r.counterparty_oib) ?? []), r.iban]);
   }
   for (const r of (invRows ?? []) as Array<Record<string, string>>) {
-    if (!r.supplier_oib || !r.iban) continue;
+    if (!r.supplier_oib || !r.iban || own.has(r.supplier_oib)) continue;
     byOib.set(r.supplier_oib, [...(byOib.get(r.supplier_oib) ?? []), r.iban]);
   }
   return { byOib, oibs: Array.from(byOib.keys()) };
@@ -424,10 +428,10 @@ async function processMessage(
   }
   
 
-  const { byOib, oibs } = await knownCounterparties(supabase, ownerId);
   const ownProfiles = await ownProfilesFor(supabase, ownerId);
   const ownOibEntries = ownOibEntriesFrom(ownProfiles);
   const ownOibs = ownOibEntries.map((e) => e.oib);
+  const { byOib, oibs } = await knownCounterparties(supabase, ownerId, ownOibs);
   const ownDomains = await ownDomainsFor(supabase, ownerId);
   const memoryRows = await issuerMemoryFor(supabase, ownerId);
 
@@ -495,6 +499,7 @@ async function processMessage(
     id: string;
     text: string;
     invoiceNumber: string | null;
+    classification: string;
     extraction: Record<string, unknown>;
     warnings: string[];
   }> = [];
@@ -693,7 +698,8 @@ async function processMessage(
     // Kvota se traži TEK ako bi obrada mogla trošiti AI/obradu.
     // Verifikacijske poruke prolaze bez kvote — zato se prvo klasificira
     // determinističkim koracima, a AI se ubacuje tek nakon provjere kvote.
-    const cheap = await classifyDocument(input, { parseUbl, analyzeWithAi: undefined });
+    const cheap = await classifyOrLog(supabase, ownerId, messageId, unit.attachmentId, "cheap", () =>
+      classifyDocument(input, { parseUbl, analyzeWithAi: undefined }));
 
     // PAMĆENJE IZDAVATELJA I MJESTA — sloj dopune IZMEĐU jeftine klasifikacije
     // i odluke o AI pozivu. Pogodak popunjava rupe pa `needsAiEnrichment`
@@ -715,7 +721,11 @@ async function processMessage(
         oibCandidates,
       });
       if (filled.knownIbans.length > 0) memoryKnownIbans = filled.knownIbans;
-      return filled;
+      // Pamćenje ne smije vratiti vlastiti OIB kao dobavljača.
+      const own = stripOwnSupplierOib(filled.extraction, ownOibs);
+      return own.stripped
+        ? { ...filled, extraction: own.extraction, warnings: [...filled.warnings, OWN_OIB_NOT_SUPPLIER_WARNING] }
+        : filled;
     };
 
     const cheapMemory = applyMemory(cheap);
@@ -754,7 +764,8 @@ async function processMessage(
           .eq("id", messageId);
         return;
       }
-      const withAi = await classifyDocument(input, { parseUbl, analyzeWithAi: aiAnalyze });
+      const withAi = await classifyOrLog(supabase, ownerId, messageId, unit.attachmentId, "ai", () =>
+        classifyDocument(input, { parseUbl, analyzeWithAi: aiAnalyze }));
       const aiMemory = applyMemory(withAi);
       warnings.push(...aiMemory.warnings);
       result = { ...withAi, extraction: aiMemory.extraction };
@@ -823,7 +834,9 @@ async function processMessage(
     // Nesigurno nikad ne nestaje: `mozda_izvod` ostaje u ljudskom redu odluke.
     const status = result.needsHumanChoice === true
       ? "na_pregledu"
-      : result.classification === "nije_za_nas" || result.classification === "nepoznato"
+      : result.classification === "nije_za_nas" ||
+          result.classification === "nepoznato" ||
+          result.classification === OUTGOING_INVOICE
         ? "nije_za_nas"
         : "na_pregledu";
 
@@ -831,7 +844,11 @@ async function processMessage(
     // DVAPUT, treći put ne gnjavi: ide izravno u odbačeno, uz zapis razloga.
     // Ništa se ne briše — korisnik stavku može vratiti u red.
     let finalStatus = status;
-    let mutedReason: string | null = null;
+    // Razlog je vidljiv u „Odbačeno": obavijest ili izlazni račun.
+    let mutedReason: string | null =
+      result.classification === OUTGOING_INVOICE
+        ? OUTGOING_INVOICE
+        : ((result.extraction?.notice_reason as string | undefined) ?? null);
 
     // PRIVREMENO PRAVILO 3 — stavka bez privitka, klasificirana kao ponuda ili
     // račun, bez iznosa I bez broja računa nije dokument. Korisnikova vlastita
@@ -926,6 +943,7 @@ async function processMessage(
         id: upserted.id as string,
         text: [pdfText, bodyText ?? ""].filter(Boolean).join("\n"),
         invoiceNumber: (extraction.invoice_number as string | null) ?? null,
+        classification: result.classification,
         extraction,
         warnings: [...new Set([...warnings, ...result.warnings])],
       });
@@ -967,11 +985,65 @@ async function processMessage(
       .eq("id", invoice.id);
   }
 
+  // PRIVICI ISTE PONUDE — jedna glavna stavka, ostali se vežu uz nju i ne
+  // broje se u redu ni u znački. Ništa se ne briše.
+  const paired = new Set(
+    pairReceiptsWithInvoices(reviewed).map((p) => p.receiptItemId),
+  );
+  for (const link of groupOfferAttachments(reviewed.filter((r) => !paired.has(r.id)))) {
+    const att = byId.get(link.attachmentItemId);
+    if (!att) continue;
+    await supabase
+      .from("document_ingest_items")
+      .update({
+        extraction: { ...att.extraction, related_item_id: link.mainItemId, is_offer_attachment: true },
+        warnings: [...new Set([...att.warnings, OFFER_ATTACHMENT_WARNING])],
+      })
+      .eq("id", att.id);
+  }
+
   await supabase
     .from("inbound_messages")
     .update({ status: "zavrsena", processed_at: new Date().toISOString(), last_error: null })
     .eq("id", messageId);
 
+}
+
+/** Build žig ove inačice lijevka — ide u svaki dijagnostički zapis pada. */
+const MAIL_PROCESS_BUILD = "mail-process@2026-09-26-classify-v2";
+
+/**
+ * Pad klasifikacije NIKAD nije tih: zapis u app_diagnostics_logs (code,
+ * message, build žig) pa ponovno bacanje — posao ide u postojeći put pada.
+ */
+async function classifyOrLog<T>(
+  supabase: Supa,
+  ownerId: string,
+  messageId: string,
+  attachmentId: string | null,
+  stage: "cheap" | "ai",
+  run: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await run();
+  } catch (e) {
+    const err = e as { code?: string; name?: string; message?: string } | null;
+    await supabase.from("app_diagnostics_logs").insert({
+      event: "mail_classification_failed",
+      user_id: ownerId,
+      session_id: "mail-process",
+      severity: "error",
+      details: {
+        code: err?.code ?? err?.name ?? "unknown",
+        message: String(err?.message ?? e).slice(0, 500),
+        build: MAIL_PROCESS_BUILD,
+        stage,
+        message_id: messageId,
+        attachment_id: attachmentId,
+      },
+    });
+    throw e;
+  }
 }
 
 Deno.serve(async (req) => {
