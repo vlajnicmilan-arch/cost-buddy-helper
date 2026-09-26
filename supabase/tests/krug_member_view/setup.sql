@@ -1,0 +1,71 @@
+-- krug_member_view: dodatna shema, RLS na ledgeru i podaci.
+\set ON_ERROR_STOP on
+-- Žive definicije pomoćnika (SECURITY DEFINER, kao na živoj bazi).
+CREATE OR REPLACE FUNCTION public.krug_is_full_member(_krug uuid, _user uuid) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public' AS $$
+  SELECT EXISTS (SELECT 1 FROM public.krug_ownership WHERE krug_id=_krug AND user_id=_user)
+      OR EXISTS (SELECT 1 FROM public.krug_membership WHERE krug_id=_krug AND user_id=_user AND role='punopravni');
+$$;
+CREATE OR REPLACE FUNCTION public.krug_is_member(_krug uuid, _user uuid) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public' AS $function$
+  SELECT
+    EXISTS (SELECT 1 FROM public.krug_ownership WHERE krug_id = _krug AND user_id = _user)
+    OR EXISTS (SELECT 1 FROM public.krug_membership m JOIN public.krug k ON k.id = m.krug_id
+               WHERE m.krug_id = _krug AND m.user_id = _user AND k.deleted_at IS NULL);
+$function$;
+GRANT EXECUTE ON FUNCTION public.krug_is_member(uuid,uuid), public.krug_is_full_member(uuid,uuid) TO authenticated, service_role;
+
+GRANT SELECT ON public.krug_settlement_ledger TO authenticated;
+ALTER TABLE public.krug_settlement_ledger ENABLE ROW LEVEL SECURITY;
+CREATE POLICY ledger_select_full_member ON public.krug_settlement_ledger
+  FOR SELECT TO authenticated USING (public.krug_is_full_member(krug_id, auth.uid()));
+
+-- K1: A vlasnik, B punopravni, C i D obični. E bivši član (nema retka).
+-- K2 (obrisan): vlasnik F, C obični.
+INSERT INTO public.krug(id,name) VALUES ('c1000000-0000-0000-0000-000000000001','kmv');
+INSERT INTO public.krug(id,name,deleted_at) VALUES ('c2000000-0000-0000-0000-000000000002','kmv-del',now());
+INSERT INTO public.krug_ownership VALUES
+ ('c1000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-00000000000a'),
+ ('c2000000-0000-0000-0000-000000000002','f0000000-0000-0000-0000-00000000000f');
+INSERT INTO public.krug_membership VALUES
+ ('c1000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-00000000000b','punopravni'),
+ ('c1000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-00000000000c','obicni'),
+ ('c1000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-00000000000d','obicni'),
+ ('c2000000-0000-0000-0000-000000000002','c0000000-0000-0000-0000-00000000000c','obicni');
+
+-- X1: A 40 bez prijedloga. X2: B 30, prijedlog A70/B30. X3: A 60, prijedlog A50/C50.
+-- X4: C 20, prijedlog C50/B50. X5: B 50 USD, prijedlog A50/B50.
+INSERT INTO public.expenses(id,user_id,krug_id,krug_privacy,krug_shared_status,amount,currency) VALUES
+ ('e1000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-00000000000a','c1000000-0000-0000-0000-000000000001','shared','potvrdjena',40,'EUR'),
+ ('e1000000-0000-0000-0000-000000000002','b0000000-0000-0000-0000-00000000000b','c1000000-0000-0000-0000-000000000001','shared','potvrdjena',30,'EUR'),
+ ('e1000000-0000-0000-0000-000000000003','a0000000-0000-0000-0000-00000000000a','c1000000-0000-0000-0000-000000000001','shared','potvrdjena',60,'EUR'),
+ ('e1000000-0000-0000-0000-000000000004','c0000000-0000-0000-0000-00000000000c','c1000000-0000-0000-0000-000000000001','shared','potvrdjena',20,'EUR'),
+ ('e1000000-0000-0000-0000-000000000005','b0000000-0000-0000-0000-00000000000b','c1000000-0000-0000-0000-000000000001','shared','potvrdjena',50,'USD');
+INSERT INTO public.krug_expense_split_override(id,expense_id,krug_id,proposed_by,status,activated_at) VALUES
+ ('0b000000-0000-0000-0000-000000000002','e1000000-0000-0000-0000-000000000002','c1000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-00000000000b','potvrdjena',now()),
+ ('0b000000-0000-0000-0000-000000000003','e1000000-0000-0000-0000-000000000003','c1000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-00000000000a','potvrdjena',now()),
+ ('0b000000-0000-0000-0000-000000000004','e1000000-0000-0000-0000-000000000004','c1000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-00000000000c','potvrdjena',now()),
+ ('0b000000-0000-0000-0000-000000000005','e1000000-0000-0000-0000-000000000005','c1000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-00000000000b','potvrdjena',now());
+INSERT INTO public.krug_expense_split_share(override_id,user_id,share_percent) VALUES
+ ('0b000000-0000-0000-0000-000000000002','a0000000-0000-0000-0000-00000000000a',70),
+ ('0b000000-0000-0000-0000-000000000002','b0000000-0000-0000-0000-00000000000b',30),
+ ('0b000000-0000-0000-0000-000000000003','a0000000-0000-0000-0000-00000000000a',50),
+ ('0b000000-0000-0000-0000-000000000003','c0000000-0000-0000-0000-00000000000c',50),
+ ('0b000000-0000-0000-0000-000000000004','c0000000-0000-0000-0000-00000000000c',50),
+ ('0b000000-0000-0000-0000-000000000004','b0000000-0000-0000-0000-00000000000b',50),
+ ('0b000000-0000-0000-0000-000000000005','a0000000-0000-0000-0000-00000000000a',50),
+ ('0b000000-0000-0000-0000-000000000005','b0000000-0000-0000-0000-00000000000b',50);
+
+-- Ledger: A→B 5 (C nije strana), C→A 10, E→A 7 (E je otišao), C→F 3 u obrisanom Krugu.
+INSERT INTO public.krug_settlement_ledger(id,krug_id,from_user,to_user,amount,currency,marked_at) VALUES
+ ('1e000000-0000-0000-0000-000000000001','c1000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-00000000000a','b0000000-0000-0000-0000-00000000000b',5,'EUR',now()),
+ ('1e000000-0000-0000-0000-000000000002','c1000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-00000000000c','a0000000-0000-0000-0000-00000000000a',10,'EUR',now()),
+ ('1e000000-0000-0000-0000-000000000003','c1000000-0000-0000-0000-000000000001','e0000000-0000-0000-0000-00000000000e','a0000000-0000-0000-0000-00000000000a',7,'EUR',now()),
+ ('1e000000-0000-0000-0000-000000000004','c2000000-0000-0000-0000-000000000002','c0000000-0000-0000-0000-00000000000c','f0000000-0000-0000-0000-00000000000f',3,'EUR',now());
+
+CREATE OR REPLACE FUNCTION public.kmv_prev(u text, cur text DEFAULT 'EUR', rates jsonb DEFAULT '{}', k uuid DEFAULT 'c1000000-0000-0000-0000-000000000001')
+RETURNS jsonb LANGUAGE plpgsql AS $$ BEGIN
+  PERFORM set_config('request.jwt.claim.sub', u, true);
+  RETURN public.krug_settlement_preview(k, date_trunc('month',current_date)::date,
+    (date_trunc('month',current_date)+interval '1 month -1 day')::date, cur, rates);
+END $$;
