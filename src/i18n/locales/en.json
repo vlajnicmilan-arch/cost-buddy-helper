@@ -7021,6 +7021,11 @@
       "odrediste_ponuda": "Customer matched by name only — check the destination.",
       "nauceno_odbijanje": "You already dismissed messages like this from this sender — they no longer reach the review queue.",
       "potvrda_uz_racun": "A payment receipt for this invoice arrived in the same message — the receipt is not entered as a separate invoice.",
+      "prilog_uz_ponudu": "This is an additional attachment of the same quote from the same message — it is kept with the main quote item.",
+      "vlastiti_oib_nije_dobavljac": "The document carries your own OIB — it was not entered as the supplier OIB.",
+      "obavijest_platforme": "This is a platform notification, not an invoice.",
+      "obavijest_o_transakciji": "This is a bank notification about a completed transaction, not an invoice.",
+      "izlazni_racun": "This invoice was issued by your company — an outgoing invoice is not an expense.",
       "datum_u_buducnosti": "The date is in the future — please check before confirming"
     },
     "field": {
