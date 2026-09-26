@@ -32,7 +32,9 @@ export function useMailPendingCount(enabled: boolean) {
       .from('document_ingest_items')
       .select('id', { count: 'exact', head: true })
       .eq('owner_user_id', user.id)
-      .eq('status', 'na_pregledu');
+      .eq('status', 'na_pregledu')
+      // Uparena potvrda plaćanja i privici iste ponude nisu zasebne stavke.
+      .is('extraction->>related_item_id', null);
 
     if (error) {
       console.warn('[useMailPendingCount] fetch error:', error.message);

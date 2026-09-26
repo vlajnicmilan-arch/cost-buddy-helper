@@ -44,9 +44,15 @@ export function splitPairedReceipts<T extends PairedReceiptItem>(
   for (const item of items) {
     const ex = (item.extraction ?? {}) as Record<string, unknown>;
     const relatedId = String(ex.related_item_id ?? '').trim();
+    if (relatedId === '' || !ids.has(relatedId)) continue;
+    // Privitak iste ponude: bez vlastite kartice, uz glavnu stavku ponude.
+    if (ex.is_offer_attachment === true) {
+      hidden.add(item.id);
+      continue;
+    }
     const isReceipt =
       item.doc_type === PAYMENT_RECEIPT_DOC_TYPE || ex.is_payment_receipt === true;
-    if (!isReceipt || relatedId === '' || !ids.has(relatedId)) continue;
+    if (!isReceipt) continue;
     hidden.add(item.id);
     receiptsByInvoiceId.set(relatedId, {
       id: item.id,
