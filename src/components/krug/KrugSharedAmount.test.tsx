@@ -56,7 +56,7 @@ describe('KrugSharedAmountField', () => {
     render(<FieldHarness />);
     const input = screen.getByTestId('krug-shared-amount');
     fireEvent.change(input, { target: { value: '41' } });
-    expect(screen.getByText('The shared amount cannot exceed the expense amount.'.length ? 'Dijeljena svota ne smije biti veća od iznosa troška.' : '')).toBeTruthy();
+    expect(screen.getByText('Dijeljena svota ne smije biti veća od iznosa troška.')).toBeTruthy();
     expect(input.getAttribute('aria-invalid')).toBe('true');
     fireEvent.change(input, { target: { value: '12' } });
     expect(input.getAttribute('aria-invalid')).toBe('false');
