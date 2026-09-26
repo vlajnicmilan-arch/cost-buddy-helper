@@ -157,6 +157,17 @@ export const HomeHeader = ({
           triggerClassName="w-full h-11 justify-center"
         />
       </div>
+
+      {!activeBusinessProfileId && (
+        <button
+          type="button"
+          onClick={() => navigate('/obrada')}
+          className="flex min-h-[44px] w-full items-center justify-center rounded-xl border border-border bg-card text-sm font-medium text-primary"
+          data-testid="obrada-cta"
+        >
+          {t('obrada.homeCta')}
+        </button>
+      )}
     </header>
   );
 };
