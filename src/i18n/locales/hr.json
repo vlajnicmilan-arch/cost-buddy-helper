@@ -7034,6 +7034,11 @@
       "odrediste_ponuda": "Kupac je prepoznat samo po nazivu — provjeri odredište.",
       "nauceno_odbijanje": "Ovakve poruke od ovog pošiljatelja si već odbacio — ubuduće ne dolaze na pregled.",
       "potvrda_uz_racun": "Uz ovaj račun stigla je i potvrda plaćanja iz iste poruke — potvrda se ne unosi kao zaseban račun.",
+      "prilog_uz_ponudu": "Ovo je dodatni privitak iste ponude iz iste poruke — vodi se uz glavnu stavku ponude.",
+      "vlastiti_oib_nije_dobavljac": "Na dokumentu je tvoj vlastiti OIB — nije upisan kao OIB dobavljača.",
+      "obavijest_platforme": "Ovo je obavijest platforme, a ne račun.",
+      "obavijest_o_transakciji": "Ovo je bankovna obavijest o izvršenoj transakciji, a ne račun.",
+      "izlazni_racun": "Ovaj račun je izdala tvoja tvrtka — izlazni račun nije trošak.",
       "datum_u_buducnosti": "Datum je u budućnosti — provjeri prije potvrde"
     },
     "field": {

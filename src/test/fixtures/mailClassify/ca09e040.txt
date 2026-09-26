@@ -1,0 +1,14 @@
+SUBJECT: Your subscription access has been paused
+FROM: Anthropic <no-reply-JWQ_9UVRPB66QbD6CS8V5w@mail.anthropic.com>
+---
+Your subscription access has been paused 
+
+Your most recent payment was unsuccessful, and your access to Claude's paid features has been paused. To restore access, please pay the outstanding invoice. 
+Note: If you pay a late invoice, your billing cycle will reset to the date of payment. 
+Pay invoice (url) 
+Go to billing settings (url) 
+
+For any further questions, please visit our help center. (url) 
+Claude.ai · (url) Research · (url) Products · (url) Company (url) 
+
+Anthropic PBC, 548 Market St, PMB 90375, San Francisco, CA 94104

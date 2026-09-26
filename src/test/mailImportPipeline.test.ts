@@ -252,7 +252,7 @@ describe('Hijerarhija klasifikacije — ČUVAR AI poziva', () => {
       confidence: 'srednja' as const,
     }));
     const result = await classifyDocument(
-      { sniffed: 'pdf', bodyText: 'OIB 12345678901, račun 5/1/1', knownOibs: ['12345678901'] },
+      { sniffed: 'pdf', bodyText: 'OIB 12345678901, Račun br. 5/1/1', knownOibs: ['12345678901'] },
       { parseUbl, analyzeWithAi },
     );
     expect(result.route).toBe('heuristika');
@@ -264,7 +264,7 @@ describe('Hijerarhija klasifikacije — ČUVAR AI poziva', () => {
     const result = await classifyDocument(
       {
         sniffed: 'pdf',
-        bodyText: 'OIB 12345678901, račun 5/1/1, ukupno 10,00 EUR',
+        bodyText: 'OIB 12345678901, Račun br. 5/1/1, ukupno 10,00 EUR',
         knownOibs: ['12345678901'],
       },
       { parseUbl, analyzeWithAi: undefined },

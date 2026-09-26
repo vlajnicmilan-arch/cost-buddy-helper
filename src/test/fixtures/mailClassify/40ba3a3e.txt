@@ -1,0 +1,77 @@
+SUBJECT: Receipt for Your Payment to Meta Platforms, Inc.
+FROM: PayPal <service@intl.paypal.com>
+---
+Receipt for Your Payment to Meta Platforms, Inc.  milan vlajnic, you successfully sent a payment.   
+     
+    
+    
+  Hello, milan vlajnic 
+    
+    
+    
+  
+ You paid €15,00 EUR to Meta Platforms, Inc.   
+    
+  View or Manage Payment (url)   
+    
+    
+    
+    
+  
+ Transaction ID 
+88S94360NB980064C    
+  
+ Transaction date 
+3 Sept 2026 
+ 
+    
+  
+ Merchant 
+Meta Platforms, Inc. 
+paypal-charges@suppo... 
++353 6505434800 
+
+    
+  
+ Invoice ID 
+28604079695947836   
+    
+  Description  Unit price  Qty  Amount 
+  Ads  €15,00 EUR   €15,00 EUR   
+    
+  Subtotal  €15,00 EUR 
+  Total  €15,00 EUR 
+  Payment  €15,00 EUR 
+  Charge will appear on your credit card statement as "PAYPAL *FACEBOOK" 
+  Payment sent to paypal-charges@suppo...   
+  
+   
+    
+  Paid Meta Platforms, Inc. with  
+  Visa-1542  €15,00 EUR   
+    
+  View or Manage Payment (url)   
+  
+  Issues with this transaction?   
+  
+ You have 180  days from the date of the transaction to open a dispute in the Resolution Center. 
+    
+    
+   
+   
+  Help & Contact (url) | Security (url) | Apps (url) 
+    
+       
+    
+  
+ PayPal is committed to preventing fraudulent emails. Emails from PayPal will always contain your full name. Learn to identify phishing (url)   
+  
+ Please don't reply to this email. To get in touch with us, click Help & Contact. (url)   
+  
+ Not sure why you received this email? Learn more (url)   
+  
+ 
+ Copyright © 1999-2026 PayPal. All rights reserved. 
+
+PayPal Pte. Ltd. is licensed by the Monetary Authority of Singapore as a Major Payment Institution under the Payment Services Act 2019. 
+PayPal RT001736:en_US(en-HR):1.7.0:00000000000000001b21704453bda349

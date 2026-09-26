@@ -21,6 +21,13 @@ import { carriesFinancialSubstance, classifyAsStatement } from './statementSigna
 import { carriesInvoiceSignal } from './invoiceSignals.ts';
 import { invoiceOverridesStatement } from './invoiceOverride.ts';
 import { detectNotInvoiceDeclaration } from './notInvoiceSignals.ts';
+import { detectNotice } from './notificationSignals.ts';
+import {
+  OUTGOING_INVOICE,
+  OWN_OIB_NOT_SUPPLIER_WARNING,
+  detectOutgoingInvoice,
+  stripOwnSupplierOib,
+} from './outgoingInvoice.ts';
 
 
 
@@ -33,6 +40,7 @@ export type Classification =
   | 'ponuda'
   | 'verifikacija_prosljedjivanja'
   | 'nije_za_nas'
+  | 'izlazni_racun'
   | 'nepoznato';
 
 export type Confidence = 'visoka' | 'srednja' | 'niska';
@@ -164,7 +172,12 @@ export async function classifyDocument(
   input: ClassifyInput,
   deps: ClassifyDeps,
 ): Promise<ClassifyResult> {
-  const result = await runClassification(input, deps);
+  const raw = await runClassification(input, deps);
+  // Vlastiti OIB NIKAD nije dobavljač — ni iz AI-ja, ni iz heuristike.
+  const own = stripOwnSupplierOib(raw.extraction, input.ownOibs ?? []);
+  const result = own.stripped
+    ? { ...raw, extraction: own.extraction, warnings: [...raw.warnings, OWN_OIB_NOT_SUPPLIER_WARNING] }
+    : raw;
   if (
     hasFutureDate(result.extraction, input.receivedAt ?? null) &&
     !result.warnings.includes(FUTURE_DATE_WARNING)
@@ -189,11 +202,29 @@ async function runClassification(
       (parsed.invoiceTypeCode as string | undefined) ??
       (parsed.docType as string | undefined) ??
       '380';
+    const ublExtraction = flattenUblExtraction(parsed, { receivedAt: input.receivedAt });
+    const ublOwn = new Set((input.ownOibs ?? []).map((o) => o.replace(/[^0-9]/g, '')));
+    const ublSupplier = String(ublExtraction?.supplier_oib ?? '').replace(/[^0-9]/g, '');
+    if (ublSupplier.length === 11 && ublOwn.has(ublSupplier) && input.userClassification !== 'racun') {
+      // IZLAZNI e-račun: izdavatelj je vlastiti profil — nikad trošak.
+      return {
+        classification: OUTGOING_INVOICE,
+        docType: String(docType),
+        extraction: { ...ublExtraction, outgoing_invoice: true },
+        confidence: 'visoka',
+        route: 'ubl',
+        aiCalls: 0,
+        consumesQuota: false,
+        priority: false,
+        warnings: [...warnings, OUTGOING_INVOICE],
+        verification: null,
+      };
+    }
     return {
       classification: 'racun',
       docType: String(docType),
       // PLOSNATI oblik — `mail_item_confirm` i UI čitaju `supplier_oib`, ne `supplier.oib`.
-      extraction: flattenUblExtraction(parsed, { receivedAt: input.receivedAt }),
+      extraction: ublExtraction,
       confidence: 'visoka',
       route: 'ubl',
       aiCalls: 0,
@@ -297,6 +328,56 @@ async function runClassification(
   }
 
 
+  // ---- 2d. OBAVIJEST BEZ PRIVITKA nije račun ------------------------------
+  // Paddle webhook, George/NetBanking potvrda naloga, FINA „primitak
+  // dokumenta", „subscription paused". Samo doslovni oblici; korisnik je jači.
+  if (!userSaysInvoice) {
+    const notice = detectNotice({
+      subject: input.subject,
+      bodyText: input.bodyText,
+      hasDocument:
+        (input.pdfText ?? '').trim() !== '' ||
+        (input.pdfBase64 ?? '') !== '' ||
+        (input.xml ?? '').trim() !== '' ||
+        input.sniffed !== 'unknown',
+    });
+    if (notice) {
+      return {
+        classification: 'nije_za_nas',
+        docType: null,
+        extraction: { notice_reason: notice },
+        confidence: 'visoka',
+        route: 'heuristika',
+        aiCalls: 0,
+        consumesQuota: false,
+        priority: false,
+        warnings: [...warnings, notice],
+        verification: null,
+      };
+    }
+
+    // ---- 2e. IZLAZNI RAČUN: izdavatelj je vlastiti profil -----------------
+    const outgoing = detectOutgoingInvoice(statementText, input.ownOibs ?? []);
+    if (outgoing.outgoing) {
+      return {
+        classification: OUTGOING_INVOICE,
+        docType: null,
+        extraction: {
+          outgoing_invoice: true,
+          issuer_oib: outgoing.issuerOib,
+          buyer_oib: outgoing.buyerOib,
+        },
+        confidence: 'visoka',
+        route: 'heuristika',
+        aiCalls: 0,
+        consumesQuota: false,
+        priority: false,
+        warnings: [...warnings, OUTGOING_INVOICE],
+        verification: null,
+      };
+    }
+  }
+
   // KLASIFIKATORSKA LEKCIJA: slaba sumnja na izvod NE smije nadjačati doslovan
   // račun-signal („Račun br.", „Dospijeće računa", naslov „Račun …") kad
   // dokument nosi financijsku supstancu. Tada ide u račun-put, ne u pitanje.
@@ -336,13 +417,24 @@ async function runClassification(
     invoice_number: deterministic.invoice_number,
   };
 
-  // ---- 3b. Heuristika — poznat OIB ili pošiljatelj, bez AI -----------------
+  // ---- 3b. Heuristika — poznat OIB ili pošiljatelj ------------------------
+  // Poznat OIB je DOKAZ IZDAVATELJA, ne presuda o vrsti (kvar rujan 2026:
+  // vlastiti OIB u potpisu/banka u podnožju pretvarali su dopis u `racun`).
+  // Heuristika smije sama reći „račun" samo uz doslovan račun-signal; inače
+  // odlučuje AI (korak 4). AI presuda `ponuda`/`nije_za_nas` se nikad ne gazi.
+  const own = new Set((input.ownOibs ?? []).map((o) => o.replace(/[^0-9]/g, '')));
   const haystack = [input.searchText, input.bodyText, input.pdfText, input.subject]
     .filter((part) => (part ?? '').length > 0)
     .join('\n');
-  const knownOib = findKnownOib(haystack, input.knownOibs ?? []);
+  const knownOib = findKnownOib(
+    haystack,
+    (input.knownOibs ?? []).filter((o) => !own.has(o.replace(/[^0-9]/g, ''))),
+  );
   const knownFrom = senderKnown(input.fromHeader, input.knownSenders ?? []);
-  if (knownOib || knownFrom) {
+  const heuristicSaysInvoice =
+    (knownOib || knownFrom) && (userSaysInvoice || carriesInvoiceSignal(statementText, input.subject));
+  let aiFromEnrichment: Awaited<ReturnType<NonNullable<ClassifyDeps['analyzeWithAi']>>> | null = null;
+  if (heuristicSaysInvoice) {
     let extraction = mergeDeterministic(
       knownOib ? { supplier_oib: knownOib } : null,
       deterministicFields,
@@ -353,29 +445,39 @@ async function runClassification(
     // PAMETNA DOPUNA: jeftina grana je odlucila STO je dokument, ali kljucna
     // polja (iznos/broj/dobavljac) znaju ostati prazna. Tek tada — i samo kad
     // postoji tekst — AI dopunjuje RUPE. Determinizam i dalje pobjeduje.
+    let enrichmentOverruled = false;
     if (deps.analyzeWithAi && needsAiEnrichment(extraction, hasExtractableText(input))) {
       const ai = await deps.analyzeWithAi(input);
       enrichCalls = 1;
-      extraction = mergeDeterministic(
-        { ...(ai?.extraction ?? {}), ...stripNulls(extraction) },
-        deterministicFields,
-        { receivedAt: input.receivedAt },
-      );
-      warnings.push('ai_dopuna');
+      if (ai.classification !== 'racun' && !userSaysInvoice) {
+        // AI kaže da ovo NIJE račun — presuda ide kroz korak 4, ne gazi se.
+        aiFromEnrichment = ai;
+        aiCalls += 1;
+        enrichmentOverruled = true;
+      } else {
+        extraction = mergeDeterministic(
+          { ...(ai?.extraction ?? {}), ...stripNulls(extraction) },
+          deterministicFields,
+          { receivedAt: input.receivedAt },
+        );
+        warnings.push('ai_dopuna');
+      }
     }
 
-    return {
-      classification: 'racun',
-      docType: '380',
-      extraction,
-      confidence: deterministic.ambiguous ? 'niska' : 'srednja',
-      route: 'heuristika',
-      aiCalls: enrichCalls,
-      consumesQuota: true,
-      priority: false,
-      warnings,
-      verification: null,
-    };
+    if (!enrichmentOverruled) {
+      return {
+        classification: 'racun',
+        docType: '380',
+        extraction,
+        confidence: deterministic.ambiguous ? 'niska' : 'srednja',
+        route: 'heuristika',
+        aiCalls: enrichCalls,
+        consumesQuota: true,
+        priority: false,
+        warnings,
+        verification: null,
+      };
+    }
   }
 
   // ---- 4. Tek sada AI ------------------------------------------------------
@@ -394,13 +496,19 @@ async function runClassification(
     };
   }
 
-  const ai = await deps.analyzeWithAi(input);
-  aiCalls += 1;
+  const ai = aiFromEnrichment ?? (await deps.analyzeWithAi(input));
+  if (!aiFromEnrichment) aiCalls += 1;
+  // Poznat izdavatelj (ne vlastiti) popunjava samo prazan OIB dobavljača.
+  if (knownOib && ai.extraction && !ai.extraction.supplier_oib) {
+    ai.extraction = { ...ai.extraction, supplier_oib: knownOib };
+  }
 
   if (ai.classification !== 'racun' && ai.classification !== 'ponuda') {
     // Korisnikova odluka „ovo je račun" je jača od AI presude: dokument ostaje
     // račun s onim što je AI uspio pročitati, nikad se ne vraća u pitanje.
-    if (invoiceWins) {
+    // Samo korisnikova odluka ili izvod-sumnja (izvorna svrha pravila) smiju
+    // pregaziti AI presudu — inače `nije_za_nas`/`ponuda` vrijedi.
+    if (userSaysInvoice || (statement.needsHumanChoice && invoiceWins)) {
       return {
         classification: 'racun',
         docType: '380',

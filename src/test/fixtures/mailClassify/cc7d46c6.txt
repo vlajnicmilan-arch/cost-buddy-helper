@@ -1,0 +1,51 @@
+SUBJECT: RE: Re: RE: Demo okolina e-Račun B2B web servisa – adrese i upute (AKROBAT j.d.o.o., OIB 39916265994)
+FROM: eracun.itpodrska@fina.hr
+---
+Poštovani, 
+nije potrebno dopuštati pristup konkretnim IP adresama. Osim namjerno blokiranih, sve bi trebale imati omogućen pristup. Međutim, jeste li sigurni da koristite produkcijski certifikat prilikom pokušaja pristupa produkcijskom web servisu? Na koji način pokušavate komunicirati sa web servisima? Ako ste prvo pokušali komunicirati s demo web servisom, a zatim odmah s produkcijskim, možda je Vaš demo certifikat ostao u cache-u. 
+Ako ste sigurno koristili produkcijski certifikat, onda najvjerojatnije na računalu nemate instalirane sve certifikate iz lanca. Finine root i intermediate certifikate možete preuzeti sa sljedeće poveznice: https://www.fina.hr/finadigicert/fina-ca-root-certifikati 
+Svakako morate imati instaliran Fina RDC 2025 na svom računalu jer je to izdavatelj Vaših produkcijskih aplikacijskih certifikata. 
+Za sve dodatne upite stojimo na raspolaganju. 
+Lijep pozdrav, 
+Tim IT podrške 
+FINA - Financijska agencija 
+ 
+----- Original Message ----- 
+From: "Milan Vlajnić" <vlajnic.milan@gmail.com> 
+Date: 09/16/2026 9:10 AM 
+To: eracun.itpodrska@fina.hr 
+Subject: Re: RE: Demo okolina e-Račun B2B web servisa – adrese i upute (AKROBAT j.d.o.o., OIB 39916265994) 
+ 
+Poštovani, 
+zahvaljujem na tehničkim uputama oko demo okoline. Zaprimanje ulaznih e-Računa na demo web servisu ( https://www.google.com/url?q=http://prezdigitalneusluge.fina.hr&source=gmail&ust=1789589442748000&sa=E, B2BFinaInvoiceWebService) radi nam ispravno — metode EchoBuyer i getB2BIncomingInvoiceList prolaze uredno, s aplikacijskim certifikatom i WS-Security potpisom (exc-c14n, RSA-SHA256). (url) 
+Isto pokušavamo prenijeti na produkciju, ali nailazimo na problem koji nije vezan uz certifikat ni potpis: kad se naš poslužitelj pokuša spojiti na produkcijski servis za zaprimanje ( https://www.google.com/url?q=http://webservisi.fina.hr/B2BFinaInvoiceWebService&source=gmail&ust=1789589442748000&sa=E), veza se prekida već pri uspostavi TLS-a (Connection reset) — dakle prije razmjene certifikata. Iz iste okoline veza prema demo adresi se uredno uspostavlja. (url) 
+Molim vas pojašnjenje: 
+1. Je li produkcijsko B2B zaprimanje ograničeno na prijavljene IP adrese? Ako jest, kako i gdje prijaviti adresu s koje se naša aplikacija spaja? 
+2. Je li za produkcijsko zaprimanje potrebno još nešto uz aplikacijski certifikat (npr. pristupnica za rad putem web servisa, poslužiteljski SSL certifikat) i je li to za Akrobat aktivirano? 
+3. Zašto produkcija prekida vezu prije razmjene certifikata, a demo je uspostavlja? 
+4. Molim potvrdu da je produkcijska adresa za zaprimanje ispravna: https://www.google.com/url?q=http://webservisi.fina.hr/B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService&source=gmail&ust=1789589442748000&sa=E. (url) 
+Cilj nam je iz vlastite aplikacije čitati ulazne e-Račune (isključivo metodama getB2BIncomingInvoiceList/getB2BIncomingInvoice, bez mijenjanja statusa). 
+Unaprijed hvala. 
+Srdačan pozdrav, 
+Milan Vlajnić 
+AKROBAT j.d.o.o. 
+OIB 39916265994 
+GSM: +385 95 123 9870 
+ 
+ 
+On Tue, Sep 15, 2026 07:54 AM, eracun.itpodrska@fina.hr wrote: (mailto:eracun.itpodrska@fina.hr)  
+ 
+Poštovani, 
+u nastavku Vam dostavljamo tehničke informacije o integraciji. 
+Za povezivanje sustava korisnika sa sustavom e-Račun koriste se SOAP web servisi. Dakle, s Vaše strane trebali biste kreirati SOAP klijent prema tehničkoj specifikaciji koju Vam šaljemo u nastavku, a koji će prema web servisu sustava e-Račun slati SOAP poruke s izlaznim računima. Poruke se šalju https protokolom, a za zaštitu prijenosnog puta se koriste 2-way SSL konekcija gdje se Vaš klijent našem web servisu predstavlja aplikacijskim certifikatom, a naš web servis Vašem klijentu našim SSL certifikatom. Pripadajuće WSDL-ove možete preuzeti sa poveznica na kojima se nalaze Tehničke specifikacije. 
+Tehnička specifikacija za slanje računa se nalazi na sljedećoj poveznici: https://www.fina.hr/digitalizacija-poslovanja/e-racun/tehnicka-specifikacija/tehnicka-specifikacija-slanje-racuna-web-servisom (url) 
+Tehnička specifikacija za zaprimanje računa web servisom se nalazi na sljedećoj poveznici: https://www.fina.hr/digitalizacija-poslovanja/e-racun/tehnicka-specifikacija/tehnicka-specifikacija-razmjena-podataka-web-servisima-sinkronom-obradom (url) 
+Adrese web servisa su: 
+Slanje računa 
+Demo: https://prezdigitalneusluge.fina.hr/SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService (url) 
+Produkcija: https://webservisi.fina.hr/SendB2BOutgoingInvoicePKIWebService/services/SendB2BOutgoingInvoicePKIWebService (url) 
+Zaprimanje računa 
+Demo: https://prezdigitalneusluge.fina.hr/B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService (url) 
+Produkcija: https://webservisi.fina.hr/B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService (https://webservisi.fina.hr/B2BFinaInvoiceWebService/services/B2BFinaInvoiceWebService) 
+Sve poruke koje se šalju prema web servisima trebaju biti digitalno potpisane prema WS-Security standardu. Predlažemo korištenje barem RSA-SHA256 algoritma jer smo u demo okolini već zabranili korištenje RSA-SHA1 algoritma, a u produkciji ćemo ga zabraniti 2.11.2026. Također, nije dozvoljeno koristiti here() funkciju u XPath elementu potpisa. Ukoliko bi Vam ovaj dio predstavljao problem, možete koristiti besplatnu Middleware aplikaciju, odnosno integracijski modul. Radi se o aplikaciji koja se pokreće na strani Vašeg sustava, Prema integracijskom modulu REST pozivom šaljete nepotpisani zahtjev, a integracijski modul iz REST poziva kreira SOAP poziv koji potpisuje i šalje prema web servisu sustava. Ukoliko Vam se ova opcija čini interesantnom, molim Vas da dodatno ispunite zahtjev za izdavanjem Integracijskog modula (Middlewarea): https://www.fina.hr/ngsite/content/download/12653/189705/1 (https://www.fina.hr/ngsite/content/download/12653/189705/1) 
+Sami računi koji se šalju treba
