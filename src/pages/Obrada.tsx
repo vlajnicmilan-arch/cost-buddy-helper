@@ -21,6 +21,7 @@ import {
 import { logObradaError } from '@/lib/obrada/obradaError';
 import { buildLoanSummary, monthRange, sumTaggedSpend } from '@/lib/expenseMarkers';
 import { matchesCategoryFilter } from '@/lib/categoryGroupMatch';
+import { isRealSpend } from '@/lib/spendClassification';
 import { normalizeMerchant } from '@/lib/duplicateDetection';
 import type { Expense } from '@/types/expense';
 
@@ -90,7 +91,7 @@ const Obrada = () => {
     const key = monthKeyOf(month);
     const filtered = expenses.filter(
       (e) =>
-        e.type === 'expense' &&
+        isRealSpend(e) &&
         !isDeleted(e) &&
         matchesCategoryFilter(e.category, `group:${groupKey}`) &&
         `${e.date.getFullYear()}-${String(e.date.getMonth() + 1).padStart(2, '0')}` === key,
@@ -105,7 +106,7 @@ const Obrada = () => {
   const openMerchantList = (merchantKey: string, name: string) => {
     const key = monthKeyOf(month);
     const filtered = expenses.filter((e) => {
-      if (e.type !== 'expense' || isDeleted(e)) return false;
+      if (!isRealSpend(e) || isDeleted(e)) return false;
       const mk = `${e.date.getFullYear()}-${String(e.date.getMonth() + 1).padStart(2, '0')}`;
       if (mk !== key) return false;
       const raw =
@@ -124,7 +125,7 @@ const Obrada = () => {
   const label = (key: string) => (key.includes('.') ? t(key) : key);
 
   return (
-    <div className="mx-auto flex w-full max-w-lg flex-col gap-3 px-4 pb-24 pt-4">
+    <div className="mx-auto flex w-full max-w-lg flex-col gap-3 px-4 pt-4">
       <header className="flex items-center justify-between">
         <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => shiftMonth(-1)} aria-label={t('obrada.prevMonth')}>
           <ChevronLeft className="h-5 w-5" />

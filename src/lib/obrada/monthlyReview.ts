@@ -4,7 +4,7 @@
  * Sve brojke idu kroz isRealSpend/isRealIncome, samo osobni redci
  * (bez project_id i business_profile_id), deleted_at null.
  */
-import { isRealIncome, isRealSpend } from '@/lib/spendClassification';
+import { isExpenseType, isRealIncome, isRealSpend } from '@/lib/spendClassification';
 import { categoryGroupLabelKey, resolveTreeCategory, type CategoryGroupKey } from '@/lib/categoryTree';
 import { normalizeMerchant } from '@/lib/duplicateDetection';
 
@@ -246,7 +246,7 @@ export function recurringMerchants(
 
   const knownSubscriptionKeys = new Set(
     rules
-      .filter((r) => r.is_active && r.type === 'expense' && !r.business_profile_id)
+      .filter((r) => r.is_active && isExpenseType(r.type) && !r.business_profile_id)
       .map((r) => normalizeMerchant((r.merchant_name ?? '').trim() || (r.description ?? '').trim()))
       .filter(Boolean),
   );
