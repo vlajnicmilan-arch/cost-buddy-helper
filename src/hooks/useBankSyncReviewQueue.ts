@@ -1,9 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { COUNTED_EXPENSE_STATUSES } from '@/lib/countedExpense';
+import { CATEGORY_TREE_VERSION } from '@/lib/categoryAssign';
+import { isIncomeType } from '@/lib/spendClassification';
 import { useAuthContext } from '@/contexts/AuthContext';
 import {
   logReviewDecision,
+  logReviewCategoryError,
   logReviewDecisionError,
   planReviewDecision,
   type ReviewCandidate,
@@ -71,6 +74,28 @@ export function useBankSyncReviewCounts() {
   });
 }
 
+/**
+ * Kategorija novog retka istim putem kao ručni upis: `categorize-transaction`
+ * s oznakom stabla → `assignTreeCategory` (naučeni ispravak → AI → provjera).
+ * Ta funkcija razvrstava samo trošak; prihod i neuspjeh → null (server: 'other').
+ */
+async function fetchReviewCategory(item: ReviewQueueItem): Promise<string | null> {
+  if (isIncomeType(item.payload)) return null;
+  const description = item.payload.description ?? '';
+  if (description.trim().length < 3) return null;
+  try {
+    const { data, error } = await supabase.functions.invoke('categorize-transaction', {
+      body: { description, merchant_name: '', category_tree_version: CATEGORY_TREE_VERSION },
+    });
+    if (error) throw error;
+    const cat = (data as { category?: unknown } | null)?.category;
+    return typeof cat === 'string' && cat.length > 0 ? cat : null;
+  } catch (err) {
+    logReviewCategoryError(err, item);
+    return null;
+  }
+}
+
 export interface DecideInput {
   item: ReviewQueueItem;
   candidates: ReviewCandidate[];
@@ -84,11 +109,13 @@ export function useBankSyncReviewDecide() {
     mutationFn: async ({ item, candidates, choice }: DecideInput) => {
       if (!user?.id) throw new Error('unauthenticated');
       const planned = planReviewDecision(item, user.id, candidates, choice);
+      const category = planned.decision === 'new' ? await fetchReviewCategory(item) : null;
       const { data, error } = await supabase.rpc('bank_sync_review_decide', {
         p_id: item.id,
         p_decision: planned.decision,
         p_target_id: planned.targetId ?? undefined,
         p_counterpart_source_id: planned.counterpartSourceId ?? undefined,
+        p_category: category ?? undefined,
       });
       if (error) {
         logReviewDecisionError(error, item, planned.decision);
